@@ -4,7 +4,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  async headers() {
+  /* async headers() {
     return [
       {
         source: '/(.*)',
@@ -13,10 +13,10 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://snap-assets.sandbox.midtrans.com https://app.sandbox.midtrans.com; connect-src 'self' https://api.sandbox.midtrans.com; frame-src 'self' https://app.sandbox.midtrans.com;`,
           },
-        ],
+        ],s
       },
     ];
-  },
+  },*/
 };
 
 export default nextConfig;
