@@ -1,0 +1,14 @@
+{
+  "accessibility": {
+    "closeAriaLabel": "Close Modal"
+  },
+  "icons": {
+    "close": "x"
+  },
+  "labels": {
+    "variant": "Pilih Ukuran / Varian:",
+    "quantityMinus": "−",
+    "quantityPlus": "+",
+    "addToCart": "Masukkan ke Keranjang"
+  }
+}

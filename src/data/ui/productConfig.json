@@ -1,0 +1,19 @@
+{
+  "header": {
+    "tagline": "our curated collection",
+    "title": {
+      "main": "Produk",
+      "highlight": "Kami"
+    }
+  },
+  "messages": {
+    "empty": "Produk Masih Diracik..."
+  },
+  "card": {
+    "pricePrefix": "Mulai dari",
+    "quickAddText": "+",
+    "soldOutText": "OUT OF STOCK",
+    "unavailableText": "Unavailable",
+    "soldOutBadge": "SOLD OUT"
+  }
+}

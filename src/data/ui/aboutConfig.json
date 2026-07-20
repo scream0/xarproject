@@ -1,0 +1,24 @@
+{
+  "image": {
+    "src": "/assets/images/about-bg.jpg",
+    "alt": "Artisanal Craftsmanship"
+  },
+  "content": {
+    "tagline": "The Story Behind",
+    "heading": "The Essence of Artisanal Perfection.",
+    "leadText": "Xar Project mendefinisikan ulang kemewahan melalui keheningan aroma dan kedalaman karakter yang terakurasi.",
+    "bodyText": "Kami percaya bahwa apa yang Anda kenakan adalah representasi paling jujur dari identitas diri. Setiap rilisan diracik secara manual dalam jumlah terbatas untuk memastikan eksklusivitas."
+  },
+  "features": [
+    {
+      "number": "01",
+      "title": "Premium Concentration",
+      "desc": "Konsentrat tertinggi untuk ketahanan aroma sepanjang hari."
+    },
+    {
+      "number": "02",
+      "title": "Artisanal Blend",
+      "desc": "Racikan manual yang menjaga keaslian setiap karakter aroma."
+    }
+  ]
+}

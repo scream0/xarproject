@@ -1,0 +1,90 @@
+/* SearchForm.module.css */
+
+.searchForm {
+  position: absolute;
+  top: 90px; /* Sesuai dengan height: 90px dari Navbar */
+  right: 7%;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  width: 350px;
+  padding: 1rem;
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.searchForm.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.searchForm input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  outline: none;
+}
+
+.searchResults {
+  margin-top: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.searchResultItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.searchResultItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px); /* Efek buram yang halus */
+  -webkit-backdrop-filter: blur(20px); /* Dukungan untuk Safari */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Menambahkan visual tidak bisa diklik */
+.disabled {
+  opacity: 0.6; /* Membuat tampilan sedikit transparan */
+  cursor: not-allowed !important; /* Mengubah kursor jadi tanda larangan */
+  pointer-events: none !important; /* Benar-benar mematikan interaksi mouse */
+  opacity: 0.5 !important;
+  filter: grayscale(1);
+}
+
+/* Opsi: Jika ingin tetap ada hover tapi tidak bisa klik, hapus pointer-events: none */
+.searchResultItem.disabled:hover {
+  background-color: transparent; /* Tidak ada efek hover saat produk habis */
+}
+
+.searchResultItem img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.resultInfo h4 {
+  font-size: 0.9rem;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+.resultInfo p {
+  color: var(--primary-color);
+  font-size: 0.8rem;
+}

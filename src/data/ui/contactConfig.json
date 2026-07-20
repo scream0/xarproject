@@ -1,0 +1,45 @@
+{
+  "whatsappNumber": "6285171723607",
+  "header": {
+    "tagline": "Get In Touch",
+    "title": {
+      "main": "Ada Pertanyaan?",
+      "highlight": "Hubungi Kami"
+    }
+  },
+  "infoItems": [
+    {
+      "icon": "mail",
+      "title": "Email Resmi",
+      "value": "support@xarproject.com"
+    },
+    {
+      "icon": "clock",
+      "title": "Jam Operasional",
+      "value": "Setiap Hari (18:00 - 21:00 WIB)"
+    },
+    {
+      "icon": "map-pin",
+      "title": "Lokasi Galeri",
+      "value": "Sleman, Yogyakarta, Indonesia"
+    }
+  ],
+  "headquarters": {
+    "title": "Headquarters",
+    "address": [
+      "Tegalrejo Wedomartani, Kabupaten Sleman,",
+      "Daerah Istimewa Yogyakarta 55584"
+    ],
+    "coordinates": "07° 43' 36.2\" S | 110° 25' 35.3\" E"
+  },
+  "form": {
+    "title": "Kirim Pesan Instan",
+    "fields": {
+      "name": "Nama Lengkap",
+      "email": "Alamat Email",
+      "phone": "Nomor WhatsApp",
+      "message": "Tulis Pesan Anda..."
+    },
+    "submitText": "Kirim via WhatsApp"
+  }
+}

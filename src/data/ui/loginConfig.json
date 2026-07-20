@@ -1,0 +1,107 @@
+{
+  "brand": {
+    "name": "XAR PROJECT",
+    "subtitle": "ANTARA AROMA DAN RASA",
+    "themeColor": "#0a0a0a"
+  },
+  "content": {
+    "backLinkLabel": "Back to Home",
+    "backLinkHref": "/"
+  },
+  "form": {
+    "title": "SIGN IN",
+    "buttonText": "SIGN IN",
+    "emailPlaceholder": "EMAIL ADDRESS",
+    "passwordPlaceholder": "PASSWORD",
+    "otpPlaceholder": "Masukkan 6 digit OTP",
+    "emptyFieldsMessage": "Semua kolom wajib diisi.",
+    "errorMessage": "Email atau password salah.",
+    "titles": {
+      "register": "CREATE ACCOUNT",
+      "phone": "PHONE SIGN IN"
+    },
+    "buttons": {
+      "signUp": "SIGN UP",
+      "sendOtp": "KIRIM KODE OTP",
+      "verifyOtp": "VERIFIKASI OTP"
+    },
+    "labels": {
+      "rememberMe": "Remember Me",
+      "forgotPassword": "Forgot Password?",
+      "oauthDivider": "OR CONTINUE WITH"
+    },
+    "switchText": {
+      "emailMode": "Masuk dengan Email & Password",
+      "phoneMode": "Masuk dengan Nomor HP",
+      "signIn": "Already have an account? Sign In",
+      "signUp": "Don't have an account? Sign Up"
+    },
+    "validation": {
+      "allFieldsRequired": "Semua kolom registrasi wajib diisi.",
+      "passwordMismatch": "Konfirmasi password tidak cocok.",
+      "otpRequired": "Silakan masukkan kode OTP terlebih dahulu.",
+      "phoneRequired": "Silakan isi nomor HP Anda terlebih dahulu.",
+      "invalidPhoneFormat": "Format nomor HP tidak valid. Gunakan format standar (Contoh: 0812xxx).",
+      "emailRequiredForReset": "Silakan masukkan email Anda terlebih dahulu untuk mereset password."
+    },
+    "messages": {
+      "registerSuccess": "Registrasi akun berhasil! Mengalihkan...",
+      "emailInUse": "Email tersebut sudah terdaftar.",
+      "weakPassword": "Password terlalu lemah (minimal 6 karakter).",
+      "registerFailed": "Gagal membuat akun. Silakan coba lagi.",
+      "invalidOtp": "Kode OTP yang Anda masukkan salah atau telah kedaluwarsa.",
+      "otpFailed": "Gagal memverifikasi kode OTP. Silakan coba lagi.",
+      "tooManyRequests": "Terlalu banyak percobaan login gagal. Akun ditangguhkan sementara.",
+      "loginFailed": "Terjadi masalah saat mencoba masuk. Silakan coba lagi.",
+      "otpSent": "Kode OTP sukses dikirim melalui SMS ke",
+      "invalidPhoneBackend": "Format nomor HP tidak dikenali oleh sistem backend.",
+      "smsLimitReached": "Batas pengiriman SMS untuk nomor ini tercapai. Coba beberapa saat lagi.",
+      "smsFailed": "Gagal mengirim SMS OTP. Periksa jaringan Anda atau coba lagi.",
+      "resetEmailSent": "Link reset password telah dikirim ke email Anda.",
+      "resetEmailFailed": "Gagal mengirim email reset. Pastikan email terdaftar.",
+      "googleAuthFailed": "Gagal masuk menggunakan Google."
+    },
+    "fields": [
+      {
+        "name": "name",
+        "type": "text",
+        "placeholder": "FULL NAME",
+        "visibility": "registerOnly",
+        "isAnimated": true,
+        "required": true
+      },
+      {
+        "name": "phone",
+        "type": "tel",
+        "placeholder": "Contoh: 08123456789",
+        "visibility": "phoneModeOnly",
+        "isAnimated": false,
+        "required": true
+      },
+      {
+        "name": "email",
+        "type": "email",
+        "placeholder": "EMAIL ADDRESS",
+        "visibility": "emailModeOnly",
+        "isAnimated": false,
+        "required": true
+      },
+      {
+        "name": "password",
+        "type": "password",
+        "placeholder": "PASSWORD",
+        "visibility": "emailModeOnly",
+        "isAnimated": false,
+        "required": true
+      },
+      {
+        "name": "confirmPassword",
+        "type": "password",
+        "placeholder": "CONFIRM PASSWORD",
+        "visibility": "registerOnly",
+        "isAnimated": true,
+        "required": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/* ====================================================
+   PALET WARNA, FONT, & ROOT VARIABLES
+   ==================================================== */
+:root {
+  --font-tenor: "Tenor Sans", sans-serif;
+  --font-lato: "Lato", sans-serif;
+
+  --primary-color: #e5f500;
+  --primary-light: #d4af37;
+  --bg-dark: #0a0a0a;
+  --text-light: #ffffff;
+  --text-muted: #666666;
+  --bg-hero: url("/assets/images/hero-bg.jpg");
+  --bg-about: url("/assets/images/about-bg.jpg");
+
+  /* Tailwind Theme Mapping */
+  --font-serif: var(--font-tenor);
+  --font-sans: var(--font-lato);
+}
+
+@theme {
+  --font-serif: var(--font-tenor);
+  --font-sans: var(--font-lato);
+}
+
+/* ====================================================
+   RESET & GLOBAL STYLES
+   ==================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+  border: none;
+  text-decoration: none;
+}
+/* --- Global Scrollbar Styling --- */
+
+/* Chrome, Safari, Edge */
+::-webkit-scrollbar {
+  width: 8px; /* Sedikit lebih lebar untuk navigasi desktop */
+}
+
+::-webkit-scrollbar-track {
+  background: #050505; /* Warna background gelap web Anda */
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1); /* Tipis dan tidak mencolok */
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2); /* Sedikit lebih terang saat di-hover */
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) #050505;
+  scroll-behavior: smooth;
+  font-size: 100%; /* Default */
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  line-height: 1.6;
+  overscroll-behavior: none;
+  overflow-x: hidden;
+}
+
+.feather {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-light); /* Warna default */
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+h1,
+h2,
+h3,
+h4,
+.heading {
+  font-family: var(--font-serif);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ====================================================
+   MEDIA QUERIES (RESPONSIVE ENGINE)
+   ==================================================== */
+@media (max-width: 1440px) {
+  html {
+    font-size: 80%;
+  }
+}
+@media (max-width: 1920px) {
+  html {
+    font-size: 90%;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Global adjustments for smaller screens */
+  .contact-container {
+    flex-direction: column;
+    gap: 4rem;
+  }
+}
+
+@media (max-width: 478px) {
+  html {
+    font-size: 75%;
+  }
+  .product,
+  .contact {
+    padding: 8rem 7% 2rem;
+  }
+}

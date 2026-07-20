@@ -1,0 +1,452 @@
+/* Modal.module.css */
+/* bair svg iconnya bisa tampil */
+.feather {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-light); /* Warna default */
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  /* Gunakan warna yang sedikit lebih gelap dan kaya agar blur terlihat kontras */
+  background: rgba(0, 0, 0, 0.7);
+  /* Meningkatkan blur sedikit agar fokus ke modal lebih maksimal */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  opacity: 0;
+  visibility: hidden;
+  /* Gunakan easing yang lebih "lembut" daripada sekadar 'ease' */
+  transition:
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.5s;
+  touch-action: none;
+}
+
+.modalActive {
+  opacity: 1;
+  visibility: visible;
+}
+.modalClosing {
+  animation: modalFadeOut 0.4s forwards;
+  pointer-events: none;
+}
+
+.modalContentWrapper {
+  /* Glassmorphism yang lebih dalam */
+  background: rgba(
+    10,
+    10,
+    10,
+    0.8
+  ); /* Background sedikit lebih gelap untuk kontras */
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+
+  /* Dual-Border untuk kesan mewah */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    /* Inner glow tipis */ 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* Ambient shadow lebih berat */
+
+  border-radius: 24px;
+  width: 80%;
+  max-width: 900px;
+  position: relative;
+
+  /* Transisi halus */
+  transform: translateY(20px);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Tambahkan efek cahaya di pinggiran */
+  background-clip: padding-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tambahkan aksen cahaya tipis di pinggiran atas modal */
+.modalContentWrapper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(229, 228, 226, 0.3),
+    transparent
+  );
+  border-radius: 24px;
+}
+
+.modalActive .modalContentWrapper {
+  animation: modalFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Class utama modal */
+.modalContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.4s ease; /* Animasi muncul */
+}
+
+/* Class saat modal akan ditutup */
+.modalContainer.isClosing {
+  animation: fadeOut 0.4s ease forwards; /* Animasi hilang */
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1) rotate(90deg);
+}
+
+.modalGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.2fr;
+  gap: 3rem;
+  padding: 3rem;
+}
+
+.modalImageBox {
+  /* Ganti warna flat dengan background semi-gelap yang mewah */
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  /* Tambahkan sedikit border agar menyatu dengan border modal */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Efek "Glass" di atas gambar */
+.modalImageBox::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+.modalMainImg {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  /* Filter agar gambar parfum terlihat lebih tajam & "glossy" */
+  filter: contrast(1.05) brightness(1.05);
+  transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hover effect pada gambar modal */
+.modalImageBox:hover .modalMainImg {
+  transform: scale(1.1); /* Zoom yang lebih mantap saat di-hover */
+}
+
+.modalActive .modalMainImg {
+  transform: scale(1.05);
+}
+
+/* Info Section */
+.modalInfoBox {
+  padding: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+}
+.modalCategoryTag {
+  color: var(--primary-color);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.modalProductTitle {
+  font-family: var(--font-tenor);
+  text-transform: uppercase;
+  font-size: 2rem;
+  font-weight: 300;
+  margin: 0.5rem 0;
+}
+.modalPriceValue {
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+.modalPriceTag {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  margin-bottom: 1rem;
+}
+.modalProductDesc {
+  color: #999;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  margin-bottom: 2rem;
+}
+
+/* Varian */
+.variantPillGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+}
+.variantPill {
+  background: #141414;
+  color: #aaa;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.variantPill.pillActive {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.disabledPill {
+  opacity: 0.4; /* Jadi transparan */
+  cursor: not-allowed !important; /* Kursor tanda larangan */
+  pointer-events: none; /* Mematikan kemampuan klik secara fisik */
+  background-color: #333; /* Warna latar abu-abu */
+  border: 1px solid #444;
+}
+/* --- Action Row: Fix Alignment & Spacing --- */
+.modalActionRow {
+  display: flex;
+  gap: 1rem;
+  margin-top: auto;
+  align-items: center; /* Gunakan center agar tombol dan box selaras */
+  width: 100%;
+}
+
+/* --- Qty Box --- */
+.modalQtyBox {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  height: 52px;
+  box-sizing: border-box;
+}
+
+.modalQtyBtn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  width: 48px; /* Dibuat sedikit lebih lebar untuk kenyamanan klik */
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: background 0.3s ease;
+}
+
+.modalQtyBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.modalQtyValue {
+  color: #fff;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* --- Add to Cart Button --- */
+.modalAddToCartBtn {
+  flex: 1;
+  position: relative; /* WAJIB ADA untuk menahan efek ::after */
+  overflow: hidden; /* WAJIB ADA agar kilatan tidak keluar dari batas tombol */
+  background: var(--primary-color);
+  color: #000;
+  border: 1px solid var(--primary-color);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  min-height: 52px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  padding: 0 1rem;
+}
+
+.modalAddToCartBtn:hover {
+  background: transparent;
+  color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modalAddToCartBtn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Efek Kilatan (Shimmer) */
+.modalAddToCartBtn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.modalAddToCartBtn:hover::after {
+  left: 100%;
+}
+@media (max-width: 768px) {
+  .modalGrid {
+    grid-template-columns: 1fr;
+  }
+  .modalContentWrapper {
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modalActionRow {
+    flex-direction: column;
+  }
+}
+
+/* animasi */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98) translateY(10px);
+  }
+}
+
+/* --- Styling Scrollbar untuk Browser Chrome, Safari, Edge --- */
+
+/* Lebar scrollbar */
+.modalContentWrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* Background jalur scrollbar */
+.modalContentWrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+/* Warna gagang scrollbar */
+.modalContentWrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+/* Efek saat gagang scrollbar di-hover */
+.modalContentWrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* --- Styling Scrollbar untuk Firefox --- */
+.modalContentWrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) rgba(0, 0, 0, 0.2);
+}
+
+/* --- Responsiveness untuk Mobile --- */
+@media (max-width: 600px) {
+  .modalActionRow {
+    flex-direction: column; /* Mengubah row menjadi kolom */
+    gap: 0.8rem;
+  }
+
+  .modalQtyBox {
+    width: 100%; /* Kotak qty memenuhi lebar layar */
+    justify-content: center; /* Tombol qty dan angka di tengah */
+  }
+
+  .modalAddToCartBtn {
+    width: 100%; /* Tombol cart memenuhi lebar layar */
+    height: 52px;
+  }
+}
+@media (max-width: 768px) {
+  .modalGrid {
+    grid-template-columns: 1fr;
+    padding: 1.5rem; /* Padding lebih kecil untuk mobile agar ruang tombol lebih luas */
+  }
+}

@@ -1,0 +1,171 @@
+/* footer */
+.feather {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-light); /* Warna default */
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+.siteFooter {
+  background-color: #080808;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 5rem 7% 2rem 7%;
+  font-family: var(--font-sans);
+}
+
+.footerContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.51fr 0.8fr 1.2fr 1fr;
+  gap: 3rem;
+}
+
+.footerBox h3 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1.8rem;
+  letter-spacing: 1px;
+}
+
+/* Branding */
+.footerLogo {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+}
+.footerLogo span {
+  color: var(--primary-color);
+}
+.footerDesc {
+  color: #888;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 1.2rem 0 1.8rem 0;
+  max-width: 320px;
+}
+
+.footerSocial {
+  display: flex;
+  gap: 1rem;
+}
+.footerSocial {
+  display: flex;
+  gap: 1.5rem; /* Memberikan ruang antar ikon agar tidak sesak */
+  margin-top: 1rem;
+}
+
+.footerSocial a {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
+  width: 44px; /* Sedikit lebih besar untuk kenyamanan jempol */
+  height: 44px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px; /* Menggunakan radius 12px agar selaras dengan desain form/info box */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); /* Transisi lebih smooth */
+}
+
+.footerSocial a:hover {
+  color: #000;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  transform: translateY(-5px); /* Lompatan lebih halus */
+  box-shadow: 0 10px 20px rgba(var(--primary-color-rgb), 0.2);
+}
+
+/* Opsional: Jika ikon terasa terlalu besar di dalam tombol */
+.footerSocial a svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.5;
+  stroke: currentColor;
+}
+/* Links */
+.linksGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.linksGrid a {
+  color: #888;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.3s ease;
+}
+.linksGrid a:hover {
+  color: var(--primary-color);
+  padding-left: 4px;
+}
+
+/* Info & Payment */
+.footerInfo p {
+  color: #888;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  margin-bottom: 0.8rem;
+}
+.footerInfo p strong {
+  color: #fff;
+}
+
+.mutedText {
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+.paymentBadges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.badgePayment {
+  background: rgba(255, 255, 255, 0.03);
+  color: #aaa;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Bottom */
+.footerBottom {
+  margin-top: 5rem;
+  padding-top: 1.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  text-align: center;
+}
+.footerBottom p {
+  color: #555;
+  font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+  .footerContainer {
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+  }
+}
+@media (max-width: 576px) {
+  .footerContainer {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  .siteFooter {
+    padding: 4rem 7% 2rem 7%;
+  }
+  .footerBottom {
+    margin-top: 3rem;
+  }
+}

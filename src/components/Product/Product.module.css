@@ -1,0 +1,382 @@
+/* PRODUK CSS */
+
+/* --- SECTION UTAMA --- */
+.product {
+  padding: 10rem 7% 5rem;
+  background-color: #050505;
+  color: #fff;
+  position: relative;
+  display: flow-root;
+  overflow: hidden;
+
+  /* Ambient glow dasar: Menggunakan perak dingin (Platinum) */
+  background-image: radial-gradient(
+    circle at 50% 0%,
+    rgba(229, 228, 226, 0.06),
+    transparent 80%
+  );
+}
+
+.productEmpty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px; /* Tinggi yang cukup agar tidak terlihat tanggung */
+  width: 100%;
+  color: #737373; /* Abu-abu gelap agar tidak terlalu mencolok */
+  text-transform: uppercase;
+  letter-spacing: 0.4em; /* Letter spacing lebar memberikan kesan mewah */
+  font-size: 0.75rem;
+  text-align: center;
+  border-top: 1px solid #1a1a1a;
+  border-bottom: 1px solid #1a1a1a;
+  margin: 40px 0;
+  font-weight: 300;
+}
+
+.product > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Layer Spotlight Dinamis - Versi Perak */
+.product::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  /* Gradien Perak: Perpaduan putih metalik dan perak dingin */
+  background: radial-gradient(
+    800px circle at var(--x, 50%) var(--y, 50%),
+    rgba(229, 228, 226, 0.15) 0%,
+    /* Titik senter silver metalik */ rgba(192, 192, 192, 0.05) 40%,
+    /* Biasan perak redup */ transparent 70%
+  );
+
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+
+  /* Tetap menggunakan screen agar pantulannya terlihat nyata */
+  mix-blend-mode: screen;
+
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.product:hover::before {
+  opacity: 1;
+}
+
+.productHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+  position: relative;
+  z-index: 1;
+}
+
+.productHeader h5 {
+  color: #a7a9ac; /* Platinum Muted */
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.productHeader h2 {
+  font-family: var(--font-tenor); /* Gunakan font serif yang elegan */
+  font-size: 2.8rem;
+  color: #fff;
+}
+
+.productHeader h2 span {
+  font-weight: 300;
+  color: #757575; /* Platinum Darker */
+}
+
+/* --- Product Card  --- */
+.productCard {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  position: relative;
+  /* Background dengan gradient tipis statis (kaca mewah) */
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+
+  /* Border gradient tipis untuk kesan mewah */
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)),
+    linear-gradient(
+      135deg,
+      rgba(229, 228, 226, 0.2) 0%,
+      transparent 50%,
+      rgba(229, 228, 226, 0.1) 100%
+    );
+  background-origin: border-box;
+
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+/* Memperkuat efek saat di-hover */
+.productCard:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  transform: translateY(-15px);
+  /* Mempertegas border platinum saat hover */
+  border-color: rgba(229, 228, 226, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* Shimmer Layer */
+.productCard::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(229, 228, 226, 0.15),
+    transparent
+  );
+  transform: skewX(-25deg);
+  transition: 0.7s;
+  pointer-events: none;
+}
+
+.productCard:hover::after {
+  left: 150%;
+}
+
+/* product card end */
+
+/* --- Price & Button --- */
+.productPrice {
+  font-size: 1.25rem;
+  color: #e5e4e2; /* Platinum */
+  font-weight: 700;
+  font-family: var(--font-lato);
+}
+/* btn quock add */
+.btnQuickAdd {
+  background: var(--primary-color); /* Platinum Button */
+  color: #000;
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  float: right;
+  opacity: 0;
+  /* Tambahkan 'transform' ke dalam transisi agar animasi halus */
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(30px); /* Tambahkan satuan 'px' */
+}
+
+/* Muncul saat Card di-hover */
+.productCard:hover .btnQuickAdd {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Efek Hover */
+.btnQuickAdd:hover {
+  transform: scale(
+    1.1
+  ) !important; /* Gunakan !important agar tidak bentrok dengan active */
+  background: var(--primary-color);
+}
+/* --- EFEK KLIK (Active) --- */
+.btnQuickAdd:active {
+  transform: scale(0.9) !important; /* Efek "ditekan" */
+  background: #b0afad; /* Sedikit lebih gelap dari platinum */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); /* Memberi kesan kedalaman */
+}
+/* Luxury Look untuk Disabled State */
+.btnQuickAdd:disabled {
+  background: transparent !important; /* Transparan agar terlihat elegan */
+  color: #a0a0a0 !important; /* Warna teks tidak kontras, subtle */
+  cursor: not-allowed;
+
+  /* Menambah sedikit jarak agar tidak mepet bawah */
+  margin-top: 15px;
+
+  /* Memastikan font tetap luxury */
+  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+}
+
+/* btn quick add end */
+
+/* product image */
+.productImageContainer {
+  aspect-ratio: 1 / 1.25;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Tambahkan filter sedikit agar gambar terlihat lebih tajam dan elegan */
+  filter: brightness(1) saturate(1);
+  transition:
+    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.5s ease;
+}
+
+.productCard:hover .productImage {
+  /* Zoom lebih halus */
+  transform: scale(1.08) rotate(1deg);
+  /* Memberikan efek sedikit redup/fokus pada gambar saat hover */
+  filter: brightness(1.1) saturate(1.1);
+  transition:
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.5s ease;
+}
+/* product image end */
+
+/* product content */
+.productContent {
+  padding: 1.5rem 0.5rem 0.5rem;
+}
+.productTitle {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+.productPrice {
+  font-size: 1.25rem;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+/* Filter Tabs */
+.produkFilterTabs {
+  display: flex; /* Mengaktifkan mode flexbox */
+  justify-content: center; /* Memaksa seluruh tombol otomatis ke tengah layar */
+  align-items: center;
+  gap: 1.5rem; /* Jarak (gap) antar tombol yang lega dan elegan */
+  margin: 2rem auto; /* Memberikan jarak atas-bawah pada area filter */
+  flex-wrap: wrap; /* Agar tetap aman dan rapi di layar HP/Mobile */
+  width: 100%;
+}
+
+.filterTab {
+  padding: 12px 28px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: 30px; /* Membuat bentuk kapsul melingkar yang modern */
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Efek saat kursor mendekati tombol */
+.filterTab:hover {
+  color: var(--primary-color);
+  border-bottom: 1px solid var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.filterTab:hover::after {
+  border-bottom: 1px;
+  width: 60%; /* Lebar garis saat muncul */
+  left: 20%; /* Menyeimbangkan agar tetap di tengah */
+}
+
+/* Efek saat kategori sedang aktif terpilih (Kuning Menyala) */
+.filterTab.active {
+  color: var(--bg-dark);
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  font-weight: 600;
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(229, 228, 226, 0.15);
+  animation: pulsePlatinum 3s infinite ease-in-out;
+}
+/* Efek saat produk habis */
+.soldOutCard {
+  opacity: 0.7;
+}
+
+.grayscale {
+  filter: grayscale(100%);
+}
+/* Soldout Badge: Glassmorphism effect & Editorial Style */
+.soldOutBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  /* Luxury look: Glass blur + subtle border */
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  color: #fff;
+  padding: 12px 28px;
+
+  /* Typography */
+  font-size: 0.7rem;
+  font-weight: 300;
+  letter-spacing: 0.4em; /* Wide spacing = Expensive feel */
+  text-transform: uppercase;
+
+  z-index: 10;
+  pointer-events: none; /* Supaya tidak mengganggu klik */
+}
+
+/* Soldout Text: Subtle and muted */
+.soldOutText {
+  color: #555; /* Soft grey, not harsh black */
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-style: italic; /* Editorial flair */
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulsePlatinum {
+  0% {
+    box-shadow: 0 0 0 0 rgba(229, 228, 226, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(229, 228, 226, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 228, 226, 0);
+  }
+}

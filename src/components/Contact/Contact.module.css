@@ -1,0 +1,312 @@
+/* Contact.module.css */
+.feather {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-light); /* Warna default */
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+.contact {
+  padding: 10rem 7% 5rem;
+  background-color: var(--bg-dark);
+}
+
+.contactContainer {
+  display: flex;
+  gap: 5rem;
+  align-items: stretch;
+}
+
+/* --- Left Info Card --- */
+.contactInfoCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.infoHeader h5 {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.infoHeader h2 {
+  font-family: var(--font-serif);
+  font-size: 2.8rem;
+  color: var(--text-light);
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+
+.infoHeader h2 span {
+  color: var(--primary-color);
+}
+
+.infoDetailsList {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.infoItem {
+  display: flex;
+  align-items: flex-start; /* Berubah jadi flex-start agar ikon sejajar dengan judul */
+  gap: 1.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  transition: background 0.3s ease;
+}
+/* 1. Pastikan SVG di dalam .infoIcon punya style yang benar */
+.infoItem .infoIcon svg {
+  transition: all 0.4s ease;
+  stroke: var(--primary-color); /* Warna default */
+}
+
+/* 2. Saat .infoItem di-hover, paksa stroke menjadi hitam */
+.infoItem:hover .infoIcon svg {
+  stroke: #000 !important; /* Paksa warna stroke ke hitam */
+}
+
+/* 3. Pastikan container-nya juga berubah */
+.infoItem:hover .infoIcon {
+  background-color: var(--primary-color);
+  color: #000 !important;
+  transform: translateY(-5px);
+}
+.infoIcon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: rgba(229, 245, 0, 0.05);
+  border: 1px solid rgba(229, 245, 0, 0.15);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.infoText h4 {
+  font-size: 1.1rem;
+  color: var(--text-light);
+  margin-bottom: 0.2rem;
+}
+
+.infoText p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.contactContainer {
+  display: flex;
+  gap: 8rem; /* Ruang lebih lebar agar terasa lebih mewah */
+  align-items: flex-start;
+}
+
+.contactInfoCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem; /* Jarak antar elemen lebih lega */
+}
+
+/* Mengganti Map dengan Editorial Address */
+.addressBox {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 2rem;
+}
+
+.addressBox h4 {
+  color: var(--text-light);
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.addressBox p {
+  color: var(--text-muted);
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
+
+/* Tipografi Koordinat (Detail High-End) */
+.coordinates {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  opacity: 0.6;
+  margin-top: 1rem;
+  display: block;
+}
+/* Update Info Icons */
+.infoIcon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 12px; /* Mengikuti radius modern */
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.4s ease;
+}
+
+/* Container Form */
+.contactFormWrapper {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 4rem;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.contactForm h3 {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  color: var(--text-light);
+  margin-bottom: 3rem; /* Memberikan ruang napas agar form tidak sesak */
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center; /* Center-kan agar lebih fokus */
+}
+
+/* Input Grouping */
+.inputBox {
+  position: relative;
+  margin-bottom: 3rem; /* Memberikan jarak antar input */
+}
+
+.inputBox input,
+.inputBox textarea {
+  width: 100%;
+  padding: 12px 0;
+  font-size: 1rem;
+  color: var(--text-light);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  outline: none;
+  transition: all 0.4s ease;
+  cursor: pointer;
+}
+
+.inputBox textarea {
+  height: 100px;
+}
+
+/* Label Styling - Elegan dan Minimalis */
+.inputBox label {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* State Aktif (Floating Label) */
+.inputBox input:focus ~ label,
+.inputBox input:not(:placeholder-shown) ~ label,
+.inputBox textarea:focus ~ label,
+.inputBox textarea:not(:placeholder-shown) ~ label {
+  top: -20px;
+  font-size: 0.7rem;
+  color: var(--primary-color);
+  letter-spacing: 2px;
+}
+/* Efek Hover yang Elegan (Subtle) */
+.inputBox input:hover,
+.inputBox textarea:hover {
+  /* Memberikan sedikit cahaya pada border bawah saat di-hover */
+  border-bottom-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Jika ingin label sedikit bergerak atau berubah warna saat hover (Opsional) */
+.inputBox:hover label {
+  color: var(--text-light); /* Label sedikit lebih terang saat di-hover */
+}
+
+.inputBox input:focus,
+.inputBox textarea:focus {
+  border-bottom-color: var(--primary-color);
+}
+
+.btnSubmit {
+  width: 100%;
+  padding: 18px 20px; /* Sedikit disesuaikan agar proporsinya proporsional */
+  background-color: var(--primary-color);
+  color: #000000;
+
+  /* PERBAIKAN: Pasang border transparan sejak awal agar saat hover tombol tidak bergeser/bergetar */
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btnSubmit:hover {
+  background-color: transparent !important;
+  color: var(--primary-color);
+  border-color: var(--primary-color); /* Hanya mengubah warna border */
+  transform: translateY(-4px);
+  letter-spacing: 4px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); /* Efek bayangan saat melayang */
+}
+
+/* Interaksi saat ditekan (click) */
+.btnSubmit:active {
+  transform: translateY(-1px);
+}
+
+/* Kilatan Cahaya Premium (Berjalan otomatis secara berkala untuk kesan hidup) */
+.btnSubmit::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: skewX(-20deg); /* Membuat efek kilatan miring yang estetis */
+  animation: lightSweep 4s infinite ease-in-out;
+}
+
+@keyframes lightSweep {
+  0% {
+    left: -150%;
+  }
+  30% {
+    left: 150%;
+  }
+  100% {
+    left: 150%;
+  } /* Jeda waktu diam sebelum menyapu kembali */
+}
+
+@media (max-width: 991px) {
+  .contactContainer {
+    flex-direction: column;
+    gap: 3rem;
+  }
+  .contactFormWrapper {
+    padding: 2rem;
+  }
+}

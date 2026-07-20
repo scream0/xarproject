@@ -1,0 +1,228 @@
+/* hero css */
+
+.hero {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  color: white;
+}
+
+.heroBackground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  background-image: var(--bg-hero);
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+
+  /* Gradien "Deep Luxury": 
+     Hitam pekat di bawah, sedikit gradien transparan di tengah, 
+     dan hitam halus di atas. Ini memberikan kesan mahal. */
+  background-blend-mode: multiply;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Tambahkan pseudo-element untuk efek cahaya "Cinematic Spotlight" */
+.heroBackground::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.05) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+.heroBackground {
+  transition: filter 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.heroBackground.is-dimmed {
+  filter: brightness(0.2) blur(10px); /* Efek dramatis saat konten muncul */
+}
+/* Tambahkan class ini untuk menangani efek spotlight */
+.heroSpotlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Di atas gambar, di bawah overlay */
+  pointer-events: none;
+  transition: background 0.1s ease-out;
+}
+
+.heroOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.6) 60%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  z-index: 2; /* Naikkan z-index agar overlay tetap di atas spotlight */
+}
+
+/* Sisanya (heroParticlesContainer, content) tetap sama */
+.heroParticlesContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.content {
+  position: relative;
+  z-index: 4; /* Naikkan z-index agar konten tetap di paling depan */
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  animation: heroFadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1);
+  animation-delay: 0.5s;
+  animation-fill-mode: both;
+}
+
+/* Untuk layar desktop, kita kembalikan ke gaya "Editorial" Anda */
+@media (min-width: 768px) {
+  .content {
+    margin-left: 10%; /* Gaya khas AWRG/Luxury untuk desktop */
+    margin-right: auto;
+    padding: 2rem;
+  }
+}
+.heroTagline {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1rem;
+  font-weight: 300;
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  line-height: 1.1;
+  font-weight: 300;
+  margin-bottom: 1.5rem;
+}
+
+.heroTitle span {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.heroDesc {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2rem;
+  font-weight: 300;
+}
+
+.heroButtons {
+  display: flex;
+  gap: 1rem;
+}
+
+.ctaPrimary {
+  background: linear-gradient(
+    135deg,
+    #bf953f,
+    #fbf5b7,
+    #b38728,
+    #fbf5b7,
+    #aa771c
+  );
+  border: none;
+  padding: 0.8rem 1.5rem;
+  color: #000;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  border-radius: 50px;
+  padding: 16px 40px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+/* Micro-interaction: Hover Effect */
+.ctaPrimary:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 20px rgba(191, 149, 63, 0.3);
+}
+
+/* Efek Kilau saat ditekan */
+.ctaPrimary:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* shimmer */
+.ctaPrimary::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  transform: rotate(30deg);
+  transition: all 0.7s;
+}
+
+.ctaPrimary:hover::after {
+  left: 100%;
+}
+
+.ctaSecondary {
+  padding: 16px 40px;
+  border-radius: 50px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+.ctaSecondary {
+  background-color: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.ctaSecondary:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-3px);
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  .heroDesc {
+    font-size: 1rem;
+  }
+  .heroButtons {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}

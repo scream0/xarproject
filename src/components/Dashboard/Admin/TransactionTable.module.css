@@ -1,0 +1,62 @@
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: rgba(18, 18, 18, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #e5e5e5;
+  font-size: 0.9rem;
+}
+
+.table th {
+  padding: 1rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: #737373;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.table td {
+  padding: 1.2rem 1rem;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.orderId {
+  font-family: monospace;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.statusSuccess {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.statusPending {
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+}
+
+.statusFailed {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}

@@ -1,0 +1,246 @@
+/* src/app/login/login.module.css */
+
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: auto;
+  color: #e5e5e5;
+  font-family: var(--font-lato);
+  animation: fadeIn 0.8s ease-in;
+  overflow: hidden;
+  background-color: #050505;
+
+  /* =======================================================
+     POLA BATU BATA MANUAL MULTI-RECTANGLE (STRICT RUNNING BOND)
+     ======================================================= */
+
+  /* 
+     Di sini kita menggambar 2 baris batu bata secara eksplisit:
+     - Baris 1 (Atas): 1 bata utuh ditengah (lebar 60).
+     - Baris 2 (Bawah): 2 bata setengah di pinggir (lebar 30) yang mengunci efek selang-seling.
+     Warna garis pembatas (stroke): #262626 dengan opasitas 0.4
+  */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30' viewBox='0 0 60 30'%3E%3Crect x='0' y='0' width='60' height='15' fill='none' stroke='%23262626' stroke-opacity='0.4' stroke-width='1'/%3E%3Crect x='-30' y='15' width='60' height='15' fill='none' stroke='%23262626' stroke-opacity='0.4' stroke-width='1'/%3E%3Crect x='30' y='15' width='60' height='15' fill='none' stroke='%23262626' stroke-opacity='0.4' stroke-width='1'/%3E%3C/svg%3E");
+
+  /* Ukuran pattern: Lebar 60px, Tinggi 30px (tiap baris bata tingginya 15px) */
+  background-size: 60px 30px;
+}
+
+/* Tampilan Brand di layar kecil dengan Efek Spotlight Sinematik */
+.leftPanel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 60px 24px 50px 24px;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #1f1f1f;
+  flex-shrink: 0;
+
+  /* =======================================================
+     INTERAKSI CAHAYA DENGAN DINDING BATA (AMBIECE LIGHTING)
+     ======================================================= */
+  background: 
+    /* Layer 1: Sorotan Utama Lampu Gantung (Pusat Cahaya Pekat Terbuka) */
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.02) 25%,
+      transparent 60%
+    ),
+    /* Layer 2: Pendaran Glow Hangat yang membias ke sela-sela tekstur bata */
+    radial-gradient(
+        circle at 50% 20%,
+        rgba(38, 38, 38, 0.4) 0%,
+        rgba(10, 10, 10, 0.8) 70%,
+        #050505 100%
+      );
+
+  position: relative;
+  overflow: hidden;
+}
+
+/* Optional Aksen: Efek bias cahaya tipis di bagian paling atas border */
+.leftPanel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* Tampilan Form di layar kecil - SEKARANG BISA DI-SCROLL PAKAI MOUSE */
+.rightPanel {
+  display: flex;
+  width: 100%;
+  padding: 40px 24px 60px 24px;
+  align-items: center;
+  justify-content: flex-start;
+  flex-direction: column;
+
+  /* Aktifkan scroll internal khusus panel ini di mobile */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex-grow: 1;
+}
+
+/* Pembungkus Konten Form */
+.formWrapper {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  margin: auto 0;
+}
+
+.brandTitle {
+  font-size: 2.6rem;
+  font-weight: 200;
+  letter-spacing: 0.35em;
+  color: var(--text-light);
+  text-transform: uppercase;
+  text-align: center;
+  padding-left: 0.35em;
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+/* Tambahan aksen garis silver tipis di bawah judul */
+.brandTitle::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(192, 192, 192, 0.5),
+    transparent
+  );
+}
+
+.brandSub {
+  color: #737373;
+  font-weight: 300;
+  letter-spacing: 0.6em;
+  margin-top: 2rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  text-align: center;
+  padding-left: 0.6em;
+}
+
+.backLink {
+  display: inline-block;
+  margin: 2.5rem auto 0 auto;
+  text-align: center;
+  font-size: 0.8rem;
+
+  /* Warna & Kontras yang ditingkatkan (Industrial Muted Grey) */
+  color: #8a8a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+
+  /* Layouting & Border halus ala panel industrial */
+  padding: 0.6rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+
+  /* Transisi halus menggunakan cubic-bezier yang konsisten dengan tema form */
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  cursor: pointer;
+}
+
+.backLink:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.25em;
+
+  /* Efek pendaran lampu tipis (Glow) */
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+/* --- RESPONSIVE LAYAR LEBAR (LAPTOP / PC) --- */
+@media (min-width: 1024px) {
+  .pageContainer {
+    flex-direction: row;
+  }
+
+  .leftPanel {
+    width: 50%;
+    height: 100vh;
+    padding: 40px;
+    border-right: 1px solid #262626;
+    border-bottom: none;
+  }
+
+  .rightPanel {
+    width: 50%;
+    height: 100vh;
+    padding: 60px 40px; /* Ditambahkan padding vertikal yang longgar */
+    justify-content: center;
+
+    /* PERBAIKAN: Mengaktifkan scroll internal jika form memanjang saat registrasi/OTP */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .formWrapper {
+    /* PERBAIKAN: Menghilangkan margin auto vertikal agar tidak mendorong elemen ke luar layar */
+    margin: 0 auto;
+    min-height: min-content;
+    padding: 40px 0; /* Ruang bernapas ekstra di atas dan bawah form */
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- Efek Shimmer (Versi Gelap) --- */
+.shimmerWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(30, 30, 30, 0) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(30, 30, 30, 0) 100%
+  );
+  filter: blur(2px);
+  animation: shimmer 2s infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(100%) skewX(-15deg);
+  }
+}

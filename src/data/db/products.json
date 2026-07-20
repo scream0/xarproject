@@ -1,0 +1,35 @@
+{
+  "kategoriItems": ["Semua", "Parfum", "Kopi"],
+  "produkItems": [
+    {
+      "id": 1,
+      "name": "Extrait De Parfum - Crush",
+      "description": "Parfum dengan konsentrasi tertinggi, memberikan aroma citrus segar yang intens digabungkan dengan sentuhan lembut vanilla dan kayu manis yang tahan lama.",
+      "image": "crush.jpg",
+      "category": "Parfum",
+      "variants": [
+        { "size": "10ml", "price": 35000 },
+        { "size": "50ml", "price": 149000 }
+      ],
+      "specs": {
+        "category": "Citrus Gourmand",
+        "duration": "8-12 Jam"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Drip bag coffee - Signature Blend",
+      "description": "Biji kopi pilihan hasil roasting premium yang menghasilkan cita rasa seimbang antara acidity dan sweetness, cocok untuk menemani nongkrong asik kamu.",
+      "image": "dripbagcoffee.jpg",
+      "category": "Kopi",
+      "variants": [
+        { "size": "10pc", "price": 65000 },
+        { "size": "20pc", "price": 100000 }
+      ],
+      "specs": {
+        "category": "Arabica Blend",
+        "duration": "Roast Date Terbaru"
+      }
+    }
+  ]
+}

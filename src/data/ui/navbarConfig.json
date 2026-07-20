@@ -1,0 +1,45 @@
+{
+  "logo": {
+    "text": "xar",
+    "subtext": "project",
+    "href": "#",
+    "icon": "logoXar"
+  },
+  "menuItems": [
+    { "label": "Home", "href": "#home" },
+    { "label": "Tentang Kami", "href": "#about" },
+    { "label": "Produk", "href": "#product" },
+    { "label": "Kontak", "href": "#contact" }
+  ],
+  "features": {
+    "search": {
+      "placeholder": "Cari produk...",
+      "icon": "search"
+    },
+    "cart": {
+      "ariaLabel": "Open Cart",
+      "icon": "shopping-cart"
+    },
+    "hamburger": {
+      "iconOpen": "menu",
+      "iconClose": "x"
+    }
+  },
+  "authSection": {
+    "styles": {
+      "container": "authSection",
+      "link": "authLink",
+      "userName": "userName"
+    },
+    "auth": {
+      "authenticated": [
+        { "type": "text", "key": "greeting", "label": "Hi, {name}" },
+        { "type": "link", "label": "Dashboard", "href": "/dashboard" },
+        { "type": "button", "label": "Logout", "action": "logout" }
+      ],
+      "unauthenticated": [
+        { "type": "link", "label": "Login", "href": "/login" }
+      ]
+    }
+  }
+}

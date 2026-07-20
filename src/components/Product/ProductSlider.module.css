@@ -1,0 +1,119 @@
+.mySwiper {
+  justify-content: center !important;
+  padding: 40px 20px !important;
+  overflow-x: hidden;
+}
+
+/* Efek visual dasar untuk semua kartu */
+.visualWrapper {
+  overflow: hidden !important;
+  padding: 1px;
+  transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* REVISI: Kartu tidak aktif dikecilkan ke 80% (sebelumnya 0.9) */
+  transform: scale(0.7);
+
+  /* Glassmorphism */
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+
+  filter: brightness(0.6);
+  opacity: 0.6;
+}
+
+/* REVISI: Kartu aktif diperbesar ke 95% (agar tidak memenuhi layar) */
+.activeVisual {
+  transform: scale(0.8);
+  opacity: 1;
+  filter: brightness(1) saturate(1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-color: rgba(192, 192, 192, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(229, 228, 226, 0.3),
+    0 10px 30px rgba(0, 0, 0, 0.5);
+
+  background: rgba(255, 255, 255, 0.06);
+}
+/* Pastikan tidak ada border tambahan dari elemen di dalam */
+.visualWrapper img,
+.visualWrapper div {
+  border: none !important;
+  outline: none !important;
+}
+/* --- Kontrol Navigasi & Pagination tetap sama --- */
+.swiperControlsContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5rem;
+  margin-top: 5px;
+}
+
+:global(.swiper-button-prev),
+:global(.swiper-button-next) {
+  position: static !important;
+  width: 45px !important;
+  height: 45px !important;
+  padding: 5px;
+  color: #e5e4e2 !important;
+  border: 1px solid rgba(229, 228, 226, 0.3);
+  border-radius: 50%;
+  transition: all 0.5s ease;
+}
+
+:global(.swiper-button-prev):hover,
+:global(.swiper-button-next):hover {
+  background-color: #e5e4e2;
+  color: #000 !important;
+  border-color: #e5e4e2;
+}
+
+/* --- Pagination --- */
+:global(.swiper-pagination-bullet) {
+  background: rgba(229, 228, 226, 0.2) !important;
+  width: 8px;
+  height: 8px;
+  transition: all 0.4s ease;
+}
+
+:global(.swiper-pagination-bullet-active) {
+  background: #e5e4e2 !important;
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* --- Pagination (Tampilkan hanya di mobile) --- */
+
+/* 1. Sembunyikan pagination secara default (untuk desktop) */
+:global(.swiper-pagination) {
+  display: none !important;
+}
+
+/* 2. Hanya tampilkan pagination pada lebar layar maksimal 768px */
+@media (max-width: 768px) {
+  :global(.swiper-pagination) {
+    display: block !important;
+  }
+
+  :global(.swiper-pagination-bullet) {
+    background: rgba(229, 228, 226, 0.2) !important;
+    width: 8px;
+    height: 8px;
+    transition: all 0.4s ease;
+  }
+
+  :global(.swiper-pagination-bullet-active) {
+    background: #e5e4e2 !important;
+    width: 24px;
+    border-radius: 4px;
+  }
+  :global(.swiper-button-prev),
+  :global(.swiper-button-next) {
+    display: none !important;
+  }
+}

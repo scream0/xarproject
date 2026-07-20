@@ -1,0 +1,324 @@
+/* cart sidebar */
+
+.feather {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-light); /* Warna default */
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.sidebarOverlay {
+  position: fixed;
+  top: 0;
+  right: -400px; /* Sembunyi ke luar layar sejauh lebarnya */
+  width: 400px;
+  height: 100vh;
+  background-color: #0d0d0d;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 2.5rem 2rem;
+  z-index: 9999;
+  transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebarOverlay.active {
+  right: 0; /* Muncul ke layar */
+}
+
+/* Responsif untuk HP agar tidak melebar */
+@media (max-width: 480px) {
+  .sidebarOverlay {
+    width: 100%;
+    right: -100%;
+  }
+}
+
+.cartHeader {
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 5srem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 1rem;
+}
+/* close btn */
+.cartCloseBtn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(255, 255, 255, 0.03); /* Lebih menyatu dengan dark mode */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 12px; /* Menggunakan rounded square agar konsisten dengan elemen lain */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cartCloseBtn:hover {
+  color: var(--text-light); /* Berubah menjadi putih, bukan hitam */
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--primary-color); /* Aksen warna brand saat di-hover */
+  transform: rotate(90deg) scale(1.05); /* Sedikit rotasi membuat animasi terasa lebih "mahal" */
+}
+.cartSidebarTitle {
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 1rem;
+}
+
+/* List Item di Keranjang */
+.cartItemsWrapper {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 120px;
+  padding-right: 5px;
+}
+
+.cartItem {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.cartItemImg {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #181818;
+}
+
+.cartItemDetails {
+  flex: 1;
+}
+
+.cartItemName {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+
+/* Dropdown Varian */
+.cartVariantSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.6rem;
+}
+
+.cartVariantSelector select {
+  background: #181818;
+  color: #aaa;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Baris Kontrol Harga & Qty */
+.cartItemPriceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.cartCurrentPrice {
+  color: #888;
+}
+
+.cartItemTotal {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Tombol Kuantitas Modern (Pill-Style) */
+.cartQtyControl {
+  display: flex;
+  align-items: center;
+  background: #181818;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.cartQtyBtn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.cartQtyBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--primary-color);
+}
+
+.cartQtyValue {
+  color: #fff;
+  padding: 0 8px;
+  font-weight: 500;
+}
+
+/* Footer Keranjang & Form */
+.cartFooterWrapper {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 1.5rem;
+  margin-top: auto;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+}
+
+.cartTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.cartItemRow h4 {
+  color: #888;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.cartGrandTotal {
+  color: var(--primary-color);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.cartCheckoutBtn {
+  width: 100%;
+  padding: 1.1rem; /* Sedikit lebih tebal agar terasa "kokoh" */
+  background: var(--primary-color);
+  color: #000;
+  border: none;
+  border-radius: 8px; /* Disesuaikan dengan radius tombol lain di web Anda */
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 2px; /* Memberikan kesan eksklusif */
+  cursor: pointer;
+  position: relative;
+  overflow: hidden; /* Penting untuk efek kilatan */
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Efek Hover High-End */
+.cartCheckoutBtn:hover:not(:disabled) {
+  background: transparent;
+  color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color); /* Border muncul dari dalam */
+  transform: translateY(-2px);
+}
+
+/* Efek Kilatan (Shimmer) saat idle */
+.cartCheckoutBtn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.cartCheckoutBtn:hover::after {
+  left: 100%;
+}
+
+.cartCheckoutBtn:disabled {
+  background: #111;
+  color: #444;
+  cursor: not-allowed;
+  border: 1px solid #222;
+}
+
+/* Status Kosong */
+.emptyCartStatus {
+  display: flex;
+  flex-direction: column; /* Ini yang membuat icon, teks, dan tombol menumpuk ke bawah */
+  align-items: center; /* Ini yang membuat semuanya rata tengah secara horizontal */
+  justify-content: center; /* Ini yang membuat konten berada di tengah secara vertikal */
+  height: 100%; /* Pastikan parent-nya memiliki tinggi yang cukup */
+  width: 100%;
+  text-align: center; /* Memastikan teks tetap rapi */
+  gap: 1.5rem; /* Memberikan jarak yang cantik antara elemen */
+}
+
+.keranjangKosongIcon svg {
+  display: block;
+  width: 50px; /* Sesuaikan ukuran ikon */
+  height: 50px;
+  stroke: var(--text-light); /* Warna icon sesuai tema */
+}
+
+.emptyCartStatus p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.btnContinueShopping {
+  padding: 16px 40px;
+  border-radius: 50px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  background-color: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btnContinueShopping:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-3px);
+}
+
+/* Sembunyikan Scrollbar Bawaan Browser di area Item */
+.cartItemsWrapper::-webkit-scrollbar {
+  width: 4px;
+}
+.cartItemsWrapper::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 10px;
+}

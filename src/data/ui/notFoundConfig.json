@@ -1,0 +1,22 @@
+{
+  "quotes": [
+    "Aroma adalah kenangan yang tak bisa diucapkan.",
+    "Parfum adalah mahkota yang tak terlihat.",
+    "Jangan biarkan aroma impianmu menguap begitu saja.",
+    "Setiap tetes wewangian menceritakan sebuah kisah.",
+    "Temukan kembali jati dirimu melalui aroma yang tepat."
+  ],
+  "content": {
+    "errorCode": "404",
+    "title": "Aroma Tidak Ditemukan",
+    "description": "Sepertinya halaman yang Anda cari telah menguap. Mari kembali ke tempat di mana aroma dimulai."
+  },
+  "button": {
+    "label": "Kembali ke Beranda",
+    "href": "/"
+  },
+  "effects": {
+    "spotlightColor": "rgba(229, 228, 226, 0.15)",
+    "backgroundColor": "#050505"
+  }
+}

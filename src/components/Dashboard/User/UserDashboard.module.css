@@ -1,0 +1,104 @@
+.dashboardContainer {
+  display: flex;
+  min-height: 100vh;
+  background: #000; /* Full black luxury */
+  color: #fff;
+  font-family: "Inter", sans-serif;
+}
+
+/* Tambahkan ini ke UserDashboard.module.css */
+
+.sidebar {
+  width: 250px;
+  border-right: 1px solid #1a1a1a;
+  padding: 40px 20px;
+  display: flex; /* Ubah ke flex */
+  flex-direction: column; /* Biar bisa didorong ke bawah */
+  justify-content: space-between; /* Sidebar isi dan footer terpisah */
+  height: 100vh;
+}
+
+.sidebarFooter {
+  margin-top: auto; /* Mendorong tombol ke paling bawah */
+  padding-bottom: 20px;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  color: #555; /* Abu-abu redup, kesan tenang */
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logoutBtn:hover {
+  color: #ff4d4d; /* Berubah jadi merah elegan saat hover */
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  font-size: 1.2rem;
+  margin-bottom: 60px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.nav button {
+  background: none;
+  border: none;
+  color: #666;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav button.active,
+.nav button:hover {
+  color: #fff;
+}
+
+.mainContent {
+  flex: 1;
+  padding: 60px;
+}
+
+.header h1 {
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.header p {
+  color: #666;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.contentArea {
+  margin-top: 40px;
+}
+
+.card {
+  border: 1px solid #1a1a1a;
+  padding: 30px;
+  max-width: 600px;
+}
+
+.card h3 {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  margin-bottom: 20px;
+  color: #888;
+}

@@ -1,0 +1,13 @@
+{
+  "projects": {},
+  "targets": {
+    "xarproject-2a7a8": {
+      "hosting": {
+        "primary": [
+          "xar"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

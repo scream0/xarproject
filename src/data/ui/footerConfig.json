@@ -1,0 +1,47 @@
+{
+  "branding": {
+    "logo": {
+      "text": "xar",
+      "subtext": "project",
+      "href": "#"
+    },
+    "description": "Meracik setiap produk dengan penuh perhatian untuk memberikan kualitas aroma dan rasa terbaik langsung ke tangan Anda.",
+    "socials": [
+      {
+        "href": "https://www.instagram.com/xar.project/",
+        "icon": "instagram",
+        "label": "Instagram"
+      },
+      {
+        "href": "#product",
+        "icon": "shopping-bag",
+        "label": "Shop"
+      }
+    ]
+  },
+  "navigation": {
+    "title": "Penjelajahan",
+    "links": [
+      { "label": "Home", "href": "#home" },
+      { "label": "Tentang Kami", "href": "#about" },
+      { "label": "Produk", "href": "#product" },
+      { "label": "Kontak", "href": "#contact" }
+    ]
+  },
+  "contactInfo": {
+    "title": "Hubungi Kami",
+    "details": [
+      { "label": "Email", "value": "support@xarproject.com" },
+      { "label": "WhatsApp", "value": "+62 851-7172-3607" },
+      { "label": "Jam Kerja", "value": "09:00 - 21:00 WIB" }
+    ]
+  },
+  "payment": {
+    "title": "Pembayaran",
+    "subtitle": "Didukung secara aman oleh:",
+    "methods": ["Midtrans", "QRIS"]
+  },
+  "copyright": {
+    "text": "Xar Project. All rights reserved."
+  }
+}
