@@ -2,15 +2,25 @@ import { NextResponse } from "next/server";
 import midtransClient from "midtrans-client";
 import { createClient } from "@supabase/supabase-js";
 
-// Inisialisasi Supabase
-// Gunakan SUPABASE_SERVICE_ROLE_KEY (bukan ANON_KEY) agar punya akses write ke database
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-);
+// Hapus inisialisasi di luar fungsi agar tidak dieksekusi saat build time
 
 export async function POST(req) {
   try {
+    // 1. Validasi Environment Variables di sini
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase Env Variables:", {
+        supabaseUrl,
+        supabaseKey,
+      });
+      throw new Error("Konfigurasi Supabase tidak ditemukan di server.");
+    }
+
+    // Inisialisasi di dalam fungsi
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     const body = await req.json();
     const { items, customerDetails } = body;
 
