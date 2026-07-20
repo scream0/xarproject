@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import midtransClient from "midtrans-client";
-import { db } from "@/lib/firebaseAdmin";
+import { createClient } from "@supabase/supabase-js";
+
+// Inisialisasi Supabase
+// Gunakan SUPABASE_SERVICE_ROLE_KEY (bukan ANON_KEY) agar punya akses write ke database
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
 
 export async function POST(req) {
   try {
@@ -11,30 +18,12 @@ export async function POST(req) {
       return NextResponse.json({ message: "Cart is empty" }, { status: 400 });
     }
 
-    // 1. Setup Snap
+    // 1. Setup Snap Midtrans
     const snap = new midtransClient.Snap({
       isProduction: false,
-      // untuk production
-      //isProduction: process.env.NODE_ENV === "production",
       serverKey: process.env.MIDTRANS_SERVER_KEY,
     });
-    // Tambahkan ini sebelum bagian Snap setup
-    console.log(
-      "DEBUG: Mode Production?",
-      process.env.NODE_ENV === "production",
-    );
-    console.log(
-      "DEBUG: Panjang Kunci:",
-      process.env.MIDTRANS_SERVER_KEY
-        ? process.env.MIDTRANS_SERVER_KEY.length
-        : "KOSONG",
-    );
-    console.log(
-      "DEBUG: 5 Karakter Awal Kunci:",
-      process.env.MIDTRANS_SERVER_KEY
-        ? process.env.MIDTRANS_SERVER_KEY.substring(0, 5)
-        : "TIDAK ADA",
-    );
+
     const orderId = `ORDER-${Date.now()}`;
 
     // Pastikan total adalah Number (Integer)
@@ -43,26 +32,33 @@ export async function POST(req) {
       0,
     );
 
-    // 2. Simpan ke Firebase
-    await db.collection("orders").doc(orderId).set({
-      orderId,
-      items,
-      customer: customerDetails,
-      total,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    });
+    // 2. Simpan ke Supabase
+    const { error: dbError } = await supabase.from("orders").insert([
+      {
+        order_id: orderId, // sesuaikan nama kolom dengan tabel di Supabase
+        items: items,
+        customer: customerDetails,
+        total: total,
+        status: "pending",
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    if (dbError) {
+      console.error("Supabase Error:", dbError);
+      throw new Error("Gagal menyimpan data order");
+    }
 
     // 3. Parameter Midtrans
     let parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: Math.round(total), // Harus Integer
+        gross_amount: Math.round(total),
       },
       item_details: items.map((item) => ({
-        id: (item.id || "item").toString(), // Harus String
-        price: Math.round(Number(item.price)), // Harus Integer
-        quantity: Number(item.quantity), // Harus Integer
+        id: (item.id || "item").toString(),
+        price: Math.round(Number(item.price)),
+        quantity: Number(item.quantity),
         name: (item.name || "Product").substring(0, 50),
       })),
       customer_details: {
@@ -80,22 +76,9 @@ export async function POST(req) {
       orderId: orderId,
     });
   } catch (error) {
-    // --- PENYESUAIAN PENTING: Menangkap detail error dari Midtrans ---
-    let errorMessage = error.message;
-
-    // Midtrans biasanya memberikan detail error di error.ApiResponse
-    if (error.ApiResponse && error.ApiResponse.error_messages) {
-      errorMessage = error.ApiResponse.error_messages.join(", ");
-      console.error(
-        "MIDTRANS VALIDATION ERROR:",
-        error.ApiResponse.error_messages,
-      );
-    } else {
-      console.error("SERVER ERROR DETAIL:", error);
-    }
-
+    console.error("SERVER ERROR DETAIL:", error);
     return NextResponse.json(
-      { message: "Terjadi kesalahan di server", error: errorMessage },
+      { message: "Terjadi kesalahan di server", error: error.message },
       { status: 500 },
     );
   }
