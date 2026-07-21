@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect, // ganti dari signInWithPopup
+  signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
   sendPasswordResetEmail,
@@ -21,7 +21,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 export default function LoginForm() {
   const { setCustomer } = useStore(); // <--- INISIALISASI
   const searchParams = useSearchParams();
-  const router = useRouter(); // biar ga load full halaman, jadi cuma kek ganti nama aja misalnya
+  const router = useRouter();
+
   // Ambil callbackUrl dari URL, jika tidak ada, default ke /dashboard
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [formData, setFormData] = useState({
@@ -31,6 +32,7 @@ export default function LoginForm() {
     confirmPassword: "",
     phone: "",
   });
+
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,9 +45,53 @@ export default function LoginForm() {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [isFormFocused, setIsFormFocused] = useState(false);
 
-  // Destrukturisasi semua konfigurasi UI dari loginConfig.json
-  const { form } = loginConfig;
+  // State untuk menahan render form saat proses balik dari Google
+  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
 
+  // Destrukturisasi semua konfigurasi UI dari loginConfig.json
+  const { form } = loginConfig || {};
+
+  // ==========================================
+  // EFFECT: CEK KEMBALIAN DARI GOOGLE REDIRECT
+  // ==========================================
+  useEffect(() => {
+    const checkRedirectLogin = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // Jika ada hasil dari Google, simpan data ke store
+          setCustomer({
+            name: result.user.displayName || "User",
+            email: result.user.email,
+            phone: "",
+          });
+
+          console.log("Google Auth (Redirect) sukses!");
+          // Langsung dorong ke Dashboard
+          router.push(callbackUrl);
+
+          // PENTING: Kita tidak mengubah isCheckingRedirect menjadi false di sini.
+          // Tujuannya agar form login tidak sempat muncul/berkedip saat router.push sedang berjalan.
+          return;
+        }
+      } catch (err) {
+        console.error("Google Redirect Error:", err);
+        setError(
+          form?.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
+        );
+      }
+
+      // Jika ternyata tidak ada result (ini adalah kunjungan normal ke halaman login),
+      // barulah kita tampilkan form loginnya.
+      setIsCheckingRedirect(false);
+    };
+
+    checkRedirectLogin();
+  }, [callbackUrl, setCustomer, form?.messages, router]);
+
+  // ==========================================
+  // EFFECT: REMEMBER ME
+  // ==========================================
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberedEmail");
     if (savedEmail) {
@@ -53,34 +99,7 @@ export default function LoginForm() {
       setRememberMe(true);
     }
   }, []);
-  // balik ke halaman semula
-  useEffect(() => {
-    const checkRedirectLogin = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          // Hasil dari Google didapatkan setelah kembali ke halaman ini
-          setCustomer({
-            name: result.user.displayName || "User",
-            email: result.user.email,
-            phone: "",
-          });
-          console.log(
-            "Google Auth (Redirect) sukses! User:",
-            result.user.displayName,
-          );
-          router.push(callbackUrl);
-        }
-      } catch (err) {
-        console.error("Google Redirect Error:", err);
-        setError(
-          form.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
-        );
-      }
-    };
 
-    checkRedirectLogin();
-  }, [callbackUrl, setCustomer, form.messages, router]);
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(
@@ -116,7 +135,7 @@ export default function LoginForm() {
         !formData.confirmPassword
       ) {
         setError(
-          form.validation?.allFieldsRequired ||
+          form?.validation?.allFieldsRequired ||
             "Semua kolom registrasi wajib diisi.",
         );
         setIsLoading(false);
@@ -124,7 +143,7 @@ export default function LoginForm() {
       }
       if (formData.password !== formData.confirmPassword) {
         setError(
-          form.validation?.passwordMismatch ||
+          form?.validation?.passwordMismatch ||
             "Konfirmasi password tidak cocok.",
         );
         setIsLoading(false);
@@ -132,7 +151,6 @@ export default function LoginForm() {
       }
 
       try {
-        // PERBAIKAN: Tambahkan baris pembuat akun ini!
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           formData.email,
@@ -151,7 +169,7 @@ export default function LoginForm() {
         });
 
         setSuccessMessage(
-          form.messages?.registerSuccess ||
+          form?.messages?.registerSuccess ||
             "Registrasi akun berhasil! Mengalihkan...",
         );
         router.push(callbackUrl);
@@ -159,16 +177,16 @@ export default function LoginForm() {
         console.error("Firebase Register Error:", err.code);
         if (err.code === "auth/email-already-in-use") {
           setError(
-            form.messages?.emailInUse || "Email tersebut sudah terdaftar.",
+            form?.messages?.emailInUse || "Email tersebut sudah terdaftar.",
           );
         } else if (err.code === "auth/weak-password") {
           setError(
-            form.messages?.weakPassword ||
+            form?.messages?.weakPassword ||
               "Password terlalu lemah (minimal 6 karakter).",
           );
         } else {
           setError(
-            form.messages?.registerFailed ||
+            form?.messages?.registerFailed ||
               "Gagal membuat akun. Silakan coba lagi.",
           );
         }
@@ -184,7 +202,7 @@ export default function LoginForm() {
     if (isPhoneMode) {
       if (!otpCode) {
         setError(
-          form.validation?.otpRequired ||
+          form?.validation?.otpRequired ||
             "Silakan masukkan kode OTP terlebih dahulu.",
         );
         setIsLoading(false);
@@ -207,12 +225,12 @@ export default function LoginForm() {
           err.code === "auth/code-expired"
         ) {
           setError(
-            form.messages?.invalidOtp ||
+            form?.messages?.invalidOtp ||
               "Kode OTP yang Anda masukkan salah atau telah kedaluwarsa.",
           );
         } else {
           setError(
-            form.messages?.otpFailed ||
+            form?.messages?.otpFailed ||
               "Gagal memverifikasi kode OTP. Silakan coba lagi.",
           );
         }
@@ -225,7 +243,7 @@ export default function LoginForm() {
     // ==========================================
     else {
       if (!formData.email || !formData.password) {
-        setError(form.emptyFieldsMessage || "Semua kolom wajib diisi.");
+        setError(form?.emptyFieldsMessage || "Semua kolom wajib diisi.");
         setIsLoading(false);
         return;
       }
@@ -236,18 +254,14 @@ export default function LoginForm() {
           formData.email,
           formData.password,
         );
-        // PERBAIKAN: Ubah 'result' menjadi 'userCredential'
+
+        // SINKRONISASI KE STORE
         setCustomer({
           name: userCredential.user.displayName || "User",
           email: userCredential.user.email,
           phone: "",
         });
-        // SINKRONISASI KE STORE
-        setCustomer({
-          name: result.user.displayName || "User",
-          email: result.user.email,
-          phone: "",
-        });
+
         if (rememberMe) {
           localStorage.setItem("rememberedEmail", formData.email);
         } else {
@@ -259,17 +273,17 @@ export default function LoginForm() {
       } catch (err) {
         console.error("Firebase Auth Error:", err.code);
         if (err.code === "auth/invalid-credential") {
-          setError(form.errorMessage || "Email atau password salah.");
+          setError(form?.errorMessage || "Email atau password salah.");
         } else if (err.code === "auth/too-many-requests") {
           setError(
-            form.messages?.tooManyRequests ||
+            form?.messages?.tooManyRequests ||
               "Terlalu banyak percobaan login gagal. Akun ditangguhkan sementara.",
           );
         } else if (err.code === "auth/user-not-found") {
           setError("Akun tidak ditemukan. Silakan daftar terlebih dahulu.");
         } else {
           setError(
-            form.messages?.loginFailed ||
+            form?.messages?.loginFailed ||
               "Terjadi masalah saat mencoba masuk. Silakan coba lagi.",
           );
         }
@@ -282,7 +296,7 @@ export default function LoginForm() {
   const handleSendOtp = async () => {
     if (!formData.phone) {
       setError(
-        form.validation?.phoneRequired ||
+        form?.validation?.phoneRequired ||
           "Silakan isi nomor HP Anda terlebih dahulu.",
       );
       return;
@@ -300,7 +314,7 @@ export default function LoginForm() {
 
     if (!formattedPhone.startsWith("+")) {
       setError(
-        form.validation?.invalidPhoneFormat ||
+        form?.validation?.invalidPhoneFormat ||
           "Format nomor HP tidak valid. Gunakan format standar (Contoh: 0812xxx).",
       );
       setIsLoading(false);
@@ -318,23 +332,23 @@ export default function LoginForm() {
 
       setConfirmationResult(confirmation);
       setSuccessMessage(
-        `${form.messages?.otpSent || "Kode OTP sukses dikirim melalui SMS ke"} ${formattedPhone}`,
+        `${form?.messages?.otpSent || "Kode OTP sukses dikirim melalui SMS ke"} ${formattedPhone}`,
       );
     } catch (err) {
       console.error("Phone Auth Error:", err.code);
       if (err.code === "auth/invalid-phone-number") {
         setError(
-          form.messages?.invalidPhoneBackend ||
+          form?.messages?.invalidPhoneBackend ||
             "Format nomor HP tidak dikenali oleh sistem backend.",
         );
       } else if (err.code === "auth/too-many-requests") {
         setError(
-          form.messages?.smsLimitReached ||
+          form?.messages?.smsLimitReached ||
             "Batas pengiriman SMS untuk nomor ini tercapai. Coba beberapa saat lagi.",
         );
       } else {
         setError(
-          form.messages?.smsFailed ||
+          form?.messages?.smsFailed ||
             "Gagal mengirim SMS OTP. Periksa jaringan Anda atau coba lagi.",
         );
       }
@@ -351,7 +365,7 @@ export default function LoginForm() {
   const handleForgotPassword = async () => {
     if (!formData.email) {
       setError(
-        form.validation?.emailRequiredForReset ||
+        form?.validation?.emailRequiredForReset ||
           "Silakan masukkan email Anda terlebih dahulu untuk mereset password.",
       );
       return;
@@ -363,13 +377,13 @@ export default function LoginForm() {
     try {
       await sendPasswordResetEmail(auth, formData.email);
       setSuccessMessage(
-        form.messages?.resetEmailSent ||
+        form?.messages?.resetEmailSent ||
           "Link reset password telah dikirim ke email Anda.",
       );
     } catch (err) {
       console.error("Forgot Password Error:", err.code);
       setError(
-        form.messages?.resetEmailFailed ||
+        form?.messages?.resetEmailFailed ||
           "Gagal mengirim email reset. Pastikan email terdaftar.",
       );
     } finally {
@@ -377,25 +391,28 @@ export default function LoginForm() {
     }
   };
 
+  // ==========================================
+  // TOMBOL GOOGLE LOGIN (REDIRECT)
+  // ==========================================
   const handleGoogleLogin = async () => {
     setError("");
     setSuccessMessage("");
+    setIsLoading(true);
+
     const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
 
     try {
       // Perintah ini akan langsung melempar user ke halaman Google.
       // Halaman Anda saat ini akan di-unload (ditutup sementara).
       await signInWithRedirect(auth, provider);
-      
     } catch (err) {
       console.error("Google Auth Redirect Error:", err);
       setError(
-        form.messages?.googleAuthFailed || "Gagal mengalihkan ke halaman Google."
+        form?.messages?.googleAuthFailed ||
+          "Gagal mengalihkan ke halaman Google.",
       );
       setIsLoading(false);
     }
-  };
   };
 
   const toggleRegisterMode = () => {
@@ -408,20 +425,51 @@ export default function LoginForm() {
     setIsFormFocused(false);
   };
 
-  // Mendapatkan judul kartu dinamis berdasarkan state auth aktif
   const getFormTitle = () => {
-    if (isRegister) return form.titles?.register || "CREATE ACCOUNT";
-    if (isPhoneMode) return form.titles?.phone || "PHONE SIGN IN";
-    return form.title || "SIGN IN";
+    if (isRegister) return form?.titles?.register || "CREATE ACCOUNT";
+    if (isPhoneMode) return form?.titles?.phone || "PHONE SIGN IN";
+    return form?.title || "SIGN IN";
   };
 
-  // Mendapatkan teks tombol submit utama secara dinamis
   const getSubmitButtonText = () => {
-    if (isRegister) return form.buttons?.signUp || "SIGN UP";
-    if (isPhoneMode) return form.buttons?.verifyOtp || "VERIFIKASI OTP";
-    return form.buttonText || "SIGN IN";
+    if (isRegister) return form?.buttons?.signUp || "SIGN UP";
+    if (isPhoneMode) return form?.buttons?.verifyOtp || "VERIFIKASI OTP";
+    return form?.buttonText || "SIGN IN";
   };
 
+  // ==========================================
+  // RENDER UI LOADING SAAT CEK REDIRECT
+  // ==========================================
+  if (isCheckingRedirect) {
+    return (
+      <div
+        className={styles.formWrapper}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "1rem",
+          }}
+        >
+          <span className={styles.spinner}></span>
+          <p style={{ color: "#a3a3a3", fontWeight: "600" }}>
+            Memverifikasi otentikasi Google...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // RENDER UI UTAMA
+  // ==========================================
   return (
     <div className={styles.formWrapper}>
       <div id="recaptcha-container"></div>
@@ -481,8 +529,7 @@ export default function LoginForm() {
 
           {/* RENDER FIELD SECARA DATA-DRIVEN */}
           {form?.fields?.map((field) => {
-            if (!field || !field.name) return null; // Mencegah error jika ada objek field kosong di JSON
-            // Evaluasi kondisi visibilitas field berdasarkan state form saat ini
+            if (!field || !field.name) return null;
             const shouldRender =
               field.visibility === "always" ||
               (field.visibility === "registerOnly" && isRegister) ||
@@ -493,7 +540,6 @@ export default function LoginForm() {
 
             if (!shouldRender) return null;
 
-            // Penanganan class transisi khusus untuk field bernilai transisi max-height (name & confirmPassword)
             const wrapperClass = field.isAnimated
               ? `${styles.inputWrapper} ${isRegister ? styles.fieldVisible : styles.fieldHidden}`
               : styles.inputWrapper;
@@ -573,7 +619,7 @@ export default function LoginForm() {
               className={styles.btnOtpRequest}
               disabled={isLoading}
             >
-              {form.buttons?.sendOtp || "KIRIM KODE OTP"}
+              {form?.buttons?.sendOtp || "KIRIM KODE OTP"}
             </button>
           )}
 
@@ -582,7 +628,7 @@ export default function LoginForm() {
             <div className={styles.inputWrapper}>
               <input
                 type="text"
-                placeholder={form.otpPlaceholder || "Masukkan 6 digit OTP"}
+                placeholder={form?.otpPlaceholder || "Masukkan 6 digit OTP"}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
                 className={styles.inputField}
@@ -605,7 +651,7 @@ export default function LoginForm() {
                   disabled={isLoading}
                 />
                 <span className={styles.customCheckmark}></span>
-                {form.labels?.rememberMe || "Remember Me"}
+                {form?.labels?.rememberMe || "Remember Me"}
               </label>
               <button
                 type="button"
@@ -613,7 +659,7 @@ export default function LoginForm() {
                 onClick={handleForgotPassword}
                 disabled={isLoading}
               >
-                {form.labels?.forgotPassword || "Forgot Password?"}
+                {form?.labels?.forgotPassword || "Forgot Password?"}
               </button>
             </div>
           )}
@@ -650,8 +696,8 @@ export default function LoginForm() {
             disabled={isLoading}
           >
             {isPhoneMode
-              ? form.switchText?.emailMode || "Masuk dengan Email & Password"
-              : form.switchText?.phoneMode || "Masuk dengan Nomor HP"}
+              ? form?.switchText?.emailMode || "Masuk dengan Email & Password"
+              : form?.switchText?.phoneMode || "Masuk dengan Nomor HP"}
           </button>
         )}
 
@@ -663,13 +709,13 @@ export default function LoginForm() {
           style={{ marginTop: "0.25rem", fontWeight: "600", color: "#a3a3a3" }}
         >
           {isRegister
-            ? form.switchText?.signIn || "Already have an account? Sign In"
-            : form.switchText?.signUp || "Don't have an account? Sign Up"}
+            ? form?.switchText?.signIn || "Already have an account? Sign In"
+            : form?.switchText?.signUp || "Don't have an account? Sign Up"}
         </button>
 
         {/* TOMBOL OAUTH GOOGLE */}
         <div className={styles.divider}>
-          <span>{form.labels?.oauthDivider || "OR CONTINUE WITH"}</span>
+          <span>{form?.labels?.oauthDivider || "OR CONTINUE WITH"}</span>
         </div>
 
         <div className={styles.socialWrapper}>
