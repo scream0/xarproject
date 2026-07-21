@@ -203,6 +203,12 @@ export default function LoginForm() {
           formData.email,
           formData.password,
         );
+        // PERBAIKAN: Ubah 'result' menjadi 'userCredential'
+        setCustomer({
+          name: userCredential.user.displayName || "User",
+          email: userCredential.user.email,
+          phone: "",
+        });
         // SINKRONISASI KE STORE
         setCustomer({
           name: result.user.displayName || "User",
