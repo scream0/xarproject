@@ -14,8 +14,9 @@ export default function AddProductForm({ onProductAdded }) {
     description: "",
   });
 
+  // Varian sekarang menyertakan imageFile untuk menampung file gambar per ukuran
   const [variants, setVariants] = useState([
-    { size: "10ml", price: "", stock: 0 },
+    { size: "10ml", price: "", stock: 0, imageFile: null },
   ]);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -24,12 +25,21 @@ export default function AddProductForm({ onProductAdded }) {
   const UPLOAD_PRESET = "xarProject";
 
   const addVariantField = () => {
-    setVariants([...variants, { size: "", price: "", stock: 0 }]);
+    setVariants([
+      ...variants,
+      { size: "", price: "", stock: 0, imageFile: null },
+    ]);
   };
 
   const handleVariantChange = (index, field, value) => {
     const newVariants = [...variants];
     newVariants[index][field] = value;
+    setVariants(newVariants);
+  };
+
+  const handleVariantFileChange = (index, fileObj) => {
+    const newVariants = [...variants];
+    newVariants[index].imageFile = fileObj;
     setVariants(newVariants);
   };
 
@@ -45,32 +55,55 @@ export default function AddProductForm({ onProductAdded }) {
     try {
       setUploading(true);
 
-      // 1. Upload ke Cloudinary
-      const data = new FormData();
-      data.append("file", file);
-      data.append("upload_preset", UPLOAD_PRESET);
+      // 1. Upload Gambar Utama ke Cloudinary
+      const mainData = new FormData();
+      mainData.append("file", file);
+      mainData.append("upload_preset", UPLOAD_PRESET);
 
-      const res = await fetch(
+      const mainRes = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: data },
+        { method: "POST", body: mainData },
       );
-      const fileData = await res.json();
-      const imageUrl = fileData.secure_url;
+      const mainFileData = await mainRes.json();
+      const imageUrl = mainFileData.secure_url;
 
-      if (!imageUrl) throw new Error("Cloudinary upload failed");
+      if (!imageUrl) throw new Error("Cloudinary main upload failed");
 
-      // 2. Simpan data ke Supabase Database
+      // 2. Upload Gambar Varian (Jika ada yang diunggah di setiap baris varian)
+      const processedVariants = await Promise.all(
+        variants.map(async (v) => {
+          let variantImageUrl = "";
+
+          if (v.imageFile) {
+            const variantData = new FormData();
+            variantData.append("file", v.imageFile);
+            variantData.append("upload_preset", UPLOAD_PRESET);
+
+            const variantRes = await fetch(
+              `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+              { method: "POST", body: variantData },
+            );
+            const variantFileData = await variantRes.json();
+            variantImageUrl = variantFileData.secure_url || "";
+          }
+
+          return {
+            size: v.size,
+            price: Number(v.price),
+            stock: Number(v.stock),
+            imageUrl: variantImageUrl, // Disimpan langsung di dalam JSON varian
+          };
+        }),
+      );
+
+      // 3. Simpan data ke Supabase Database
       const { error } = await supabase.from("products").insert([
         {
           name: formData.name,
           category: formData.category,
           description: formData.description,
           image_url: imageUrl,
-          variants: variants.map((v) => ({
-            ...v,
-            price: Number(v.price),
-            stock: Number(v.stock),
-          })),
+          variants: processedVariants,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -81,7 +114,7 @@ export default function AddProductForm({ onProductAdded }) {
 
       // Reset form
       setFormData({ name: "", category: "Parfum", description: "" });
-      setVariants([{ size: "10ml", price: "", stock: 0 }]);
+      setVariants([{ size: "10ml", price: "", stock: 0, imageFile: null }]);
       setFile(null);
       onProductAdded?.();
     } catch (e) {
@@ -137,7 +170,7 @@ export default function AddProductForm({ onProductAdded }) {
           </select>
         </div>
 
-        {/* Varian Section */}
+        {/* Varian Section dengan Gambar Per Varian */}
         <div className={styles.variantsBox}>
           <label className={styles.fieldLabel}>
             {addConfig.labels.variants}
@@ -172,6 +205,15 @@ export default function AddProductForm({ onProductAdded }) {
                 }
                 className={styles.variantInput}
                 required
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  handleVariantFileChange(index, e.target.files[0])
+                }
+                className={styles.variantFileInput}
+                title="Visual khusus varian ini"
               />
             </div>
           ))}

@@ -20,7 +20,7 @@
   padding: 30px;
   border-radius: 12px;
   width: 100%;
-  max-width: 540px;
+  max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
   color: #fff;
@@ -107,15 +107,20 @@
 
 .variantRow {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-template-columns: 1fr 0.8fr 0.8fr 1.2fr;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  align-items: center;
+  background: #181818;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #262626;
 }
 
 .variantInput {
-  background: #1a1a1a;
+  background: #121212;
   border: 1px solid #333;
-  padding: 10px;
+  padding: 8px;
   color: #fff;
   border-radius: 4px;
   font-size: 0.85rem;
@@ -125,6 +130,25 @@
 
 .variantInput:focus {
   border-color: #777;
+}
+
+.variantFileInput {
+  font-size: 0.7rem;
+  color: #aaa;
+  background: #121212;
+  padding: 6px;
+  border: 1px dashed #333;
+  border-radius: 4px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.variantThumb {
+  width: 30px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #444;
 }
 
 .addSizeBtn {
@@ -200,18 +224,12 @@
 }
 
 /* Responsif Mobile */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .modal {
     padding: 20px 15px;
-    max-height: 95vh;
   }
-
   .variantRow {
     grid-template-columns: 1fr;
     gap: 6px;
-    background: #161616;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #222;
   }
 }

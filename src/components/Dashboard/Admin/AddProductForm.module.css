@@ -5,7 +5,7 @@
   border-radius: 12px;
   color: #fff;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-  max-width: 900px;
+  max-width: 950px;
   margin: 0 auto;
 }
 
@@ -86,14 +86,19 @@
 
 .variantRow {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-template-columns: 1.2fr 1fr 1fr 1.5fr;
   gap: 10px;
+  align-items: center;
+  background: #161616;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #222;
 }
 
 .variantInput {
-  background: #181818;
+  background: #1b1b1b;
   border: 1px solid #333;
-  padding: 10px 14px;
+  padding: 10px 12px;
   color: #fff;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -103,6 +108,17 @@
 
 .variantInput:focus {
   border-color: #777;
+}
+
+.variantFileInput {
+  font-size: 0.75rem;
+  color: #aaa;
+  background: #121212;
+  padding: 8px;
+  border: 1px dashed #333;
+  border-radius: 6px;
+  width: 100%;
+  cursor: pointer;
 }
 
 .addSizeBtn {
@@ -156,16 +172,12 @@
 }
 
 /* Responsif Mobile */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .formContainer {
     padding: 20px 15px;
   }
   .variantRow {
     grid-template-columns: 1fr;
     gap: 8px;
-    background: #161616;
-    padding: 12px;
-    border-radius: 6px;
-    border: 1px solid #222;
   }
 }

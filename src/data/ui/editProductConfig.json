@@ -1,10 +1,10 @@
 {
   "title": "EDIT PRODUCT ARCHIVE",
   "labels": {
-    "currentImage": "CURRENT VISUAL",
-    "changeImage": "UPDATE VISUAL (OPTIONAL)",
+    "currentImage": "CURRENT MAIN VISUAL",
+    "changeImage": "UPDATE MAIN VISUAL (OPTIONAL)",
     "productName": "PRODUCT NAME",
-    "variants": "VARIANTS CONFIGURATION (SIZE | PRICE | STOCK)",
+    "variants": "VARIANTS CONFIGURATION (SIZE | PRICE | STOCK | VISUAL)",
     "description": "CURATION DESCRIPTION"
   },
   "buttons": {
