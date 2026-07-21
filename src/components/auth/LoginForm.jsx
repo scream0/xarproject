@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithRedirect, // ganti dari signInWithPopup
   getRedirectResult,
+  GoogleAuthProvider,
   sendPasswordResetEmail,
   RecaptchaVerifier,
   signInWithPhoneNumber,
