@@ -2,8 +2,13 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth, db } from "@/lib/firebaseClient";
-import { collection, getDocs } from "firebase/firestore";
+import { auth } from "@/lib/firebaseClient"; // db firestore sudah tidak dipakai
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, // pakai ANON key, bukan service role, karena ini jalan di browser
+);
 import toast from "react-hot-toast";
 
 const StoreContext = createContext();
@@ -32,12 +37,15 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "products"));
-        const data = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const { data, error } = await supabase.from("products").select("*");
+        if (error) throw error;
+        // Map snake_case (Supabase) -> camelCase (dipakai komponen lain)
+        const mapped = data.map((p) => ({
+          ...p,
+          imageUrl: p.image_url,
+          isAvailable: p.is_available,
         }));
-        setProducts(data);
+        setProducts(mapped);
       } catch (error) {
         console.error("Gagal ambil produk:", error);
       }
@@ -70,44 +78,55 @@ export function StoreProvider({ children }) {
     0;
 
   const addToCart = (product, customVariant = null, quantity = 1) => {
-  let variant = customVariant || (product.variants && product.variants[0]);
-  
-  if (!variant) return toast.error("Varian tidak tersedia");
+    let variant = customVariant || (product.variants && product.variants[0]);
 
-  // --- TAMBAHKAN LOGIKA INI ---
-  // Jika varian yang masuk tidak punya stok (misal karena objek tidak lengkap),
-  // coba cari data stok yang asli dari daftar varian produk
-  if (product.variants && (variant.stock === undefined || variant.stock === null)) {
-    const fullVariantData = product.variants.find(v => v.size === variant.size);
-    if (fullVariantData) variant = fullVariantData;
-  }
-  // ---------------------------
+    if (!variant) return toast.error("Varian tidak tersedia");
 
-  const stock = variant.stock ?? 0;
-  if (stock <= 0) {
-    return toast.error(`${product.name} (${variant.size}) stok habis!`);
-  }
-
-  const prodId = String(product.id).trim();
-  const varSize = String(variant.size).trim();
-  const uniqueCartId = `${prodId}-${varSize}`;
-
-  setCart((prev) => {
-    const existingItem = prev.items.find((item) => item.cartId === uniqueCartId);
-    const currentQtyInCart = existingItem ? existingItem.quantity : 0;
-    
-    if (currentQtyInCart + quantity > stock) {
-      toast.error(`Stok ${product.name} (${variant.size}) tidak cukup!`);
-      return prev;
+    // --- TAMBAHKAN LOGIKA INI ---
+    // Jika varian yang masuk tidak punya stok (misal karena objek tidak lengkap),
+    // coba cari data stok yang asli dari daftar varian produk
+    if (
+      product.variants &&
+      (variant.stock === undefined || variant.stock === null)
+    ) {
+      const fullVariantData = product.variants.find(
+        (v) => v.size === variant.size,
+      );
+      if (fullVariantData) variant = fullVariantData;
     }
-    
-    // ... (sisanya tetap sama: logic update cart/tambah item)
-    if (existingItem) {
+    // ---------------------------
+
+    const stock = variant.stock ?? 0;
+    if (stock <= 0) {
+      return toast.error(`${product.name} (${variant.size}) stok habis!`);
+    }
+
+    const prodId = String(product.id).trim();
+    const varSize = String(variant.size).trim();
+    const uniqueCartId = `${prodId}-${varSize}`;
+
+    setCart((prev) => {
+      const existingItem = prev.items.find(
+        (item) => item.cartId === uniqueCartId,
+      );
+      const currentQtyInCart = existingItem ? existingItem.quantity : 0;
+
+      if (currentQtyInCart + quantity > stock) {
+        toast.error(`Stok ${product.name} (${variant.size}) tidak cukup!`);
+        return prev;
+      }
+
+      // ... (sisanya tetap sama: logic update cart/tambah item)
+      if (existingItem) {
         return {
           ...prev,
           items: prev.items.map((item) =>
             item.cartId === uniqueCartId
-              ? { ...item, quantity: item.quantity + quantity, total: (item.quantity + quantity) * item.price }
+              ? {
+                  ...item,
+                  quantity: item.quantity + quantity,
+                  total: (item.quantity + quantity) * item.price,
+                }
               : item,
           ),
         };
@@ -129,9 +148,9 @@ export function StoreProvider({ children }) {
           ],
         };
       }
-  });
-  toast.success(`${product.name} (${variant.size}) ditambahkan!`);
-};
+    });
+    toast.success(`${product.name} (${variant.size}) ditambahkan!`);
+  };
   const removeFromCart = (cartId) => {
     setCart((prev) => {
       const item = prev.items.find((i) => i.cartId === cartId);

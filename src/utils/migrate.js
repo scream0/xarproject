@@ -1,42 +1,45 @@
-// src/utils/migrate.js
-import { db } from "@/lib/firebaseClient";
-import { collection, addDoc } from "firebase/firestore";
-import data from "@/data/db/products.json";
+// migrate.js
+// Jalankan lokal: node migrate.js
+import { initializeApp, cert } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import { createClient } from "@supabase/supabase-js";
+import serviceAccount from "./firebase-service-account.json" assert { type: "json" };
 
-export const migrateData = async () => {
-  // Selalu tanya konfirmasi sebelum hapus/tambah data
-  if (
-    !confirm(
-      "Yakin ingin melakukan migrasi? Pastikan koleksi 'products' di Firestore sudah dikosongkan!",
-    )
-  )
-    return;
+initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore();
 
-  try {
-    const productsCollection = collection(db, "products");
-    let count = 0;
+const supabase = createClient(
+  "https://gwdvcfuzwchnfrhnhaek.supabase.co",
+  "PASTE_SERVICE_ROLE_KEY_DI_SINI", // jangan commit ke git!
+);
 
-    for (const item of data.produkItems) {
-      // Hapus ID lama dari JSON
-      const { id, ...itemData } = item;
+async function migrate() {
+  const snapshot = await db.collection("products").get();
+  const rows = snapshot.docs.map((doc) => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      name: d.name,
+      description: d.description || null,
+      category: d.category || null,
+      image: d.image || null,
+      image_url: d.imageUrl || null,
+      is_available: d.isAvailable ?? true,
+      specs: d.specs || {},
+      variants: (d.variants || []).map((v) => ({
+        size: v.size,
+        price: Number(v.price) || 0,
+        stock: parseInt(v.stock, 10) || 0, // string "10" -> number 10
+      })),
+    };
+  });
 
-      // Tambahkan default field untuk fitur Sold Out & Status
-      const dataToUpload = {
-        ...itemData,
-        stock: 10, // Default stock awal
-        isAvailable: true,
-        createdAt: new Date().toISOString(),
-      };
-
-      // addDoc otomatis membuatkan Auto-ID
-      await addDoc(productsCollection, dataToUpload);
-      count++;
-      console.log(`Berhasil migrasi: ${item.name}`);
-    }
-
-    alert(`Sukses! ${count} produk telah dimigrasi dengan Auto-ID.`);
-  } catch (error) {
-    console.error("Gagal migrasi:", error);
-    alert("Terjadi kesalahan, cek console!");
+  const { error } = await supabase.from("products").insert(rows);
+  if (error) {
+    console.error("Migrasi gagal:", error);
+  } else {
+    console.log(`Berhasil migrasi ${rows.length} produk.`);
   }
-};
+}
+
+migrate();
