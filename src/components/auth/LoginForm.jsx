@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
+  signInWithRedirect, // ganti dari signInWithPopup
+  getRedirectResult,
   sendPasswordResetEmail,
   RecaptchaVerifier,
   signInWithPhoneNumber,
@@ -104,11 +104,11 @@ export default function LoginForm() {
       }
 
       try {
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          formData.email,
-          formData.password,
-        );
+        setCustomer({
+          name: userCredential.user.displayName || "User",
+          email: userCredential.user.email,
+          phone: "",
+        });
 
         await updateProfile(userCredential.user, {
           displayName: formData.name,
@@ -340,8 +340,8 @@ export default function LoginForm() {
   const handleGoogleLogin = async () => {
     setError("");
     setSuccessMessage("");
-    setIsLoading(true);
     const provider = new GoogleAuthProvider();
+    await signInWithRedirect(auth, provider);
 
     try {
       const result = await signInWithPopup(auth, provider);
