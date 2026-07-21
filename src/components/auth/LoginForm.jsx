@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup, // <-- Menggunakan Popup
   GoogleAuthProvider,
   sendPasswordResetEmail,
   RecaptchaVerifier,
@@ -19,12 +18,13 @@ import { useStore } from "@/context/StoreContext";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginForm() {
-  const { setCustomer } = useStore(); // <--- INISIALISASI
+  const { setCustomer } = useStore();
   const searchParams = useSearchParams();
   const router = useRouter();
 
   // Ambil callbackUrl dari URL, jika tidak ada, default ke /dashboard
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -45,53 +45,8 @@ export default function LoginForm() {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [isFormFocused, setIsFormFocused] = useState(false);
 
-  // State untuk menahan render form saat proses balik dari Google
-  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
-
   // Destrukturisasi semua konfigurasi UI dari loginConfig.json
   const { form } = loginConfig || {};
-
-  // ==========================================
-  // EFFECT: CEK KEMBALIAN DARI GOOGLE REDIRECT
-  // ==========================================
-  useEffect(() => {
-    const checkRedirectLogin = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          // Jika ada hasil dari Google, simpan data ke store
-          setCustomer({
-            name: result.user.displayName || "User",
-            email: result.user.email,
-            phone: "",
-          });
-
-          console.log("Google Auth (Redirect) sukses!");
-          // Langsung dorong ke Dashboard
-          // router.push(callbackUrl);
-
-          // GANTI BARIS INI:
-          // router.push(callbackUrl);
-          router.replace(callbackUrl);
-
-          return;
-          // PENTING: Kita tidak mengubah isCheckingRedirect menjadi false di sini.
-          // Tujuannya agar form login tidak sempat muncul/berkedip saat router.push sedang berjalan.
-        }
-      } catch (err) {
-        console.error("Google Redirect Error:", err);
-        setError(
-          form?.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
-        );
-      }
-
-      // Jika ternyata tidak ada result (ini adalah kunjungan normal ke halaman login),
-      // barulah kita tampilkan form loginnya.
-      setIsCheckingRedirect(false);
-    };
-
-    checkRedirectLogin();
-  }, [callbackUrl, setCustomer, form?.messages, router]);
 
   // ==========================================
   // EFFECT: REMEMBER ME
@@ -165,7 +120,6 @@ export default function LoginForm() {
           displayName: formData.name,
         });
 
-        // SINKRONISASI KE CONTEXT
         setCustomer({
           name: formData.name,
           email: userCredential.user.email,
@@ -176,7 +130,7 @@ export default function LoginForm() {
           form?.messages?.registerSuccess ||
             "Registrasi akun berhasil! Mengalihkan...",
         );
-        router.push(callbackUrl);
+        window.location.href = callbackUrl; // Hard redirect agar stabil
       } catch (err) {
         console.error("Firebase Register Error:", err.code);
         if (err.code === "auth/email-already-in-use") {
@@ -194,7 +148,6 @@ export default function LoginForm() {
               "Gagal membuat akun. Silakan coba lagi.",
           );
         }
-      } finally {
         setIsLoading(false);
       }
       return;
@@ -214,14 +167,13 @@ export default function LoginForm() {
       }
       try {
         const result = await confirmationResult.confirm(otpCode);
-        // SINKRONISASI KE STORE
         setCustomer({
           name: result.user.displayName || "User",
           email: result.user.email,
           phone: "",
         });
         console.log("Login Nomor HP berhasil! User UID:", result.user.uid);
-        router.push(callbackUrl);
+        window.location.href = callbackUrl; // Hard redirect agar stabil
       } catch (err) {
         console.error("OTP Verification Error:", err.code);
         if (
@@ -238,7 +190,6 @@ export default function LoginForm() {
               "Gagal memverifikasi kode OTP. Silakan coba lagi.",
           );
         }
-      } finally {
         setIsLoading(false);
       }
     }
@@ -259,7 +210,6 @@ export default function LoginForm() {
           formData.password,
         );
 
-        // SINKRONISASI KE STORE
         setCustomer({
           name: userCredential.user.displayName || "User",
           email: userCredential.user.email,
@@ -273,7 +223,7 @@ export default function LoginForm() {
         }
 
         console.log("Login berhasil! User UID:", userCredential.user.uid);
-        router.push(callbackUrl);
+        window.location.href = callbackUrl; // Hard redirect agar stabil
       } catch (err) {
         console.error("Firebase Auth Error:", err.code);
         if (err.code === "auth/invalid-credential") {
@@ -291,7 +241,6 @@ export default function LoginForm() {
               "Terjadi masalah saat mencoba masuk. Silakan coba lagi.",
           );
         }
-      } finally {
         setIsLoading(false);
       }
     }
@@ -396,7 +345,7 @@ export default function LoginForm() {
   };
 
   // ==========================================
-  // TOMBOL GOOGLE LOGIN (REDIRECT)
+  // TOMBOL GOOGLE LOGIN (POPUP)
   // ==========================================
   const handleGoogleLogin = async () => {
     setError("");
@@ -406,16 +355,33 @@ export default function LoginForm() {
     const provider = new GoogleAuthProvider();
 
     try {
-      // Perintah ini akan langsung melempar user ke halaman Google.
-      // Halaman Anda saat ini akan di-unload (ditutup sementara).
-      await signInWithRedirect(auth, provider);
+      // 1. Panggil jendela Popup
+      const result = await signInWithPopup(auth, provider);
+
+      // 2. Jika sukses, simpan data ke Store
+      setCustomer({
+        name: result.user.displayName || "User",
+        email: result.user.email,
+        phone: "",
+      });
+
+      console.log("Google Auth (Popup) sukses! User:", result.user.displayName);
+
+      // 3. Lempar ke Dashboard
+      window.location.href = callbackUrl;
     } catch (err) {
-      console.error("Google Auth Redirect Error:", err);
-      setError(
-        form?.messages?.googleAuthFailed ||
-          "Gagal mengalihkan ke halaman Google.",
-      );
+      console.error("Google Auth Popup Error:", err);
+      // Hanya matikan loading jika gagal (kalau sukses biarkan loading muter sampai pindah halaman)
       setIsLoading(false);
+
+      // Abaikan error jika user sengaja menutup jendela popup sebelum login selesai
+      if (err.code === "auth/popup-closed-by-user") {
+        return;
+      }
+
+      setError(
+        form?.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
+      );
     }
   };
 
@@ -440,36 +406,6 @@ export default function LoginForm() {
     if (isPhoneMode) return form?.buttons?.verifyOtp || "VERIFIKASI OTP";
     return form?.buttonText || "SIGN IN";
   };
-
-  // ==========================================
-  // RENDER UI LOADING SAAT CEK REDIRECT
-  // ==========================================
-  if (isCheckingRedirect) {
-    return (
-      <div
-        className={styles.formWrapper}
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "1rem",
-          }}
-        >
-          <span className={styles.spinner}></span>
-          <p style={{ color: "#a3a3a3", fontWeight: "600" }}>
-            Memverifikasi otentikasi Google...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   // ==========================================
   // RENDER UI UTAMA
