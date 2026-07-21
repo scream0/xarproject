@@ -6,6 +6,9 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebaseClient";
 import styles from "./Dashboard.module.css";
 
+// Import Konfigurasi JSON
+import dashboardConfig from "@/data/ui/dashboardPageConfig.json";
+
 // Import dua dashboard
 import AdminDashboard from "@/components/Dashboard/Admin/AdminDashboard";
 import UserDashboard from "@/components/Dashboard/User/UserDashboard";
@@ -19,19 +22,20 @@ export default function DashboardPage() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         window.location.href = "/login";
-        return; // Hentikan eksekusi
+        return;
       }
 
       setUser(currentUser);
 
       try {
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        // Menggunakan optional chaining (?.) agar tidak error jika field role kosong
-        const userRole = userDoc.exists() ? userDoc.data()?.role : "customer";
-        setRole(userRole || "customer"); // Fallback ke "customer" jika undefined
+        const userRole = userDoc.exists()
+          ? userDoc.data()?.role
+          : dashboardConfig.defaultRole;
+        setRole(userRole || dashboardConfig.defaultRole);
       } catch (error) {
         console.error("Gagal ambil data role:", error);
-        setRole("customer");
+        setRole(dashboardConfig.defaultRole);
       } finally {
         setLoading(false);
       }
@@ -43,7 +47,8 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
-        <p>VERIFYING CREDENTIALS...</p>
+        <div className={styles.pulseScanner}></div>
+        <p className={styles.loadingText}>{dashboardConfig.loadingText}</p>
       </div>
     );
   }

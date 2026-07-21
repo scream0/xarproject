@@ -1,0 +1,81 @@
+.loadingContainer {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0b0b0b;
+  color: #fff;
+  font-family: inherit;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+}
+
+/* Animasi Cincin Pemindai Mewah */
+.pulseScanner {
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #fff;
+  border-radius: 50%;
+  animation: spinAndGlow 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  margin-bottom: 24px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+  position: relative;
+}
+
+.pulseScanner::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  animation: reverseSpin 5s linear infinite;
+}
+
+/* Animasi Teks Berdenyut & Spasi Huruf Elegan */
+.loadingText {
+  font-size: 0.75rem;
+  letter-spacing: 4px;
+  color: #999;
+  text-transform: uppercase;
+  font-weight: 500;
+  animation: textPulse 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes spinAndGlow {
+  0% {
+    transform: rotate(0deg);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.03);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.15);
+  }
+  100% {
+    transform: rotate(360deg);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.03);
+  }
+}
+
+@keyframes reverseSpin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes textPulse {
+  0% {
+    opacity: 0.35;
+    letter-spacing: 3px;
+  }
+  100% {
+    opacity: 1;
+    letter-spacing: 5px;
+  }
+}
