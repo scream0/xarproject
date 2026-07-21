@@ -345,44 +345,53 @@ export default function LoginForm() {
   };
 
   // ==========================================
-  // TOMBOL GOOGLE LOGIN (POPUP)
+  // TOMBOL GOOGLE LOGIN (POPUP - ANTI-BLOKIR)
   // ==========================================
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
+    // Hapus 'async' di sini agar tidak ada jeda micro-task
     setError("");
     setSuccessMessage("");
     setIsLoading(true);
 
     const provider = new GoogleAuthProvider();
 
-    try {
-      // 1. Panggil jendela Popup
-      const result = await signInWithPopup(auth, provider);
+    // Jalankan langsung tanpa await di awal pembuka fungsi
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        // Simpan data ke Store
+        setCustomer({
+          name: result.user.displayName || "User",
+          email: result.user.email,
+          phone: "",
+        });
 
-      // 2. Jika sukses, simpan data ke Store
-      setCustomer({
-        name: result.user.displayName || "User",
-        email: result.user.email,
-        phone: "",
+        console.log(
+          "Google Auth (Popup) sukses! User:",
+          result.user.displayName,
+        );
+
+        // Lempar ke Dashboard
+        window.location.href = callbackUrl;
+      })
+      .catch((err) => {
+        console.error("Google Auth Popup Error:", err);
+        setIsLoading(false);
+
+        if (err.code === "auth/popup-closed-by-user") {
+          return; // Abaikan jika user sengaja menutup popup
+        }
+
+        if (err.code === "auth/popup-blocked") {
+          setError(
+            "Browser Anda memblokir jendela pop-up. Harapizinkan pop-up untuk situs ini.",
+          );
+          return;
+        }
+
+        setError(
+          form?.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
+        );
       });
-
-      console.log("Google Auth (Popup) sukses! User:", result.user.displayName);
-
-      // 3. Lempar ke Dashboard
-      window.location.href = callbackUrl;
-    } catch (err) {
-      console.error("Google Auth Popup Error:", err);
-      // Hanya matikan loading jika gagal (kalau sukses biarkan loading muter sampai pindah halaman)
-      setIsLoading(false);
-
-      // Abaikan error jika user sengaja menutup jendela popup sebelum login selesai
-      if (err.code === "auth/popup-closed-by-user") {
-        return;
-      }
-
-      setError(
-        form?.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
-      );
-    }
   };
 
   const toggleRegisterMode = () => {
