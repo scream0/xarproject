@@ -167,7 +167,7 @@ export default function AddProductForm({ onProductAdded }) {
                 placeholder="Stock"
                 value={v.stock}
                 onChange={
-                  (e) => handleVariantCode(index, "stock", e.target.value) // Fixed typo here if any, standard handler:
+                  (e) => handleVariantChange(index, "stock", e.target.value) // Fixed typo here if any, standard handler:
                 }
                 // Jika handler lama menggunakan string langsung:
                 // onChange={(e) => handleVariantChange(index, "stock", e.target.value)}
