@@ -68,11 +68,15 @@ export default function LoginForm() {
 
           console.log("Google Auth (Redirect) sukses!");
           // Langsung dorong ke Dashboard
-          router.push(callbackUrl);
+          // router.push(callbackUrl);
 
+          // GANTI BARIS INI:
+          // router.push(callbackUrl);
+          router.replace(callbackUrl);
+
+          return;
           // PENTING: Kita tidak mengubah isCheckingRedirect menjadi false di sini.
           // Tujuannya agar form login tidak sempat muncul/berkedip saat router.push sedang berjalan.
-          return;
         }
       } catch (err) {
         console.error("Google Redirect Error:", err);
