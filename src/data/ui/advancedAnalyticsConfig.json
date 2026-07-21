@@ -1,8 +1,8 @@
 {
   "sections": {
+    "growthRate": "MONTHLY GROWTH (MoM)",
     "topVariants": "TOP-SELLING VARIANTS & SIZES",
     "orderStatus": "ORDER STATUS BREAKDOWN",
-    "growthRate": "MONTHLY GROWTH (MoM)",
     "inventoryMovement": "INVENTORY TURNOVER ANALYSIS"
   },
   "headers": {
@@ -14,10 +14,9 @@
     "action": "Rekomendasi"
   },
   "statusLabels": {
-    "completed": "Selesai",
-    "processing": "Diproses",
-    "shipped": "Dikirim",
-    "cancelled": "Dibatalkan"
+    "paid": "Selesai / Dibayar",
+    "pending": "Menunggu",
+    "failed": "Gagal"
   },
   "loadingText": "Memuat analitik lanjutan..."
 }

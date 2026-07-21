@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "../../../lib/firebaseClient";
 import styles from "./AdminDashboard.module.css";
 
 // Import UI Config JSON
 import adminConfig from "@/data/ui/adminConfig.json";
 
-// Import Komponen Dashboard
+// Import Komponen Dashboard (Pastikan path folder Analytics sudah benar di src/components/)
 import AnalyticsChart from "@/components/Dashboard/Analytics/AnalyticsChart";
 import AdvancedAnalytics from "@/components/Dashboard/Analytics/AdvancedAnalytics";
 import TransactionTable from "@/components/Dashboard/Overview/TransactionTable";
@@ -22,44 +23,24 @@ export default function AdminDashboard() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Cek sesi aktif dari Supabase saat pertama kali dimuat
-    const checkUserSession = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (!session || error) {
-        window.location.href = "/login";
-        return;
-      }
-
-      setUser(session.user);
-      setLoading(false);
-    };
-
-    checkUserSession();
-
-    // Pantau perubahan status auth secara real-time via Supabase
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
+    // Kembali menggunakan Firebase Auth untuk mengecek sesi login
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (!currentUser) {
         window.location.href = "/login";
       } else {
-        setUser(session.user);
+        setUser(currentUser);
+        setLoading(false);
       }
     });
-
-    return () => subscription?.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut(auth);
       window.location.href = "/login";
     } catch (error) {
-      console.error("Gagal logout dari Supabase:", error);
+      console.error("Gagal logout:", error);
     }
   };
 
@@ -135,7 +116,7 @@ export default function AdminDashboard() {
           <div className={styles.headerInfo}>
             <h1 className={styles.welcomeTitle}>
               SYSTEM ACCESS:{" "}
-              {user?.email?.split("@")[0].toUpperCase() || "ADMIN"}
+              {user?.displayName || user?.email?.split("@")[0].toUpperCase()}
             </h1>
           </div>
         </header>

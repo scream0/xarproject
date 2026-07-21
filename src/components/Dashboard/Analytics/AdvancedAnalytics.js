@@ -37,12 +37,10 @@ export default function AdvancedAnalytics() {
 
   const fetchAdvancedData = async () => {
     try {
-      // 1. Ambil data transaksi
-      const { data: transactions, error: txError } = await supabase
-        .from("transactions")
+      const { data: orders, error: txError } = await supabase
+        .from("orders")
         .select("*");
 
-      // 2. Ambil data produk untuk analisis stok
       const { data: products, error: prodError } = await supabase
         .from("products")
         .select("*");
@@ -50,24 +48,23 @@ export default function AdvancedAnalytics() {
       if (txError) throw txError;
       if (prodError) throw prodError;
 
-      if (transactions) {
-        processMoMGrowth(transactions);
-        processOrderStatus(transactions);
-        processTopVariants(transactions);
+      if (orders) {
+        processMoMGrowth(orders);
+        processOrderStatus(orders);
+        processTopVariants(orders);
       }
 
       if (products) {
-        processInventoryTurnover(products, transactions || []);
+        processInventoryTurnover(products);
       }
     } catch (error) {
-      console.error("Gagal mengambil analitik lanjutan:", error);
+      console.error("Gagal mengambil analitik lanjutan dari Supabase:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Hitung pertumbuhan Month-over-Month (MoM)
-  const processMoMGrowth = (transactions) => {
+  const processMoMGrowth = (orders) => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -75,11 +72,11 @@ export default function AdvancedAnalytics() {
     let currentRev = 0;
     let lastRev = 0;
 
-    transactions.forEach((tx) => {
-      const dateField = tx.created_at || tx.date;
+    orders.forEach((order) => {
+      const dateField = order.created_at;
       if (dateField) {
         const d = new Date(dateField);
-        const amount = Number(tx.total_price || tx.amount || 0);
+        const amount = Number(order.total || order.gross_amount || 0);
 
         if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
           currentRev += amount;
@@ -107,16 +104,15 @@ export default function AdvancedAnalytics() {
     });
   };
 
-  // Proses status pesanan untuk Donut/Pie Chart
-  const processOrderStatus = (transactions) => {
-    const statusMap = { completed: 0, processing: 0, shipped: 0, cancelled: 0 };
+  const processOrderStatus = (orders) => {
+    const statusMap = { paid: 0, pending: 0, failed: 0 };
 
-    transactions.forEach((tx) => {
-      const status = (tx.status || "completed").toLowerCase();
+    orders.forEach((order) => {
+      const status = (order.status || "pending").toLowerCase();
       if (statusMap[status] !== undefined) {
         statusMap[status] += 1;
       } else {
-        statusMap.completed += 1; // Default fallback
+        statusMap.pending += 1;
       }
     });
 
@@ -130,23 +126,22 @@ export default function AdvancedAnalytics() {
     setStatusData(formatted);
   };
 
-  // Proses varian terlaris untuk Bar Chart
-  const processTopVariants = (transactions) => {
+  const processTopVariants = (orders) => {
     const variantMap = {};
 
-    transactions.forEach((tx) => {
-      // Asumsi transaksi menyimpan detail item atau varian
-      const items = tx.items || tx.products || [];
-      items.forEach((item) => {
-        const name = `${item.name || "Product"} (${item.size || "Standard"})`;
-        const qty = Number(item.quantity || item.qty || 1);
+    orders.forEach((order) => {
+      const items = order.items || [];
+      if (Array.isArray(items)) {
+        items.forEach((item) => {
+          const name = `${item.name || "Product"} (${item.size || item.variant || "Standard"})`;
+          const qty = Number(item.quantity || item.qty || 1);
 
-        if (!variantMap[name]) variantMap[name] = 0;
-        variantMap[name] += qty;
-      });
+          if (!variantMap[name]) variantMap[name] = 0;
+          variantMap[name] += qty;
+        });
+      }
     });
 
-    // Jika data item transaksi belum ada strukturnya, buat contoh dummy representatif
     const formatted =
       Object.keys(variantMap).length > 0
         ? Object.keys(variantMap).map((k) => ({ name: k, sold: variantMap[k] }))
@@ -159,15 +154,13 @@ export default function AdvancedAnalytics() {
     setVariantData(formatted.sort((a, b) => b.sold - a.sold).slice(0, 5));
   };
 
-  // Analisis perputaran stok (Fast-moving vs Dead stock)
-  const processInventoryTurnover = (products, transactions) => {
+  const processInventoryTurnover = (products) => {
     const report = [];
 
     products.forEach((prod) => {
       if (prod.variants && Array.isArray(prod.variants)) {
         prod.variants.forEach((v) => {
           const totalStock = Number(v.stock || 0);
-          // Logika sederhana: Stok sedikit dan sering dibeli = Fast-moving, Stok banyak jarang bergerak = Slow/Dead stock
           const isFast = totalStock <= 10;
           report.push({
             name: `${prod.name} - ${v.size}`,
@@ -186,7 +179,6 @@ export default function AdvancedAnalytics() {
 
   return (
     <div className={styles.advancedContainer}>
-      {/* 1. Kartu Indikator Pertumbuhan (MoM Growth) */}
       <div className={styles.metricsGrid}>
         <div className={styles.metricCard}>
           <span className={styles.metricLabel}>
@@ -220,7 +212,6 @@ export default function AdvancedAnalytics() {
         </div>
       </div>
 
-      {/* 2. Grid Grafik (Bar Chart Varian & Pie Chart Status Pesanan) */}
       <div className={styles.chartsGrid}>
         <div className={styles.chartCard}>
           <h4 className={styles.cardTitle}>{config.sections.topVariants}</h4>
@@ -292,7 +283,6 @@ export default function AdvancedAnalytics() {
         </div>
       </div>
 
-      {/* 3. Tabel Perputaran Stok / Inventory Turnover */}
       <div className={styles.tableCard}>
         <h4 className={styles.cardTitle}>
           {config.sections.inventoryMovement}
