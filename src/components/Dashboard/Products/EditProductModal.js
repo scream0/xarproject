@@ -26,6 +26,13 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
   );
 
   const [file, setFile] = useState(null);
+
+  // State khusus untuk mengatur URL pratinjau gambar utama secara reaktif
+  const [previewUrl, setPreviewUrl] = useState(
+    product.image_url || product.imageUrl || "",
+  );
+
+  const [imageRemoved, setImageRemoved] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // --- CONFIG CLOUDINARY ---
@@ -51,6 +58,29 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
     setVariants(newVariants);
   };
 
+  // Handler saat memilih file gambar utama dari PC
+  const handleMainFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setPreviewUrl(URL.createObjectURL(selectedFile)); // Ubah preview langsung ke file lokal PC
+      setImageRemoved(false);
+    }
+  };
+
+  // Handler menghapus gambar utama
+  const removeMainImage = () => {
+    setFile(null);
+    setPreviewUrl("");
+    setImageRemoved(true);
+  };
+
+  // Handler membatalkan penghapusan
+  const cancelRemoveMainImage = () => {
+    setImageRemoved(false);
+    setPreviewUrl(product.image_url || product.imageUrl || "");
+  };
+
   const addVariantField = () => {
     setVariants([
       ...variants,
@@ -63,10 +93,11 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
     const toastId = toast.loading(editConfig.buttons.saving);
     setUploading(true);
 
-    let imageUrl = product.imageUrl || product.image_url || "";
+    let imageUrl = imageRemoved
+      ? ""
+      : product.imageUrl || product.image_url || "";
 
     try {
-      // Jika file utama baru dipilih, replace gambar utama
       if (file) {
         const data = new FormData();
         data.append("file", file);
@@ -84,7 +115,6 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
         }
       }
 
-      // Proses replace gambar varian satu per satu jika ada file baru
       const processedVariants = await Promise.all(
         variants.map(async (v) => {
           let currentVariantImageUrl = v.imageUrl;
@@ -141,43 +171,44 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
       <form onSubmit={handleUpdate} className={styles.modal}>
         <h3 className={styles.modalTitle}>{editConfig.title}</h3>
 
-        {/* Bagian Gambar Utama & Fitur Replace */}
         <div className={styles.imageSection}>
           <span className={styles.sectionLabel}>
             {editConfig.labels.currentImage}
           </span>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "15px",
-              marginBottom: "10px",
-            }}
-          >
-            <img
-              src={
-                file
-                  ? URL.createObjectURL(file)
-                  : product.imageUrl || product.image_url
-              }
-              alt="preview"
-              className={styles.previewImage}
-            />
-            {file && (
+          <div className={styles.imagePreviewRow}>
+            {previewUrl && !imageRemoved ? (
+              <img
+                src={previewUrl}
+                alt="preview"
+                className={styles.previewImage}
+                onError={(e) => {
+                  e.target.src = "/assets/placeholder.jpg";
+                }}
+              />
+            ) : (
+              <div className={styles.noImageBox}>
+                {editConfig.labels.noImage}
+              </div>
+            )}
+
+            {(file ||
+              (!imageRemoved && (product.image_url || product.imageUrl))) && (
               <button
                 type="button"
-                onClick={() => setFile(null)}
-                style={{
-                  background: "#333",
-                  color: "#ff5555",
-                  border: "none",
-                  padding: "5px 10px",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "0.75rem",
-                }}
+                onClick={removeMainImage}
+                className={styles.cancelImageBtn}
               >
-                Batalkan Ganti Gambar
+                {editConfig.buttons.removeMainImage}
+              </button>
+            )}
+
+            {imageRemoved && !file && (
+              <button
+                type="button"
+                onClick={cancelRemoveMainImage}
+                className={styles.cancelImageBtn}
+              >
+                {editConfig.buttons.cancelRemoveMain}
               </button>
             )}
           </div>
@@ -186,12 +217,20 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
         <span className={styles.sectionLabel}>
           {editConfig.labels.changeImage}
         </span>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFile(e.target.files[0])}
-          className={styles.fileInput}
-        />
+        <div className={styles.customFileWrapper}>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleMainFileChange}
+            className={styles.fileInputHidden}
+          />
+          <div className={styles.fileUploadCustomBtn}>
+            <span>{editConfig.buttons.chooseFileMain}</span>
+            <span className={styles.fileChosenText}>
+              {file ? file.name : editConfig.buttons.noFile}
+            </span>
+          </div>
+        </div>
 
         <input
           placeholder={editConfig.labels.productName}
@@ -201,7 +240,6 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
           required
         />
 
-        {/* Bagian Varian dengan Fitur Replace Gambar Per Varian */}
         <div className={styles.variantsContainer}>
           <span className={styles.sectionLabel}>
             {editConfig.labels.variants}
@@ -235,17 +273,9 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
                 className={styles.variantInput}
                 required
               />
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-              >
+              <div className={styles.variantFileWrapper}>
                 {(v.imageUrl || v.imageFile) && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                    }}
-                  >
+                  <div className={styles.variantFileInner}>
                     <img
                       src={
                         v.imageFile
@@ -258,28 +288,32 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
                     <button
                       type="button"
                       onClick={() => removeVariantImage(i)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#ff5555",
-                        cursor: "pointer",
-                        fontSize: "0.7rem",
-                      }}
+                      className={styles.removeVariantImgBtn}
                       title="Hapus gambar varian"
                     >
-                      ✕ Hapus
+                      {editConfig.buttons.removeVariantImage}
                     </button>
                   </div>
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    handleVariantFileChange(i, e.target.files[0])
-                  }
-                  className={styles.variantFileInput}
-                  title="Replace gambar varian"
-                />
+                <div className={styles.variantCustomFileWrapper}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      handleVariantFileChange(i, e.target.files[0])
+                    }
+                    className={styles.variantFileInputHidden}
+                    title="Replace gambar varian"
+                  />
+                  <div className={styles.variantFileCustomBtn}>
+                    <span>{editConfig.buttons.chooseFileVariant}</span>
+                    <span className={styles.variantFileChosen}>
+                      {v.imageFile
+                        ? v.imageFile.name
+                        : editConfig.buttons.chooseShort}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           ))}

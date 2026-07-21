@@ -1,0 +1,147 @@
+.advancedContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* Kartu Indikator Pertumbuhan */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.metricCard {
+  background: rgba(18, 18, 18, 0.4);
+  border: 1px solid #222;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.metricLabel {
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.metricValue {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.metricTrend {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.trendPositive {
+  color: #10b981;
+}
+
+.trendNegative {
+  color: #ef4444;
+}
+
+/* Grid Grafik Ganda (Bar & Pie Chart) */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chartCard {
+  background: rgba(18, 18, 18, 0.4);
+  border: 1px solid #222;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: #f5f5f5;
+  text-transform: uppercase;
+}
+
+.chartBox {
+  width: 100%;
+  height: 240px;
+}
+
+/* Tabel Perputaran Stok */
+.tableCard {
+  background: rgba(18, 18, 18, 0.4);
+  border: 1px solid #222;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.inventoryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.inventoryTable th {
+  background: #141414;
+  color: #888;
+  padding: 10px 12px;
+  border-bottom: 1px solid #262626;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+}
+
+.inventoryTable td {
+  padding: 12px;
+  border-bottom: 1px solid #1a1a1a;
+  color: #e5e5e5;
+}
+
+.badgeFast {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.badgeSlow {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}

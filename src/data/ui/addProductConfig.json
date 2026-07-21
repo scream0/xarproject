@@ -17,8 +17,12 @@
   "categories": ["Parfum", "Kopi"],
   "buttons": {
     "addSize": "+ ADD SIZE VARIANT",
-    "uploading": "UPLOADING ASSETS TO VAULT...",
-    "submit": "ADD TO ARCHIVE"
+    "uploading": "UPLOADING TO VAULT...",
+    "submit": "ADD TO ARCHIVE",
+    "removeImage": "✕",
+    "chooseFileMain": "📁 Pilih Gambar Utama",
+    "chooseFileVariant": "📁 Pilih Gambar Varian",
+    "noFile": "Belum ada file dipilih"
   },
   "toast": {
     "selectImage": "Silakan unggah visual utama produk terlebih dahulu.",

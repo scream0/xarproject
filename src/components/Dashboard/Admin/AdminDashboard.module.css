@@ -1,14 +1,13 @@
 /* Container Utama */
 .dashboardContainer {
   display: flex;
-  min-height: 100vh;
+  height: 100vh; /* Ganti min-height menjadi height penuh */
   background-color: #0b0b0b;
   color: #fff;
   font-family: inherit;
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden; /* Mencegah body ikut scroll ganda */
 }
-
 /* Sidebar Desktop */
 .sidebar {
   width: 260px;
@@ -146,13 +145,13 @@
   background: #2a1a1a;
 }
 
-/* Main Content Area - Diperbaiki agar tidak nge-lock scroll */
+/* Main Content Area */
 .mainContent {
   flex: 1;
   margin-left: 260px; /* Lebar sidebar desktop */
   padding: 30px;
-  width: calc(100% - 260px);
-  min-height: 100vh;
+  height: 100vh; /* Mengisi penuh tinggi layar */
+  overflow-y: auto; /* KUNCI UTAMA: Mengizinkan mouse scroll ke bawah */
   box-sizing: border-box;
 }
 
@@ -285,11 +284,14 @@
     backdrop-filter: blur(3px);
     z-index: 100;
   }
-
   .mainContent {
     margin-left: 0;
     width: 100%;
+    height: calc(
+      100vh - 60px
+    ); /* Tinggi layar dikurangi tinggi topbar mobile */
+    overflow-y: auto; /* KUNCI UTAMA untuk mobile */
     padding: 20px 15px;
-    margin-top: 60px; /* Dorong ke bawah karena ada header mobile */
+    margin-top: 60px;
   }
 }

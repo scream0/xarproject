@@ -1,42 +1,65 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "../../../lib/firebaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import styles from "./AdminDashboard.module.css";
 
 // Import UI Config JSON
 import adminConfig from "@/data/ui/adminConfig.json";
 
 // Import Komponen Dashboard
-import AnalyticsChart from "@/app/api/analytics/AnalyticsChart";
-import TransactionTable from "@/components/Dashboard/Admin/TransactionTable";
-import ProductManager from "@/components/Dashboard/Admin/ProductManager";
+import AnalyticsChart from "@/components/Dashboard/Analytics/AnalyticsChart";
+import AdvancedAnalytics from "@/components/Dashboard/Analytics/AdvancedAnalytics";
+import TransactionTable from "@/components/Dashboard/Overview/TransactionTable";
+import OverviewStats from "@/components/Dashboard/Overview/OverviewStats";
+import ProductManager from "@/components/Dashboard/Products/ProductManager";
+import SettingsView from "@/components/Dashboard/Settings/SettingsView";
 
-export default function DashboardPage() {
+export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
+    // Cek sesi aktif dari Supabase saat pertama kali dimuat
+    const checkUserSession = async () => {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (!session || error) {
+        window.location.href = "/login";
+        return;
+      }
+
+      setUser(session.user);
+      setLoading(false);
+    };
+
+    checkUserSession();
+
+    // Pantau perubahan status auth secara real-time via Supabase
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
         window.location.href = "/login";
       } else {
-        setUser(currentUser);
-        setLoading(false);
+        setUser(session.user);
       }
     });
-    return () => unsubscribe();
+
+    return () => subscription?.unsubscribe();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       window.location.href = "/login";
     } catch (error) {
-      console.error("Gagal logout:", error);
+      console.error("Gagal logout dari Supabase:", error);
     }
   };
 
@@ -86,7 +109,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => {
                     setActiveTab(item.id);
-                    setIsMobileMenuOpen(false); // Tutup menu otomatis di mobile saat diklik
+                    setIsMobileMenuOpen(false);
                   }}
                   className={`${styles.navItem} ${
                     activeTab === item.id ? styles.navItemActive : ""
@@ -112,7 +135,7 @@ export default function DashboardPage() {
           <div className={styles.headerInfo}>
             <h1 className={styles.welcomeTitle}>
               SYSTEM ACCESS:{" "}
-              {user?.displayName || user?.email?.split("@")[0].toUpperCase()}
+              {user?.email?.split("@")[0].toUpperCase() || "ADMIN"}
             </h1>
           </div>
         </header>
@@ -121,13 +144,9 @@ export default function DashboardPage() {
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <>
-              <section className={styles.statsGrid}>
-                {adminConfig.stats.map((stat, idx) => (
-                  <div key={idx} className={styles.card}>
-                    {stat}
-                  </div>
-                ))}
-              </section>
+              {/* Kartu Statistik Dinamis dari Supabase */}
+              <OverviewStats />
+
               <section className={styles.workspaceArea}>
                 <AnalyticsChart />
                 <div className={styles.tableContainer}>
@@ -154,6 +173,7 @@ export default function DashboardPage() {
                   {adminConfig.placeholders.analytics}
                 </p>
                 <AnalyticsChart />
+                <AdvancedAnalytics />
               </div>
             </section>
           )}
@@ -162,9 +182,7 @@ export default function DashboardPage() {
           {activeTab === "settings" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>
-                <p className={styles.placeholderText}>
-                  {adminConfig.placeholders.settings}
-                </p>
+                <SettingsView />
               </div>
             </section>
           )}

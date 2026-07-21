@@ -14,11 +14,11 @@ export default function AddProductForm({ onProductAdded }) {
     description: "",
   });
 
-  // Varian sekarang menyertakan imageFile untuk menampung file gambar per ukuran
   const [variants, setVariants] = useState([
     { size: "10ml", price: "", stock: 0, imageFile: null },
   ]);
   const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [uploading, setUploading] = useState(false);
 
   const CLOUD_NAME = "qs59fb4k";
@@ -41,6 +41,25 @@ export default function AddProductForm({ onProductAdded }) {
     const newVariants = [...variants];
     newVariants[index].imageFile = fileObj;
     setVariants(newVariants);
+  };
+
+  const removeVariantFile = (index) => {
+    const newVariants = [...variants];
+    newVariants[index].imageFile = null;
+    setVariants(newVariants);
+  };
+
+  const handleMainFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setPreviewUrl(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  const removeMainFile = () => {
+    setFile(null);
+    setPreviewUrl("");
   };
 
   const handleSubmit = async (e) => {
@@ -69,7 +88,7 @@ export default function AddProductForm({ onProductAdded }) {
 
       if (!imageUrl) throw new Error("Cloudinary main upload failed");
 
-      // 2. Upload Gambar Varian (Jika ada yang diunggah di setiap baris varian)
+      // 2. Upload Gambar Varian (Jika ada)
       const processedVariants = await Promise.all(
         variants.map(async (v) => {
           let variantImageUrl = "";
@@ -91,7 +110,7 @@ export default function AddProductForm({ onProductAdded }) {
             size: v.size,
             price: Number(v.price),
             stock: Number(v.stock),
-            imageUrl: variantImageUrl, // Disimpan langsung di dalam JSON varian
+            imageUrl: variantImageUrl,
           };
         }),
       );
@@ -116,6 +135,7 @@ export default function AddProductForm({ onProductAdded }) {
       setFormData({ name: "", category: "Parfum", description: "" });
       setVariants([{ size: "10ml", price: "", stock: 0, imageFile: null }]);
       setFile(null);
+      setPreviewUrl("");
       onProductAdded?.();
     } catch (e) {
       console.error("Error adding product to Supabase: ", e);
@@ -130,14 +150,44 @@ export default function AddProductForm({ onProductAdded }) {
       <h3 className={styles.formTitle}>{addConfig.title}</h3>
 
       <div className={styles.gridGroup}>
+        {/* Input Gambar Utama */}
         <div className={styles.inputGroup}>
-          <label className={styles.fieldLabel}>{addConfig.labels.image}</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files[0])}
-            className={styles.fileInput}
-          />
+          <label className={`${styles.fieldLabel} ${styles.mainFileLabel}`}>
+            {addConfig.labels.image}
+          </label>
+          <div className={styles.imageUploadWrapper}>
+            {previewUrl && (
+              <div className={styles.previewContainer}>
+                <img
+                  src={previewUrl}
+                  alt="Main preview"
+                  className={styles.mainPreviewImg}
+                />
+                <button
+                  type="button"
+                  onClick={removeMainFile}
+                  className={styles.removeImgBtn}
+                >
+                  {addConfig.buttons.removeImage}
+                </button>
+              </div>
+            )}
+
+            <div className={styles.customFileWrapper}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleMainFileChange}
+                className={styles.fileInputHidden}
+              />
+              <div className={styles.fileUploadCustomBtn}>
+                <span>{addConfig.buttons.chooseFileMain}</span>
+                <span className={styles.fileChosenText}>
+                  {file ? file.name : addConfig.buttons.noFile}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className={styles.inputGroup}>
@@ -170,7 +220,7 @@ export default function AddProductForm({ onProductAdded }) {
           </select>
         </div>
 
-        {/* Varian Section dengan Gambar Per Varian */}
+        {/* Varian Section dengan Thumbnail Preview */}
         <div className={styles.variantsBox}>
           <label className={styles.fieldLabel}>
             {addConfig.labels.variants}
@@ -206,15 +256,45 @@ export default function AddProductForm({ onProductAdded }) {
                 className={styles.variantInput}
                 required
               />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  handleVariantFileChange(index, e.target.files[0])
-                }
-                className={styles.variantFileInput}
-                title="Visual khusus varian ini"
-              />
+              <div className={styles.variantFileControl}>
+                {/* Thumbnail Preview Gambar Varian */}
+                {v.imageFile && (
+                  <>
+                    <img
+                      src={URL.createObjectURL(v.imageFile)}
+                      alt="Variant preview"
+                      className={styles.variantThumb}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeVariantFile(index)}
+                      className={styles.variantRemoveBtn}
+                      title="Hapus gambar varian"
+                    >
+                      {addConfig.buttons.removeImage}
+                    </button>
+                  </>
+                )}
+                <div className={styles.variantCustomFileWrapper}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      handleVariantFileChange(index, e.target.files[0])
+                    }
+                    className={styles.variantFileInputHidden}
+                    title="Visual khusus varian ini"
+                  />
+                  <div className={styles.variantFileCustomBtn}>
+                    <span>{addConfig.buttons.chooseFileVariant}</span>
+                    <span className={styles.variantFileChosen}>
+                      {v.imageFile
+                        ? v.imageFile.name
+                        : addConfig.buttons.chooseShort}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
           <button

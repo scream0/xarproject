@@ -5,13 +5,22 @@
     "changeImage": "UPDATE MAIN VISUAL (OPTIONAL)",
     "productName": "PRODUCT NAME",
     "variants": "VARIANTS CONFIGURATION (SIZE | PRICE | STOCK | VISUAL)",
-    "description": "CURATION DESCRIPTION"
+    "description": "CURATION DESCRIPTION",
+    "noImage": "No Image"
   },
   "buttons": {
+    "cancelImage": "Batalkan Ganti Gambar",
+    "removeMainImage": "✕ Hapus Gambar Utama",
+    "cancelRemoveMain": "Batalkan Hapus",
+    "removeVariantImage": "✕",
     "addSize": "+ ADD SIZE VARIANT",
     "saving": "SYNCHRONIZING...",
     "save": "SAVE CHANGES",
-    "cancel": "ABORT"
+    "cancel": "ABORT",
+    "chooseFileMain": "📁 Ganti Gambar Utama",
+    "noFile": "Belum ada file dipilih",
+    "chooseFileVariant": "📷 Ganti Gambar Varian",
+    "chooseShort": "Pilih"
   },
   "alerts": {
     "success": "Produk berhasil diperbarui di Supabase!",

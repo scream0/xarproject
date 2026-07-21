@@ -1,0 +1,9 @@
+{
+  "title": "OVERVIEW ANALYTICS",
+  "cards": {
+    "revenue": "Total Pendapatan",
+    "orders": "Total Transaksi",
+    "products": "Produk Aktif",
+    "lowStock": "Stok Menipis"
+  }
+}

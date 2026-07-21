@@ -1,0 +1,21 @@
+{
+  "title": "SYSTEM & STORE SETTINGS",
+  "labels": {
+    "storeName": "BRAND / STORE NAME",
+    "storeEmail": "ADMIN NOTIFICATION EMAIL",
+    "currency": "DEFAULT CURRENCY",
+    "lowStockThreshold": "LOW STOCK ALERT THRESHOLD"
+  },
+  "placeholders": {
+    "storeName": "e.g. AWRG Archive / Flowrawr",
+    "storeEmail": "admin@xarproject.com"
+  },
+  "buttons": {
+    "save": "SAVE CONFIGURATION",
+    "saving": "SAVING..."
+  },
+  "toast": {
+    "success": "Pengaturan berhasil diperbarui!",
+    "error": "Gagal menyimpan pengaturan."
+  }
+}
