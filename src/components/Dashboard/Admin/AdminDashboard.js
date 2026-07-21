@@ -8,7 +8,7 @@ import styles from "./AdminDashboard.module.css";
 // Import Komponen Dashboard
 import AnalyticsChart from "@/app/api/analytics/AnalyticsChart";
 import TransactionTable from "@/components/Dashboard/Admin/TransactionTable";
-import ProductManager from "@/components/Dashboard/Admin/ProductManager"; // Pastikan path ini benar
+import ProductManager from "@/components/Dashboard/Admin/ProductManager";
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
@@ -57,7 +57,6 @@ export default function DashboardPage() {
 
         <nav className={styles.navContainer}>
           <ul className={styles.navigationList}>
-            {/* Nav Item: Overview */}
             <li>
               <button
                 onClick={() => setActiveTab("overview")}
@@ -66,7 +65,6 @@ export default function DashboardPage() {
                 <span>Overview</span>
               </button>
             </li>
-            {/* Nav Item: Inventory (Produk) */}
             <li>
               <button
                 onClick={() => setActiveTab("products")}
@@ -75,7 +73,6 @@ export default function DashboardPage() {
                 <span>Inventory</span>
               </button>
             </li>
-            {/* Nav Item: Analytics */}
             <li>
               <button
                 onClick={() => setActiveTab("analytics")}
@@ -84,7 +81,6 @@ export default function DashboardPage() {
                 <span>Analytics</span>
               </button>
             </li>
-            {/* Nav Item: Settings */}
             <li>
               <button
                 onClick={() => setActiveTab("settings")}
@@ -113,9 +109,7 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Dashboard Dynamic View Matrix */}
         <div className={styles.viewWrapper}>
-          {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <>
               <section className={styles.statsGrid}>
@@ -132,16 +126,14 @@ export default function DashboardPage() {
             </>
           )}
 
-          {/* TAB 2: INVENTORY (Produk & Update) */}
           {activeTab === "products" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>
-                <ProductManager /> {/* Komponen yang tadi kita buat */}
+                <ProductManager />
               </div>
             </section>
           )}
 
-          {/* TAB 3: ANALYTICS */}
           {activeTab === "analytics" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>
@@ -153,7 +145,6 @@ export default function DashboardPage() {
             </section>
           )}
 
-          {/* TAB 4: SETTINGS */}
           {activeTab === "settings" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>
