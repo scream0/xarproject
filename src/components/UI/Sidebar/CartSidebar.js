@@ -51,7 +51,7 @@ export function CartSidebar() {
       {cart.items.length > 0 ? (
         <div className={styles.cartItemsWrapper}>
           {cart.items.map((item) => {
-            // Logika Stok Per Varian
+            // Logika Stok & Varian
             const originalProduct = productList.find((p) => p.id === item.id);
             const variantInfo = originalProduct?.variants?.find(
               (v) => v.size === item.size,
@@ -59,14 +59,19 @@ export function CartSidebar() {
             const maxStock = variantInfo?.stock ?? 0;
             const isMaxReached = item.quantity >= maxStock;
 
+            // LOGIKA GAMBAR DINAMIS PER VARIAN:
+            // Prioritaskan gambar khusus varian jika ada.
+            // Jika tidak ada, gunakan gambar utama item/produk.
+            const itemImageSrc =
+              variantInfo?.imageUrl ||
+              item.imageUrl ||
+              (item.image ? `${item.image}` : "/assets/placeholder.jpg");
+
             return (
               <div className={styles.cartItem} key={item.cartId}>
                 <div className={styles.cartItemImg}>
                   <img
-                    src={
-                      item.imageUrl ||
-                      (item.image ? `${item.image}` : "/assets/placeholder.jpg")
-                    }
+                    src={itemImageSrc}
                     alt={item.name}
                     onError={(e) => {
                       e.target.src = "/assets/placeholder.jpg";

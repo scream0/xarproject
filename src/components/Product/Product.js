@@ -133,8 +133,13 @@ function ProductCard({ item, onDetail, onAdd, rupiah }) {
 
   const price = availableVariants[0]?.price ?? item.price ?? 0;
 
+  // LOGIKA GAMBAR KARTU PRODUK:
+  // Prioritaskan gambar dari varian yang tersedia pertama,
+  // jika tidak ada, gunakan gambar utama produk (imageUrl / image_url).
   const imageSrc =
+    availableVariants[0]?.imageUrl ||
     item.imageUrl ||
+    item.image_url ||
     (item.image ? `/assets/produk/${item.image}` : "/assets/placeholder.jpg");
 
   return (

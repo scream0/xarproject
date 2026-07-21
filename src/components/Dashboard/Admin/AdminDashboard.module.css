@@ -5,6 +5,8 @@
   background-color: #0b0b0b;
   color: #fff;
   font-family: inherit;
+  position: relative;
+  overflow-x: hidden;
 }
 
 /* Sidebar Desktop */
@@ -21,7 +23,13 @@
   bottom: 0;
   left: 0;
   z-index: 100;
+  overflow-y: auto; /* Agar menu panel bisa di-scroll jika itemnya banyak */
   transition: transform 0.3s ease;
+}
+
+/* Backdrop untuk Mobile saat Sidebar Buka */
+.mobileOverlay {
+  display: none;
 }
 
 /* Mobile Top Bar & Hamburger */
@@ -78,6 +86,8 @@
 /* Navigasi */
 .navContainer {
   flex: 1;
+  overflow-y: auto;
+  margin: 15px 0;
 }
 
 .navigationList {
@@ -136,12 +146,14 @@
   background: #2a1a1a;
 }
 
-/* Main Content Area */
+/* Main Content Area - Diperbaiki agar tidak nge-lock scroll */
 .mainContent {
   flex: 1;
   margin-left: 260px; /* Lebar sidebar desktop */
   padding: 30px;
-  max-width: calc(100% - 260px);
+  width: calc(100% - 260px);
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .header {
@@ -254,15 +266,29 @@
     top: 60px; /* Beri ruang untuk mobile top bar */
     width: 280px;
     box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+    z-index: 101;
   }
 
   .sidebarOpen {
     transform: translateX(0);
   }
 
+  /* Backdrop Overlay saat menu mobile terbuka */
+  .mobileOverlayOpen {
+    display: block;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    z-index: 100;
+  }
+
   .mainContent {
     margin-left: 0;
-    max-width: 100%;
+    width: 100%;
     padding: 20px 15px;
     margin-top: 60px; /* Dorong ke bawah karena ada header mobile */
   }

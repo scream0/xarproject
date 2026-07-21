@@ -57,6 +57,12 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
     }
   };
 
+  // LOGIKA GAMBAR DINAMIS:
+  // Jika varian yang dipilih memiliki imageUrl sendiri, gunakan itu.
+  // Jika tidak, fallback ke gambar utama produk (imageUrl / image_url).
+  const displayedImage =
+    selectedVariant?.imageUrl || item?.imageUrl || item?.image_url;
+
   return (
     <div
       className={`${styles.modalOverlay} ${isOpen && !isClosing ? styles.modalActive : ""} ${isClosing ? styles.modalClosing : ""}`}
@@ -81,7 +87,7 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
         <div className={styles.modalGrid}>
           <div className={styles.modalImageBox}>
             <img
-              src={item.imageUrl}
+              src={displayedImage}
               alt={item.name}
               className={styles.modalMainImg}
             />
