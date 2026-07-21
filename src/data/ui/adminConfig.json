@@ -1,0 +1,20 @@
+{
+  "brand": {
+    "name": "XAR",
+    "suffix": ".HQ",
+    "badge": "OWNER PANEL"
+  },
+  "nav": [
+    { "id": "overview", "label": "Overview" },
+    { "id": "products", "label": "Inventory" },
+    { "id": "analytics", "label": "Analytics" },
+    { "id": "settings", "label": "Settings" }
+  ],
+  "stats": ["BRAND MATRICES", "SECURITY NODE", "CORE VAULT"],
+  "placeholders": {
+    "analytics": "[ ANALYTICS CORE DATASTREAM ]",
+    "settings": "[ SYSTEM CONFIGURATION ]"
+  },
+  "loading": "LOADING EXECUTIVE SYSTEM...",
+  "logoutText": "Sign Out Control"
+}

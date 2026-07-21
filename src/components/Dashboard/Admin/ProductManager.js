@@ -1,8 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient"; // Sesuaikan path client Supabase Anda
+import { supabase } from "@/lib/supabaseClient";
 import AddProductForm from "./AddProductForm";
 import EditProductModal from "./EditProductModal";
+import styles from "./ProductManager.module.css";
+
+// Import Konfigurasi JSON
+import pmConfig from "@/data/ui/productManagerConfig.json";
 
 export default function ProductManager() {
   const [products, setProducts] = useState([]);
@@ -13,7 +17,6 @@ export default function ProductManager() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      // Mengambil data dari tabel "products" di Supabase
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -21,8 +24,6 @@ export default function ProductManager() {
 
       if (error) throw error;
 
-      // Supabase biasanya menggunakan snake_case (image_url),
-      // kita petakan ke camelCase (imageUrl) agar kompatibel dengan komponen Anda yang lain
       const formattedData = data.map((item) => ({
         ...item,
         imageUrl: item.image_url || item.imageUrl,
@@ -41,12 +42,10 @@ export default function ProductManager() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (confirm("Hapus produk ini dari Supabase?")) {
+    if (confirm(pmConfig.confirmDelete)) {
       try {
         const { error } = await supabase.from("products").delete().eq("id", id);
-
         if (error) throw error;
-
         fetchProducts();
       } catch (error) {
         console.error("Gagal menghapus produk:", error);
@@ -55,24 +54,101 @@ export default function ProductManager() {
     }
   };
 
-  return (
-    <div style={{ color: "#fff", padding: "20px" }}>
-      <h2>Inventory Management (Supabase)</h2>
-      <input
-        type="text"
-        placeholder="Cari parfum/produk..."
-        onChange={(e) => setSearchTerm(e.target.value)}
-        style={{
-          background: "#222",
-          color: "#fff",
-          padding: "10px",
-          marginBottom: "20px",
-          width: "300px",
-          border: "1px solid #444",
-        }}
-      />
+  const filteredProducts = products.filter((p) =>
+    p.name?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
-      <AddProductForm onProductAdded={fetchProducts} />
+  return (
+    <div className={styles.container}>
+      {/* BAGIAN ATAS: DAFTAR PRODUK (INVENTORY) DENGAN MIN-HEIGHT & SCROLL */}
+      <div className={styles.headerRow}>
+        <h2 className={styles.title}>{pmConfig.title}</h2>
+        <input
+          type="text"
+          placeholder={pmConfig.searchPlaceholder}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={styles.searchInput}
+        />
+      </div>
+
+      <div className={styles.inventorySection}>
+        {loading ? (
+          <div className={styles.loadingState}>{pmConfig.loadingText}</div>
+        ) : filteredProducts.length === 0 ? (
+          <div className={styles.emptyState}>{pmConfig.emptyText}</div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>{pmConfig.tableHeaders.image}</th>
+                <th>{pmConfig.tableHeaders.name}</th>
+                <th>{pmConfig.tableHeaders.variants}</th>
+                <th>{pmConfig.tableHeaders.status}</th>
+                <th>{pmConfig.tableHeaders.actions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.map((item) => {
+                const isReady = item.variants?.some((v) => (v.stock ?? 0) > 0);
+
+                return (
+                  <tr key={item.id}>
+                    <td>
+                      {item.imageUrl && (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          width="45"
+                          height="45"
+                          className={styles.productImage}
+                        />
+                      )}
+                    </td>
+                    <td style={{ fontWeight: 500 }}>{item.name}</td>
+                    <td>
+                      {item.variants?.map((v, i) => (
+                        <div key={i} className={styles.variantItem}>
+                          {v.size} : Rp{" "}
+                          {Number(v.price).toLocaleString("id-ID")}
+                          <span className={styles.stockInfo}>
+                            {" "}
+                            (Stok: {v.stock ?? 0})
+                          </span>
+                        </div>
+                      ))}
+                    </td>
+                    <td>
+                      <span
+                        className={
+                          isReady ? styles.statusReady : styles.statusSoldOut
+                        }
+                      >
+                        {isReady
+                          ? pmConfig.statusReady
+                          : pmConfig.statusSoldOut}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => setEditingProduct(item)}
+                        className={styles.editBtn}
+                      >
+                        {pmConfig.actions.edit}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className={styles.deleteBtn}
+                      >
+                        {pmConfig.actions.delete}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {editingProduct && (
         <EditProductModal
@@ -85,101 +161,10 @@ export default function ProductManager() {
         />
       )}
 
-      {loading ? (
-        <p>Loading Inventory...</p>
-      ) : (
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            marginTop: "20px",
-          }}
-        >
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "1px solid #333" }}>
-              <th style={{ padding: "10px" }}>Gambar</th>
-              <th style={{ padding: "10px" }}>Nama</th>
-              <th style={{ padding: "10px" }}>Varian (Size | Price | Stock)</th>
-              <th style={{ padding: "10px" }}>Status</th>
-              <th style={{ padding: "10px" }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products
-              .filter((p) =>
-                p.name?.toLowerCase().includes(searchTerm.toLowerCase()),
-              )
-              .map((item) => {
-                // LOGIKA: Produk Ready jika minimal 1 varian punya stok > 0
-                const isReady = item.variants?.some((v) => (v.stock ?? 0) > 0);
-
-                return (
-                  <tr key={item.id} style={{ borderBottom: "1px solid #222" }}>
-                    <td style={{ padding: "10px" }}>
-                      {item.imageUrl && (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          width="50"
-                          style={{ borderRadius: "4px" }}
-                        />
-                      )}
-                    </td>
-                    <td style={{ padding: "10px" }}>{item.name}</td>
-                    <td style={{ padding: "10px" }}>
-                      {item.variants?.map((v, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            fontSize: "0.8rem",
-                            marginBottom: "4px",
-                            borderBottom: "1px solid #333",
-                          }}
-                        >
-                          {v.size}: Rp {Number(v.price).toLocaleString()}
-                          <span style={{ color: "#aaa" }}>
-                            {" "}
-                            (Stok: {v.stock ?? 0})
-                          </span>
-                        </div>
-                      ))}
-                    </td>
-                    <td style={{ padding: "10px" }}>
-                      <span style={{ color: isReady ? "#4caf50" : "#f44336" }}>
-                        {isReady ? "Ready" : "Sold Out"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "10px" }}>
-                      <button
-                        onClick={() => setEditingProduct(item)}
-                        style={{
-                          cursor: "pointer",
-                          marginRight: "10px",
-                          color: "#ffa500",
-                          background: "none",
-                          border: "none",
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        style={{
-                          cursor: "pointer",
-                          color: "#ff5555",
-                          background: "none",
-                          border: "none",
-                        }}
-                      >
-                        Hapus
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
-      )}
+      {/* BAGIAN BAWAH: FORM TAMBAH PRODUK */}
+      <div className={styles.formSection}>
+        <AddProductForm onProductAdded={fetchProducts} />
+      </div>
     </div>
   );
 }

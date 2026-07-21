@@ -1,0 +1,180 @@
+.container {
+  color: #fff;
+  padding: 10px 0;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.headerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+@media (min-width: 768px) {
+  .headerRow {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #f5f5f5;
+  margin: 0;
+}
+
+.searchInput {
+  background: #141414;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 6px;
+  width: 100%;
+  max-width: 320px;
+  border: 1px solid #2a2a2a;
+  outline: none;
+  font-size: 0.85rem;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  border-color: #777;
+}
+
+/* Area Daftar Produk di Atas dengan Min-Height & Scroll */
+.inventorySection {
+  background: #0f0f0f;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 20px;
+  min-height: 380px;
+  max-height: 520px;
+  overflow-y: auto;
+  margin-bottom: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.inventorySection::-webkit-scrollbar {
+  width: 5px;
+}
+.inventorySection::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 12px 14px;
+  font-size: 0.75rem;
+  letter-spacing: 1.5px;
+  color: #777;
+  border-bottom: 1px solid #262626;
+  text-transform: uppercase;
+}
+
+.table td {
+  padding: 14px;
+  border-bottom: 1px solid #1a1a1a;
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+.productImage {
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #333;
+}
+
+.variantItem {
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #1f1f1f;
+  padding-bottom: 3px;
+  color: #ddd;
+}
+
+.stockInfo {
+  color: #777;
+  font-size: 0.75rem;
+}
+
+.statusReady {
+  color: #4ade80;
+  font-weight: 500;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.statusSoldOut {
+  color: #f87171;
+  font-weight: 500;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.editBtn,
+.deleteBtn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.editBtn {
+  color: #fbbf24;
+  margin-right: 5px;
+}
+.editBtn:hover {
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.deleteBtn {
+  color: #f87171;
+}
+.deleteBtn:hover {
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.emptyState,
+.loadingState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #777;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+/* Area Form Add Product di Bawah */
+.formSection {
+  background: #0f0f0f;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsif Mobile Table Wrapper */
+@media (max-width: 768px) {
+  .inventorySection {
+    padding: 10px;
+  }
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "title": "INVENTORY MANAGEMENT",
+  "searchPlaceholder": "Cari parfum atau produk eksklusif...",
+  "loadingText": "MEMUAT INVENTARIS...",
+  "emptyText": "Belum ada produk yang terdaftar di arsip.",
+  "tableHeaders": {
+    "image": "VISUAL",
+    "name": "NAMA",
+    "variants": "VARIAN (SIZE | HARGA | STOK)",
+    "status": "STATUS",
+    "actions": "AKSI"
+  },
+  "statusReady": "READY",
+  "statusSoldOut": "SOLD OUT",
+  "actions": {
+    "edit": "Edit",
+    "delete": "Hapus"
+  },
+  "confirmDelete": "Hapus produk ini dari database?"
+}

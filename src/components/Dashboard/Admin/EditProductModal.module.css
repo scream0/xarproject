@@ -1,0 +1,217 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.modal {
+  background: #0f0f0f;
+  border: 1px solid #262626;
+  padding: 30px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #fff;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+.modal::-webkit-scrollbar {
+  width: 4px;
+}
+.modal::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+.modalTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+  color: #e5e5e5;
+  border-bottom: 1px solid #222;
+  padding-bottom: 12px;
+}
+
+.imageSection {
+  margin-bottom: 20px;
+}
+
+.sectionLabel {
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  color: #888;
+  display: block;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.previewImage {
+  border-radius: 6px;
+  border: 1px solid #333;
+  object-fit: cover;
+  width: 90px;
+  height: 90px;
+}
+
+.inputField,
+.textareaField {
+  width: 100%;
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  padding: 12px 14px;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.inputField:focus,
+.textareaField:focus {
+  border-color: #fff;
+}
+
+.fileInput {
+  color: #aaa;
+  padding: 10px;
+  border: 1px dashed #333;
+  border-radius: 6px;
+  width: 100%;
+  margin-bottom: 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  background: #141414;
+}
+
+.variantsContainer {
+  border: 1px solid #222;
+  padding: 16px;
+  border-radius: 8px;
+  background: #121212;
+  margin-bottom: 16px;
+}
+
+.variantRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.variantInput {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  padding: 10px;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  width: 100%;
+  outline: none;
+}
+
+.variantInput:focus {
+  border-color: #777;
+}
+
+.addSizeBtn {
+  background: transparent;
+  color: #ccc;
+  border: 1px solid #333;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.addSizeBtn:hover {
+  background: #222;
+  color: #fff;
+  border-color: #555;
+}
+
+.textareaField {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.saveBtn {
+  background: #fff;
+  color: #000;
+  padding: 12px;
+  flex: 1;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 6px;
+  transition: opacity 0.2s;
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.cancelBtn {
+  background: #1a1a1a;
+  color: #aaa;
+  padding: 12px;
+  flex: 1;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.cancelBtn:hover {
+  background: #262626;
+  color: #fff;
+}
+
+/* Responsif Mobile */
+@media (max-width: 600px) {
+  .modal {
+    padding: 20px 15px;
+    max-height: 95vh;
+  }
+
+  .variantRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    background: #161616;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #222;
+  }
+}

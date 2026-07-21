@@ -42,15 +42,21 @@ export function Product({ onBukaDetail }) {
     [onBukaDetail],
   );
 
-  // Loading State
+  // Loading State (Data Driven dari JSON)
   if (!products || products.length === 0) {
-    return <div className={styles.productEmpty}>Loading...</div>;
+    return (
+      <div className={styles.productEmpty}>
+        {productData.messages?.loading || "Loading..."}
+      </div>
+    );
   }
 
   // Pesan jika produk tidak ditemukan (Data Driven dari JSON)
   if (!filteredItems || filteredItems.length === 0) {
     return (
-      <div className={styles.productEmpty}>{productData.messages.empty}</div>
+      <div className={styles.productEmpty}>
+        {productData.messages?.empty || "Produk tidak ditemukan."}
+      </div>
     );
   }
 
@@ -121,14 +127,10 @@ export function Product({ onBukaDetail }) {
 }
 
 function ProductCard({ item, onDetail, onAdd, rupiah }) {
-  // Stok sekarang ada di level varian, bukan di level produk.
-  // Produk dianggap tersedia kalau minimal 1 varian stoknya > 0.
   const availableVariants =
     item.variants?.filter((v) => (v.stock ?? 0) > 0) || [];
   const isSoldOut = availableVariants.length === 0;
 
-  // Harga yang ditampilkan harus dari varian pertama yang stoknya masih ada,
-  // bukan varian pertama secara mentah (yang bisa saja stoknya 0).
   const price = availableVariants[0]?.price ?? item.price ?? 0;
 
   const imageSrc =
@@ -150,7 +152,6 @@ function ProductCard({ item, onDetail, onAdd, rupiah }) {
           className={`${styles.productImage} ${isSoldOut ? styles.grayscale : ""}`}
           loading="lazy"
         />
-        {/* Badge Sold Out Data Driven */}
         {isSoldOut && (
           <div className={styles.soldOutBadge}>
             {productData.card.soldOutBadge}

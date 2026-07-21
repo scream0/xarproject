@@ -7,6 +7,7 @@
     }
   },
   "messages": {
+    "loading": "Memuat Produk...",
     "empty": "Produk Masih Diracik..."
   },
   "card": {

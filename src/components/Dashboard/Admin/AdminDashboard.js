@@ -5,6 +5,9 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../../../lib/firebaseClient";
 import styles from "./AdminDashboard.module.css";
 
+// Import UI Config JSON
+import adminConfig from "@/data/ui/adminConfig.json";
+
 // Import Komponen Dashboard
 import AnalyticsChart from "@/app/api/analytics/AnalyticsChart";
 import TransactionTable from "@/components/Dashboard/Admin/TransactionTable";
@@ -14,6 +17,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -40,65 +44,69 @@ export default function DashboardPage() {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.pulseScanner}></div>
-        <p className={styles.loadingText}>LOADING EXECUTIVE SYSTEM...</p>
+        <p className={styles.loadingText}>{adminConfig.loading}</p>
       </div>
     );
   }
 
   return (
     <div className={styles.dashboardContainer}>
-      <aside className={styles.sidebar}>
+      {/* Mobile Top Navigation Bar */}
+      <div className={styles.mobileTopBar}>
+        <div className={styles.brandLogo}>
+          {adminConfig.brand.name}
+          <span>{adminConfig.brand.suffix}</span>
+        </div>
+        <button
+          className={styles.hamburgerBtn}
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? "✕ MENU" : "☰ MENU"}
+        </button>
+      </div>
+
+      {/* Sidebar Navigasi (Desktop & Mobile Drawer) */}
+      <aside
+        className={`${styles.sidebar} ${
+          isMobileMenuOpen ? styles.sidebarOpen : ""
+        }`}
+      >
         <div className={styles.brandSection}>
           <div className={styles.brandLogo}>
-            XAR<span>.HQ</span>
+            {adminConfig.brand.name}
+            <span>{adminConfig.brand.suffix}</span>
           </div>
-          <div className={styles.brandBadge}>OWNER PANEL</div>
+          <div className={styles.brandBadge}>{adminConfig.brand.badge}</div>
         </div>
 
         <nav className={styles.navContainer}>
           <ul className={styles.navigationList}>
-            <li>
-              <button
-                onClick={() => setActiveTab("overview")}
-                className={`${styles.navItem} ${activeTab === "overview" ? styles.navItemActive : ""}`}
-              >
-                <span>Overview</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setActiveTab("products")}
-                className={`${styles.navItem} ${activeTab === "products" ? styles.navItemActive : ""}`}
-              >
-                <span>Inventory</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setActiveTab("analytics")}
-                className={`${styles.navItem} ${activeTab === "analytics" ? styles.navItemActive : ""}`}
-              >
-                <span>Analytics</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setActiveTab("settings")}
-                className={`${styles.navItem} ${activeTab === "settings" ? styles.navItemActive : ""}`}
-              >
-                <span>Settings</span>
-              </button>
-            </li>
+            {adminConfig.nav.map((item) => (
+              <li key={item.id}>
+                <button
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setIsMobileMenuOpen(false); // Tutup menu otomatis di mobile saat diklik
+                  }}
+                  className={`${styles.navItem} ${
+                    activeTab === item.id ? styles.navItemActive : ""
+                  }`}
+                >
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
           </ul>
         </nav>
 
         <div className={styles.sidebarFooter}>
           <button onClick={handleLogout} className={styles.logoutBtn}>
-            <span>Sign Out Control</span>
+            <span>{adminConfig.logoutText}</span>
           </button>
         </div>
       </aside>
 
+      {/* Konten Utama */}
       <main className={styles.mainContent}>
         <header className={styles.header}>
           <div className={styles.headerInfo}>
@@ -110,12 +118,15 @@ export default function DashboardPage() {
         </header>
 
         <div className={styles.viewWrapper}>
+          {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <>
               <section className={styles.statsGrid}>
-                <div className={styles.card}>BRAND MATRICES</div>
-                <div className={styles.card}>SECURITY NODE</div>
-                <div className={styles.card}>CORE VAULT</div>
+                {adminConfig.stats.map((stat, idx) => (
+                  <div key={idx} className={styles.card}>
+                    {stat}
+                  </div>
+                ))}
               </section>
               <section className={styles.workspaceArea}>
                 <AnalyticsChart />
@@ -126,6 +137,7 @@ export default function DashboardPage() {
             </>
           )}
 
+          {/* TAB 2: INVENTORY */}
           {activeTab === "products" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>
@@ -134,22 +146,24 @@ export default function DashboardPage() {
             </section>
           )}
 
+          {/* TAB 3: ANALYTICS */}
           {activeTab === "analytics" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>
                 <p className={styles.placeholderText}>
-                  [ ANALYTICS CORE DATASTREAM ]
+                  {adminConfig.placeholders.analytics}
                 </p>
                 <AnalyticsChart />
               </div>
             </section>
           )}
 
+          {/* TAB 4: SETTINGS */}
           {activeTab === "settings" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>
                 <p className={styles.placeholderText}>
-                  [ SYSTEM CONFIGURATION ]
+                  {adminConfig.placeholders.settings}
                 </p>
               </div>
             </section>

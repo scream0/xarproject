@@ -1,6 +1,10 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient"; // Sesuaikan path client Supabase Anda
+import { supabase } from "@/lib/supabaseClient";
+import styles from "./EditProductModal.module.css";
+
+// Import Konfigurasi JSON
+import editConfig from "@/data/ui/editProductConfig.json";
 
 export default function EditProductModal({ product, onClose, onUpdate }) {
   const [formData, setFormData] = useState({
@@ -8,7 +12,6 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
     description: product.description || "",
   });
 
-  // Inisialisasi state varian dengan memastikan ada field 'stock'
   const [variants, setVariants] = useState(
     product.variants?.map((v) => ({
       size: v.size || "",
@@ -38,7 +41,6 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
     e.preventDefault();
     setUploading(true);
 
-    // Ambil gambar lama dari produk (sesuaikan apakah imageUrl atau image_url)
     let imageUrl = product.imageUrl || product.image_url || "";
 
     try {
@@ -55,88 +57,82 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
         if (fileData.secure_url) {
           imageUrl = fileData.secure_url;
         } else {
-          throw new Error("Gagal mendapatkan URL dari Cloudinary");
+          throw new Error(editConfig.alerts.failedCloudinary);
         }
       }
 
-      // Update Database Supabase
-      // Pastikan nama tabel adalah "products" dan menggunakan primary key "id"
       const { error } = await supabase
         .from("products")
         .update({
           name: formData.name,
           description: formData.description,
-          image_url: imageUrl, // Sesuaikan dengan nama kolom di Supabase Anda (image_url atau imageUrl)
+          image_url: imageUrl,
           variants: variants.map((v) => ({
             ...v,
             price: Number(v.price),
             stock: Number(v.stock),
           })),
         })
-        .eq("id", product.id); // Mencari data berdasarkan ID produk
+        .eq("id", product.id);
 
       if (error) throw error;
 
-      alert("Produk berhasil diupdate di Supabase!");
+      alert(editConfig.alerts.success);
       onUpdate?.();
       onClose?.();
     } catch (e) {
       console.error("Gagal update ke Supabase:", e);
-      alert("Gagal memperbarui produk: " + e.message);
+      alert(editConfig.alerts.failedUpdate + e.message);
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div style={overlayStyle}>
-      <form onSubmit={handleUpdate} style={modalStyle}>
-        <h3>Edit Produk</h3>
+    <div className={styles.overlay}>
+      <form onSubmit={handleUpdate} className={styles.modal}>
+        <h3 className={styles.modalTitle}>{editConfig.title}</h3>
 
-        <div style={{ marginBottom: "10px" }}>
-          <label style={{ fontSize: "0.8rem", color: "#aaa" }}>
-            Current Image
-          </label>
-          <br />
+        <div className={styles.imageSection}>
+          <span className={styles.sectionLabel}>
+            {editConfig.labels.currentImage}
+          </span>
           <img
             src={product.imageUrl || product.image_url}
             alt="preview"
-            width="80"
-            style={{ borderRadius: "4px", marginTop: "5px" }}
+            className={styles.previewImage}
           />
         </div>
 
-        <label style={{ fontSize: "0.8rem", color: "#aaa" }}>
-          Change Image (Optional)
-        </label>
+        <span className={styles.sectionLabel}>
+          {editConfig.labels.changeImage}
+        </span>
         <input
           type="file"
+          accept="image/*"
           onChange={(e) => setFile(e.target.files[0])}
-          style={inputStyle}
+          className={styles.fileInput}
         />
 
         <input
-          placeholder="Product Name"
+          placeholder={editConfig.labels.productName}
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          style={inputStyle}
+          className={styles.inputField}
           required
         />
 
-        <div style={{ margin: "10px 0" }}>
-          <label style={{ fontSize: "0.8rem", color: "#aaa" }}>
-            Variants (Size, Price, Stock)
-          </label>
+        <div className={styles.variantsContainer}>
+          <span className={styles.sectionLabel}>
+            {editConfig.labels.variants}
+          </span>
           {variants.map((v, i) => (
-            <div
-              key={i}
-              style={{ display: "flex", gap: "5px", marginBottom: "5px" }}
-            >
+            <div key={i} className={styles.variantRow}>
               <input
-                placeholder="Size"
+                placeholder="Size (e.g. 10ml)"
                 value={v.size}
                 onChange={(e) => handleVariantChange(i, "size", e.target.value)}
-                style={{ ...inputStyle, margin: 0 }}
+                className={styles.variantInput}
                 required
               />
               <input
@@ -146,7 +142,7 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
                 onChange={(e) =>
                   handleVariantChange(i, "price", e.target.value)
                 }
-                style={{ ...inputStyle, margin: 0 }}
+                className={styles.variantInput}
                 required
               />
               <input
@@ -156,92 +152,38 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
                 onChange={(e) =>
                   handleVariantChange(i, "stock", e.target.value)
                 }
-                style={{ ...inputStyle, margin: 0 }}
+                className={styles.variantInput}
                 required
               />
             </div>
           ))}
-          <button type="button" onClick={addVariantField} style={addBtnStyle}>
-            + Add Size
+          <button
+            type="button"
+            onClick={addVariantField}
+            className={styles.addSizeBtn}
+          >
+            {editConfig.buttons.addSize}
           </button>
         </div>
 
         <textarea
-          placeholder="Description"
+          placeholder={editConfig.labels.description}
           value={formData.description}
           onChange={(e) =>
             setFormData({ ...formData, description: e.target.value })
           }
-          style={{ ...inputStyle, minHeight: "80px" }}
+          className={styles.textareaField}
         />
 
-        <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-          <button type="submit" disabled={uploading} style={saveBtnStyle}>
-            {uploading ? "SAVING..." : "SAVE CHANGES"}
+        <div className={styles.buttonGroup}>
+          <button type="submit" disabled={uploading} className={styles.saveBtn}>
+            {uploading ? editConfig.buttons.saving : editConfig.buttons.save}
           </button>
-          <button type="button" onClick={onClose} style={cancelBtnStyle}>
-            CANCEL
+          <button type="button" onClick={onClose} className={styles.cancelBtn}>
+            {editConfig.buttons.cancel}
           </button>
         </div>
       </form>
     </div>
   );
 }
-
-// Styling tetap sama
-const overlayStyle = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100%",
-  height: "100%",
-  background: "rgba(0,0,0,0.8)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 1000,
-};
-const modalStyle = {
-  background: "#1a1a1a",
-  padding: "20px",
-  borderRadius: "8px",
-  width: "450px",
-  color: "#fff",
-};
-const inputStyle = {
-  width: "100%",
-  margin: "10px 0",
-  padding: "8px",
-  background: "#333",
-  color: "#fff",
-  border: "none",
-  borderRadius: "4px",
-};
-const addBtnStyle = {
-  background: "#333",
-  color: "#fff",
-  border: "none",
-  padding: "5px 10px",
-  borderRadius: "4px",
-  cursor: "pointer",
-  fontSize: "0.7rem",
-};
-const saveBtnStyle = {
-  background: "#fff",
-  padding: "10px",
-  flex: 1,
-  cursor: "pointer",
-  fontWeight: "bold",
-  border: "none",
-  borderRadius: "4px",
-  color: "#000",
-};
-const cancelBtnStyle = {
-  background: "#333",
-  color: "#fff",
-  padding: "10px",
-  flex: 1,
-  cursor: "pointer",
-  border: "none",
-  borderRadius: "4px",
-};

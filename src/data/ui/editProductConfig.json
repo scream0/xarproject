@@ -1,0 +1,21 @@
+{
+  "title": "EDIT PRODUCT ARCHIVE",
+  "labels": {
+    "currentImage": "CURRENT VISUAL",
+    "changeImage": "UPDATE VISUAL (OPTIONAL)",
+    "productName": "PRODUCT NAME",
+    "variants": "VARIANTS CONFIGURATION (SIZE | PRICE | STOCK)",
+    "description": "CURATION DESCRIPTION"
+  },
+  "buttons": {
+    "addSize": "+ ADD SIZE VARIANT",
+    "saving": "SYNCHRONIZING...",
+    "save": "SAVE CHANGES",
+    "cancel": "ABORT"
+  },
+  "alerts": {
+    "success": "Produk berhasil diperbarui di Supabase!",
+    "failedCloudinary": "Gagal mendapatkan URL dari Cloudinary",
+    "failedUpdate": "Gagal memperbarui produk: "
+  }
+}

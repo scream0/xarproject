@@ -1,0 +1,29 @@
+{
+  "title": "ADD NEW LUXURY ARCHIVE",
+  "labels": {
+    "image": "PRODUCT VISUAL ASSET",
+    "name": "PRODUCT NAME",
+    "category": "COLLECTION CATEGORY",
+    "variants": "VARIANTS CONFIGURATION (SIZE | PRICE | STOCK)",
+    "description": "CURATION DESCRIPTION"
+  },
+  "placeholders": {
+    "name": "e.g. Extrait de Parfum Noir",
+    "size": "Size (e.g. 50ml)",
+    "price": "Price (IDR)",
+    "stock": "Stock",
+    "description": "Enter curation narrative or notes..."
+  },
+  "categories": ["Parfum", "Kopi"],
+  "buttons": {
+    "addSize": "+ ADD SIZE VARIANT",
+    "uploading": "UPLOADING TO VAULT...",
+    "submit": "ADD TO ARCHIVE"
+  },
+  "toast": {
+    "selectImage": "Silakan unggah visual produk terlebih dahulu.",
+    "uploading": "Mengunggah aset dan menyinkronkan data...",
+    "success": "Produk berhasil ditambahkan ke arsip eksklusif!",
+    "error": "Gagal menambahkan produk ke database."
+  }
+}
