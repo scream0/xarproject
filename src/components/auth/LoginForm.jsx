@@ -53,7 +53,34 @@ export default function LoginForm() {
       setRememberMe(true);
     }
   }, []);
+  // balik ke halaman semula
+  useEffect(() => {
+    const checkRedirectLogin = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // Hasil dari Google didapatkan setelah kembali ke halaman ini
+          setCustomer({
+            name: result.user.displayName || "User",
+            email: result.user.email,
+            phone: "",
+          });
+          console.log(
+            "Google Auth (Redirect) sukses! User:",
+            result.user.displayName,
+          );
+          router.push(callbackUrl);
+        }
+      } catch (err) {
+        console.error("Google Redirect Error:", err);
+        setError(
+          form.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
+        );
+      }
+    };
 
+    checkRedirectLogin();
+  }, [callbackUrl, setCustomer, form.messages, router]);
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(
@@ -105,17 +132,23 @@ export default function LoginForm() {
       }
 
       try {
-        setCustomer({
-          name: userCredential.user.displayName || "User",
-          email: userCredential.user.email,
-          phone: "",
-        });
+        // PERBAIKAN: Tambahkan baris pembuat akun ini!
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password,
+        );
 
         await updateProfile(userCredential.user, {
           displayName: formData.name,
         });
-        // SINKRONISASI KE CONTEXT (Gunakan data dari userCredential agar lebih aman)
-        setCustomer({ name: formData.name, email: formData.email, phone: "" });
+
+        // SINKRONISASI KE CONTEXT
+        setCustomer({
+          name: formData.name,
+          email: userCredential.user.email,
+          phone: "",
+        });
 
         setSuccessMessage(
           form.messages?.registerSuccess ||
@@ -351,23 +384,18 @@ export default function LoginForm() {
     await signInWithRedirect(auth, provider);
 
     try {
-      const result = await signInWithPopup(auth, provider);
-      // SINKRONISASI KE STORE
-      setCustomer({
-        name: result.user.displayName || "User",
-        email: result.user.email,
-        phone: "",
-      });
-      console.log("Google Auth sukses! User:", result.user.displayName);
-      router.push(callbackUrl);
+      // Perintah ini akan langsung melempar user ke halaman Google.
+      // Halaman Anda saat ini akan di-unload (ditutup sementara).
+      await signInWithRedirect(auth, provider);
+      
     } catch (err) {
-      console.error("Google Auth Error:", err.code);
+      console.error("Google Auth Redirect Error:", err);
       setError(
-        form.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
+        form.messages?.googleAuthFailed || "Gagal mengalihkan ke halaman Google."
       );
-    } finally {
       setIsLoading(false);
     }
+  };
   };
 
   const toggleRegisterMode = () => {
