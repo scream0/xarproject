@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { db } from "@/lib/firebaseClient";
-import { collection, addDoc } from "firebase/firestore";
+import { supabase } from "@/lib/supabaseClient"; // Sesuaikan jalur file client Supabase Anda
 
 export default function AddProductForm({ onProductAdded }) {
   const [formData, setFormData] = useState({
@@ -10,7 +9,7 @@ export default function AddProductForm({ onProductAdded }) {
     description: "",
   });
 
-  // State awal varian sekarang menyertakan stock
+  // State awal varian menyertakan stock
   const [variants, setVariants] = useState([
     { size: "10ml", price: "", stock: 0 },
   ]);
@@ -52,29 +51,36 @@ export default function AddProductForm({ onProductAdded }) {
       const fileData = await res.json();
       const imageUrl = fileData.secure_url;
 
-      // 2. Simpan data ke Firestore
-      // Note: Kita memetakan variants agar price & stock menjadi Number
-      await addDoc(collection(db, "products"), {
-        ...formData,
-        imageUrl: imageUrl,
-        variants: variants.map((v) => ({
-          ...v,
-          price: Number(v.price),
-          stock: Number(v.stock),
-        })),
-        createdAt: new Date().toISOString(),
-      });
+      // 2. Simpan data ke Supabase Database
+      // Pastikan nama tabel di Supabase Anda adalah "products"
+      // dan kolom variants bertipe json/jsonb
+      const { error } = await supabase.from("products").insert([
+        {
+          name: formData.name,
+          category: formData.category,
+          description: formData.description,
+          image_url: imageUrl, // Sesuaikan dengan nama kolom di Supabase (imageUrl atau image_url)
+          variants: variants.map((v) => ({
+            ...v,
+            price: Number(v.price),
+            stock: Number(v.stock),
+          })),
+          created_at: new Date().toISOString(),
+        },
+      ]);
 
-      alert("Produk berhasil ditambahkan!");
+      if (error) throw error;
+
+      alert("Produk berhasil ditambahkan ke Supabase!");
 
       // Reset form
       setFormData({ name: "", category: "Parfum", description: "" });
       setVariants([{ size: "10ml", price: "", stock: 0 }]);
       setFile(null);
       setUploading(false);
-      onProductAdded();
+      onProductAdded?.();
     } catch (e) {
-      console.error("Error adding product: ", e);
+      console.error("Error adding product to Supabase: ", e);
       setUploading(false);
       alert("Gagal menambahkan produk.");
     }
@@ -82,7 +88,7 @@ export default function AddProductForm({ onProductAdded }) {
 
   return (
     <form onSubmit={handleSubmit} style={formContainerStyle}>
-      <h3 style={{ color: "#fff" }}>Add New Product</h3>
+      <h3 style={{ color: "#fff" }}>Add New Product (Supabase)</h3>
 
       <div style={{ display: "grid", gap: "15px" }}>
         <input
@@ -160,9 +166,11 @@ export default function AddProductForm({ onProductAdded }) {
                 type="number"
                 placeholder="Stock"
                 value={v.stock}
-                onChange={(e) =>
-                  handleVariantChange(index, "stock", e.target.value)
+                onChange={
+                  (e) => handleVariantCode(index, "stock", e.target.value) // Fixed typo here if any, standard handler:
                 }
+                // Jika handler lama menggunakan string langsung:
+                // onChange={(e) => handleVariantChange(index, "stock", e.target.value)}
                 style={inputStyle}
               />
             </div>
@@ -205,7 +213,7 @@ export default function AddProductForm({ onProductAdded }) {
   );
 }
 
-// Styles (Tetap sama)
+// Styles
 const inputStyle = {
   background: "#1a1a1a",
   border: "1px solid #333",

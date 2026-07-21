@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { db } from "@/lib/firebaseClient";
-import { doc, updateDoc } from "firebase/firestore";
+import { supabase } from "@/lib/supabaseClient"; // Sesuaikan path client Supabase Anda
 
 export default function EditProductModal({ product, onClose, onUpdate }) {
   const [formData, setFormData] = useState({
@@ -14,8 +13,8 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
     product.variants?.map((v) => ({
       size: v.size || "",
       price: v.price || "",
-      stock: v.stock ?? 0, // Default ke 0 jika field stock belum ada
-    })) || [{ size: "10ml", price: "", stock: 0 }]
+      stock: v.stock ?? 0,
+    })) || [{ size: "10ml", price: "", stock: 0 }],
   );
 
   const [file, setFile] = useState(null);
@@ -39,7 +38,8 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
     e.preventDefault();
     setUploading(true);
 
-    let imageUrl = product.imageUrl || "";
+    // Ambil gambar lama dari produk (sesuaikan apakah imageUrl atau image_url)
+    let imageUrl = product.imageUrl || product.image_url || "";
 
     try {
       if (file) {
@@ -49,7 +49,7 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
 
         const res = await fetch(
           `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-          { method: "POST", body: data }
+          { method: "POST", body: data },
         );
         const fileData = await res.json();
         if (fileData.secure_url) {
@@ -59,25 +59,29 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
         }
       }
 
-      // Update Firestore
-      const docRef = doc(db, "products", product.id);
-      await updateDoc(docRef, {
-        name: formData.name,
-        description: formData.description,
-        imageUrl: imageUrl,
-        // Pastikan price dan stock dikonversi ke Number agar perhitungan di sistem akurat
-        variants: variants.map((v) => ({ 
-            ...v, 
-            price: Number(v.price), 
-            stock: Number(v.stock) 
-        })),
-      });
+      // Update Database Supabase
+      // Pastikan nama tabel adalah "products" dan menggunakan primary key "id"
+      const { error } = await supabase
+        .from("products")
+        .update({
+          name: formData.name,
+          description: formData.description,
+          image_url: imageUrl, // Sesuaikan dengan nama kolom di Supabase Anda (image_url atau imageUrl)
+          variants: variants.map((v) => ({
+            ...v,
+            price: Number(v.price),
+            stock: Number(v.stock),
+          })),
+        })
+        .eq("id", product.id); // Mencari data berdasarkan ID produk
 
-      alert("Produk berhasil diupdate!");
-      onUpdate();
-      onClose();
+      if (error) throw error;
+
+      alert("Produk berhasil diupdate di Supabase!");
+      onUpdate?.();
+      onClose?.();
     } catch (e) {
-      console.error("Gagal update:", e);
+      console.error("Gagal update ke Supabase:", e);
       alert("Gagal memperbarui produk: " + e.message);
     } finally {
       setUploading(false);
@@ -90,44 +94,70 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
         <h3>Edit Produk</h3>
 
         <div style={{ marginBottom: "10px" }}>
-          <label style={{ fontSize: "0.8rem", color: "#aaa" }}>Current Image</label>
+          <label style={{ fontSize: "0.8rem", color: "#aaa" }}>
+            Current Image
+          </label>
           <br />
-          <img src={product.imageUrl} alt="preview" width="80" style={{ borderRadius: "4px", marginTop: "5px" }} />
+          <img
+            src={product.imageUrl || product.image_url}
+            alt="preview"
+            width="80"
+            style={{ borderRadius: "4px", marginTop: "5px" }}
+          />
         </div>
 
-        <label style={{ fontSize: "0.8rem", color: "#aaa" }}>Change Image (Optional)</label>
-        <input type="file" onChange={(e) => setFile(e.target.files[0])} style={inputStyle} />
+        <label style={{ fontSize: "0.8rem", color: "#aaa" }}>
+          Change Image (Optional)
+        </label>
+        <input
+          type="file"
+          onChange={(e) => setFile(e.target.files[0])}
+          style={inputStyle}
+        />
 
         <input
           placeholder="Product Name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           style={inputStyle}
+          required
         />
 
         <div style={{ margin: "10px 0" }}>
-          <label style={{ fontSize: "0.8rem", color: "#aaa" }}>Variants (Size, Price, Stock)</label>
+          <label style={{ fontSize: "0.8rem", color: "#aaa" }}>
+            Variants (Size, Price, Stock)
+          </label>
           {variants.map((v, i) => (
-            <div key={i} style={{ display: "flex", gap: "5px", marginBottom: "5px" }}>
+            <div
+              key={i}
+              style={{ display: "flex", gap: "5px", marginBottom: "5px" }}
+            >
               <input
                 placeholder="Size"
                 value={v.size}
                 onChange={(e) => handleVariantChange(i, "size", e.target.value)}
                 style={{ ...inputStyle, margin: 0 }}
+                required
               />
               <input
                 type="number"
                 placeholder="Price"
                 value={v.price}
-                onChange={(e) => handleVariantChange(i, "price", e.target.value)}
+                onChange={(e) =>
+                  handleVariantChange(i, "price", e.target.value)
+                }
                 style={{ ...inputStyle, margin: 0 }}
+                required
               />
               <input
                 type="number"
                 placeholder="Stock"
                 value={v.stock}
-                onChange={(e) => handleVariantChange(i, "stock", e.target.value)}
+                onChange={(e) =>
+                  handleVariantChange(i, "stock", e.target.value)
+                }
                 style={{ ...inputStyle, margin: 0 }}
+                required
               />
             </div>
           ))}
@@ -139,7 +169,9 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
         <textarea
           placeholder="Description"
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
           style={{ ...inputStyle, minHeight: "80px" }}
         />
 
@@ -157,9 +189,59 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
 }
 
 // Styling tetap sama
-const overlayStyle = { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 };
-const modalStyle = { background: "#1a1a1a", padding: "20px", borderRadius: "8px", width: "450px", color: "#fff" }; // Lebar sedikit ditambah untuk menampung input stock
-const inputStyle = { width: "100%", margin: "10px 0", padding: "8px", background: "#333", color: "#fff", border: "none", borderRadius: "4px" };
-const addBtnStyle = { background: "#333", color: "#fff", border: "none", padding: "5px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "0.7rem" };
-const saveBtnStyle = { background: "#fff", padding: "10px", flex: 1, cursor: "pointer", fontWeight: "bold", border: "none", borderRadius: "4px" };
-const cancelBtnStyle = { background: "#333", color: "#fff", padding: "10px", flex: 1, cursor: "pointer", border: "none", borderRadius: "4px" };
+const overlayStyle = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  background: "rgba(0,0,0,0.8)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+};
+const modalStyle = {
+  background: "#1a1a1a",
+  padding: "20px",
+  borderRadius: "8px",
+  width: "450px",
+  color: "#fff",
+};
+const inputStyle = {
+  width: "100%",
+  margin: "10px 0",
+  padding: "8px",
+  background: "#333",
+  color: "#fff",
+  border: "none",
+  borderRadius: "4px",
+};
+const addBtnStyle = {
+  background: "#333",
+  color: "#fff",
+  border: "none",
+  padding: "5px 10px",
+  borderRadius: "4px",
+  cursor: "pointer",
+  fontSize: "0.7rem",
+};
+const saveBtnStyle = {
+  background: "#fff",
+  padding: "10px",
+  flex: 1,
+  cursor: "pointer",
+  fontWeight: "bold",
+  border: "none",
+  borderRadius: "4px",
+  color: "#000",
+};
+const cancelBtnStyle = {
+  background: "#333",
+  color: "#fff",
+  padding: "10px",
+  flex: 1,
+  cursor: "pointer",
+  border: "none",
+  borderRadius: "4px",
+};

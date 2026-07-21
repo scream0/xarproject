@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebaseClient";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { supabase } from "@/lib/supabaseClient"; // Sesuaikan path client Supabase Anda
 import AddProductForm from "./AddProductForm";
 import EditProductModal from "./EditProductModal";
 
@@ -14,12 +13,24 @@ export default function ProductManager() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const querySnapshot = await getDocs(collection(db, "products"));
-      setProducts(
-        querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
-      );
+      // Mengambil data dari tabel "products" di Supabase
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Supabase biasanya menggunakan snake_case (image_url),
+      // kita petakan ke camelCase (imageUrl) agar kompatibel dengan komponen Anda yang lain
+      const formattedData = data.map((item) => ({
+        ...item,
+        imageUrl: item.image_url || item.imageUrl,
+      }));
+
+      setProducts(formattedData);
     } catch (error) {
-      console.error("Gagal memuat produk:", error);
+      console.error("Gagal memuat produk dari Supabase:", error);
     } finally {
       setLoading(false);
     }
@@ -30,15 +41,23 @@ export default function ProductManager() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (confirm("Hapus produk ini?")) {
-      await deleteDoc(doc(db, "products", id));
-      fetchProducts();
+    if (confirm("Hapus produk ini dari Supabase?")) {
+      try {
+        const { error } = await supabase.from("products").delete().eq("id", id);
+
+        if (error) throw error;
+
+        fetchProducts();
+      } catch (error) {
+        console.error("Gagal menghapus produk:", error);
+        alert("Gagal menghapus produk.");
+      }
     }
   };
 
   return (
     <div style={{ color: "#fff", padding: "20px" }}>
-      <h2>Inventory Management</h2>
+      <h2>Inventory Management (Supabase)</h2>
       <input
         type="text"
         placeholder="Cari parfum/produk..."
@@ -88,7 +107,7 @@ export default function ProductManager() {
           <tbody>
             {products
               .filter((p) =>
-                p.name.toLowerCase().includes(searchTerm.toLowerCase()),
+                p.name?.toLowerCase().includes(searchTerm.toLowerCase()),
               )
               .map((item) => {
                 // LOGIKA: Produk Ready jika minimal 1 varian punya stok > 0
@@ -137,13 +156,20 @@ export default function ProductManager() {
                           cursor: "pointer",
                           marginRight: "10px",
                           color: "#ffa500",
+                          background: "none",
+                          border: "none",
                         }}
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
-                        style={{ cursor: "pointer", color: "#ff5555" }}
+                        style={{
+                          cursor: "pointer",
+                          color: "#ff5555",
+                          background: "none",
+                          border: "none",
+                        }}
                       >
                         Hapus
                       </button>
