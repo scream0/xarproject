@@ -20,8 +20,8 @@
     "uploading": "UPLOADING TO VAULT...",
     "submit": "ADD TO ARCHIVE",
     "removeImage": "✕",
-    "chooseFileMain": "📁 Pilih Gambar Utama",
-    "chooseFileVariant": "📁 Pilih Gambar Varian",
+    "chooseFileMain": "📁 Pilih File",
+    "chooseFileVariant": "📁 Pilih File",
     "noFile": "Belum ada file dipilih"
   },
   "toast": {

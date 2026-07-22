@@ -181,27 +181,29 @@
   margin-bottom: 16px;
 }
 
+/* === VARIAN ROW YANG LEBIH BERSIH & RESPONSIF === */
 .variantRow {
   display: grid;
-  grid-template-columns: 1fr 0.8fr 0.8fr 1.3fr;
-  gap: 8px;
-  margin-bottom: 10px;
+  grid-template-columns: 1fr 0.8fr 0.8fr 1.4fr;
+  gap: 10px;
+  margin-bottom: 12px;
   align-items: center;
   background: #181818;
-  padding: 8px;
-  border-radius: 6px;
+  padding: 10px;
+  border-radius: 8px;
   border: 1px solid #262626;
 }
 
 .variantInput {
   background: #121212;
   border: 1px solid #333;
-  padding: 8px;
+  padding: 9px 10px;
   color: #fff;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.85rem;
   width: 100%;
   outline: none;
+  box-sizing: border-box;
 }
 
 .variantInput:focus {
@@ -211,19 +213,23 @@
 .variantFileWrapper {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
 }
 
 .variantFileInner {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  background: #141414;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid #333;
 }
 
 .variantThumb {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   object-fit: cover;
   border-radius: 4px;
   border: 1px solid #444;
@@ -235,17 +241,23 @@
   border: 1px solid rgba(255, 85, 85, 0.3);
   color: #ff5555;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  padding: 6px 8px;
+  padding: 4px 8px;
   border-radius: 4px;
+  transition: background 0.2s;
+  white-space: nowrap;
 }
 
-/* === CUSTOM TOMBOL FILE VARIAN === */
+.removeVariantImgBtn:hover {
+  background: rgba(255, 85, 85, 0.25);
+}
+
+/* === CUSTOM TOMBOL FILE VARIAN (CLEAN & MODERN) === */
 .variantCustomFileWrapper {
   position: relative;
   overflow: hidden;
-  display: inline-block;
+  display: flex;
   width: 100%;
 }
 
@@ -266,7 +278,7 @@
   justify-content: space-between;
   background: #121212;
   border: 1px dashed #4b5563;
-  padding: 8px 10px;
+  padding: 9px 12px;
   border-radius: 6px;
   color: #9ca3af;
   font-size: 0.75rem;
@@ -277,16 +289,16 @@
 }
 
 .variantFileCustomBtn:hover {
-  border-color: #9ca3af;
+  border-color: #60a5fa;
   background: #1a1a1a;
   color: #fff;
 }
 
 .variantFileChosen {
   font-size: 0.65rem;
-  color: #d1d5db;
+  color: #93c5fd;
   font-style: italic;
-  max-width: 65px;
+  max-width: 70px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -295,20 +307,22 @@
 .addSizeBtn {
   background: transparent;
   color: #ccc;
-  border: 1px solid #333;
-  padding: 8px 12px;
-  border-radius: 4px;
+  border: 1px dashed #444;
+  padding: 10px 14px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 0.75rem;
   letter-spacing: 1px;
   transition: all 0.2s;
   margin-top: 4px;
+  width: 100%;
+  text-align: center;
 }
 
 .addSizeBtn:hover {
-  background: #222;
+  background: #1a1a1a;
   color: #fff;
-  border-color: #555;
+  border-color: #666;
 }
 
 .textareaField {
@@ -364,13 +378,14 @@
   color: #fff;
 }
 
-/* Responsif Mobile */
+/* === RESPONSIF MOBILE === */
 @media (max-width: 768px) {
   .modal {
     padding: 20px 15px;
   }
   .variantRow {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 8px;
+    padding: 12px;
   }
 }

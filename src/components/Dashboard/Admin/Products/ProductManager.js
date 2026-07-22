@@ -27,6 +27,7 @@ export default function ProductManager() {
       const formattedData = data.map((item) => ({
         ...item,
         imageUrl: item.image_url || item.imageUrl,
+        imagePublicId: item.image_public_id || item.imagePublicId,
       }));
 
       setProducts(formattedData);
@@ -41,11 +42,38 @@ export default function ProductManager() {
     fetchProducts();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (item) => {
     if (confirm(pmConfig.confirmDelete)) {
       try {
-        const { error } = await supabase.from("products").delete().eq("id", id);
+        // 1. Hapus gambar utama dari Cloudinary jika ada publicId-nya
+        if (item.imagePublicId) {
+          await fetch("/api/cloudinary", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ publicId: item.imagePublicId }),
+          });
+        }
+
+        // 2. Hapus gambar varian dari Cloudinary jika ada publicId-nya
+        if (item.variants && Array.isArray(item.variants)) {
+          for (const v of item.variants) {
+            if (v.imagePublicId) {
+              await fetch("/api/cloudinary", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ publicId: v.imagePublicId }),
+              });
+            }
+          }
+        }
+
+        // 3. Hapus data produk dari Supabase
+        const { error } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", item.id);
         if (error) throw error;
+
         fetchProducts();
       } catch (error) {
         console.error("Gagal menghapus produk:", error);
@@ -136,7 +164,7 @@ export default function ProductManager() {
                         {pmConfig.actions.edit}
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item)}
                         className={styles.deleteBtn}
                       >
                         {pmConfig.actions.delete}

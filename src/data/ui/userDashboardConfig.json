@@ -1,0 +1,14 @@
+{
+  "brand": {
+    "name": "MAKE ME KOOL",
+    "suffix": "PARFUM",
+    "badge": "CLIENT PORTAL"
+  },
+  "loading": "Accessing your personal scent archive...",
+  "logoutText": "Sign Out",
+  "nav": [
+    { "id": "overview", "label": "Overview" },
+    { "id": "orders", "label": "Orders" },
+    { "id": "profile", "label": "Profile" }
+  ]
+}

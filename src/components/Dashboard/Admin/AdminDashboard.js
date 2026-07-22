@@ -9,12 +9,12 @@ import styles from "./AdminDashboard.module.css";
 import adminConfig from "@/data/ui/adminConfig.json";
 
 // Import Komponen Dashboard (Pastikan path folder Analytics sudah benar di src/components/)
-import AnalyticsChart from "@/components/Dashboard/Analytics/AnalyticsChart";
-import AdvancedAnalytics from "@/components/Dashboard/Analytics/AdvancedAnalytics";
-import TransactionTable from "@/components/Dashboard/Overview/TransactionTable";
-import OverviewStats from "@/components/Dashboard/Overview/OverviewStats";
-import ProductManager from "@/components/Dashboard/Products/ProductManager";
-import SettingsView from "@/components/Dashboard/Settings/SettingsView";
+import AnalyticsChart from "@/components/Dashboard/Admin/Analytics/AnalyticsChart";
+import AdvancedAnalytics from "@/components/Dashboard/Admin/Analytics/AdvancedAnalytics";
+import TransactionTable from "@/components/Dashboard/Admin/Overview/TransactionTable";
+import OverviewStats from "@/components/Dashboard/Admin/Overview/OverviewStats";
+import ProductManager from "@/components/Dashboard/Admin/Products/ProductManager";
+import SettingsView from "@/components/Dashboard/Admin/Settings/SettingsView";
 
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);

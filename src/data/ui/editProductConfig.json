@@ -18,8 +18,8 @@
     "save": "SAVE CHANGES",
     "cancel": "ABORT",
     "chooseFileMain": "📁 Ganti Gambar Utama",
-    "noFile": "Belum ada file dipilih",
-    "chooseFileVariant": "📷 Ganti Gambar Varian",
+    "noFile": "Pilih",
+    "chooseFileVariant": "📁 Pilih file",
     "chooseShort": "Pilih"
   },
   "alerts": {

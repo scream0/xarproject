@@ -19,9 +19,17 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
       price: v.price || "",
       stock: v.stock ?? 0,
       imageUrl: v.imageUrl || "",
+      imagePublicId: v.imagePublicId || "",
       imageFile: null,
     })) || [
-      { size: "10ml", price: "", stock: 0, imageUrl: "", imageFile: null },
+      {
+        size: "10ml",
+        price: "",
+        stock: 0,
+        imageUrl: "",
+        imagePublicId: "",
+        imageFile: null,
+      },
     ],
   );
 
@@ -31,13 +39,12 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
   const [previewUrl, setPreviewUrl] = useState(
     product.image_url || product.imageUrl || "",
   );
+  const [mainPhotoPublicId, setMainPhotoPublicId] = useState(
+    product.image_public_id || product.imagePublicId || "",
+  );
 
   const [imageRemoved, setImageRemoved] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  // --- CONFIG CLOUDINARY ---
-  const CLOUD_NAME = "qs59fb4k";
-  const UPLOAD_PRESET = "xarProject";
 
   const handleVariantChange = (index, field, value) => {
     const newVariants = [...variants];
@@ -54,6 +61,7 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
   const removeVariantImage = (index) => {
     const newVariants = [...variants];
     newVariants[index].imageUrl = "";
+    newVariants[index].imagePublicId = "";
     newVariants[index].imageFile = null;
     setVariants(newVariants);
   };
@@ -72,6 +80,7 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
   const removeMainImage = () => {
     setFile(null);
     setPreviewUrl("");
+    setMainPhotoPublicId("");
     setImageRemoved(true);
   };
 
@@ -79,12 +88,22 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
   const cancelRemoveMainImage = () => {
     setImageRemoved(false);
     setPreviewUrl(product.image_url || product.imageUrl || "");
+    setMainPhotoPublicId(
+      product.image_public_id || product.imagePublicId || "",
+    );
   };
 
   const addVariantField = () => {
     setVariants([
       ...variants,
-      { size: "", price: "", stock: 0, imageUrl: "", imageFile: null },
+      {
+        size: "",
+        price: "",
+        stock: 0,
+        imageUrl: "",
+        imagePublicId: "",
+        imageFile: null,
+      },
     ]);
   };
 
@@ -96,41 +115,89 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
     let imageUrl = imageRemoved
       ? ""
       : product.imageUrl || product.image_url || "";
+    let imagePublicId = imageRemoved
+      ? ""
+      : product.image_public_id || product.imagePublicId || "";
 
     try {
+      // 1. Upload Gambar Utama via API Route /api/cloudinary jika ada file baru
       if (file) {
         const data = new FormData();
         data.append("file", file);
-        data.append("upload_preset", UPLOAD_PRESET);
+        // Menggunakan identifier produk atau unik agar tidak berantakan
+        data.append("userId", `product_${product.id}`);
+        if (mainPhotoPublicId) {
+          data.append("oldPublicId", mainPhotoPublicId);
+        } else if (imageUrl) {
+          data.append("oldUrl", imageUrl);
+        }
 
-        const res = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-          { method: "POST", body: data },
-        );
-        const fileData = await res.json();
-        if (fileData.secure_url) {
+        const res = await fetch("/api/cloudinary", {
+          method: "POST",
+          body: data,
+        });
+
+        const responseText = await res.text();
+        let fileData;
+        try {
+          fileData = JSON.parse(responseText);
+        } catch {
+          throw new Error(responseText || editConfig.alerts.failedCloudinary);
+        }
+
+        if (res.ok && fileData.secure_url) {
           imageUrl = fileData.secure_url;
+          imagePublicId = fileData.public_id;
         } else {
-          throw new Error(editConfig.alerts.failedCloudinary);
+          throw new Error(fileData.error || editConfig.alerts.failedCloudinary);
+        }
+      } else if (imageRemoved) {
+        // Jika user menghapus gambar utama, hapus dari Cloudinary via endpoint DELETE
+        if (mainPhotoPublicId || imageUrl) {
+          await fetch("/api/cloudinary", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              publicId: mainPhotoPublicId || undefined,
+            }),
+          });
         }
       }
 
+      // 2. Proses Varian Produk (Upload gambar varian jika ada file baru)
       const processedVariants = await Promise.all(
-        variants.map(async (v) => {
+        variants.map(async (v, index) => {
           let currentVariantImageUrl = v.imageUrl;
+          let currentVariantPublicId = v.imagePublicId;
 
           if (v.imageFile) {
             const variantData = new FormData();
             variantData.append("file", v.imageFile);
-            variantData.append("upload_preset", UPLOAD_PRESET);
+            variantData.append("userId", `product_${product.id}_var_${index}`);
+            if (v.imagePublicId) {
+              variantData.append("oldPublicId", v.imagePublicId);
+            } else if (v.imageUrl) {
+              variantData.append("oldUrl", v.imageUrl);
+            }
 
-            const variantRes = await fetch(
-              `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-              { method: "POST", body: variantData },
-            );
-            const variantFileData = await variantRes.json();
-            if (variantFileData.secure_url) {
+            const variantRes = await fetch("/api/cloudinary", {
+              method: "POST",
+              body: variantData,
+            });
+
+            const variantResponseText = await variantRes.text();
+            let variantFileData;
+            try {
+              variantFileData = JSON.parse(variantResponseText);
+            } catch {
+              throw new Error(
+                variantResponseText || "Gagal upload gambar varian.",
+              );
+            }
+
+            if (variantRes.ok && variantFileData.secure_url) {
               currentVariantImageUrl = variantFileData.secure_url;
+              currentVariantPublicId = variantFileData.public_id;
             }
           }
 
@@ -139,16 +206,19 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
             price: Number(v.price),
             stock: Number(v.stock),
             imageUrl: currentVariantImageUrl,
+            imagePublicId: currentVariantPublicId,
           };
         }),
       );
 
+      // 3. Simpan perubahan ke Supabase
       const { error } = await supabase
         .from("products")
         .update({
           name: formData.name,
           description: formData.description,
           image_url: imageUrl,
+          image_public_id: imagePublicId,
           variants: processedVariants,
         })
         .eq("id", product.id);
@@ -159,8 +229,10 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
       onUpdate?.();
       onClose?.();
     } catch (e) {
-      console.error("Gagal update ke Supabase:", e);
-      toast.error(editConfig.alerts.failedUpdate + e.message, { id: toastId });
+      console.error("Gagal update ke Supabase/Cloudinary:", e);
+      toast.error(editConfig.alerts.failedUpdate + (e.message || ""), {
+        id: toastId,
+      });
     } finally {
       setUploading(false);
     }

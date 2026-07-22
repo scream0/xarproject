@@ -1,0 +1,25 @@
+{
+  "header": {
+    "title": "ORDER ARCHIVE",
+    "subtitle": "Manage and track your scent bottle acquisitions."
+  },
+  "tabs": ["all", "processing", "completed"],
+  "loadingText": "Memuat riwayat transaksi...",
+  "emptyText": "Belum ada data.",
+  "modal": {
+    "title": "ORDER DETAILS",
+    "closeBtn": "Close"
+  },
+  "buttons": {
+    "details": "Details",
+    "reorder": "Re-Order"
+  },
+  "labels": {
+    "orderId": "Order ID",
+    "product": "Product",
+    "specsAndNotes": "Specification & Notes",
+    "paymentMethod": "Payment Method (Midtrans)",
+    "shippingAddress": "Shipping Address",
+    "totalPaid": "Total Paid:"
+  }
+}

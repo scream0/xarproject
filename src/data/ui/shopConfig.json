@@ -1,0 +1,37 @@
+{
+  "brandName": "MAKE ME KOOL",
+  "backButton": "← Kembali ke Dashboard",
+  "header": {
+    "title": "Koleksi Ekstra Parfum",
+    "subtitle": "Pilih racikan extrait de parfum 30% pilihan terbaik Anda."
+  },
+  "filters": {
+    "allLabel": "Semua",
+    "searchPlaceholder": "Cari parfum...",
+    "sortDefault": "Urutkan",
+    "sortPriceLow": "Harga: Rendah",
+    "sortPriceHigh": "Harga: Tinggi",
+    "sortName": "Nama: A-Z"
+  },
+  "card": {
+    "placeholderImageText": "✨ AWRG AROMA",
+    "defaultCategory": "Parfum",
+    "defaultDescription": "Formula eksklusif pilihan terbaik.",
+    "variantLabel": "Ukuran:",
+    "buyButtonText": "Pesan",
+    "fallbackPrice": "Hubungi Admin"
+  },
+  "messages": {
+    "loading": "Memuat koleksi produk...",
+    "empty": "Produk tidak ditemukan."
+  },
+  "toast": {
+    "loginRequired": "Silakan login terlebih dahulu untuk checkout.",
+    "invalidPrice": "Harga produk tidak valid.",
+    "loadingMidtrans": "Menyiapkan transaksi Midtrans...",
+    "success": "Pembayaran berhasil!",
+    "pending": "Menunggu pembayaran...",
+    "error": "Pembayaran gagal!",
+    "closed": "Popup pembayaran ditutup."
+  }
+}

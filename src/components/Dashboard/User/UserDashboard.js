@@ -1,12 +1,93 @@
 "use client";
-import { useState } from "react";
-import styles from "./UserDashboard.module.css";
-import { signOut } from "firebase/auth";
-import { auth } from "../../../lib/firebaseClient";
 
-export default function UserDashboard({ user }) {
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "../../../lib/firebaseClient";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import styles from "./UserDashboard.module.css";
+
+// Import UI Config JSON
+import userConfig from "@/data/ui/userDashboardConfig.json";
+
+// Import Komponen Section
+import OverviewSection from "@/components/Dashboard/User/Overview/OverviewSection";
+import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
+import ProfileSection from "@/components/Dashboard/User/Profil/ProfileSection";
+
+const db = getFirestore();
+
+export default function UserDashboard() {
+  const [user, setUser] = useState(null);
+  const [userName, setUserName] = useState("");
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  // handle logout
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        window.location.href = "/login";
+      } else {
+        setUser(currentUser);
+
+        try {
+          const docRef = doc(db, "users", currentUser.uid);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const resolvedName =
+              data.full_name ||
+              data.username ||
+              currentUser.displayName ||
+              currentUser.email?.split("@")[0] ||
+              currentUser.phoneNumber ||
+              "VALUED CUSTOMER";
+
+            setUserName(resolvedName.toUpperCase());
+          } else {
+            const defaultName =
+              currentUser.displayName ||
+              currentUser.email?.split("@")[0] ||
+              currentUser.phoneNumber ||
+              "VALUED CUSTOMER";
+
+            try {
+              await setDoc(
+                docRef,
+                {
+                  uid: currentUser.uid,
+                  email: currentUser.email || "",
+                  phone_number: currentUser.phoneNumber || "",
+                  full_name: defaultName,
+                  created_at: new Date().toISOString(),
+                },
+                { merge: true },
+              );
+            } catch (createErr) {
+              console.error("Gagal inisialisasi dokumen user baru:", createErr);
+            }
+
+            setUserName(defaultName.toUpperCase());
+          }
+        } catch (err) {
+          console.error("Gagal mengambil data profil dari database:", err);
+
+          const fallbackName =
+            currentUser.displayName ||
+            currentUser.email?.split("@")[0] ||
+            currentUser.phoneNumber ||
+            "USER";
+
+          setUserName(fallbackName.toUpperCase());
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -16,64 +97,87 @@ export default function UserDashboard({ user }) {
     }
   };
 
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.pulseScanner}></div>
+        <p className={styles.loadingText}>{userConfig.loading}</p>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.dashboardContainer}>
-      <aside className={styles.sidebar}>
-        <div className={styles.brand}>MAKE ME KOOL PARFUM</div>
-        <nav className={styles.nav}>
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={activeTab === "overview" ? styles.active : ""}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={activeTab === "orders" ? styles.active : ""}
-          >
-            Orders
-          </button>
-          <button
-            onClick={() => setActiveTab("profile")}
-            className={activeTab === "profile" ? styles.active : ""}
-          >
-            Profile
-          </button>
+      {/* Mobile Top Navigation Bar */}
+      <div className={styles.mobileTopBar}>
+        <div className={styles.brandLogo}>
+          {userConfig.brand.name} <span>{userConfig.brand.suffix}</span>
+        </div>
+        <button
+          className={styles.hamburgerBtn}
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? "✕ MENU" : "☰ MENU"}
+        </button>
+      </div>
+
+      {/* Sidebar Navigasi (Desktop & Mobile Drawer) */}
+      <aside
+        className={`${styles.sidebar} ${
+          isMobileMenuOpen ? styles.sidebarOpen : ""
+        }`}
+      >
+        <div className={styles.brandSection}>
+          <div className={styles.brandLogo}>
+            {userConfig.brand.name} <span>{userConfig.brand.suffix}</span>
+          </div>
+          <div className={styles.brandBadge}>{userConfig.brand.badge}</div>
+        </div>
+
+        <nav className={styles.navContainer}>
+          <ul className={styles.navigationList}>
+            {userConfig.nav.map((item) => (
+              <li key={item.id}>
+                <button
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`${styles.navItem} ${
+                    activeTab === item.id ? styles.navItemActive : ""
+                  }`}
+                >
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </nav>
-        {/* 4. Tombol Logout di paling bawah sidebar */}
+
         <div className={styles.sidebarFooter}>
           <button onClick={handleLogout} className={styles.logoutBtn}>
-            Sign Out
+            <span>{userConfig.logoutText}</span>
           </button>
         </div>
       </aside>
 
+      {/* Konten Utama */}
       <main className={styles.mainContent}>
         <header className={styles.header}>
-          <h1>Welcome, {user?.displayName || "CLIENT"}</h1>
-          <p>Accessing your personal scent archive.</p>
+          <div className={styles.headerInfo}>
+            <h1 className={styles.welcomeTitle}>
+              WELCOME, {userName || "USER"}
+            </h1>
+          </div>
         </header>
 
-        <section className={styles.contentArea}>
+        <div className={styles.viewWrapper}>
           {activeTab === "overview" && (
-            <div className={styles.card}>
-              <h3>LATEST ACTIVITY</h3>
-              <p>No recent shipments found.</p>
-            </div>
+            <OverviewSection setActiveTab={setActiveTab} />
           )}
-          {activeTab === "orders" && (
-            <div className={styles.card}>
-              <h3>ORDER HISTORY</h3>
-              <p>Your history is empty.</p>
-            </div>
-          )}
-          {activeTab === "profile" && (
-            <div className={styles.card}>
-              <h3>ACCOUNT SETTINGS</h3>
-              <p>Edit your personal details here.</p>
-            </div>
-          )}
-        </section>
+          {activeTab === "orders" && <OrdersSection />}
+          {activeTab === "profile" && <ProfileSection />}
+        </div>
       </main>
     </div>
   );

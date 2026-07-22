@@ -10,20 +10,32 @@ const ProtectedRoute = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        // Gunakan replace agar user tidak bisa kembali dengan tombol "back"
-        router.replace("/login");
-      } else {
-        setAuthorized(true);
-        setLoading(false);
-      }
-    });
+    let unsubscribe = () => {};
 
-    return () => unsubscribe();
+    const verifyAuth = async () => {
+      // Tunggu hingga Firebase selesai memuat status autentikasi dari storage
+      if (auth.authStateReady) {
+        await auth.authStateReady();
+      }
+
+      unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          router.replace("/login");
+        } else {
+          setAuthorized(true);
+          setLoading(false);
+        }
+      });
+    };
+
+    verifyAuth();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [router]);
 
-  // Memberikan feedback visual yang minimalis saat memuat (Luxury style)
+  // Memberikan feedback visual yang minimalis saat memuat
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-white">

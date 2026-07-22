@@ -1,0 +1,69 @@
+{
+  "sessionCard": {
+    "title": "ACTIVE ACCOUNT SESSION",
+    "loginViaLabel": "Login via: ",
+    "fallbackAuth": "Google Account"
+  },
+  "headerCard": {
+    "title": "ACCOUNT, SECURITY & PREFERENCES",
+    "subtitle": "Kelola foto profil, kredensial login, dan informasi pengiriman Anda."
+  },
+  "reauthCard": {
+    "title": "CONFIRM CURRENT PASSWORD REQUIRED",
+    "description": "Untuk keamanan perubahan email/password, masukkan password saat ini.",
+    "placeholder": "Masukkan password saat ini"
+  },
+  "avatarCard": {
+    "title": "Profile Avatar (Cloudinary Auto-Replace)",
+    "uploadLabel": "Upload New Avatar",
+    "removeBtn": "Hapus Foto"
+  },
+  "detailsCard": {
+    "title": "Personal Details & Security Credentials",
+    "usernameLabel": "Username",
+    "fullNameLabel": "Full Name",
+    "genderLabel": "Gender",
+    "birthDateLabel": "Date of Birth",
+    "emailLabel": "Email Address",
+    "newPasswordLabel": "New Password (Optional)",
+    "newPasswordPlaceholder": "Kosongkan jika tidak diubah",
+    "phoneAuthLabel": "Phone / Auth ID (Read-only)",
+    "whatsappLabel": "WhatsApp / Phone",
+    "languageLabel": "Preferred Language"
+  },
+  "logisticsCard": {
+    "title": "Shipping & Logistics Details",
+    "shippingLabel": "Default Shipping Address",
+    "cityLabel": "City / Kabupaten",
+    "postalCodeLabel": "Postal Code (Kode Pos)",
+    "landmarkLabel": "Address Landmark / Notes (Patokan Kurir)"
+  },
+  "recipientCard": {
+    "title": "Alternative Recipient / Penerima Lain (Opsional)",
+    "nameLabel": "Nama Penerima (Jika bukan Anda)",
+    "phoneLabel": "Nomor Telepon Penerima"
+  },
+  "billingCard": {
+    "title": "Billing Address (Alamat Penagihan)",
+    "sameAsShippingLabel": "Gunakan alamat pengiriman yang sama untuk penagihan",
+    "addressLabel": "Alamat Penagihan Lengkap",
+    "cityLabel": "Kota / Kabupaten (Penagihan)",
+    "postalCodeLabel": "Kode Pos (Penagihan)"
+  },
+  "preferencesCard": {
+    "title": "Communication & Marketing Consent",
+    "newsletterLabel": "Terima pembaruan promo eksklusif, diskon, & peluncuran produk baru via WhatsApp/Email"
+  },
+  "header": {
+    "title": "MY PROFILE & ADDRESS BOOK",
+    "subtitle": "Kelola informasi akun dan hingga 3 alamat pengiriman tersimpan."
+  },
+  "buttons": {
+    "editProfile": "Edit Profil",
+    "addAddress": "Tambah Alamat Baru",
+    "save": "Simpan Perubahan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "setPrimary": "Jadikan Utama"
+  }
+}

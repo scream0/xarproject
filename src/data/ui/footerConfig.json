@@ -28,14 +28,6 @@
       { "label": "Kontak", "href": "#contact" }
     ]
   },
-  "contactInfo": {
-    "title": "Hubungi Kami",
-    "details": [
-      { "label": "Email", "value": "support@xarproject.com" },
-      { "label": "WhatsApp", "value": "+62 851-7172-3607" },
-      { "label": "Jam Kerja", "value": "09:00 - 21:00 WIB" }
-    ]
-  },
   "payment": {
     "title": "Pembayaran",
     "subtitle": "Didukung secara aman oleh:",

@@ -44,17 +44,7 @@ export function Footer() {
           </div>
         </div>
 
-        {/* KOLOM 3: HUBUNGI */}
-        <div className={`${styles.footerBox} ${styles.footerInfo}`}>
-          <h3>{footerData?.contactInfo?.title}</h3>
-          {footerData?.contactInfo?.details?.map((detail, index) => (
-            <p key={index}>
-              <strong>{detail.label}:</strong> {detail.value}
-            </p>
-          ))}
-        </div>
-
-        {/* KOLOM 4: PAYMENT */}
+        {/* KOLOM 3: PAYMENT */}
         <div className={`${styles.footerBox} ${styles.footerPayment}`}>
           <h3>{footerData?.payment?.title}</h3>
           <p className={styles.mutedText}>{footerData?.payment?.subtitle}</p>

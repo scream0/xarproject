@@ -1,104 +1,352 @@
+/* ==========================================
+   1. LAYOUT & CONTAINER UTAMA
+   ========================================== */
 .dashboardContainer {
   display: flex;
-  min-height: 100vh;
-  background: #000; /* Full black luxury */
+  height: 100vh; /* Ganti min-height menjadi height penuh */
+  background-color: #0b0b0b;
   color: #fff;
-  font-family: "Inter", sans-serif;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden; /* Mencegah body ikut scroll ganda */
 }
 
-/* Tambahkan ini ke UserDashboard.module.css */
+/* ==========================================
+   2. LOADING STATE
+   ========================================== */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #07090e;
+  color: #94a3b8;
+}
 
+.pulseScanner {
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(79, 70, 229, 0.2);
+  border-top: 2px solid #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.loadingText {
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================
+   3. MOBILE TOP NAVIGATION BAR
+   ========================================== */
+.mobileTopBar {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: #0b0f17;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0 20px;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+}
+
+.hamburgerBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hamburgerBtn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ==========================================
+   4. SIDEBAR (DESKTOP & DRAWER)
+   ========================================== */
 .sidebar {
-  width: 250px;
-  border-right: 1px solid #1a1a1a;
-  padding: 40px 20px;
-  display: flex; /* Ubah ke flex */
-  flex-direction: column; /* Biar bisa didorong ke bawah */
-  justify-content: space-between; /* Sidebar isi dan footer terpisah */
+  width: 280px;
+  background-color: #0b0f17;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px 20px;
+  position: fixed;
   height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 90;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brandSection {
+  padding: 0 8px 24px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.brandLogo {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: #ffffff;
+}
+
+.brandLogo span {
+  color: #818cf8;
+}
+
+.brandBadge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: #94a3b8;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.navContainer {
+  flex: 1;
+  margin-top: 24px;
+}
+
+.navigationList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.navItem:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+}
+
+.navItemActive {
+  background: linear-gradient(
+    135deg,
+    rgba(79, 70, 229, 0.2) 0%,
+    rgba(99, 102, 241, 0.1) 100%
+  );
+  color: #ffffff;
+  border-left: 3px solid #6366f1;
+  font-weight: 600;
 }
 
 .sidebarFooter {
-  margin-top: auto; /* Mendorong tombol ke paling bawah */
-  padding-bottom: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .logoutBtn {
-  background: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
   border: none;
-  color: #555; /* Abu-abu redup, kesan tenang */
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.7rem;
+  color: #f43f5e;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease;
+  text-align: left;
 }
 
 .logoutBtn:hover {
-  color: #ff4d4d; /* Berubah jadi merah elegan saat hover */
+  background-color: rgba(244, 63, 94, 0.08);
 }
 
-.brand {
+/* ==========================================
+   5. MAIN CONTENT & HEADER
+   ========================================== */
+.mainContent {
+  flex: 1;
+  margin-left: 260px; /* Lebar sidebar desktop */
+  padding: 30px;
+  height: 100vh; /* Mengisi penuh tinggi layar */
+  overflow-y: auto; /* KUNCI UTAMA: Mengizinkan mouse scroll ke bawah */
+  box-sizing: border-box;
+}
+
+.header {
+  padding: 32px 48px;
+  background-color: #0b0f17;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.welcomeTitle {
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0.3em;
-  font-size: 1.2rem;
-  margin-bottom: 60px;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  margin: 0;
 }
 
-.nav {
+.viewWrapper {
+  padding: 40px 48px;
   display: flex;
   flex-direction: column;
+  gap: 32px;
+}
+
+/* ==========================================
+   6. GLOBAL COMPONENT STYLING FOR SECTIONS
+   ========================================== */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
 }
 
-.nav button {
-  background: none;
-  border: none;
-  color: #666;
-  text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
+.metricCard {
+  background: linear-gradient(145deg, #0f1523 0%, #0b0f17 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.metricTitle {
   font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.nav button.active,
-.nav button:hover {
-  color: #fff;
-}
-
-.mainContent {
-  flex: 1;
-  padding: 60px;
-}
-
-.header h1 {
-  font-weight: 300;
-  letter-spacing: 0.05em;
-  margin-bottom: 10px;
-}
-
-.header p {
-  color: #666;
-  font-size: 0.8rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0 0 8px 0;
 }
 
-.contentArea {
-  margin-top: 40px;
+.metricValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+}
+
+.metricDesc {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.workspaceArea {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.workspaceInner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .card {
-  border: 1px solid #1a1a1a;
-  padding: 30px;
-  max-width: 600px;
+  background-color: #0b0f17;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .card h3 {
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
-  margin-bottom: 20px;
-  color: #888;
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0 0 12px 0;
+}
+
+.card p {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* ==========================================
+   7. RESPONSIVE DESIGN (BREAKPOINTS)
+   ========================================== */
+@media (max-width: 1024px) {
+  .mobileTopBar {
+    display: flex;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .mainContent {
+    margin-left: 0;
+    margin-top: 64px;
+  }
+
+  .header {
+    padding: 24px;
+  }
+
+  .viewWrapper {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .welcomeTitle {
+    font-size: 1.05rem;
+  }
+
+  .card {
+    padding: 20px;
+  }
 }

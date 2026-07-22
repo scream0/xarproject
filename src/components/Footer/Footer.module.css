@@ -10,6 +10,7 @@
   transition: all 0.3s ease;
   transform-origin: center;
 }
+
 .siteFooter {
   background-color: #080808;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -21,7 +22,8 @@
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.51fr 0.8fr 1.2fr 1fr;
+  /* Disesuaikan menjadi 3 kolom utama karena kolom kontak dihapus */
+  grid-template-columns: 1.5fr 1fr 1.2fr;
   gap: 3rem;
 }
 
@@ -53,10 +55,6 @@
 
 .footerSocial {
   display: flex;
-  gap: 1rem;
-}
-.footerSocial {
-  display: flex;
   gap: 1.5rem; /* Memberikan ruang antar ikon agar tidak sesak */
   margin-top: 1rem;
 }
@@ -82,13 +80,13 @@
   box-shadow: 0 10px 20px rgba(var(--primary-color-rgb), 0.2);
 }
 
-/* Opsional: Jika ikon terasa terlalu besar di dalam tombol */
 .footerSocial a svg {
   width: 20px;
   height: 20px;
   stroke-width: 1.5;
   stroke: currentColor;
 }
+
 /* Links */
 .linksGrid {
   display: flex;
@@ -106,17 +104,7 @@
   padding-left: 4px;
 }
 
-/* Info & Payment */
-.footerInfo p {
-  color: #888;
-  font-size: 0.92rem;
-  line-height: 1.8;
-  margin-bottom: 0.8rem;
-}
-.footerInfo p strong {
-  color: #fff;
-}
-
+/* Payment */
 .mutedText {
   color: #666;
   font-size: 0.85rem;
@@ -136,6 +124,11 @@
   border: 1px solid rgba(255, 255, 255, 0.05);
   text-align: center;
   font-weight: 500;
+  transition: all 0.3s ease;
+}
+.badgePayment:hover {
+  border-color: var(--primary-color);
+  color: #fff;
 }
 
 /* Bottom */

@@ -21,9 +21,6 @@ export default function AddProductForm({ onProductAdded }) {
   const [previewUrl, setPreviewUrl] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  const CLOUD_NAME = "qs59fb4k";
-  const UPLOAD_PRESET = "xarProject";
-
   const addVariantField = () => {
     setVariants([
       ...variants,
@@ -74,36 +71,67 @@ export default function AddProductForm({ onProductAdded }) {
     try {
       setUploading(true);
 
-      // 1. Upload Gambar Utama ke Cloudinary
+      // Generate unik identifier sementara untuk penamaan folder/file di server
+      const uniqueId = Date.now();
+
+      // 1. Upload Gambar Utama via API Route /api/cloudinary
       const mainData = new FormData();
       mainData.append("file", file);
-      mainData.append("upload_preset", UPLOAD_PRESET);
+      mainData.append("userId", `product_new_${uniqueId}`);
 
-      const mainRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: mainData },
-      );
-      const mainFileData = await mainRes.json();
+      const mainRes = await fetch("/api/cloudinary", {
+        method: "POST",
+        body: mainData,
+      });
+
+      const mainResponseText = await mainRes.text();
+      let mainFileData;
+      try {
+        mainFileData = JSON.parse(mainResponseText);
+      } catch {
+        throw new Error(mainResponseText || addConfig.toast.error);
+      }
+
+      if (!mainRes.ok || !mainFileData.secure_url) {
+        throw new Error(mainFileData.error || "Cloudinary main upload failed");
+      }
+
       const imageUrl = mainFileData.secure_url;
+      const imagePublicId = mainFileData.public_id;
 
-      if (!imageUrl) throw new Error("Cloudinary main upload failed");
-
-      // 2. Upload Gambar Varian (Jika ada)
+      // 2. Upload Gambar Varian (Jika ada) via API Route /api/cloudinary
       const processedVariants = await Promise.all(
-        variants.map(async (v) => {
+        variants.map(async (v, index) => {
           let variantImageUrl = "";
+          let variantPublicId = "";
 
           if (v.imageFile) {
             const variantData = new FormData();
             variantData.append("file", v.imageFile);
-            variantData.append("upload_preset", UPLOAD_PRESET);
-
-            const variantRes = await fetch(
-              `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-              { method: "POST", body: variantData },
+            variantData.append(
+              "userId",
+              `product_new_${uniqueId}_var_${index}`,
             );
-            const variantFileData = await variantRes.json();
-            variantImageUrl = variantFileData.secure_url || "";
+
+            const variantRes = await fetch("/api/cloudinary", {
+              method: "POST",
+              body: variantData,
+            });
+
+            const variantResponseText = await variantRes.text();
+            let variantFileData;
+            try {
+              variantFileData = JSON.parse(variantResponseText);
+            } catch {
+              throw new Error(
+                variantResponseText || "Gagal upload gambar varian.",
+              );
+            }
+
+            if (variantRes.ok && variantFileData.secure_url) {
+              variantImageUrl = variantFileData.secure_url;
+              variantPublicId = variantFileData.public_id;
+            }
           }
 
           return {
@@ -111,17 +139,19 @@ export default function AddProductForm({ onProductAdded }) {
             price: Number(v.price),
             stock: Number(v.stock),
             imageUrl: variantImageUrl,
+            imagePublicId: variantPublicId,
           };
         }),
       );
 
-      // 3. Simpan data ke Supabase Database
+      // 3. Simpan data ke Supabase Database (termasuk image_public_id)
       const { error } = await supabase.from("products").insert([
         {
           name: formData.name,
           category: formData.category,
           description: formData.description,
           image_url: imageUrl,
+          image_public_id: imagePublicId,
           variants: processedVariants,
           created_at: new Date().toISOString(),
         },
@@ -139,7 +169,9 @@ export default function AddProductForm({ onProductAdded }) {
       onProductAdded?.();
     } catch (e) {
       console.error("Error adding product to Supabase: ", e);
-      toast.error(addConfig.toast.error, { id: toastId });
+      toast.error(addConfig.toast.error + (e.message ? `: ${e.message}` : ""), {
+        id: toastId,
+      });
     } finally {
       setUploading(false);
     }
