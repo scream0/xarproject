@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import {
   BarChart,
   Bar,
@@ -37,28 +36,35 @@ export default function AdvancedAnalytics() {
 
   const fetchAdvancedData = async () => {
     try {
-      const { data: orders, error: txError } = await supabase
-        .from("orders")
-        .select("*");
+      // Mengambil data dari endpoint orders dan products yang sudah ada
+      const [ordersRes, productsRes] = await Promise.all([
+        fetch("/api/orders"),
+        fetch("/api/products"),
+      ]);
 
-      const { data: products, error: prodError } = await supabase
-        .from("products")
-        .select("*");
+      const ordersResult = await ordersRes.json();
+      const productsResult = await productsRes.json();
 
-      if (txError) throw txError;
-      if (prodError) throw prodError;
+      // Menyesuaikan dengan struktur data yang dikembalikan oleh route masing-masing
+      const orders = Array.isArray(ordersResult)
+        ? ordersResult
+        : ordersResult.data || ordersResult.orders || [];
 
-      if (orders) {
+      const products = Array.isArray(productsResult)
+        ? productsResult
+        : productsResult.data || productsResult.products || [];
+
+      if (orders.length > 0) {
         processMoMGrowth(orders);
         processOrderStatus(orders);
         processTopVariants(orders);
       }
 
-      if (products) {
+      if (products.length > 0) {
         processInventoryTurnover(products);
       }
     } catch (error) {
-      console.error("Gagal mengambil analitik lanjutan dari Supabase:", error);
+      console.error("Gagal mengambil analitik lanjutan:", error);
     } finally {
       setLoading(false);
     }
@@ -76,7 +82,9 @@ export default function AdvancedAnalytics() {
       const dateField = order.created_at;
       if (dateField) {
         const d = new Date(dateField);
-        const amount = Number(order.total || order.gross_amount || 0);
+        const amount = Number(
+          order.total || order.gross_amount || order.rawPrice || 0,
+        );
 
         if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
           currentRev += amount;
@@ -105,11 +113,21 @@ export default function AdvancedAnalytics() {
   };
 
   const processOrderStatus = (orders) => {
-    const statusMap = { paid: 0, pending: 0, failed: 0 };
+    const statusMap = { paid: 0, pending: 0, failed: 0, settlement: 0 };
 
     orders.forEach((order) => {
-      const status = (order.status || "pending").toLowerCase();
-      if (statusMap[status] !== undefined) {
+      const status = (
+        order.status ||
+        order.transaction_status ||
+        "pending"
+      ).toLowerCase();
+      if (
+        status === "settlement" ||
+        status === "completed" ||
+        status === "success"
+      ) {
+        statusMap.paid += 1;
+      } else if (statusMap[status] !== undefined) {
         statusMap[status] += 1;
       } else {
         statusMap.pending += 1;
@@ -130,10 +148,11 @@ export default function AdvancedAnalytics() {
     const variantMap = {};
 
     orders.forEach((order) => {
-      const items = order.items || [];
+      // Menyesuaikan struktur item pesanan baik dalam bentuk array maupun objek tunggal
+      const items = order.items || (order.order ? [order.order] : []);
       if (Array.isArray(items)) {
         items.forEach((item) => {
-          const name = `${item.name || "Product"} (${item.size || item.variant || "Standard"})`;
+          const name = `${item.name || "Product"} (${item.size || item.concentration || item.variant || "Standard"})`;
           const qty = Number(item.quantity || item.qty || 1);
 
           if (!variantMap[name]) variantMap[name] = 0;

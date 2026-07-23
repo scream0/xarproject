@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import styles from "./OverviewStats.module.css";
+import toast from "react-hot-toast";
 
 // Import Konfigurasi JSON
 import overviewConfig from "@/data/ui/overviewConfig.json";
@@ -13,28 +13,42 @@ export default function OverviewStats() {
     activeProducts: 0,
     lowStockCount: 0,
   });
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchDashboardData = async () => {
     try {
-      // 1. Ambil data produk untuk menghitung jumlah produk & stok menipis pada varian
-      const { data: products, error: productError } = await supabase
-        .from("products")
-        .select("*");
+      setLoading(true);
+      // Panggil produk dan seluruh pesanan secara paralel (tanpa userId agar mengambil semua data admin)
+      const [productsRes, ordersRes] = await Promise.all([
+        fetch("/api/products"),
+        fetch("/api/orders"),
+      ]);
 
-      if (productError) throw productError;
+      const productsResult = await productsRes.json();
+      const ordersResult = await ordersRes.json();
 
-      let activeProductsCount = products?.length || 0;
+      const products = Array.isArray(productsResult)
+        ? productsResult
+        : productsResult.data || productsResult.products || [];
+
+      const transactions = Array.isArray(ordersResult)
+        ? ordersResult
+        : ordersResult.data || ordersResult.orders || [];
+
+      setOrders(transactions);
+
+      let activeProductsCount = products.length;
       let lowStockCount = 0;
 
-      products?.forEach((product) => {
+      products.forEach((product) => {
         if (product.variants && Array.isArray(product.variants)) {
           product.variants.forEach((v) => {
-            // Jika stok varian kurang dari atau sama dengan 5
             if (Number(v.stock) <= 5) {
               lowStockCount++;
             }
@@ -42,20 +56,20 @@ export default function OverviewStats() {
         }
       });
 
-      // 2. Ambil data transaksi untuk menghitung total pendapatan & jumlah pesanan
       let totalRevenue = 0;
-      let totalOrders = 0;
+      let totalOrders = transactions.length;
 
-      const { data: transactions, error: txError } = await supabase
-        .from("transactions") // Sesuaikan jika nama tabel Anda berbeda (misal: "orders")
-        .select("*");
-
-      if (!txError && transactions) {
-        totalOrders = transactions.length;
-        totalRevenue = transactions.reduce((acc, curr) => {
-          return acc + Number(curr.total_price || curr.amount || 0);
-        }, 0);
-      }
+      transactions.forEach((curr) => {
+        // Hitung pendapatan hanya dari pesanan yang sukses/dibayar
+        if (
+          curr.status === "success" ||
+          curr.status === "processing" ||
+          curr.status === "shipping" ||
+          curr.status === "completed"
+        ) {
+          totalRevenue += Number(curr.amount || curr.price || 0);
+        }
+      });
 
       setStats({
         totalRevenue,
@@ -64,13 +78,45 @@ export default function OverviewStats() {
         lowStockCount,
       });
     } catch (error) {
-      console.error("Gagal mengambil data statistik overview:", error);
+      console.error("Gagal mengambil data dashboard:", error);
+      toast.error("Gagal memuat data dashboard");
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper format mata uang Rupiah
+  // Fungsi bagi Seller untuk Mengonfirmasi / Mengubah Status Pesanan
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    try {
+      setUpdatingId(orderId);
+      const res = await fetch("/api/orders", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+
+      const result = await res.json();
+      if (!res.ok)
+        throw new Error(result.error || "Gagal memperbarui status pesanan");
+
+      toast.success(`Pesanan ${orderId} berhasil diubah ke: ${newStatus}`);
+
+      // Perbarui data lokal secara instan tanpa reload halaman
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId || o.orderId === orderId
+            ? { ...o, status: newStatus }
+            : o,
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -79,57 +125,185 @@ export default function OverviewStats() {
     }).format(number);
   };
 
+  const getBadgeClass = (status) => {
+    switch (status) {
+      case "success":
+        return styles.badgeSuccess;
+      case "processing":
+        return styles.badgeProcessing;
+      case "shipping":
+        return styles.badgeShipping;
+      case "completed":
+        return styles.badgeCompleted;
+      default:
+        return styles.badgePending;
+    }
+  };
+
   return (
     <div className={styles.statsContainer}>
-      {/* Kartu 1: Total Pendapatan */}
-      <div className={styles.statCard}>
-        <span className={styles.statLabel}>{overviewConfig.cards.revenue}</span>
-        <span className={styles.statValue}>
-          {loading ? "..." : formatRupiah(stats.totalRevenue)}
-        </span>
-        <span className={styles.statDesc}>Akumulasi transaksi sukses</span>
+      {/* 4 Kartu Metrik Statistik Utama */}
+      <div className={styles.cardsGrid}>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>
+            {overviewConfig.cards.revenue}
+          </span>
+          <span className={styles.statValue}>
+            {loading ? "..." : formatRupiah(stats.totalRevenue)}
+          </span>
+          <span className={styles.statDesc}>Akumulasi transaksi sukses</span>
+        </div>
+
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>
+            {overviewConfig.cards.orders}
+          </span>
+          <span className={styles.statValue}>
+            {loading ? "..." : stats.totalOrders}
+          </span>
+          <span className={styles.statDesc}>Total pesanan masuk</span>
+        </div>
+
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>
+            {overviewConfig.cards.products}
+          </span>
+          <span className={styles.statValue}>
+            {loading ? "..." : stats.activeProducts}
+          </span>
+          <span className={styles.statDesc}>Koleksi item di arsip</span>
+        </div>
+
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>
+            {overviewConfig.cards.lowStock}
+          </span>
+          <span
+            className={styles.statValue}
+            style={{ color: stats.lowStockCount > 0 ? "#ef4444" : "#fff" }}
+          >
+            {loading ? "..." : stats.lowStockCount}
+          </span>
+          <span
+            className={`${styles.statDesc} ${stats.lowStockCount > 0 ? styles.warningDesc : ""}`}
+          >
+            {stats.lowStockCount > 0
+              ? "Varian perlu restock segera"
+              : "Stok aman terkendali"}
+          </span>
+        </div>
       </div>
 
-      {/* Kartu 2: Total Transaksi */}
-      <div className={styles.statCard}>
-        <span className={styles.statLabel}>{overviewConfig.cards.orders}</span>
-        <span className={styles.statValue}>
-          {loading ? "..." : stats.totalOrders}
-        </span>
-        <span className={styles.statDesc}>Total pesanan masuk</span>
-      </div>
+      {/* Bagian Tabel Daftar & Konfirmasi Pesanan untuk Seller */}
+      <div className={styles.ordersSection}>
+        <h3 className={styles.sectionTitle}>
+          Kelola & Konfirmasi Pesanan Masuk
+        </h3>
+        {loading ? (
+          <p style={{ color: "#888", fontSize: "14px" }}>
+            Memuat daftar pesanan...
+          </p>
+        ) : orders.length === 0 ? (
+          <p style={{ color: "#888", fontSize: "14px" }}>
+            Belum ada pesanan masuk.
+          </p>
+        ) : (
+          <div className={styles.tableResponsive}>
+            <table className={styles.ordersTable}>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Pemesan</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Aksi Seller</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => {
+                  const currentId = order.orderId || order.id;
+                  const customerName =
+                    order.customerName ||
+                    order.shipping_address?.recipientName ||
+                    "Customer";
+                  const orderTotal = Number(order.amount || order.price || 0);
 
-      {/* Kartu 3: Produk Aktif */}
-      <div className={styles.statCard}>
-        <span className={styles.statLabel}>
-          {overviewConfig.cards.products}
-        </span>
-        <span className={styles.statValue}>
-          {loading ? "..." : stats.activeProducts}
-        </span>
-        <span className={styles.statDesc}>Koleksi item di arsip</span>
-      </div>
-
-      {/* Kartu 4: Stok Menipis */}
-      <div className={styles.statCard}>
-        <span className={styles.statLabel}>
-          {overviewConfig.cards.lowStock}
-        </span>
-        <span
-          className={styles.statValue}
-          style={{ color: stats.lowStockCount > 0 ? "#ef4444" : "#fff" }}
-        >
-          {loading ? "..." : stats.lowStockCount}
-        </span>
-        <span
-          className={`${styles.statDesc} ${
-            stats.lowStockCount > 0 ? styles.warningDesc : ""
-          }`}
-        >
-          {stats.lowStockCount > 0
-            ? "Varian perlu restock segera"
-            : "Stok aman terkendali"}
-        </span>
+                  return (
+                    <tr key={currentId}>
+                      <td style={{ fontWeight: 600 }}>{currentId}</td>
+                      <td>{customerName}</td>
+                      <td>{formatRupiah(orderTotal)}</td>
+                      <td>
+                        <span
+                          className={`${styles.badge} ${getBadgeClass(order.status)}`}
+                        >
+                          {order.status || "pending"}
+                        </span>
+                      </td>
+                      <td>
+                        {order.status === "success" && (
+                          <button
+                            className={styles.actionBtn}
+                            onClick={() =>
+                              handleUpdateStatus(currentId, "processing")
+                            }
+                            disabled={updatingId === currentId}
+                          >
+                            {updatingId === currentId
+                              ? "Memproses..."
+                              : "Proses Pesanan"}
+                          </button>
+                        )}
+                        {order.status === "processing" && (
+                          <button
+                            className={styles.actionBtn}
+                            onClick={() =>
+                              handleUpdateStatus(currentId, "shipping")
+                            }
+                            disabled={updatingId === currentId}
+                          >
+                            {updatingId === currentId
+                              ? "Mengirim..."
+                              : "Kirim Barang"}
+                          </button>
+                        )}
+                        {order.status === "shipping" && (
+                          <button
+                            className={styles.actionBtn}
+                            onClick={() =>
+                              handleUpdateStatus(currentId, "completed")
+                            }
+                            disabled={updatingId === currentId}
+                          >
+                            {updatingId === currentId
+                              ? "Menyelesaikan..."
+                              : "Selesaikan"}
+                          </button>
+                        )}
+                        {order.status === "completed" && (
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: "#4ade80",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Selesai
+                          </span>
+                        )}
+                        {order.status === "pending" && (
+                          <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+                            Belum Bayar
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

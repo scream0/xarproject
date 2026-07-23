@@ -8,7 +8,7 @@ import styles from "./AdminDashboard.module.css";
 // Import UI Config JSON
 import adminConfig from "@/data/ui/adminConfig.json";
 
-// Import Komponen Dashboard (Pastikan path folder Analytics sudah benar di src/components/)
+// Import Komponen Dashboard
 import AnalyticsChart from "@/components/Dashboard/Admin/Analytics/AnalyticsChart";
 import AdvancedAnalytics from "@/components/Dashboard/Admin/Analytics/AdvancedAnalytics";
 import TransactionTable from "@/components/Dashboard/Admin/Overview/TransactionTable";
@@ -23,15 +23,33 @@ export default function AdminDashboard() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Kembali menggunakan Firebase Auth untuk mengecek sesi login
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         window.location.href = "/login";
-      } else {
-        setUser(currentUser);
-        setLoading(false);
+        return;
       }
+
+      try {
+        // Validasi role ke API Route server backend
+        const res = await fetch(`/api/users?userId=${currentUser.uid}`);
+        const result = await res.json();
+
+        if (res.ok && result.exists && result.data) {
+          const role = result.data.role;
+          // Jika bukan admin, tendang kembali ke dashboard user atau halaman utama
+          if (role !== "admin") {
+            window.location.href = "/dashboard";
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Gagal memverifikasi hak akses admin:", error);
+      }
+
+      setUser(currentUser);
+      setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 
@@ -125,7 +143,6 @@ export default function AdminDashboard() {
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <>
-              {/* Kartu Statistik Dinamis dari Supabase */}
               <OverviewStats />
 
               <section className={styles.workspaceArea}>

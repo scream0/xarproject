@@ -1,15 +1,15 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup, // <-- Menggunakan Popup
+  signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
   RecaptchaVerifier,
   signInWithPhoneNumber,
   updateProfile,
+  sendEmailVerification, // <-- 1. Import fungsi verifikasi email
 } from "firebase/auth";
 import { auth } from "../../lib/firebaseClient";
 import loginConfig from "@/data/ui/loginConfig.json";
@@ -47,6 +47,19 @@ export default function LoginForm() {
 
   // Destrukturisasi semua konfigurasi UI dari loginConfig.json
   const { form } = loginConfig || {};
+
+  // Helper untuk sinkronisasi data user ke API Route `/api/users`
+  const syncUserToServer = async (userData) => {
+    try {
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+    } catch (err) {
+      console.error("Gagal menyinkronkan user ke server:", err);
+    }
+  };
 
   // ==========================================
   // EFFECT: REMEMBER ME
@@ -110,14 +123,28 @@ export default function LoginForm() {
       }
 
       try {
+        // 1. Buat akun di Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           formData.email,
           formData.password,
         );
 
+        // 2. Update nama tampilan profil (Display Name)
         await updateProfile(userCredential.user, {
           displayName: formData.name,
+        });
+
+        // 3. Kirim Email Verifikasi ke email yang didaftarkan
+        await sendEmailVerification(userCredential.user);
+
+        // 4. Sinkronisasi data ke Firestore via API Route
+        await syncUserToServer({
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          name: formData.name,
+          phone: "",
+          role: "user",
         });
 
         setCustomer({
@@ -128,9 +155,13 @@ export default function LoginForm() {
 
         setSuccessMessage(
           form?.messages?.registerSuccess ||
-            "Registrasi akun berhasil! Mengalihkan...",
+            "Registrasi berhasil! Link verifikasi telah dikirim ke email Anda. Mengalihkan...",
         );
-        window.location.href = callbackUrl; // Hard redirect agar stabil
+
+        // Berikan jeda 2.5 detik agar user sempat membaca pesan sukses verifikasi email
+        setTimeout(() => {
+          window.location.href = callbackUrl;
+        }, 2500);
       } catch (err) {
         console.error("Firebase Register Error:", err.code);
         if (err.code === "auth/email-already-in-use") {
@@ -167,13 +198,22 @@ export default function LoginForm() {
       }
       try {
         const result = await confirmationResult.confirm(otpCode);
+
+        await syncUserToServer({
+          uid: result.user.uid,
+          email: result.user.email || "",
+          name: result.user.displayName || "User",
+          phone: result.user.phoneNumber || "",
+          role: "user",
+        });
+
         setCustomer({
           name: result.user.displayName || "User",
           email: result.user.email,
           phone: "",
         });
-        console.log("Login Nomor HP berhasil! User UID:", result.user.uid);
-        window.location.href = callbackUrl; // Hard redirect agar stabil
+
+        window.location.href = callbackUrl;
       } catch (err) {
         console.error("OTP Verification Error:", err.code);
         if (
@@ -210,6 +250,13 @@ export default function LoginForm() {
           formData.password,
         );
 
+        await syncUserToServer({
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          name: userCredential.user.displayName || "User",
+          phone: userCredential.user.phoneNumber || "",
+        });
+
         setCustomer({
           name: userCredential.user.displayName || "User",
           email: userCredential.user.email,
@@ -222,8 +269,7 @@ export default function LoginForm() {
           localStorage.removeItem("rememberedEmail");
         }
 
-        console.log("Login berhasil! User UID:", userCredential.user.uid);
-        window.location.href = callbackUrl; // Hard redirect agar stabil
+        window.location.href = callbackUrl;
       } catch (err) {
         console.error("Firebase Auth Error:", err.code);
         if (err.code === "auth/invalid-credential") {
@@ -345,32 +391,31 @@ export default function LoginForm() {
   };
 
   // ==========================================
-  // TOMBOL GOOGLE LOGIN (POPUP - ANTI-BLOKIR)
+  // TOMBOL GOOGLE LOGIN
   // ==========================================
   const handleGoogleLogin = () => {
-    // Hapus 'async' di sini agar tidak ada jeda micro-task
     setError("");
     setSuccessMessage("");
     setIsLoading(true);
 
     const provider = new GoogleAuthProvider();
 
-    // Jalankan langsung tanpa await di awal pembuka fungsi
     signInWithPopup(auth, provider)
-      .then((result) => {
-        // Simpan data ke Store
+      .then(async (result) => {
+        await syncUserToServer({
+          uid: result.user.uid,
+          email: result.user.email,
+          name: result.user.displayName || "User",
+          phone: result.user.phoneNumber || "",
+          role: "user",
+        });
+
         setCustomer({
           name: result.user.displayName || "User",
           email: result.user.email,
           phone: "",
         });
 
-        console.log(
-          "Google Auth (Popup) sukses! User:",
-          result.user.displayName,
-        );
-
-        // Lempar ke Dashboard
         window.location.href = callbackUrl;
       })
       .catch((err) => {
@@ -378,12 +423,12 @@ export default function LoginForm() {
         setIsLoading(false);
 
         if (err.code === "auth/popup-closed-by-user") {
-          return; // Abaikan jika user sengaja menutup popup
+          return;
         }
 
         if (err.code === "auth/popup-blocked") {
           setError(
-            "Browser Anda memblokir jendela pop-up. Harapizinkan pop-up untuk situs ini.",
+            "Browser Anda memblokir jendela pop-up. Harap izinkan pop-up untuk situs ini.",
           );
           return;
         }
@@ -416,9 +461,6 @@ export default function LoginForm() {
     return form?.buttonText || "SIGN IN";
   };
 
-  // ==========================================
-  // RENDER UI UTAMA
-  // ==========================================
   return (
     <div className={styles.formWrapper}>
       <div id="recaptcha-container"></div>
@@ -476,7 +518,6 @@ export default function LoginForm() {
             <div className={styles.successMessage}>{successMessage}</div>
           )}
 
-          {/* RENDER FIELD SECARA DATA-DRIVEN */}
           {form?.fields?.map((field) => {
             if (!field || !field.name) return null;
             const shouldRender =
@@ -512,7 +553,6 @@ export default function LoginForm() {
                   onBlur={() => setIsFormFocused(false)}
                 />
 
-                {/* Fitur Toggle Mata khusus inputan Password */}
                 {field.type === "password" && (
                   <button
                     type="button"
@@ -560,7 +600,6 @@ export default function LoginForm() {
             );
           })}
 
-          {/* Aksi Tambahan untuk Mode Phone: Request OTP (Hanya jika belum dikirim) */}
           {isPhoneMode && !confirmationResult && (
             <button
               type="button"
@@ -572,7 +611,6 @@ export default function LoginForm() {
             </button>
           )}
 
-          {/* Input OTP Mandiri setelah SMS sukses terkirim */}
           {isPhoneMode && confirmationResult && (
             <div className={styles.inputWrapper}>
               <input
@@ -589,7 +627,6 @@ export default function LoginForm() {
             </div>
           )}
 
-          {/* Opsi Row Bawah (Remember Me & Forgot Password) */}
           {!isRegister && !isPhoneMode && (
             <div className={styles.optionsRow}>
               <label className={styles.checkboxLabel}>
@@ -613,7 +650,6 @@ export default function LoginForm() {
             </div>
           )}
 
-          {/* Tombol Submit Utama */}
           {(!isPhoneMode || confirmationResult) && (
             <button
               type="submit"
@@ -629,7 +665,6 @@ export default function LoginForm() {
           )}
         </form>
 
-        {/* FOOTER INTERFACE SWITCHER */}
         {!isRegister && (
           <button
             type="button"
@@ -662,7 +697,6 @@ export default function LoginForm() {
             : form?.switchText?.signUp || "Don't have an account? Sign Up"}
         </button>
 
-        {/* TOMBOL OAUTH GOOGLE */}
         <div className={styles.divider}>
           <span>{form?.labels?.oauthDivider || "OR CONTINUE WITH"}</span>
         </div>

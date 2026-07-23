@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import styles from "./SettingsView.module.css";
 
@@ -15,19 +15,32 @@ export default function SettingsView() {
   });
   const [loading, setLoading] = useState(false);
 
+  // Muat pengaturan tersimpan dari localStorage saat pertama kali dirender
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem("app_settings");
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
+        setSettings((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch (error) {
+      console.error("Gagal memuat pengaturan dari localStorage:", error);
+    }
+  }, []);
+
   const handleSave = async (e) => {
     e.preventDefault();
     const toastId = toast.loading(settingsConfig.buttons.saving);
     setLoading(true);
 
     try {
-      // Simulasi penyimpanan (bisa dihubungkan ke localStorage atau tabel database settings)
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Simulasi jeda jaringan tipis untuk UX, lalu simpan ke localStorage
+      await new Promise((resolve) => setTimeout(resolve, 600));
       localStorage.setItem("app_settings", JSON.stringify(settings));
 
       toast.success(settingsConfig.toast.success, { id: toastId });
     } catch (error) {
-      console.error("Gagal menyimpan:", error);
+      console.error("Gagal menyimpan pengaturan:", error);
       toast.error(settingsConfig.toast.error, { id: toastId });
     } finally {
       setLoading(false);

@@ -20,7 +20,7 @@ const lato = Lato({
 });
 
 export const metadata = {
-  title: "xar project",
+  title: "mameko",
   description: "Artisanal Craftsmanship",
 };
 

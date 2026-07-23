@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
 import styles from "./CartSidebar.module.css";
 import cartData from "@/data/ui/cartSidebarConfig.json";
 
 export function CartSidebar() {
+  const router = useRouter();
   const {
     isCartOpen,
     setIsCartOpen,
@@ -18,6 +20,7 @@ export function CartSidebar() {
     getAvailableVariants,
     processPayment,
     isProcessing,
+    user, // Mengambil status user dari StoreContext
   } = useStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -32,7 +35,32 @@ export function CartSidebar() {
   // Normalisasi array produk untuk pencarian
   const productList = Array.isArray(products)
     ? products
-    : products?.produkItems || [];
+    : products?.data || products?.produkItems || [];
+
+  // Logika Checkout & Pengalihan Auth
+  const handleCheckoutClick = async () => {
+    // Jika user belum login, simpan keranjang dan arahkan ke login
+    if (!user) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("pending_cart", JSON.stringify(cart));
+      }
+      closeSidebar();
+      router.push("/login");
+      return;
+    }
+
+    // Jika sudah login, lanjutkan proses pembayaran
+    if (processPayment) {
+      processPayment();
+    }
+  };
+
+  // Fungsi navigasi tombol Jelajah / Lanjutkan Belanja
+  const handleExploreClick = (e) => {
+    e.preventDefault();
+    closeSidebar();
+    router.push(cartData?.emptyState?.buttonLink || "/shop");
+  };
 
   return (
     <div
@@ -48,22 +76,27 @@ export function CartSidebar() {
 
       <h3 className={styles.cartSidebarTitle}>{cartData?.labels?.title}</h3>
 
-      {cart.items.length > 0 ? (
+      {cart?.items?.length > 0 ? (
         <div className={styles.cartItemsWrapper}>
           {cart.items.map((item) => {
-            // Logika Stok & Varian
-            const originalProduct = productList.find((p) => p.id === item.id);
+            // Logika Stok & Varian yang akurat untuk JSONB Supabase
+            const originalProduct = productList.find(
+              (p) => String(p.id || p._id) === String(item.id),
+            );
             const variantInfo = originalProduct?.variants?.find(
               (v) => v.size === item.size,
             );
-            const maxStock = variantInfo?.stock ?? 0;
+
+            const maxStock = Number(
+              variantInfo?.stock ?? variantInfo?.stok ?? 10,
+            );
             const isMaxReached = item.quantity >= maxStock;
 
-            // LOGIKA GAMBAR DINAMIS PER VARIAN:
-            // Prioritaskan gambar khusus varian jika ada.
-            // Jika tidak ada, gunakan gambar utama item/produk.
+            // LOGIKA GAMBAR DINAMIS PER VARIAN TERPUSAT:
             const itemImageSrc =
+              variantInfo?.image_url ||
               variantInfo?.imageUrl ||
+              item.image_url ||
               item.imageUrl ||
               (item.image ? `${item.image}` : "/assets/placeholder.jpg");
 
@@ -90,7 +123,8 @@ export function CartSidebar() {
                       }
                     >
                       {getAvailableVariants(item.id).map((v) => {
-                        const isOutOfStock = (v.stock ?? 0) <= 0;
+                        const vStock = Number(v.stock ?? v.stok ?? 0);
+                        const isOutOfStock = vStock <= 0;
                         return (
                           <option
                             key={v.size}
@@ -98,7 +132,7 @@ export function CartSidebar() {
                             disabled={isOutOfStock}
                           >
                             {v.size} ({rupiah(v.price)}){" "}
-                            {isOutOfStock ? "- Habis" : ""}
+                            {isOutOfStock ? "- Habis" : `(Sisa: ${vStock})`}
                           </option>
                         );
                       })}
@@ -128,7 +162,11 @@ export function CartSidebar() {
                           if (originalProduct && !isMaxReached) {
                             addToCart(
                               originalProduct,
-                              { size: item.size, price: item.price },
+                              {
+                                size: item.size,
+                                price: item.price,
+                                stock: maxStock,
+                              },
                               1,
                             );
                           }
@@ -160,17 +198,17 @@ export function CartSidebar() {
             </svg>
           </div>
           <p>{cartData?.emptyState?.message}</p>
-          <a
-            href={cartData?.emptyState?.buttonLink}
-            onClick={closeSidebar}
+          <button
+            onClick={handleExploreClick}
             className={styles.btnContinueShopping}
+            style={{ border: "none", cursor: "pointer", width: "100%" }}
           >
             {cartData?.emptyState?.buttonText}
-          </a>
+          </button>
         </div>
       )}
 
-      {cart.items.length > 0 && (
+      {cart?.items?.length > 0 && (
         <div className={styles.cartFooterWrapper}>
           <div className={styles.cartTotalRow}>
             <h4>{cartData?.labels?.total}</h4>
@@ -178,7 +216,7 @@ export function CartSidebar() {
           </div>
           <button
             className={styles.cartCheckoutBtn}
-            onClick={processPayment}
+            onClick={handleCheckoutClick}
             disabled={isProcessing}
           >
             {isProcessing ? "Memproses..." : cartData?.labels?.checkout}

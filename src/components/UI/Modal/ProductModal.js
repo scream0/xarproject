@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import styles from "./Modal.module.css";
-import modalData from "@/data/ui/modalConfig.json";
+import styles from "./ProductModal.module.css";
+import modalData from "@/data/ui/productModalConfig.json";
 
 export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
   const [currentSize, setCurrentSize] = useState("");
@@ -11,24 +11,23 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
 
   // Reset state saat item berubah atau ukuran terpilih berubah
   useEffect(() => {
+    if (!item) return;
+
     const availableVariants =
       item?.variants?.filter((v) => (v.stock ?? 0) > 0) || [];
 
     if (availableVariants.length > 0) {
-      // Cek apakah varian yang terpilih sekarang masih tersedia
       const currentIsStillAvailable = availableVariants.find(
         (v) => v.size === currentSize,
       );
 
       if (!currentIsStillAvailable) {
-        // Jika varian terpilih sudah habis, pilih varian tersedia pertama
         const firstAvailable = availableVariants[0];
         setCurrentSize(firstAvailable.size);
         setSelectedVariant(firstAvailable);
         setModalQty(1);
       }
     } else {
-      // Jika tidak ada stok sama sekali
       setCurrentSize("");
       setSelectedVariant(null);
     }
@@ -42,6 +41,7 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
     }, 400);
   };
 
+  if (!isOpen || !item) return null;
   if (!isOpen && !isClosing) return null;
 
   const handleSizeChange = (variant) => {
@@ -57,15 +57,25 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
     }
   };
 
-  // LOGIKA GAMBAR DINAMIS:
-  // Jika varian yang dipilih memiliki imageUrl sendiri, gunakan itu.
-  // Jika tidak, fallback ke gambar utama produk (imageUrl / image_url).
+  // LOGIKA GAMBAR DINAMIS TERPUSAT:
+  // Prioritaskan gambar dari varian, lalu image_url / imageUrl dari database/item utama.
   const displayedImage =
-    selectedVariant?.imageUrl || item?.imageUrl || item?.image_url;
+    selectedVariant?.image_url ||
+    selectedVariant?.imageUrl ||
+    item?.image_url ||
+    item?.imageUrl ||
+    "/assets/placeholder.jpg";
+
+  const formatRupiah = (val) => {
+    if (rupiah) return rupiah(val);
+    return `Rp ${Number(val).toLocaleString("id-ID")}`;
+  };
 
   return (
     <div
-      className={`${styles.modalOverlay} ${isOpen && !isClosing ? styles.modalActive : ""} ${isClosing ? styles.modalClosing : ""}`}
+      className={`${styles.modalOverlay} ${
+        isOpen && !isClosing ? styles.modalActive : ""
+      } ${isClosing ? styles.modalClosing : ""}`}
       onClick={handleClose}
     >
       <div
@@ -94,21 +104,29 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
           </div>
 
           <div className={styles.modalInfoBox}>
-            <span className={styles.modalCategoryTag}>{item.category}</span>
+            <span className={styles.modalCategoryTag}>
+              {item.category || "Parfum"}
+            </span>
             <h2 className={styles.modalProductTitle}>{item.name}</h2>
 
             <div className={styles.modalPriceTag}>
               <span className={styles.modalPriceValue}>
-                {selectedVariant ? rupiah(selectedVariant.price) : "Stok Habis"}
+                {selectedVariant
+                  ? formatRupiah(selectedVariant.price)
+                  : item.price
+                    ? formatRupiah(item.price)
+                    : "Stok Habis"}
               </span>
             </div>
 
-            <p className={styles.modalProductDesc}>{item.description}</p>
+            <p className={styles.modalProductDesc}>
+              {item.description || "Deskripsi produk belum tersedia."}
+            </p>
 
             {/* Pilihan Varian */}
             {item.variants?.length > 0 && (
               <div className={styles.modalVariantSection}>
-                <h4>{modalData?.labels?.variant}</h4>
+                <h4>{modalData?.labels?.variant || "Pilih Ukuran / Varian"}</h4>
                 <div className={styles.variantPillGroup}>
                   {item.variants.map((v) => {
                     const stock = v.stock ?? 0;
@@ -116,7 +134,9 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
                     return (
                       <label
                         key={v.size}
-                        className={`${styles.variantPill} ${currentSize === v.size ? styles.pillActive : ""} ${isOutOfStock ? styles.disabledPill : ""}`}
+                        className={`${styles.variantPill} ${
+                          currentSize === v.size ? styles.pillActive : ""
+                        } ${isOutOfStock ? styles.disabledPill : ""}`}
                       >
                         <input
                           type="radio"
@@ -154,22 +174,22 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
                   onClick={() => setModalQty(Math.max(1, modalQty - 1))}
                   disabled={!selectedVariant || modalQty <= 1}
                 >
-                  {modalData?.labels?.quantityMinus}
+                  {modalData?.labels?.quantityMinus || "-"}
                 </button>
                 <span className={styles.modalQtyValue}>{modalQty}</span>
                 <button
                   className={styles.modalQtyBtn}
                   onClick={() =>
                     setModalQty(
-                      Math.min(selectedVariant?.stock ?? 0, modalQty + 1),
+                      Math.min(selectedVariant?.stock ?? 1, modalQty + 1),
                     )
                   }
                   disabled={
                     !selectedVariant ||
-                    modalQty >= (selectedVariant?.stock ?? 0)
+                    modalQty >= (selectedVariant?.stock ?? 1)
                   }
                 >
-                  {modalData?.labels?.quantityPlus}
+                  {modalData?.labels?.quantityPlus || "+"}
                 </button>
               </div>
 
@@ -178,7 +198,9 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
                 onClick={handleAddToCart}
                 disabled={!selectedVariant}
               >
-                {selectedVariant ? modalData?.labels?.addToCart : "Stok Habis"}
+                {selectedVariant
+                  ? modalData?.labels?.addToCart || "Tambah ke Keranjang"
+                  : "Stok Habis"}
               </button>
             </div>
           </div>

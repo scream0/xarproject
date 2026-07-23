@@ -1,150 +1,277 @@
+/* Workspace Utama Overview */
 .overviewWorkspace {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
+/* 1. Metric Cards Grid */
 .metricsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .metricsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .metricCard {
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #121214;
+  border: 1px solid #27272a;
   border-radius: 12px;
-  padding: 20px;
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.5rem;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.metricCard:hover {
+  border-color: #3f3f46;
+  transform: translateY(-2px);
+}
+
+.metricHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .metricTitle {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a1a1aa;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #94a3b8;
   margin: 0;
 }
 
+.metricIconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fbbf24;
+}
+
 .metricValue {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #ffffff;
+  color: #fff;
   margin: 0;
+  line-height: 1.2;
+}
+
+.unitText {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #71717a;
 }
 
 .metricDesc {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #71717a;
   margin: 0;
 }
 
+/* 2. Overview Grid Two Columns */
 .overviewGridTwo {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
 }
 
-@media (max-width: 900px) {
+@media (min-width: 1024px) {
   .overviewGridTwo {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 .sectionCard {
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #121214;
+  border: 1px solid #27272a;
   border-radius: 12px;
-  padding: 24px;
+  padding: 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  justify-content: space-between;
+}
+
+.welcomeBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  width: fit-content;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  margin-bottom: 0.75rem;
 }
 
 .cardTitle {
-  font-size: 0.95rem;
-  color: #ffffff;
-  margin: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 10px;
-  letter-spacing: 0.05em;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.75rem 0;
+  letter-spacing: 0.03em;
+}
+
+.cardTitle span {
+  color: #fbbf24;
 }
 
 .cardDesc {
-  font-size: 0.85rem;
-  color: #cbd5e1;
-  margin: 0;
-  line-height: 1.4;
+  font-size: 0.875rem;
+  color: #a1a1aa;
+  line-height: 1.6;
+  margin: 0 0 1.5rem 0;
 }
 
 .actionButtonGroup {
   display: flex;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .btnPrimary {
-  background-color: #6366f1;
-  color: #ffffff;
+  background: #fbbf24;
+  color: #000;
   border: none;
-  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.65rem 1.25rem;
   border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnPrimary:hover {
+  background: #f59e0b;
+}
+
+.btnOutline {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #3f3f46;
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnOutline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #71717a;
+}
+
+/* Curated Products Section */
+.curatedHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.seeAllLink {
+  background: transparent;
+  border: none;
+  color: #fbbf24;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
 }
 
-.btnPrimary:hover {
-  opacity: 0.9;
-}
-
-.btnOutline {
-  background-color: transparent;
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btnOutline:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+.seeAllLink:hover {
+  opacity: 0.8;
 }
 
 .curatedList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .curatedItem {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  justify-content: space-between;
+  background: #18181b;
+  border: 1px solid #27272a;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  transition: border-color 0.2s;
+}
+
+.curatedItem:hover {
+  border-color: #3f3f46;
+}
+
+.curatedImgWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #27272a;
+  flex-shrink: 0;
+  margin-right: 0.85rem;
+}
+
+.curatedThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.curatedInfo {
+  flex: 1;
+  min-width: 0;
 }
 
 .curatedName {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: #fff;
-  font-weight: 500;
-  margin: 0 0 2px 0;
+  margin: 0 0 0.15rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .curatedSub {
-  font-size: 0.7rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: #a1a1aa;
   margin: 0;
 }
 
-.curatedPrice {
-  font-size: 0.85rem;
-  color: #818cf8;
-  font-weight: 600;
+.curatedQuickAddBtn {
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  margin-left: 0.75rem;
+}
+
+.curatedQuickAddBtn:hover {
+  background: #fbbf24;
+  color: #000;
+  border-color: #fbbf24;
 }

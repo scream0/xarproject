@@ -1,25 +1,27 @@
 {
   "header": {
-    "title": "ORDER ARCHIVE",
-    "subtitle": "Manage and track your scent bottle acquisitions."
+    "title": "Riwayat Pesanan",
+    "subtitle": "Pantau status pengiriman, lacak proses peracikan parfum, dan kelola pesanan Anda."
   },
   "tabs": ["all", "processing", "completed"],
-  "loadingText": "Memuat riwayat transaksi...",
-  "emptyText": "Belum ada data.",
-  "modal": {
-    "title": "ORDER DETAILS",
-    "closeBtn": "Close"
-  },
+  "loadingText": "Memuat riwayat pesanan Anda...",
+  "emptyText": "Belum ada riwayat pesanan yang tercatat.",
   "buttons": {
-    "details": "Details",
-    "reorder": "Re-Order"
+    "details": "Detail Pesanan",
+    "reorder": "Beli Lagi",
+    "copyId": "Salin ID",
+    "downloadInvoice": "Unduh Invoice"
+  },
+  "modal": {
+    "title": "Detail & Status Pesanan",
+    "closeBtn": "Tutup"
   },
   "labels": {
-    "orderId": "Order ID",
-    "product": "Product",
-    "specsAndNotes": "Specification & Notes",
-    "paymentMethod": "Payment Method (Midtrans)",
-    "shippingAddress": "Shipping Address",
-    "totalPaid": "Total Paid:"
+    "orderId": "ID Transaksi:",
+    "product": "Produk:",
+    "specsAndNotes": "Spesifikasi & Catatan:",
+    "paymentMethod": "Metode Pembayaran:",
+    "shippingAddress": "Alamat Pengiriman:",
+    "totalPaid": "Total Pembayaran:"
   }
 }

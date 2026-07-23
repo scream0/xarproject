@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./EditProductModal.module.css";
 
@@ -71,7 +70,7 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setPreviewUrl(URL.createObjectURL(selectedFile)); // Ubah preview langsung ke file lokal PC
+      setPreviewUrl(URL.createObjectURL(selectedFile));
       setImageRemoved(false);
     }
   };
@@ -124,7 +123,6 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
       if (file) {
         const data = new FormData();
         data.append("file", file);
-        // Menggunakan identifier produk atau unik agar tidak berantakan
         data.append("userId", `product_${product.id}`);
         if (mainPhotoPublicId) {
           data.append("oldPublicId", mainPhotoPublicId);
@@ -164,7 +162,7 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
         }
       }
 
-      // 2. Proses Varian Produk (Upload gambar varian jika ada file baru)
+    // 2. Proses Varian Produk (Upload gambar varian jika ada file baru)
       const processedVariants = await Promise.all(
         variants.map(async (v, index) => {
           let currentVariantImageUrl = v.imageUrl;
@@ -201,35 +199,43 @@ export default function EditProductModal({ product, onClose, onUpdate }) {
             }
           }
 
+          const parsedStock = Number(v.stock) || 0;
+
           return {
             size: v.size,
-            price: Number(v.price),
-            stock: Number(v.stock),
+            price: Number(v.price) || 0,
+            stock: parsedStock,   // Format Inggris
+            stok: parsedStock,    // Format Indonesia (cadangan agar tidak undefined)
             imageUrl: currentVariantImageUrl,
+            image_url: currentVariantImageUrl,
             imagePublicId: currentVariantPublicId,
           };
         }),
       );
 
-      // 3. Simpan perubahan ke Supabase
-      const { error } = await supabase
-        .from("products")
-        .update({
+      // 3. Simpan perubahan ke API Route `/api/products` (Supabase backend)
+      const res = await fetch("/api/products", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: product.id,
           name: formData.name,
           description: formData.description,
-          image_url: imageUrl,
-          image_public_id: imagePublicId,
+          imageUrl: imageUrl,
+          imagePublicId: imagePublicId,
           variants: processedVariants,
-        })
-        .eq("id", product.id);
+        }),
+      });
 
-      if (error) throw error;
+      const result = await res.json();
+      if (!res.ok)
+        throw new Error(result.error || editConfig.alerts.failedUpdate);
 
       toast.success(editConfig.alerts.success, { id: toastId });
       onUpdate?.();
       onClose?.();
     } catch (e) {
-      console.error("Gagal update ke Supabase/Cloudinary:", e);
+      console.error("Gagal update produk:", e);
       toast.error(editConfig.alerts.failedUpdate + (e.message || ""), {
         id: toastId,
       });

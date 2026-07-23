@@ -3,24 +3,13 @@ import { useState, useEffect } from "react";
 import styles from "./ProfileSection.module.css";
 import profileConfig from "@/data/ui/userProfilConfig.json";
 import { auth } from "@/lib/firebaseClient";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
 import toast from "react-hot-toast";
-
-const db = getFirestore();
 
 export default function ProfileSection() {
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [removingImage, setRemovingImage] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Data Profil Utama
   const [profile, setProfile] = useState({
@@ -32,6 +21,8 @@ export default function ProfileSection() {
     email: "",
     photoURL: "",
     photoPublicId: "",
+    memberTier: "VIP Collector",
+    newsletterSubscribed: true,
   });
 
   // Daftar Alamat (Maksimal 3)
@@ -74,12 +65,13 @@ export default function ProfileSection() {
     }
   };
 
+  // Ambil Data User via API Route
   useEffect(() => {
     async function fetchUserData() {
       if (!currentUser) return;
       try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
+        const res = await fetch(`/api/users?userId=${currentUser.uid}`);
+        const result = await res.json();
 
         const defaultUsername = currentUser.email
           ? currentUser.email
@@ -89,8 +81,8 @@ export default function ProfileSection() {
           : "user_" + currentUser.uid.substring(0, 5);
         const defaultPhoto = currentUser.photoURL || "";
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+        if (res.ok && result.exists && result.data) {
+          const data = result.data;
           const photoUrlToUse = data.photo_url || defaultPhoto;
           const resolvedPublicId =
             data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse);
@@ -104,6 +96,8 @@ export default function ProfileSection() {
             email: currentUser.email || "",
             photoURL: photoUrlToUse,
             photoPublicId: resolvedPublicId,
+            memberTier: data.member_tier || "VIP Collector",
+            newsletterSubscribed: data.newsletter_subscribed ?? true,
           });
           setAddresses(data.addresses || []);
         } else {
@@ -114,6 +108,8 @@ export default function ProfileSection() {
             email: currentUser.email || "",
             photoURL: defaultPhoto,
             photoPublicId: extractPublicIdFromUrl(defaultPhoto),
+            memberTier: "VIP Collector",
+            newsletterSubscribed: true,
           });
         }
       } catch (err) {
@@ -130,7 +126,7 @@ export default function ProfileSection() {
     setTempProfile({ ...tempProfile, username: formatted });
   };
 
-  // Handler Upload Avatar via Cloudinary
+  // Handler Upload Avatar via Cloudinary Route
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file || !currentUser) return;
@@ -181,7 +177,7 @@ export default function ProfileSection() {
     }
   };
 
-  // Handler Hapus Avatar
+  // Handler Hapus Avatar via Cloudinary Route
   const handleRemoveAvatar = async () => {
     if (!currentUser || !tempProfile.photoURL) return;
     if (!window.confirm("Yakin ingin menghapus foto profil ini?")) return;
@@ -211,7 +207,7 @@ export default function ProfileSection() {
     }
   };
 
-  // Simpan Perubahan Profil ke Firestore dengan Cek Unik Username
+  // Simpan Perubahan Profil ke API Route `/api/users`
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     const cleanUsername = tempProfile.username?.trim();
@@ -225,37 +221,26 @@ export default function ProfileSection() {
     setLoading(true);
 
     try {
-      if (cleanUsername !== profile.username) {
-        const q = query(
-          collection(db, "users"),
-          where("username", "==", cleanUsername),
-        );
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          toast.error(
-            `Username @${cleanUsername} sudah digunakan orang lain.`,
-            {
-              id: toastId,
-            },
-          );
-          setLoading(false);
-          return;
-        }
-      }
+      const res = await fetch("/api/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.uid,
+          type: "profile",
+          username: cleanUsername,
+          fullName: tempProfile.fullName,
+          gender: tempProfile.gender,
+          birthDate: tempProfile.birthDate,
+          phone: tempProfile.phone,
+          photoURL: tempProfile.photoURL || "",
+          photoPublicId: tempProfile.photoPublicId || "",
+          newsletterSubscribed: tempProfile.newsletterSubscribed ?? true,
+        }),
+      });
 
-      const docRef = doc(db, "users", currentUser.uid);
-      const updatedData = {
-        username: cleanUsername,
-        full_name: tempProfile.fullName,
-        gender: tempProfile.gender,
-        birth_date: tempProfile.birthDate,
-        phone: tempProfile.phone,
-        photo_url: tempProfile.photoURL || "",
-        photo_public_id: tempProfile.photoPublicId || "",
-        updated_at: new Date(),
-      };
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal menyimpan profil.");
 
-      await setDoc(docRef, updatedData, { merge: true });
       setProfile((prev) => ({
         ...prev,
         ...tempProfile,
@@ -265,13 +250,63 @@ export default function ProfileSection() {
       toast.success("Profil berhasil diperbarui!", { id: toastId });
     } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan profil.", { id: toastId });
+      toast.error(err.message || "Gagal menyimpan profil.", { id: toastId });
     } finally {
       setLoading(false);
     }
   };
 
-  // Simpan / Tambah Alamat (Maksimal 3)
+  // Hapus Akun Pengguna
+  const handleDeleteAccount = async () => {
+    const confirmation = window.confirm(
+      "PERINGATAN: Tindakan ini bersifat permanen dan akan menghapus seluruh data akun Anda di database. Apakah Anda benar-benar yakin ingin menghapus akun?",
+    );
+    if (!confirmation) return;
+
+    const toastId = toast.loading("Menghapus akun secara permanen...");
+    setDeletingAccount(true);
+
+    try {
+      const res = await fetch(`/api/users?userId=${currentUser.uid}`, {
+        method: "DELETE",
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal menghapus akun.");
+
+      toast.success("Akun berhasil dihapus. Mengalihkan...", { id: toastId });
+
+      await auth.signOut();
+      window.location.href = "/login";
+    } catch (err) {
+      console.error("Delete Account Error:", err);
+      toast.error(err.message || "Gagal menghapus akun.", { id: toastId });
+      setDeletingAccount(false);
+    }
+  };
+
+  // Helper untuk kirim update alamat ke API Route
+  const updateAddressesOnServer = async (
+    updatedAddresses,
+    successMessage,
+    toastId,
+  ) => {
+    const res = await fetch("/api/users", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: currentUser.uid,
+        type: "addresses",
+        addresses: updatedAddresses,
+      }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || "Gagal menyimpan alamat.");
+    setAddresses(updatedAddresses);
+    toast.success(successMessage, { id: toastId });
+  };
+
+  // Simpan / Tambah Alamat
   const handleSaveAddress = async (e) => {
     e.preventDefault();
     if (addresses.length >= 3 && !currentAddress.id) {
@@ -305,14 +340,14 @@ export default function ProfileSection() {
         updatedAddresses.push(newAddressItem);
       }
 
-      const docRef = doc(db, "users", currentUser.uid);
-      await setDoc(docRef, { addresses: updatedAddresses }, { merge: true });
-
-      setAddresses(updatedAddresses);
+      await updateAddressesOnServer(
+        updatedAddresses,
+        "Alamat berhasil disimpan!",
+        toastId,
+      );
       setIsAddressModalOpen(false);
-      toast.success("Alamat berhasil disimpan!", { id: toastId });
     } catch (err) {
-      toast.error("Gagal menyimpan alamat.", { id: toastId });
+      toast.error(err.message || "Gagal menyimpan alamat.", { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -321,6 +356,7 @@ export default function ProfileSection() {
   // Hapus Alamat
   const handleDeleteAddress = async (id) => {
     if (!window.confirm("Hapus alamat ini?")) return;
+    const toastId = toast.loading("Menghapus alamat...");
     try {
       let updatedAddresses = addresses.filter((addr) => addr.id !== id);
       if (
@@ -330,29 +366,34 @@ export default function ProfileSection() {
         updatedAddresses[0].isPrimary = true;
       }
 
-      const docRef = doc(db, "users", currentUser.uid);
-      await setDoc(docRef, { addresses: updatedAddresses }, { merge: true });
-      setAddresses(updatedAddresses);
-      toast.success("Alamat dihapus.");
+      await updateAddressesOnServer(
+        updatedAddresses,
+        "Alamat dihapus.",
+        toastId,
+      );
     } catch (err) {
-      toast.error("Gagal menghapus alamat.");
+      toast.error(err.message || "Gagal menghapus alamat.", { id: toastId });
     }
   };
 
-  // Jadikan Alamat Utama
+  // Jadikan Alamat Utama (Tombol interaktif di card daftar alamat)
   const handleSetPrimaryAddress = async (id) => {
+    const toastId = toast.loading("Memperbarui alamat utama...");
     try {
       const updatedAddresses = addresses.map((addr) => ({
         ...addr,
         isPrimary: addr.id === id,
       }));
 
-      const docRef = doc(db, "users", currentUser.uid);
-      await setDoc(docRef, { addresses: updatedAddresses }, { merge: true });
-      setAddresses(updatedAddresses);
-      toast.success("Alamat utama diperbarui.");
+      await updateAddressesOnServer(
+        updatedAddresses,
+        "Alamat utama berhasil diperbarui!",
+        toastId,
+      );
     } catch (err) {
-      toast.error("Gagal memperbarui alamat utama.");
+      toast.error(err.message || "Gagal memperbarui alamat utama.", {
+        id: toastId,
+      });
     }
   };
 
@@ -360,12 +401,41 @@ export default function ProfileSection() {
     <div className={styles.workspaceInner}>
       {/* Header Info */}
       <div className={`card ${styles.sectionHeaderCard}`}>
-        <h3 className={styles.sectionHeaderTitle}>
-          {profileConfig.header.title}
-        </h3>
-        <p className={styles.sectionHeaderSubtitle}>
-          {profileConfig.header.subtitle}
-        </p>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <div>
+            <h3 className={styles.sectionHeaderTitle}>
+              {profileConfig.header.title}
+            </h3>
+            <p className={styles.sectionHeaderSubtitle}>
+              {profileConfig.header.subtitle}
+            </p>
+          </div>
+          <div
+            style={{
+              background: "rgba(251, 191, 36, 0.1)",
+              border: "1px solid rgba(251, 191, 36, 0.3)",
+              color: "#fbbf24",
+              padding: "6px 14px",
+              borderRadius: "20px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <span>⭐</span> {profile.memberTier}
+          </div>
+        </div>
       </div>
 
       {/* Grid Ringkasan Profil */}
@@ -422,7 +492,7 @@ export default function ProfileSection() {
               <span>Username Handle:</span>
               <span
                 className={styles.infoValue}
-                style={{ color: "#818cf8", fontWeight: 600 }}
+                style={{ color: "#fbbf24", fontWeight: 600 }}
               >
                 @{profile.username || "belum_diatur"}
               </span>
@@ -442,30 +512,88 @@ export default function ProfileSection() {
               <span className={styles.infoValue}>{profile.phone || "-"}</span>
             </div>
             <div className={styles.infoRow}>
+              <span>Tanggal Lahir:</span>
+              <span className={styles.infoValue}>
+                {profile.birthDate || "-"}
+              </span>
+            </div>
+            <div className={styles.infoRow}>
               <span>Jenis Kelamin:</span>
               <span className={styles.infoValue}>{profile.gender || "-"}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span>Newsletter / Promo Eksklusif:</span>
+              <span
+                className={styles.infoValue}
+                style={{
+                  color: profile.newsletterSubscribed ? "#10b981" : "#71717a",
+                }}
+              >
+                {profile.newsletterSubscribed
+                  ? "Aktif (Menerima Info VIP)"
+                  : "Dinonaktifkan"}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Card Ringkasan Kontak / Sesi */}
-        <div className="card">
-          <div className={styles.cardHeaderFlex}>
-            <h4 className={styles.cardTitle}>Keamanan & Sesi</h4>
+        {/* Card Keamanan & Sesi */}
+        <div
+          className="card"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div className={styles.cardHeaderFlex}>
+              <h4 className={styles.cardTitle}>Keamanan & Sesi</h4>
+            </div>
+            <div className={styles.profileInfoList}>
+              <div className={styles.infoRow}>
+                <span>UID Pengguna:</span>
+                <span className={styles.infoValue}>
+                  {currentUser?.uid.substring(0, 10)}...
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span>Metode Login:</span>
+                <span className={styles.infoValue}>
+                  {currentUser?.providerData?.[0]?.providerId ||
+                    "Google / Phone"}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className={styles.profileInfoList}>
-            <div className={styles.infoRow}>
-              <span>UID Pengguna:</span>
-              <span className={styles.infoValue}>
-                {currentUser?.uid.substring(0, 10)}...
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span>Metode Login:</span>
-              <span className={styles.infoValue}>
-                {currentUser?.providerData?.[0]?.providerId || "Google / Phone"}
-              </span>
-            </div>
+
+          <div
+            style={{
+              marginTop: "24px",
+              paddingTop: "16px",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount}
+              style={{
+                width: "100%",
+                background: "rgba(244, 63, 94, 0.1)",
+                color: "#f43f5e",
+                border: "1px solid rgba(244, 63, 94, 0.3)",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {deletingAccount
+                ? "Menghapus Akun..."
+                : "Hapus Akun Secara Permanen"}
+            </button>
           </div>
         </div>
       </div>
@@ -557,8 +685,14 @@ export default function ProfileSection() {
 
       {/* --- MODAL EDIT PROFIL --- */}
       {isProfileModalOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setIsProfileModalOpen(false)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>Edit Informasi Profil</h3>
               <button
@@ -569,7 +703,6 @@ export default function ProfileSection() {
               </button>
             </div>
             <form onSubmit={handleSaveProfile}>
-              {/* Pengaturan Avatar / Foto Profil */}
               <div className={styles.formGroup}>
                 <label className={styles.inputLabel}>
                   Foto Profil (Avatar)
@@ -660,7 +793,7 @@ export default function ProfileSection() {
                   <span
                     style={{
                       padding: "0 12px",
-                      color: "#818cf8",
+                      color: "#fbbf24",
                       fontWeight: 600,
                       fontSize: "0.9rem",
                     }}
@@ -708,6 +841,7 @@ export default function ProfileSection() {
                   className={styles.formInput}
                 />
               </div>
+
               <div className={styles.formGroup}>
                 <label className={styles.inputLabel}>
                   Nomor WhatsApp / Telepon
@@ -721,6 +855,22 @@ export default function ProfileSection() {
                   className={styles.formInput}
                 />
               </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.inputLabel}>Tanggal Lahir</label>
+                <input
+                  type="date"
+                  value={tempProfile.birthDate || ""}
+                  onChange={(e) =>
+                    setTempProfile({
+                      ...tempProfile,
+                      birthDate: e.target.value,
+                    })
+                  }
+                  className={styles.formInput}
+                />
+              </div>
+
               <div className={styles.formGroup}>
                 <label className={styles.inputLabel}>Jenis Kelamin</label>
                 <select
@@ -735,7 +885,47 @@ export default function ProfileSection() {
                   <option value="Female">Perempuan</option>
                 </select>
               </div>
-              <div className={styles.modalFooter}>
+
+              <div
+                className={styles.formGroup}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  marginTop: "12px",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  id="newsletter"
+                  checked={tempProfile.newsletterSubscribed ?? true}
+                  onChange={(e) =>
+                    setTempProfile({
+                      ...tempProfile,
+                      newsletterSubscribed: e.target.checked,
+                    })
+                  }
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    accentColor: "#fbbf24",
+                    cursor: "pointer",
+                  }}
+                />
+                <label
+                  htmlFor="newsletter"
+                  style={{
+                    fontSize: "0.8rem",
+                    color: "#a1a1aa",
+                    cursor: "pointer",
+                  }}
+                >
+                  Terima info peluncuran produk eksklusif & promo via
+                  WhatsApp/Email
+                </label>
+              </div>
+
+              <div className={styles.modalFooter} style={{ marginTop: "20px" }}>
                 <button
                   type="button"
                   onClick={() => setIsProfileModalOpen(false)}
@@ -758,8 +948,14 @@ export default function ProfileSection() {
 
       {/* --- MODAL TAMBAH / EDIT ALAMAT --- */}
       {isAddressModalOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setIsAddressModalOpen(false)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>
                 {currentAddress.id ? "Edit Alamat" : "Tambah Alamat Baru"}
@@ -852,7 +1048,7 @@ export default function ProfileSection() {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>Kode Pos</label>
+                <label className={styles.inputLabel}>Zona / Kode Pos</label>
                 <input
                   type="text"
                   value={currentAddress.postalCode}

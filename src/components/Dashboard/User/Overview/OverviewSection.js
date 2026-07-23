@@ -4,13 +4,14 @@ import { useRouter, usePathname } from "next/navigation";
 import styles from "./OverviewSection.module.css";
 import { auth } from "@/lib/firebaseClient";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { supabase } from "@/lib/supabaseClient";
+import { useStore } from "@/context/StoreContext";
 
 const db = getFirestore();
 
 export default function OverviewSection({ setActiveTab }) {
   const router = useRouter();
-  const pathname = usePathname(); // Mendapatkan path URL saat ini (misal: /dashboard)
+  const pathname = usePathname();
+  const { products, setIsCartOpen, addToCart } = useStore();
 
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -21,7 +22,6 @@ export default function OverviewSection({ setActiveTab }) {
     fullName: "",
     username: "",
   });
-  const [curatedProducts, setCuratedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const currentUser = auth.currentUser;
@@ -44,13 +44,14 @@ export default function OverviewSection({ setActiveTab }) {
           });
         }
 
-        // 2. Ambil total pesanan dari Supabase Database
-        const { data: orderData, error: orderError } = await supabase
-          .from("orders")
-          .select("status, transaction_status")
-          .eq("user_id", currentUser.uid);
+        // 2. Ambil total pesanan dari endpoint API terpusat (/api/orders)
+        const orderRes = await fetch(`/api/orders?userId=${currentUser.uid}`);
+        const orderResult = await orderRes.json();
+        const orderData = Array.isArray(orderResult)
+          ? orderResult
+          : orderResult.orders || orderResult.data || [];
 
-        if (!orderError && orderData) {
+        if (orderRes.ok && orderData.length > 0) {
           const total = orderData.length;
           const completed = orderData.filter((o) =>
             ["settlement", "capture", "completed", "success"].includes(
@@ -65,16 +66,6 @@ export default function OverviewSection({ setActiveTab }) {
             processingOrders: processing,
           });
         }
-
-        // 3. Ambil produk eksklusif dari katalog Supabase
-        const { data: productData, error: productError } = await supabase
-          .from("products")
-          .select("*")
-          .limit(2);
-
-        if (!productError && productData) {
-          setCuratedProducts(productData);
-        }
       } catch (err) {
         console.error("Gagal memuat ringkasan dashboard:", err);
       } finally {
@@ -86,55 +77,121 @@ export default function OverviewSection({ setActiveTab }) {
   }, [currentUser]);
 
   // Handler Tombol "Jelajahi Katalog"
-  // Sesuaikan path "/shop" atau "/products" dengan folder rute halaman katalog Anda yang sebenarnya
   const handleExploreCatalog = () => {
-    router.push("/shop");
+    if (typeof setActiveTab === "function") {
+      setActiveTab("shop");
+    } else {
+      const basePath = pathname.split("?")[0];
+      router.push(`${basePath}?tab=shop`);
+    }
   };
 
   // Handler Tombol "Cek Status Pesanan"
   const handleCheckOrders = () => {
     if (typeof setActiveTab === "function") {
-      // Jika komponen dikendalikan oleh parent dashboard (state tab)
       setActiveTab("orders");
     } else {
-      // Jika menggunakan query parameter di URL
       const basePath = pathname.split("?")[0];
       router.push(`${basePath}?tab=orders`);
     }
   };
 
+  // Ambil 3 produk pertama untuk showcase eksklusif
+  const curatedProducts = products.slice(0, 3);
+
   return (
     <div className={styles.overviewWorkspace}>
-      {/* 1. Metric Cards Grid */}
+      {/* 1. Metric Cards Grid dengan Desain E-Commerce Modern & SVG Lokal */}
       <div className={styles.metricsGrid}>
         <div className={styles.metricCard}>
-          <p className={styles.metricTitle}>Total Pesanan</p>
+          <div className={styles.metricHeaderRow}>
+            <p className={styles.metricTitle}>Total Pesanan</p>
+            <span className={styles.metricIconBox}>
+              <svg
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  stroke: "currentColor",
+                  strokeWidth: 2,
+                  fill: "none",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                }}
+              >
+                <use href="/assets/icon/feather-sprite.svg#package" />
+              </svg>
+            </span>
+          </div>
           <h3 className={styles.metricValue}>
-            {stats.totalOrders} {stats.totalOrders === 1 ? "Botol" : "Botol"}
+            {loading ? "..." : stats.totalOrders}{" "}
+            <span className={styles.unitText}>Botol</span>
           </h3>
-          <p className={styles.metricDesc}>Riwayat pembelian keseluruhan</p>
+          <p className={styles.metricDesc}>Akumulasi seluruh transaksi</p>
         </div>
+
         <div className={styles.metricCard}>
-          <p className={styles.metricTitle}>Pesanan Selesai</p>
-          <h3 className={styles.metricValue}>{stats.completedOrders}</h3>
-          <p className={styles.metricDesc}>Telah terkirim & diterima</p>
+          <div className={styles.metricHeaderRow}>
+            <p className={styles.metricTitle}>Pesanan Selesai</p>
+            <span className={styles.metricIconBox} style={{ color: "#10b981" }}>
+              <svg
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  stroke: "currentColor",
+                  strokeWidth: 2,
+                  fill: "none",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                }}
+              >
+                <use href="/assets/icon/feather-sprite.svg#check-circle" />
+              </svg>
+            </span>
+          </div>
+          <h3 className={styles.metricValue}>
+            {loading ? "..." : stats.completedOrders}
+          </h3>
+          <p className={styles.metricDesc}>Telah diterima & dinikmati</p>
         </div>
+
         <div className={styles.metricCard}>
-          <p className={styles.metricTitle}>Dalam Proses</p>
-          <h3 className={styles.metricValue}>{stats.processingOrders}</h3>
-          <p className={styles.metricDesc}>Sedang disiapkan / maceration</p>
+          <div className={styles.metricHeaderRow}>
+            <p className={styles.metricTitle}>Dalam Proses</p>
+            <span className={styles.metricIconBox} style={{ color: "#fbbf24" }}>
+              <svg
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  stroke: "currentColor",
+                  strokeWidth: 2,
+                  fill: "none",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                }}
+              >
+                <use href="/assets/icon/feather-sprite.svg#clock" />
+              </svg>
+            </span>
+          </div>
+          <h3 className={styles.metricValue}>
+            {loading ? "..." : stats.processingOrders}
+          </h3>
+          <p className={styles.metricDesc}>Kurasi / proses pengiriman</p>
         </div>
       </div>
 
-      {/* 2. Welcome & Account Summary */}
+      {/* 2. Welcome Banner & Curated Exclusives */}
       <div className={styles.overviewGridTwo}>
         <div className={styles.sectionCard}>
+          <div className={styles.welcomeBadge}>AREA ANGGOTA VIP</div>
           <h3 className={styles.cardTitle}>
-            SELAMAT DATANG, {userProfile.fullName.toUpperCase()}
+            SELAMAT DATANG,{" "}
+            <span>{userProfile.fullName.toUpperCase() || "VALUED GUEST"}</span>
           </h3>
           <p className={styles.cardDesc}>
-            Kelola pesanan Anda, pantau pengiriman, dan perbarui informasi
-            pengiriman langsung dari dashboard eksklusif ini.
+            Nikmati kemudahan berbelanja koleksi Extrait de Parfum eksklusif
+            kami. Pantau status pengiriman atau akses keranjang belanja Anda
+            langsung dari panel kontrol ini.
           </p>
           <div className={styles.actionButtonGroup}>
             <button
@@ -144,38 +201,107 @@ export default function OverviewSection({ setActiveTab }) {
               Jelajahi Katalog
             </button>
             <button className={styles.btnOutline} onClick={handleCheckOrders}>
-              Cek Status Pesanan
+              Riwayat Pesanan
+            </button>
+            <button
+              className={styles.btnOutline}
+              onClick={() => setIsCartOpen(true)}
+              style={{
+                borderColor: "rgba(251, 191, 36, 0.4)",
+                color: "#fbbf24",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  stroke: "currentColor",
+                  strokeWidth: 2,
+                  fill: "none",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                }}
+              >
+                <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
+              </svg>
+              <span>Buka Keranjang</span>
             </button>
           </div>
         </div>
 
-        {/* Curated Exclusives from Supabase Products */}
+        {/* Curated Exclusives with Direct Add to Cart Feature */}
         <div className={styles.sectionCard}>
-          <h3 className={styles.cardTitle}>KOLEKSI EKSKLUSIF</h3>
+          <div className={styles.curatedHeaderRow}>
+            <h3 className={styles.cardTitle} style={{ margin: 0 }}>
+              REKOMENDASI UNGGULAN
+            </h3>
+            <button
+              onClick={handleExploreCatalog}
+              className={styles.seeAllLink}
+            >
+              Lihat Semua →
+            </button>
+          </div>
+
           <div className={styles.curatedList}>
             {curatedProducts.length > 0 ? (
               curatedProducts.map((prod) => {
                 const firstVariant = prod.variants?.[0] || {};
                 const price = firstVariant.price
                   ? Number(firstVariant.price).toLocaleString("id-ID")
-                  : "0";
+                  : prod.price
+                    ? Number(prod.price).toLocaleString("id-ID")
+                    : "0";
 
                 return (
-                  <div key={prod.id} className={styles.curatedItem}>
-                    <div>
+                  <div key={prod.id || prod._id} className={styles.curatedItem}>
+                    <div className={styles.curatedImgWrap}>
+                      <img
+                        src={
+                          prod.image_url ||
+                          prod.imageUrl ||
+                          "/assets/placeholder.jpg"
+                        }
+                        alt={prod.name}
+                        className={styles.curatedThumb}
+                      />
+                    </div>
+                    <div className={styles.curatedInfo}>
                       <p className={styles.curatedName}>{prod.name}</p>
                       <p className={styles.curatedSub}>
-                        {firstVariant.size ? `${firstVariant.size} - ` : ""}
-                        {prod.category || "Parfum"}
+                        {firstVariant.size ? `${firstVariant.size} • ` : ""}
+                        Rp {price}
                       </p>
                     </div>
-                    <span className={styles.curatedPrice}>Rp {price}</span>
+                    <button
+                      className={styles.curatedQuickAddBtn}
+                      onClick={() => addToCart(prod, firstVariant, 1)}
+                      title="Tambah ke Keranjang"
+                    >
+                      <svg
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          stroke: "currentColor",
+                          strokeWidth: 2,
+                          fill: "none",
+                          strokeLinecap: "round",
+                          strokeLinejoin: "round",
+                        }}
+                      >
+                        <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
+                      </svg>
+                    </button>
                   </div>
                 );
               })
             ) : (
-              <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
-                Katalog produk eksklusif sedang diperbarui.
+              <p style={{ fontSize: "0.85rem", color: "#71717a", margin: 0 }}>
+                Memuat rekomendasi produk terbaik...
               </p>
             )}
           </div>

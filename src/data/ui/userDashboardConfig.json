@@ -7,8 +7,9 @@
   "loading": "Accessing your personal scent archive...",
   "logoutText": "Sign Out",
   "nav": [
-    { "id": "overview", "label": "Overview" },
-    { "id": "orders", "label": "Orders" },
-    { "id": "profile", "label": "Profile" }
+    { "id": "shop", "label": "Katalog Toko" },
+    { "id": "overview", "label": "Ringkasan / Overview" },
+    { "id": "orders", "label": "Pesanan Saya" },
+    { "id": "profile", "label": "Profil Akun" }
   ]
 }

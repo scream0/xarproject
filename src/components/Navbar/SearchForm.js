@@ -33,10 +33,20 @@ export function SearchForm({
         <div className={styles.searchResults}>
           {filteredProdukItems?.length > 0 ? (
             filteredProdukItems.map((item) => {
-              // Produk dianggap tersedia kalau minimal 1 varian stoknya > 0
+              // Menyesuaikan dengan skema database terpusat
               const availableVariants =
                 item.variants?.filter((v) => (v.stock ?? 0) > 0) || [];
-              const isAvailable = availableVariants.length > 0;
+              const isAvailable =
+                item.variants && item.variants.length > 0
+                  ? availableVariants.length > 0
+                  : true;
+
+              // Ambil harga dari varian yang aktif, atau fallback ke harga utama produk
+              const displayPrice =
+                availableVariants[0]?.price ||
+                item.variants?.[0]?.price ||
+                item.price ||
+                0;
 
               return (
                 <div
@@ -47,7 +57,11 @@ export function SearchForm({
                   }
                 >
                   <img
-                    src={item?.imageUrl || searchData?.results?.defaultImage}
+                    src={
+                      item?.image_url ||
+                      item?.imageUrl ||
+                      searchData?.results?.defaultImage
+                    }
                     alt={item?.name}
                   />
                   <div className={styles.resultInfo}>
@@ -56,7 +70,9 @@ export function SearchForm({
                       {isAvailable ? (
                         <p>
                           {searchData?.results?.pricePrefix}{" "}
-                          {rupiah(availableVariants[0].price)}
+                          {rupiah
+                            ? rupiah(displayPrice)
+                            : `Rp ${Number(displayPrice).toLocaleString("id-ID")}`}
                         </p>
                       ) : (
                         <p style={{ color: "#999" }}>

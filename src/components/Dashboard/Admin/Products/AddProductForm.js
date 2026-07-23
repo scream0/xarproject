@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./AddProductForm.module.css";
 
@@ -137,27 +136,30 @@ export default function AddProductForm({ onProductAdded }) {
           return {
             size: v.size,
             price: Number(v.price),
-            stock: Number(v.stock),
+            stock: parsedStock, // Menyimpan format bahasa Inggris
+            stok: parsedStock, // Menyimpan format bahasa Indonesia (untuk cadangan pembacaan)
             imageUrl: variantImageUrl,
             imagePublicId: variantPublicId,
           };
         }),
       );
 
-      // 3. Simpan data ke Supabase Database (termasuk image_public_id)
-      const { error } = await supabase.from("products").insert([
-        {
+      // 3. Simpan data ke API Route `/api/products` (Supabase backend)
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: formData.name,
           category: formData.category,
           description: formData.description,
-          image_url: imageUrl,
-          image_public_id: imagePublicId,
+          imageUrl: imageUrl,
+          imagePublicId: imagePublicId,
           variants: processedVariants,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+        }),
+      });
 
-      if (error) throw error;
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || addConfig.toast.error);
 
       toast.success(addConfig.toast.success, { id: toastId });
 
@@ -168,7 +170,7 @@ export default function AddProductForm({ onProductAdded }) {
       setPreviewUrl("");
       onProductAdded?.();
     } catch (e) {
-      console.error("Error adding product to Supabase: ", e);
+      console.error("Error adding product: ", e);
       toast.error(addConfig.toast.error + (e.message ? `: ${e.message}` : ""), {
         id: toastId,
       });

@@ -7,7 +7,8 @@ import { About } from "@/components/About/About";
 import { Product } from "@/components/Product/Product";
 import { Contact } from "@/components/Contact/Contact";
 import { Footer } from "@/components/Footer/Footer";
-import { Modal } from "@/components/UI/Modal/Modal";
+import { Modal } from "@/components/UI/Modal/ProductModal";
+import { AddressModal } from "@/components/UI/Modal/AddressModal"; // <-- Diimpor di sini
 import { useStore } from "@/context/StoreContext";
 
 // Komponen Wrapper untuk animasi
@@ -59,6 +60,7 @@ export default function Home() {
         <Footer />
       </FadeInSection>
 
+      {/* Modal Detail Produk */}
       {isModalOpen && selectedProduct && (
         <Modal
           isOpen={isModalOpen}
@@ -68,6 +70,9 @@ export default function Home() {
           rupiah={rupiah}
         />
       )}
+
+      {/* Modal Form Alamat Otomatis saat Checkout & Alamat Kosong */}
+      <AddressModal />
     </>
   );
 }

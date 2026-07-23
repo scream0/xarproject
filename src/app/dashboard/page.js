@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../../lib/firebaseClient";
+import { auth } from "../../lib/firebaseClient";
 import styles from "./Dashboard.module.css";
 
 // Import Konfigurasi JSON
@@ -28,13 +27,19 @@ export default function DashboardPage() {
       setUser(currentUser);
 
       try {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        const userRole = userDoc.exists()
-          ? userDoc.data()?.role
-          : dashboardConfig.defaultRole;
-        setRole(userRole || dashboardConfig.defaultRole);
+        // Mengambil data user dari API Route backend
+        const res = await fetch(`/api/users?userId=${currentUser.uid}`);
+        const result = await res.json();
+
+        // FIX: Periksa result.exists dan ambil role dari dalam result.data.role
+        if (res.ok && result.exists && result.data) {
+          const userRole = result.data.role || dashboardConfig.defaultRole;
+          setRole(userRole);
+        } else {
+          setRole(dashboardConfig.defaultRole);
+        }
       } catch (error) {
-        console.error("Gagal ambil data role:", error);
+        console.error("Gagal ambil data role via API:", error);
         setRole(dashboardConfig.defaultRole);
       } finally {
         setLoading(false);

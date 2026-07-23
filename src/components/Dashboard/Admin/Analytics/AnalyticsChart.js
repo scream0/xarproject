@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import {
   AreaChart,
   Area,
@@ -35,11 +34,13 @@ export default function AnalyticsChart() {
 
   const fetchTransactionData = async () => {
     try {
-      const { data: transactions, error } = await supabase
-        .from("transactions")
-        .select("*");
+      const res = await fetch("/api/orders");
+      const result = await res.json();
 
-      if (error) throw error;
+      // Menyesuaikan dengan format respons dari endpoint orders
+      const transactions = Array.isArray(result)
+        ? result
+        : result.data || result.orders || [];
 
       if (transactions && transactions.length > 0) {
         setRawTransactions(transactions);
@@ -58,7 +59,7 @@ export default function AnalyticsChart() {
         setYearlySummary([]);
       }
     } catch (error) {
-      console.error("Gagal mengambil data analitik dari Supabase:", error);
+      console.error("Gagal mengambil data analitik dari API:", error);
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,9 @@ export default function AnalyticsChart() {
             weekday: "short",
           });
           if (daysMap[dayName] !== undefined) {
-            daysMap[dayName] += Number(tx.total_price || tx.amount || 0);
+            daysMap[dayName] += Number(
+              tx.total || tx.total_price || tx.rawPrice || tx.amount || 0,
+            );
           }
         }
       });
@@ -111,7 +114,9 @@ export default function AnalyticsChart() {
             month: "short",
           });
           if (monthsMap[monthName] !== undefined) {
-            monthsMap[monthName] += Number(tx.total_price || tx.amount || 0);
+            monthsMap[monthName] += Number(
+              tx.total || tx.total_price || tx.rawPrice || tx.amount || 0,
+            );
           }
         }
       });
@@ -141,7 +146,9 @@ export default function AnalyticsChart() {
             month: "short",
           });
           if (dateMap[dStr] !== undefined) {
-            dateMap[dStr] += Number(tx.total_price || tx.amount || 0);
+            dateMap[dStr] += Number(
+              tx.total || tx.total_price || tx.rawPrice || tx.amount || 0,
+            );
           }
         }
       });
@@ -166,7 +173,9 @@ export default function AnalyticsChart() {
         const month = new Date(dateField).toLocaleString("en-US", {
           month: "long",
         });
-        const amount = Number(tx.total_price || tx.amount || 0);
+        const amount = Number(
+          tx.total || tx.total_price || tx.rawPrice || tx.amount || 0,
+        );
 
         if (!yearsMap[year]) {
           yearsMap[year] = {
@@ -187,7 +196,7 @@ export default function AnalyticsChart() {
     });
 
     const formattedSummary = Object.keys(yearsMap)
-      .sort((a, b) => b - a) // Urutkan tahun terbaru di atas
+      .sort((a, b) => b - a)
       .map((year) => {
         const dataYear = yearsMap[year];
         const avgOrder =
@@ -195,7 +204,6 @@ export default function AnalyticsChart() {
             ? Math.round(dataYear.totalRevenue / dataYear.totalTransactions)
             : 0;
 
-        // Cari bulan terbaik (pendapatan tertinggi)
         let bestMonth = "-";
         let maxRev = -1;
         Object.keys(dataYear.months).forEach((m) => {
@@ -217,14 +225,12 @@ export default function AnalyticsChart() {
     setYearlySummary(formattedSummary);
   };
 
-  // Handler Export PDF menggunakan fitur cetak bawaan browser yang terformat bersih
   const handleExportPdf = () => {
     window.print();
   };
 
   return (
     <div className={styles.chartContainer}>
-      {/* Header dengan Judul, Tab Filter, dan Tombol Export PDF */}
       <div className={styles.headerRow}>
         <h3 className={styles.chartTitle}>{analyticsConfig.title}</h3>
         <div className={styles.actionGroup}>
@@ -254,7 +260,6 @@ export default function AnalyticsChart() {
         </div>
       </div>
 
-      {/* Konten Grafik */}
       <div className={styles.chartWrapper}>
         {loading ? (
           <div className={styles.loadingState}>
@@ -313,7 +318,6 @@ export default function AnalyticsChart() {
         )}
       </div>
 
-      {/* Tabel Rincian Tahunan */}
       <div className={styles.yearlySection}>
         <h4 className={styles.sectionSubtitle}>
           {analyticsConfig.yearlyTable.title}

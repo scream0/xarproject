@@ -20,7 +20,9 @@ function SlideWrapper({ children }) {
   return (
     <div className="swiper-slide">
       <div
-        className={`${sliderStyles.visualWrapper} ${swiperSlide.isActive ? sliderStyles.activeVisual : ""}`}
+        className={`${sliderStyles.visualWrapper} ${
+          swiperSlide.isActive ? sliderStyles.activeVisual : ""
+        }`}
       >
         {children}
       </div>
@@ -30,8 +32,14 @@ function SlideWrapper({ children }) {
 
 export function Product({ onBukaDetail }) {
   const { products, addToCart, rupiah } = useStore();
+
+  // Menyesuaikan struktur data produk terpusat dari API/Store (bisa array langsung atau terbungkus di .data/.produkItems)
+  const productList = Array.isArray(products)
+    ? products
+    : products?.data || products?.produkItems || [];
+
   const { kategoriItems, currentCategory, setCurrentCategory, filteredItems } =
-    useProductFilter(products);
+    useProductFilter(productList);
 
   const handleAddToCart = useCallback(
     (item, variant) => addToCart(item, variant),
@@ -43,7 +51,7 @@ export function Product({ onBukaDetail }) {
   );
 
   // Loading State (Data Driven dari JSON)
-  if (!products || products.length === 0) {
+  if (!products) {
     return (
       <div className={styles.productEmpty}>
         {productData.messages?.loading || "Loading..."}
@@ -75,7 +83,9 @@ export function Product({ onBukaDetail }) {
         {kategoriItems.map((kat) => (
           <button
             key={kat}
-            className={`${styles.filterTab} ${currentCategory === kat ? styles.active : ""}`}
+            className={`${styles.filterTab} ${
+              currentCategory === kat ? styles.active : ""
+            }`}
             onClick={() => setCurrentCategory(kat)}
           >
             {kat}
@@ -104,7 +114,7 @@ export function Product({ onBukaDetail }) {
         className={sliderStyles.mySwiper}
       >
         {filteredItems.map((item) => (
-          <SwiperSlide key={item.id}>
+          <SwiperSlide key={item.id || item._id}>
             <SlideWrapper>
               <ProductCard
                 item={item}
@@ -129,18 +139,24 @@ export function Product({ onBukaDetail }) {
 function ProductCard({ item, onDetail, onAdd, rupiah }) {
   const availableVariants =
     item.variants?.filter((v) => (v.stock ?? 0) > 0) || [];
-  const isSoldOut = availableVariants.length === 0;
+  const isSoldOut =
+    item.variants && item.variants.length > 0 && availableVariants.length === 0;
 
-  const price = availableVariants[0]?.price ?? item.price ?? 0;
+  const price =
+    availableVariants[0]?.price || item.variants?.[0]?.price || item.price || 0;
 
-  // LOGIKA GAMBAR KARTU PRODUK:
-  // Prioritaskan gambar dari varian yang tersedia pertama,
-  // jika tidak ada, gunakan gambar utama produk (imageUrl / image_url).
+  // LOGIKA GAMBAR KARTU PRODUK TERPUSAT:
   const imageSrc =
+    availableVariants[0]?.image_url ||
     availableVariants[0]?.imageUrl ||
-    item.imageUrl ||
     item.image_url ||
+    item.imageUrl ||
     (item.image ? `/assets/produk/${item.image}` : "/assets/placeholder.jpg");
+
+  const formatRupiah = (val) => {
+    if (rupiah) return rupiah(val);
+    return `Rp ${Number(val).toLocaleString("id-ID")}`;
+  };
 
   return (
     <div
@@ -154,7 +170,9 @@ function ProductCard({ item, onDetail, onAdd, rupiah }) {
         <img
           src={imageSrc}
           alt={item.name}
-          className={`${styles.productImage} ${isSoldOut ? styles.grayscale : ""}`}
+          className={`${styles.productImage} ${
+            isSoldOut ? styles.grayscale : ""
+          }`}
           loading="lazy"
         />
         {isSoldOut && (
@@ -179,14 +197,17 @@ function ProductCard({ item, onDetail, onAdd, rupiah }) {
               >
                 {productData.card.pricePrefix}
               </span>
-              <span className={styles.currentPrice}>{rupiah(price)}</span>
+              <span className={styles.currentPrice}>{formatRupiah(price)}</span>
             </>
           )}
         </div>
 
         <button
           className={styles.btnQuickAdd}
-          onClick={() => !isSoldOut && onAdd(item, availableVariants[0])}
+          onClick={() =>
+            !isSoldOut &&
+            onAdd(item, availableVariants[0] || item.variants?.[0] || { price })
+          }
           disabled={isSoldOut}
         >
           {isSoldOut

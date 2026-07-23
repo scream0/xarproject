@@ -1,0 +1,549 @@
+.shopContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  color: #ffffff;
+  font-family: inherit;
+}
+
+.shopHeader {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.shopTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+}
+
+.shopSubtitle {
+  color: #a3a3a3;
+  font-size: 0.9rem;
+}
+
+/* NAVBAR KATEGORI (Responsif Horizontal Scroll) */
+.categoryNavbar {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.25rem 0.75rem 0.25rem;
+  margin-bottom: 1.25rem;
+  scrollbar-width: none; /* Hilangkan scrollbar di Firefox */
+  -webkit-overflow-scrolling: touch;
+}
+
+.categoryNavbar::-webkit-scrollbar {
+  display: none; /* Hilangkan scrollbar di Chrome/Safari */
+}
+
+.navCatBtn {
+  background: #171717;
+  border: 1px solid #262626;
+  color: #a3a3a3;
+  padding: 0.5rem 1.1rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.navCatBtn:hover {
+  background: #262626;
+  color: #ffffff;
+}
+
+.activeNavCatBtn {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* TOOLBAR (Search & Sort) */
+.toolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  background: #121212;
+  border: 1px solid #262626;
+  color: #fff;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  border-color: #525252;
+}
+
+.sortSelect {
+  background: #121212;
+  border: 1px solid #262626;
+  color: #fff;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+}
+
+/* STATE CONTAINER */
+.stateContainer {
+  text-align: center;
+  padding: 4rem 0;
+  color: #737373;
+}
+
+/* PRODUCT GRID & CARD (Responsif Grid ala E-Commerce Besar) */
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Default 2 kolom di HP */
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .productGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .productGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+.productCard {
+  background: #121212;
+  border: 1px solid #222;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+}
+
+.productCard:hover {
+  border-color: #404040;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.4);
+}
+
+.productCardImageWrapper {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #1a1a1a;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.productCardImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.productCard:hover .productCardImg {
+  transform: scale(1.05);
+}
+
+.productCardPlaceholder {
+  color: #525252;
+  font-size: 0.8rem;
+}
+
+.cardCategoryBadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.productCardBody {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+@media (min-width: 640px) {
+  .productCardBody {
+    padding: 1rem;
+  }
+}
+
+.cardTopInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.productName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+}
+
+@media (min-width: 640px) {
+  .productName {
+    font-size: 1rem;
+    -webkit-line-clamp: 1;
+  }
+}
+
+.cartIconBtn {
+  background: #222;
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+
+@media (min-width: 640px) {
+  .cartIconBtn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.cartIconBtn:hover {
+  background: #fbbf24;
+  color: #000;
+  transform: scale(1.1);
+}
+
+.cardPriceRow {
+  margin-bottom: 0.5rem;
+}
+
+.cardPrice {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+@media (min-width: 640px) {
+  .cardPrice {
+    font-size: 1.05rem;
+  }
+}
+
+.cardFooterInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  border-top: 1px solid #1f1f1f;
+  padding-top: 0.5rem;
+  margin-top: auto;
+}
+
+.soldCount {
+  color: #888;
+}
+
+.viewDetailText {
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+/* MODAL DETAIL (Responsif Full-Screen di HP) */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .modalOverlay {
+    padding: 1rem;
+  }
+}
+
+.modalContent {
+  background: #0f0f0f;
+  border: none;
+  width: 100%;
+  height: 100%;
+  max-width: 800px;
+  max-height: 100vh;
+  border-radius: 0;
+  overflow-y: auto;
+  position: relative;
+  padding: 1.5rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .modalContent {
+    border: 1px solid #262626;
+    height: auto;
+    max-height: 90vh;
+    border-radius: 16px;
+    padding: 2rem;
+  }
+}
+
+.closeModalBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #1f1f1f;
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  z-index: 10;
+}
+
+.closeModalBtn:hover {
+  background: #333;
+}
+
+.modalGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .modalGrid {
+    grid-template-columns: 1fr 1.2fr;
+    margin-top: 0;
+  }
+}
+
+.modalImageWrapper {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #171717;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modalPlaceholderImg {
+  color: #525252;
+  font-size: 0.9rem;
+}
+
+.modalDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.productCategory {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a3a3a3;
+  margin-bottom: 0.35rem;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .modalTitle {
+    font-size: 1.5rem;
+  }
+}
+
+.modalDesc {
+  color: #a3a3a3;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.variantBox {
+  margin-bottom: 1.25rem;
+}
+
+.variantLabel {
+  display: block;
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 0.4rem;
+}
+
+.variantChips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: #171717;
+  border: 1px solid #333;
+  color: #ccc;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.activeChip {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+  font-weight: 600;
+}
+
+.modalPriceAction {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #222;
+  gap: 1rem;
+}
+
+.modalPrice {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+@media (min-width: 640px) {
+  .modalPrice {
+    font-size: 1.25rem;
+  }
+}
+
+.buyBtn {
+  background: #fbbf24;
+  color: #000;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.buyBtn:hover {
+  opacity: 0.9;
+}
+
+/* ULASAN PEMBELI */
+.reviewsSection {
+  border-top: 1px solid #222;
+  padding-top: 1.25rem;
+}
+
+.reviewsTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reviewItem {
+  background: #141414;
+  border: 1px solid #222;
+  padding: 0.85rem;
+  border-radius: 8px;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.reviewerName {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.reviewStars {
+  font-size: 0.75rem;
+}
+
+.reviewComment {
+  color: #b0b0b0;
+  font-size: 0.825rem;
+  line-height: 1.4;
+  margin: 0;
+}

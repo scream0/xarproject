@@ -1,10 +1,10 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link"; // IMPORT LINK
+import Link from "next/link";
 import { useStore } from "@/context/StoreContext";
 import { SearchForm } from "./SearchForm";
 import { CartSidebar } from "../UI/Sidebar/CartSidebar";
-import { Modal } from "../UI/Modal/Modal";
+import { Modal } from "../UI/Modal/ProductModal";
 import styles from "./Navbar.module.css";
 import config from "@/data/ui/navbarConfig.json";
 import { Logo } from "@/components/UI/Logo/logo";
@@ -29,17 +29,17 @@ export function Navbar() {
     isCartOpen,
     setIsCartOpen,
   } = useStore();
-  // Tentukan item mana yang harus ditampilkan
+
+  // Tentukan item mana yang harus ditampilkan berdasarkan status auth
   const getAuthItems = () => {
     const authConfig = config?.authSection?.auth;
-    if (!authConfig) return []; // Fallback jika data kosong
+    if (!authConfig) return [];
     return user
       ? authConfig.authenticated || []
       : authConfig.unauthenticated || [];
   };
 
   const authItems = getAuthItems();
-
   const navRef = useRef(null);
 
   useEffect(() => {
@@ -65,7 +65,11 @@ export function Navbar() {
     }
   }, [cartQuantity]);
 
-  const productList = products?.produkItems || products || [];
+  // Menyesuaikan struktur data produk terpusat dari API/Store
+  const productList = Array.isArray(products)
+    ? products
+    : products?.data || products?.produkItems || [];
+
   const filtered = productList.filter((p) =>
     p?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
@@ -82,9 +86,7 @@ export function Navbar() {
       >
         {/* LOGO DINAMIS */}
         <Link href={config.logo.href} className={styles.logo}>
-          {/* Tambahkan logo di sini */}
           <Logo className={styles.logoSvg} />
-          {/* Tetap pertahankan text jika masih ingin ditampilkan */}
           {config.logo.text}
           <span>{config.logo.subtext}</span>.
         </Link>
@@ -102,13 +104,17 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
+
           {/* USER AUTH SECTION DINAMIS */}
           <div className={styles.authSection}>
             {authItems.map((item, index) => {
               if (item.type === "text") {
                 return (
                   <span key={index} className={styles.userName}>
-                    {item.label.replace("{name}", customer?.name || "User")}
+                    {item.label.replace(
+                      "{name}",
+                      customer?.name || user?.email?.split("@")[0] || "User",
+                    )}
                   </span>
                 );
               }
@@ -160,6 +166,7 @@ export function Navbar() {
           <button
             onClick={() => togglePanel("search")}
             className="animate-elastic-bounce"
+            aria-label="Cari Produk"
           >
             <svg className={styles.feather}>
               <use
@@ -190,6 +197,7 @@ export function Navbar() {
           <button
             onClick={() => togglePanel("navbar")}
             className={`${styles.hamburger} animate-elastic-bounce`}
+            aria-label="Menu Navigasi"
           >
             <svg className={styles.feather}>
               <use

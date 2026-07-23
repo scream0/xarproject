@@ -1,27 +1,29 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import styles from "./OrdersSection.module.css";
 import ordersConfig from "@/data/ui/ordersConfig.json";
-import { supabase } from "@/lib/supabaseClient";
 import { auth } from "@/lib/firebaseClient";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
-
-const db = getFirestore();
 
 export default function OrdersSection() {
   const [filter, setFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [userPrimaryAddress, setUserPrimaryAddress] = useState("Belum diatur");
 
+  // State untuk modal ulasan produk
+  const [reviewModalOrder, setReviewModalOrder] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+
   const currentUser = auth.currentUser;
 
-  // 1. Muat Script Midtrans Snap secara dinamis saat komponen dirender
+  // 1. Muat Script Midtrans Snap secara dinamis
   useEffect(() => {
-    const snapScriptUrl = "https://app.sandbox.midtrans.com/snap/snap.js"; // Ubah ke production jika sudah live: https://app.midtrans.com/snap/snap.js
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ""; // Masukkan client key dari env
+    const snapScriptUrl = "https://app.sandbox.midtrans.com/snap/snap.js";
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
 
     if (!document.getElementById("midtrans-snap-script")) {
       const script = document.createElement("script");
@@ -33,94 +35,99 @@ export default function OrdersSection() {
     }
   }, []);
 
-  // 2. Ambil data alamat utama user dari database
-  useEffect(() => {
-    async function fetchUserPrimaryAddress() {
-      if (!currentUser) return;
-      try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (
-            data.addresses &&
-            Array.isArray(data.addresses) &&
-            data.addresses.length > 0
-          ) {
-            const primary =
-              data.addresses.find((a) => a.isPrimary) || data.addresses[0];
-            const formattedAddress = `${primary.label} - ${primary.recipientName} (${primary.recipientPhone}): ${primary.street}, ${primary.city} (${primary.postalCode})`;
-            setUserPrimaryAddress(formattedAddress);
-          } else if (data.shipping_address) {
-            setUserPrimaryAddress(data.shipping_address);
-          }
-        }
-      } catch (err) {
-        console.error("Gagal memuat alamat utama:", err);
-      }
-    }
-    fetchUserPrimaryAddress();
-  }, [currentUser]);
-
-  // 3. Ambil data pesanan (Orders) dari Supabase Database
+  // 2. Ambil data alamat & pesanan via API Route `/api/orders`
   const fetchUserOrders = async () => {
     if (!currentUser) return;
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("user_id", currentUser.uid)
-        .order("created_at", { ascending: false });
+      const res = await fetch(`/api/orders?userId=${currentUser.uid}`);
+      const result = await res.json();
 
-      if (error) throw error;
+      if (!res.ok)
+        throw new Error(result.error || "Gagal memuat data pesanan.");
 
-      if (data && data.length > 0) {
-        const formattedOrders = data.map((item) => {
+      setUserPrimaryAddress(result.primaryAddress || "Belum diatur");
+
+      if (result.orders && result.orders.length > 0) {
+        const formattedOrders = result.orders.map((item) => {
+          const rawStatus = (item.status || "pending").toLowerCase();
+
+          // Petakan status backend ke status UI
           let mappedStatus = "processing";
-          const rawStatus = item.transaction_status || item.status || "";
-
           if (
-            ["settlement", "capture", "completed", "success"].includes(
-              rawStatus.toLowerCase(),
-            )
+            [
+              "success",
+              "completed",
+              "settlement",
+              "capture",
+              "shipping",
+            ].includes(rawStatus)
           ) {
-            mappedStatus = "completed";
-          } else if (["pending", "waiting"].includes(rawStatus.toLowerCase())) {
-            mappedStatus = "processing";
+            mappedStatus =
+              rawStatus === "completed" ? "completed" : "processing";
           } else {
-            mappedStatus = rawStatus.toLowerCase() || "processing";
+            mappedStatus = "processing";
           }
 
-          const orderAddress =
-            item.shipping_address || item.address || userPrimaryAddress;
+          // Ambil ringkasan nama produk dari array items jika ada, atau fallback ke properti tunggal
+          let displayName =
+            item.product_name || item.name || "Extrait de Parfum";
+          if (
+            item.items &&
+            Array.isArray(item.items) &&
+            item.items.length > 0
+          ) {
+            const firstItem = item.items[0];
+            displayName = `${firstItem.name} (${firstItem.size})`;
+            if (item.items.length > 1) {
+              displayName += ` +${item.items.length - 1} produk lainnya`;
+            }
+          }
+
+          const orderAddressObj = item.shipping_address || item.address;
+          let formattedAddress = "Belum diatur";
+          if (typeof orderAddressObj === "string") {
+            formattedAddress = orderAddressObj;
+          } else if (orderAddressObj) {
+            formattedAddress = `${orderAddressObj.recipientName || ""} (${orderAddressObj.recipientPhone || ""}) - ${orderAddressObj.street || ""}, ${orderAddressObj.city || ""} (${orderAddressObj.postalCode || ""})`;
+          } else {
+            formattedAddress = result.primaryAddress;
+          }
+
+          const rawAmount = Number(
+            item.amount || item.gross_amount || item.price || 0,
+          );
 
           return {
-            id: item.order_id || item.id_order || item.id,
-            name:
-              item.product_name ||
-              item.name ||
-              "Extrait de Parfum - Custom Blend",
-            concentration: item.concentration || "30% Bibit (50 ml)",
+            id: item.orderId || item.order_id || item.id,
+            name: displayName,
+            items: item.items || [],
+            concentration:
+              item.concentration ||
+              (item.items?.[0]
+                ? `Varian: ${item.items[0].size}`
+                : "30% Bibit (50 ml)"),
             notes: item.notes || "-",
-            price:
-              item.gross_amount || item.price
-                ? `Rp ${Number(item.gross_amount || item.price).toLocaleString("id-ID")}`
-                : "Rp 0",
-            rawPrice: item.gross_amount || item.price || 0,
-            status: mappedStatus,
-            date: item.created_at
-              ? new Date(item.created_at).toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })
-              : "Hari ini",
+            price: `Rp ${rawAmount.toLocaleString("id-ID")}`,
+            rawPrice: rawAmount,
+            status: item.status || "pending", // status asli dari database untuk stepper & badge
+            mappedStatus: mappedStatus, // untuk tab filter
+            date:
+              item.createdAt || item.created_at
+                ? new Date(
+                    item.createdAt || item.created_at,
+                  ).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "Hari ini",
             paymentMethod:
-              item.payment_type || "Midtrans QRIS / Virtual Account",
-            shippingAddress: orderAddress,
+              item.payment_type ||
+              item.paymentType ||
+              "Midtrans QRIS / Virtual Account",
+            shippingAddress: formattedAddress,
           };
         });
         setOrders(formattedOrders);
@@ -139,31 +146,66 @@ export default function OrdersSection() {
     if (currentUser) {
       fetchUserOrders();
     }
-  }, [currentUser, userPrimaryAddress]);
+  }, [currentUser]);
 
-  // 4. Fungsi Re-Order Terintegrasi Midtrans Snap
+  // 3. Filter & Search Logic
+  const filteredOrders = useMemo(() => {
+    let result = orders;
+
+    if (filter !== "all") {
+      if (filter === "completed") {
+        result = result.filter(
+          (o) =>
+            o.status === "completed" ||
+            o.status === "success" ||
+            o.status === "shipping",
+        );
+      } else {
+        result = result.filter((o) => o.status === filter);
+      }
+    }
+
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (o) =>
+          o.id.toLowerCase().includes(query) ||
+          o.name.toLowerCase().includes(query) ||
+          o.concentration.toLowerCase().includes(query),
+      );
+    }
+
+    return result;
+  }, [orders, filter, searchQuery]);
+
+  // 4. Fungsi Re-Order Terintegrasi Midtrans Snap via API Route
   const handleReOrder = async (order) => {
     const toastId = toast.loading("Menyiapkan transaksi Midtrans...");
     try {
       if (!currentUser) throw new Error("Pengguna tidak terautentikasi.");
 
       const newOrderId =
-        "MMK-RO-" + Math.floor(100000 + Math.random() * 900000);
+        "XAR-RO-" + Math.floor(100000 + Math.random() * 900000);
       const targetAddress = order.shippingAddress || userPrimaryAddress;
 
-      // Panggil API backend Next.js untuk mendapatkan Snap Token Midtrans
       const res = await fetch("/api/midtrans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: currentUser.uid,
           orderId: newOrderId,
-          amount: order.rawPrice,
-          productName: order.name,
-          customerDetails: {
-            first_name: currentUser.displayName || "Customer",
-            email: currentUser.email,
-            phone: currentUser.phoneNumber || "08123456789",
-          },
+          amount: Number(order.rawPrice),
+          items:
+            order.items.length > 0
+              ? order.items
+              : [
+                  {
+                    id: newOrderId,
+                    price: Number(order.rawPrice),
+                    quantity: 1,
+                    name: order.name,
+                  },
+                ],
         }),
       });
 
@@ -175,24 +217,22 @@ export default function OrdersSection() {
 
       toast.dismiss(toastId);
 
-      // Buka Pop-up Pembayaran Midtrans Snap
       if (window.snap) {
         window.snap.pay(result.token, {
           onSuccess: async function (resultData) {
             toast.success("Pembayaran berhasil! Pesanan sedang diproses.");
-            // Simpan ke database Supabase dengan status sukses
-            await saveOrderToSupabase(
+            await saveOrderToServer(
               newOrderId,
               order,
               targetAddress,
-              "settlement",
+              "success",
               resultData.payment_type,
             );
             fetchUserOrders();
           },
           onPending: async function (resultData) {
             toast("Menunggu pembayaran Anda...", { icon: "⏳" });
-            await saveOrderToSupabase(
+            await saveOrderToServer(
               newOrderId,
               order,
               targetAddress,
@@ -201,7 +241,7 @@ export default function OrdersSection() {
             );
             fetchUserOrders();
           },
-          onError: function (resultData) {
+          onError: function () {
             toast.error("Pembayaran gagal!");
           },
           onClose: function () {
@@ -210,9 +250,7 @@ export default function OrdersSection() {
           },
         });
       } else {
-        throw new Error(
-          "Sistem pembayaran Midtrans belum siap. Coba muat ulang halaman.",
-        );
+        throw new Error("Sistem pembayaran Midtrans belum siap.");
       }
     } catch (err) {
       console.error("Midtrans Error:", err);
@@ -222,8 +260,7 @@ export default function OrdersSection() {
     }
   };
 
-  // Helper untuk menyimpan pesanan re-order ke Supabase setelah interaksi Midtrans
-  const saveOrderToSupabase = async (
+  const saveOrderToServer = async (
     orderId,
     order,
     address,
@@ -231,48 +268,119 @@ export default function OrdersSection() {
     paymentType,
   ) => {
     try {
-      await supabase.from("orders").insert([
-        {
-          user_id: currentUser.uid,
-          order_id: orderId,
-          product_name: order.name,
-          concentration: order.concentration,
-          notes: order.notes,
-          price: order.rawPrice,
-          status: status,
-          payment_type: paymentType,
-          shipping_address: address,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.uid,
+          orderId,
+          order: {
+            name: order.name,
+            rawPrice: order.rawPrice,
+            concentration: order.concentration,
+            notes: order.notes,
+          },
+          address,
+          status,
+          paymentType,
+        }),
+      });
     } catch (dbErr) {
       console.error("Gagal menyimpan ke database:", dbErr);
     }
   };
 
-  const filteredOrders =
-    filter === "all" ? orders : orders.filter((o) => o.status === filter);
+  const handleCopyId = (orderId) => {
+    navigator.clipboard.writeText(orderId);
+    toast.success(`ID Transaksi ${orderId} disalin!`);
+  };
+
+  const handleDownloadInvoice = (order) => {
+    const invoiceContent = `=====================================
+          INVOICE TRANSAKSI XAR
+=====================================
+ID Transaksi     : ${order.id}
+Tanggal          : ${order.date}
+Status Pesanan   : ${order.status.toUpperCase()}
+-------------------------------------
+PRODUK
+Nama Produk      : ${order.name}
+Spesifikasi      : ${order.concentration}
+Catatan          : ${order.notes}
+-------------------------------------
+PEMBAYARAN & PENGIRIMAN
+Metode Pembayaran: ${order.paymentMethod}
+Alamat Pengiriman: ${order.shippingAddress}
+Total Pembayaran : ${order.price}
+=====================================
+Terima kasih telah berbelanja di XAR!`;
+
+    const blob = new Blob([invoiceContent], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Invoice-${order.id}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Invoice berhasil diunduh!");
+  };
+
+  const handleReviewSubmit = (e) => {
+    e.preventDefault();
+    toast.success("Terima kasih! Ulasan Anda berhasil dikirim.");
+    setReviewModalOrder(null);
+    setComment("");
+    setRating(5);
+  };
 
   return (
     <div className={styles.workspaceInner}>
-      {/* Header & Filter Tabs */}
+      {/* Header, Search & Filter Tabs */}
       <div className={`card ${styles.cardHeader}`}>
-        <div>
-          <h3 className={styles.headerTitle}>{ordersConfig.header.title}</h3>
-          <p className={styles.headerSubtitle}>
-            {ordersConfig.header.subtitle}
-          </p>
+        <div className={styles.headerTopRow}>
+          <div>
+            <h3 className={styles.headerTitle}>{ordersConfig.header.title}</h3>
+            <p className={styles.headerSubtitle}>
+              {ordersConfig.header.subtitle}
+            </p>
+          </div>
+          <div className={styles.searchBox}>
+            <svg
+              style={{
+                width: "16px",
+                height: "16px",
+                stroke: "currentColor",
+                strokeWidth: 2,
+                fill: "none",
+                strokeLinecap: "round",
+                strokeLinejoin: "round",
+                color: "#71717a",
+              }}
+            >
+              <use href="/assets/icon/feather-sprite.svg#search" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Cari ID pesanan / nama parfum..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
         </div>
+
         <div className={styles.filterGroup}>
           {ordersConfig.tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
-              className={`${styles.filterBtn} ${
-                filter === tab ? styles.filterBtnActive : ""
-              }`}
+              className={`${styles.filterBtn} ${filter === tab ? styles.filterBtnActive : ""}`}
             >
-              {tab}
+              {tab.toUpperCase()}
             </button>
           ))}
         </div>
@@ -286,65 +394,145 @@ export default function OrdersSection() {
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className={`card ${styles.centerStateCard}`}>
+            <svg
+              style={{
+                width: "36px",
+                height: "36px",
+                stroke: "currentColor",
+                strokeWidth: 1.5,
+                fill: "none",
+                strokeLinecap: "round",
+                strokeLinejoin: "round",
+                color: "#71717a",
+                marginBottom: "0.5rem",
+              }}
+            >
+              <use href="/assets/icon/feather-sprite.svg#package" />
+            </svg>
             <p className={styles.emptyText}>{ordersConfig.emptyText}</p>
           </div>
         ) : (
-          filteredOrders.map((order) => (
-            <div key={order.id} className={`card ${styles.orderCard}`}>
-              <div className={styles.orderInfoCol}>
-                <div className={styles.orderIdRow}>
-                  <span className={styles.orderIdText}>{order.id}</span>
-                  <span
-                    className={`${styles.statusBadge} ${
-                      order.status === "completed"
-                        ? styles.statusCompleted
-                        : styles.statusProcessing
-                    }`}
-                  >
-                    {order.status}
-                  </span>
+          filteredOrders.map((order) => {
+            const isFinished = ["completed", "success", "shipping"].includes(
+              order.status,
+            );
+            return (
+              <div key={order.id} className={`card ${styles.orderCard}`}>
+                <div className={styles.orderInfoCol}>
+                  <div className={styles.orderIdRow}>
+                    <span className={styles.orderIdText}>{order.id}</span>
+                    <span
+                      className={`${styles.statusBadge} ${isFinished ? styles.statusCompleted : styles.statusProcessing}`}
+                    >
+                      {order.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <h4 className={styles.orderName}>{order.name}</h4>
+                  <p className={styles.orderSpec}>
+                    Spesifikasi: {order.concentration}
+                  </p>
+                  <p className={styles.orderNotes}>Catatan: {order.notes}</p>
+                  <p className={styles.orderDate}>Tanggal: {order.date}</p>
                 </div>
-                <h4 className={styles.orderName}>{order.name}</h4>
-                <p className={styles.orderSpec}>
-                  Specification: {order.concentration}
-                </p>
-                <p className={styles.orderNotes}>Notes: {order.notes}</p>
-              </div>
 
-              <div className={styles.orderActionCol}>
-                <span className={styles.orderPrice}>{order.price}</span>
-                <div className={styles.buttonGroup}>
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    className={styles.detailBtn}
-                  >
-                    {ordersConfig.buttons.details}
-                  </button>
-                  <button
-                    onClick={() => handleReOrder(order)}
-                    className={styles.reorderBtn}
-                  >
-                    {ordersConfig.buttons.reorder}
-                  </button>
+                <div className={styles.orderActionCol}>
+                  <span className={styles.orderPrice}>{order.price}</span>
+                  <div className={styles.buttonGroup}>
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className={styles.detailBtn}
+                    >
+                      {ordersConfig.buttons.details}
+                    </button>
+                    {isFinished && (
+                      <button
+                        onClick={() => setReviewModalOrder(order)}
+                        style={{
+                          background: "rgba(251, 191, 36, 0.1)",
+                          border: "1px solid rgba(251, 191, 36, 0.3)",
+                          color: "#fbbf24",
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Beri Ulasan
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleReOrder(order)}
+                      className={styles.reorderBtn}
+                    >
+                      {ordersConfig.buttons.reorder}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
-      {/* --- MODAL POPUP DETAIL PESANAN --- */}
+      {/* --- MODAL DETAIL PESANAN TERHUBUNG DATABASE --- */}
       {selectedOrder && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setSelectedOrder(null)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>{ordersConfig.modal.title}</h3>
               <button
                 onClick={() => setSelectedOrder(null)}
                 className={styles.modalCloseBtn}
               >
-                ✕
+                <svg
+                  style={{
+                    width: "18px",
+                    height: "18px",
+                    stroke: "currentColor",
+                    strokeWidth: 2,
+                    fill: "none",
+                  }}
+                >
+                  <use href="/assets/icon/feather-sprite.svg#x" />
+                </svg>
               </button>
+            </div>
+
+            {/* Stepper Status Pelacakan Dinamis */}
+            <div className={styles.trackingStepper}>
+              <div className={styles.stepItemActive}>
+                <div className={styles.stepDot}></div>
+                <span>Dibuat</span>
+              </div>
+              <div
+                className={
+                  ["processing", "success", "shipping", "completed"].includes(
+                    selectedOrder.status,
+                  )
+                    ? styles.stepItemActive
+                    : styles.stepItem
+                }
+              >
+                <div className={styles.stepDot}></div>
+                <span>Peracikan / Diproses</span>
+              </div>
+              <div
+                className={
+                  ["shipping", "completed"].includes(selectedOrder.status)
+                    ? styles.stepItemActive
+                    : styles.stepItem
+                }
+              >
+                <div className={styles.stepDot}></div>
+                <span>Dikirim / Selesai</span>
+              </div>
             </div>
 
             <div className={styles.modalBody}>
@@ -367,7 +555,7 @@ export default function OrdersSection() {
                   {ordersConfig.labels.specsAndNotes}
                 </span>
                 <span>
-                  {selectedOrder.concentration} | Notes: {selectedOrder.notes}
+                  {selectedOrder.concentration} | Catatan: {selectedOrder.notes}
                 </span>
               </div>
               <div>
@@ -392,12 +580,110 @@ export default function OrdersSection() {
               </div>
             </div>
 
+            <div className={styles.modalActionRow}>
+              <button
+                onClick={() => handleCopyId(selectedOrder.id)}
+                className={styles.modalActionBtn}
+              >
+                {ordersConfig.buttons.copyId}
+              </button>
+              <button
+                onClick={() => handleDownloadInvoice(selectedOrder)}
+                className={styles.modalActionBtn}
+              >
+                {ordersConfig.buttons.downloadInvoice}
+              </button>
+            </div>
+
             <button
               onClick={() => setSelectedOrder(null)}
               className={styles.modalCloseActionBtn}
             >
               {ordersConfig.modal.closeBtn}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL ULASAN PRODUK --- */}
+      {reviewModalOrder && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setReviewModalOrder(null)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Beri Ulasan Produk</h3>
+              <button
+                onClick={() => setReviewModalOrder(null)}
+                className={styles.modalCloseBtn}
+              >
+                <svg
+                  style={{
+                    width: "18px",
+                    height: "18px",
+                    stroke: "currentColor",
+                    strokeWidth: 2,
+                    fill: "none",
+                  }}
+                >
+                  <use href="/assets/icon/feather-sprite.svg#x" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleReviewSubmit} className={styles.modalBody}>
+              <div>
+                <span className={styles.modalFieldLabel}>Produk</span>
+                <strong>{reviewModalOrder.name}</strong>
+              </div>
+              <div>
+                <span className={styles.modalFieldLabel}>Rating (Bintang)</span>
+                <select
+                  value={rating}
+                  onChange={(e) => setRating(Number(e.target.value))}
+                  style={{
+                    width: "100%",
+                    background: "#18181b",
+                    border: "1px solid #27272a",
+                    color: "#fff",
+                    padding: "8px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  <option value={5}>⭐⭐⭐⭐⭐ (Sempurna - 5 Bintang)</option>
+                  <option value={4}>⭐⭐⭐⭐ (Puas - 4 Bintang)</option>
+                  <option value={3}>⭐⭐⭐ (Cukup - 3 Bintang)</option>
+                  <option value={2}>⭐⭐ (Kurang - 2 Bintang)</option>
+                  <option value={1}>⭐ (Buruk - 1 Bintang)</option>
+                </select>
+              </div>
+              <div>
+                <span className={styles.modalFieldLabel}>Komentar Ulasan</span>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Bagaimana aroma dan ketahanan parfum pilihan Anda?"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  style={{
+                    width: "100%",
+                    background: "#18181b",
+                    border: "1px solid #27272a",
+                    color: "#fff",
+                    padding: "8px",
+                    borderRadius: "6px",
+                    resize: "none",
+                  }}
+                />
+              </div>
+              <button type="submit" className={styles.modalCloseActionBtn}>
+                Kirim Ulasan
+              </button>
+            </form>
           </div>
         </div>
       )}
