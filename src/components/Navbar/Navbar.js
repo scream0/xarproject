@@ -90,6 +90,23 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
+          
+          <div className={styles.mobileAuthSection}>
+            {user ? (
+              <>
+                <span className={styles.mobileUserName}>Halo, {user.displayName || user.email?.split('@')[0] || "User"}</span>
+                {authItems.map((item, index) => (
+                  item.type === 'link' ? (
+                    <Link key={index} href={item.href} className={styles.mobileAuthLink} onClick={() => setActivePanel(null)}>{item.label}</Link>
+                  ) : (
+                    <button key={index} onClick={() => {logout(); setActivePanel(null);}} className={`${styles.mobileAuthLink} ${styles.mobileLogoutBtn}`}>{item.label}</button>
+                  )
+                ))}
+              </>
+            ) : (
+              unauthItem && <Link href={unauthItem.href} className={styles.mobileLoginBtn} onClick={() => setActivePanel(null)}>{unauthItem.label}</Link>
+            )}
+          </div>
         </div>
 
         <SearchForm
