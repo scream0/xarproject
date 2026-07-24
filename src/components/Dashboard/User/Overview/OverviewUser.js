@@ -7,7 +7,7 @@ import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewUserConfig.json";
 
-export default function OverviewSection({ setActiveTab }) {
+export default function OverviewUser({ setActiveTab }) {
   const router = useRouter();
   const pathname = usePathname();
   const { products, setIsCartOpen, addToCart } = useStore();
@@ -37,7 +37,10 @@ export default function OverviewSection({ setActiveTab }) {
           throw new Error(overviewConfig.toasts.fetchOrdersError);
 
         const orderResult = await orderRes.json();
-        const orderData = orderResult.orders || [];
+        // Menyesuaikan struktur data API orders (bisa terbungkus dalam .data atau berupa array langsung)
+        const orderData = Array.isArray(orderResult)
+          ? orderResult
+          : orderResult.data || orderResult.orders || [];
 
         setUserProfile({
           fullName:
@@ -49,10 +52,18 @@ export default function OverviewSection({ setActiveTab }) {
 
         const total = orderData.length;
         const completedOrders = orderData.filter((o) =>
-          ["completed", "success", "shipping"].includes(o.status),
+          [
+            "completed",
+            "success",
+            "shipping",
+            "shipped",
+            "settlement",
+            "capture",
+            "paid",
+          ].includes((o.status || "").toLowerCase()),
         );
         const totalSpent = completedOrders.reduce(
-          (sum, o) => sum + Number(o.price || o.rawPrice || 0),
+          (sum, o) => sum + Number(o.amount || o.price || o.rawPrice || 0),
           0,
         );
         const processing = total - completedOrders.length;
@@ -67,15 +78,17 @@ export default function OverviewSection({ setActiveTab }) {
 
         if (products.length > 0) {
           const purchasedProductIds = new Set(
-            orderData.flatMap((o) => o.items.map((i) => i.id)),
+            orderData.flatMap((o) =>
+              (o.items || []).map((i) => String(i.id || i.product_id)),
+            ),
           );
           let recommendations = products.filter((p) =>
-            purchasedProductIds.has(p.id),
+            purchasedProductIds.has(String(p.id || p._id)),
           );
 
           if (recommendations.length < 3) {
             const additionalProducts = products.filter(
-              (p) => !purchasedProductIds.has(p.id),
+              (p) => !purchasedProductIds.has(String(p.id || p._id)),
             );
             recommendations = [
               ...recommendations,
@@ -200,29 +213,36 @@ export default function OverviewSection({ setActiveTab }) {
                 {overviewConfig.recentOrders.loading}
               </p>
             ) : recentOrders.length > 0 ? (
-              recentOrders.map((order) => (
-                <div key={order.id} className={styles.recentOrderItem}>
-                  <div className={styles.orderItemInfo}>
-                    <span className={styles.orderId}>
-                      #{order.id.substring(0, 12)}...
-                    </span>
-                    <p className={styles.orderItemName}>{order.name}</p>
+              recentOrders.map((order) => {
+                const displayId = order.orderId || order.id || "";
+                const itemName = order.items?.[0]?.name || "Pesanan Produk";
+                return (
+                  <div
+                    key={order.id || order.orderId}
+                    className={styles.recentOrderItem}
+                  >
+                    <div className={styles.orderItemInfo}>
+                      <span className={styles.orderId}>
+                        #{displayId.substring(0, 12)}...
+                      </span>
+                      <p className={styles.orderItemName}>{itemName}</p>
+                    </div>
+                    <div className={styles.orderItemStatus}>
+                      <span
+                        className={`${styles.statusBadge} ${styles[order.status]}`}
+                      >
+                        {order.status}
+                      </span>
+                      <button
+                        onClick={() => handleNavigation("orders")}
+                        className={styles.detailsLink}
+                      >
+                        {overviewConfig.recentOrders.detailBtn}
+                      </button>
+                    </div>
                   </div>
-                  <div className={styles.orderItemStatus}>
-                    <span
-                      className={`${styles.statusBadge} ${styles[order.status]}`}
-                    >
-                      {order.status}
-                    </span>
-                    <button
-                      onClick={() => handleNavigation("orders")}
-                      className={styles.detailsLink}
-                    >
-                      {overviewConfig.recentOrders.detailBtn}
-                    </button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className={styles.smallLoadingText}>
                 {overviewConfig.recentOrders.empty}
@@ -250,7 +270,7 @@ export default function OverviewSection({ setActiveTab }) {
             <p className={styles.smallLoadingText}>
               {overviewConfig.recommendations.loading}
             </p>
-          ) : (
+          ) : recommendedProducts.length > 0 ? (
             recommendedProducts.map((prod) => {
               const firstVariant = prod.variants?.[0] || {};
               const price = firstVariant.price
@@ -286,6 +306,10 @@ export default function OverviewSection({ setActiveTab }) {
                 </div>
               );
             })
+          ) : (
+            <p className={styles.smallLoadingText}>
+              Belum ada rekomendasi produk.
+            </p>
           )}
         </div>
       </div>

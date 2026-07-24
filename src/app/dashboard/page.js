@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebaseClient";
 import styles from "./Dashboard.module.css";
+import toast from "react-hot-toast";
 
 // Import Konfigurasi JSON
 import dashboardConfig from "@/data/ui/dashboardPageConfig.json";
@@ -16,6 +17,39 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Tangkap parameter redirect dari Midtrans (settlement / sukses)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("order_id");
+    const transactionStatus =
+      params.get("transaction_status") || params.get("status_code");
+
+    if (
+      orderId &&
+      (transactionStatus === "settlement" ||
+        transactionStatus === "200" ||
+        transactionStatus === "success")
+    ) {
+      toast.success(`Pembayaran untuk pesanan #${orderId} berhasil!`);
+
+      // Panggil API update-status secara otomatis untuk memastikan status database & stok terpotong
+      fetch("/api/orders/update-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: "success" }),
+      }).catch((err) =>
+        console.error("Gagal sinkronisasi status otomatis:", err),
+      );
+
+      // Bersihkan URL dari parameter Midtrans yang panjang agar kembali bersih
+      const currentTab = params.get("tab");
+      const cleanUrl = currentTab
+        ? `/dashboard?tab=${currentTab}`
+        : "/dashboard";
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -31,7 +65,6 @@ export default function DashboardPage() {
         const res = await fetch(`/api/users?userId=${currentUser.uid}`);
         const result = await res.json();
 
-        // FIX: Periksa result.exists dan ambil role dari dalam result.data.role
         if (res.ok && result.exists && result.data) {
           const userRole = result.data.role || dashboardConfig.defaultRole;
           setRole(userRole);

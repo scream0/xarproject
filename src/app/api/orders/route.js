@@ -34,18 +34,45 @@ function sanitizeData(obj) {
   return cleanObj;
 }
 
+// Helper untuk mapping 1 dokumen Firestore -> object order yang rapi
+function mapOrderDoc(doc) {
+  const order = doc.data();
+  return {
+    id: doc.id,
+    ...order,
+    createdAt: order.createdAt?.toDate
+      ? order.createdAt.toDate().toISOString()
+      : order.createdAt || new Date().toISOString(),
+  };
+}
+
 // GET -> Mengambil Alamat Utama User & Daftar Pesanan dari Firestore
+// - Jika userId DIKIRIM  -> mode USER: alamat + pesanan milik user tsb (untuk halaman akun user)
+// - Jika userId TIDAK DIKIRIM -> mode ADMIN: SEMUA pesanan (untuk dashboard admin / OverviewStats)
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
 
+    // ================= MODE ADMIN (tanpa userId) =================
     if (!userId) {
-      return NextResponse.json(
-        { error: "userId is required" },
-        { status: 400 },
-      );
+      const ordersSnapshot = await db.collection("orders").get();
+
+      let ordersData = [];
+      ordersSnapshot.forEach((doc) => {
+        ordersData.push(mapOrderDoc(doc));
+      });
+
+      // Urutkan pesanan dari yang terbaru
+      ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      return NextResponse.json({
+        success: true,
+        orders: ordersData,
+      });
     }
+
+    // ================= MODE USER (dengan userId) =================
 
     // 1. Ambil Alamat User dari Firestore
     let userPrimaryAddress = "Belum diatur";
@@ -69,7 +96,7 @@ export async function GET(request) {
       console.error("Gagal mengambil alamat dari Firestore:", err);
     }
 
-    // 2. Ambil Daftar Pesanan dari Firestore (Collection: orders)
+    // 2. Ambil Daftar Pesanan milik user dari Firestore (Collection: orders)
     const ordersSnapshot = await db
       .collection("orders")
       .where("userId", "==", userId)
@@ -77,14 +104,7 @@ export async function GET(request) {
 
     let ordersData = [];
     ordersSnapshot.forEach((doc) => {
-      const order = doc.data();
-      ordersData.push({
-        id: doc.id,
-        ...order,
-        createdAt: order.createdAt?.toDate
-          ? order.createdAt.toDate().toISOString()
-          : order.createdAt || new Date().toISOString(),
-      });
+      ordersData.push(mapOrderDoc(doc));
     });
 
     // Urutkan pesanan dari yang terbaru

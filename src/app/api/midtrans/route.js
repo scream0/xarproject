@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import midtransClient from "midtrans-client";
 import { db } from "@/lib/firebaseAdmin";
 
+// Inisialisasi Midtrans Snap Client
 let snap = new midtransClient.Snap({
   isProduction: process.env.NODE_ENV === "production",
   serverKey: process.env.MIDTRANS_SERVER_KEY,
@@ -15,15 +16,16 @@ export async function POST(request) {
 
     if (!orderId || !amount) {
       return NextResponse.json(
-        { error: "orderId and amount are required" },
+        { success: false, error: "orderId and amount are required" },
         { status: 400 },
       );
     }
 
-    let customerName = "Customer MAMEKO";
-    let customerEmail = "customer@mameko.my.id";
+    let customerName = "Customer XAR Store";
+    let customerEmail = "customer@xarstore.com";
     let customerPhone = "08123456789";
 
+    // Ambil data user dari Firestore jika userId tersedia
     if (userId) {
       try {
         const userDoc = await db.collection("users").doc(userId).get();
@@ -42,17 +44,16 @@ export async function POST(request) {
       }
     }
 
-    // Format item details dari cart items yang dikirim frontend
+    // Format item details dari cart items
     let formattedItems = [];
     if (items && Array.isArray(items) && items.length > 0) {
       formattedItems = items.map((item) => ({
         id: String(item.id || item.cartId || "XAR-ITEM"),
         price: Number(item.price),
         quantity: Number(item.quantity),
-        name: `${item.name} (${item.size})`.substring(0, 50), // Midtrans membatasi panjang nama item
+        name: `${item.name} (${item.size || "Standard"})`.substring(0, 50),
       }));
     } else {
-      // Fallback jika items kosong
       formattedItems = [
         {
           id: orderId,
@@ -90,10 +91,26 @@ export async function POST(request) {
       },
     };
 
-    // 1. Buat Snap Token dari Midtrans
-    const transaction = await snap.createTransaction(parameter);
+    // 1. Buat Snap Token dari Midtrans dengan pengaman timeout jaringan (15 detik)
+    const transactionPromise = snap.createTransaction(parameter);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              "Koneksi ke Midtrans Timeout (ETIMEDOUT). Periksa jaringan Anda.",
+            ),
+          ),
+        15000,
+      ),
+    );
 
-    // 2. SIMPAN DATA PESANAN KE FIRESTORE (Collection: orders)
+    const transaction = await Promise.race([
+      transactionPromise,
+      timeoutPromise,
+    ]);
+
+    // 2. Simpan data pesanan ke Firestore (Collection: orders)
     await db
       .collection("orders")
       .doc(orderId)
@@ -105,7 +122,7 @@ export async function POST(request) {
         items: items || [],
         amount: Number(amount),
         shippingAddress: shippingAddress || null,
-        status: "pending", // Status awal sebelum dibayar
+        status: "pending",
         createdAt: new Date(),
       });
 
@@ -115,9 +132,16 @@ export async function POST(request) {
       redirect_url: transaction.redirect_url,
     });
   } catch (error) {
-    console.error("Midtrans Error:", error);
+    console.error("Midtrans API Error:", error.message || error);
+
+    // Berikan pesan error yang deskriptif jika terjadi timeout/koneksi terputus
+    const errorMessage =
+      error.message.includes("ETIMEDOUT") || error.message.includes("Timeout")
+        ? "Koneksi ke server Midtrans terhalang (Timeout). Pastikan jaringan atau firewall lokal mengizinkan akses ke port 443."
+        : error.message || "Gagal membuat transaksi Midtrans";
+
     return NextResponse.json(
-      { error: error.message || "Gagal membuat transaksi Midtrans" },
+      { success: false, error: errorMessage },
       { status: 500 },
     );
   }

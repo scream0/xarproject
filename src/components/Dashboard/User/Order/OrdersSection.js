@@ -4,6 +4,7 @@ import styles from "./OrdersSection.module.css";
 import ordersConfig from "@/data/ui/ordersConfig.json";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
+import { useStore } from "@/context/StoreContext";
 
 export default function OrdersSection() {
   const [filter, setFilter] = useState("all");
@@ -12,7 +13,7 @@ export default function OrdersSection() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [userPrimaryAddress, setUserPrimaryAddress] = useState("Belum diatur");
-
+  const { addToCart } = useStore();
   // State untuk currentUser yang mendengarkan status Auth Firebase secara real-time
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -191,89 +192,114 @@ export default function OrdersSection() {
 
     return result;
   }, [orders, filter, searchQuery]);
-
-  // 5. Fungsi Re-Order Terintegrasi Midtrans Snap via API Route
+  // Fungsi Pesanan Lagi: Validasi stok & masukkan ke keranjang belanja
   const handleReOrder = async (order) => {
-    const toastId = toast.loading("Menyiapkan transaksi Midtrans...");
+    const toastId = toast.loading("Memeriksa ketersediaan stok produk...");
     try {
       if (!currentUser) throw new Error("Pengguna tidak terautentikasi.");
 
-      const newOrderId =
-        "XAR-RO-" + Math.floor(100000 + Math.random() * 900000);
-      const targetAddress = order.shippingAddress || userPrimaryAddress;
+      // Ambil data produk terbaru dari database untuk cek stok
+      const productsRes = await fetch("/api/products", { cache: "no-store" });
+      const productsResult = await productsRes.json();
+      if (!productsRes.ok) throw new Error("Gagal memeriksa stok produk.");
 
-      const res = await fetch("/api/midtrans", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: currentUser.uid,
-          orderId: newOrderId,
-          amount: Number(order.rawPrice),
-          items:
-            order.items.length > 0
-              ? order.items
-              : [
-                  {
-                    id: newOrderId,
-                    price: Number(order.rawPrice),
-                    quantity: 1,
-                    name: order.name,
-                  },
-                ],
-        }),
-      });
+      const latestProducts =
+        productsResult.data || productsResult.products || [];
+      const orderItems =
+        order.items && order.items.length > 0
+          ? order.items
+          : [
+              {
+                id: order.id,
+                name: order.name,
+                quantity: 1,
+                size: order.concentration,
+                price: order.rawPrice,
+              },
+            ];
 
-      const result = await res.json();
-      if (!res.ok)
-        throw new Error(
-          result.error || "Gagal membuat sesi pembayaran Midtrans",
+      let addedCount = 0;
+
+      for (const item of orderItems) {
+        const pId = String(item.id || item.productId || item.product_id || "");
+        const orderedSize = String(item.size || "").trim();
+        const orderedQty = Number(item.quantity || item.qty || 1);
+
+        const foundProduct = latestProducts.find(
+          (p) =>
+            String(p.id || p._id) === pId ||
+            p.name?.toLowerCase() === item.name?.toLowerCase(),
         );
+
+        if (!foundProduct) {
+          toast.error(`Produk "${item.name}" sudah tidak tersedia.`);
+          continue;
+        }
+
+        // Cari varian atau produk utama
+        let targetVariant = null;
+        let currentStock = 0;
+
+        if (
+          Array.isArray(foundProduct.variants) &&
+          foundProduct.variants.length > 0
+        ) {
+          targetVariant = foundProduct.variants.find(
+            (v) =>
+              String(v.size || "")
+                .trim()
+                .toLowerCase() === orderedSize.toLowerCase(),
+          );
+          currentStock = Number(
+            targetVariant?.stock ?? targetVariant?.stok ?? 0,
+          );
+        } else {
+          currentStock = Number(foundProduct.stock ?? foundProduct.stok ?? 0);
+        }
+
+        if (currentStock <= 0) {
+          toast.error(
+            `Stok "${item.name} (${orderedSize || "Standard"})" sudah habis.`,
+          );
+          continue;
+        }
+
+        // Sesuaikan jumlah dengan sisa stok
+        const finalQty = Math.min(orderedQty, currentStock);
+        if (finalQty < orderedQty) {
+          toast(
+            `Stok terbatas! Jumlah "${item.name}" disesuaikan jadi ${finalQty}.`,
+          );
+        }
+
+        // Masukkan ke keranjang menggunakan Store Context
+        const variantData = targetVariant || {
+          size: orderedSize || "Standard",
+          price: Number(item.price || foundProduct.price || 0),
+          stock: currentStock,
+        };
+
+        addToCart(foundProduct, variantData, finalQty);
+        addedCount++;
+      }
 
       toast.dismiss(toastId);
 
-      if (window.snap) {
-        window.snap.pay(result.token, {
-          onSuccess: async function (resultData) {
-            toast.success("Pembayaran berhasil! Pesanan sedang diproses.");
-            await saveOrderToServer(
-              newOrderId,
-              order,
-              targetAddress,
-              "success",
-              resultData.payment_type,
-            );
-            fetchUserOrders(currentUser);
-          },
-          onPending: async function (resultData) {
-            toast("Menunggu pembayaran Anda...", { icon: "⏳" });
-            await saveOrderToServer(
-              newOrderId,
-              order,
-              targetAddress,
-              "pending",
-              resultData.payment_type || "Midtrans",
-            );
-            fetchUserOrders(currentUser);
-          },
-          onError: function () {
-            toast.error("Pembayaran gagal!");
-          },
-          onClose: function () {
-            toast("Popup pembayaran ditutup.");
-            fetchUserOrders(currentUser);
-          },
-        });
+      if (addedCount > 0) {
+        toast.success("Produk berhasil dimasukkan ke keranjang!");
+        // Opsional: Buka modal keranjang jika fungsi setIsCartOpen tersedia
+        // setIsCartOpen(true);
       } else {
-        throw new Error("Sistem pembayaran Midtrans belum siap.");
+        toast.error("Gagal menambahkan produk ke keranjang karena stok habis.");
       }
     } catch (err) {
-      console.error("Midtrans Error:", err);
-      toast.error(err.message || "Gagal memproses pembayaran.", {
+      console.error("Re-Order Error:", err);
+      toast.error(err.message || "Gagal memproses pesanan ulang.", {
         id: toastId,
       });
     }
   };
-
+  // fungsi menyimpan pesanan ke server
   const saveOrderToServer = async (
     orderId,
     order,

@@ -9,10 +9,11 @@ import shopConfig from "@/data/ui/shopConfig.json";
 
 const PRODUCTS_PER_PAGE = 12;
 
-export default function ShopSection() {
+export default function Shop() {
   const { addToCart, products: contextProducts } = useStore();
   const [products, setProducts] = useState([]);
   const [orderItemsMap, setOrderItemsMap] = useState({});
+  const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,60 +24,80 @@ export default function ShopSection() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeVariantIdx, setActiveVariantIdx] = useState(0);
 
-  // 1. Fetch Products & Orders dari Database Supabase dengan Refresh Otomatis
+  // Fetch Produk & Orders secara terpisah
   const fetchShopData = async () => {
     try {
-      const [productsRes, ordersRes] = await Promise.all([
-        fetch("/api/products", { cache: "no-store" }),
-        fetch("/api/orders", { cache: "no-store" }),
-      ]);
+      const productsRes = await fetch("/api/products", { cache: "no-store" });
+      const prodContentType = productsRes.headers.get("content-type");
+
+      if (!prodContentType || !prodContentType.includes("application/json")) {
+        throw new Error(
+          "Endpoint /api/products tidak mengembalikan JSON yang valid.",
+        );
+      }
 
       const productsResult = await productsRes.json();
-      const ordersResult = await ordersRes.json();
-
       if (!productsRes.ok)
-        throw new Error(productsResult.error || "Gagal memuat katalog");
+        throw new Error(productsResult.error || "Gagal memuat katalog produk");
 
       const fetchedProducts =
         productsResult.data || productsResult.products || productsResult || [];
       setProducts(fetchedProducts);
-
-      // Hitung jumlah terjual dari database pesanan
-      const transactions = Array.isArray(ordersResult)
-        ? ordersResult
-        : ordersResult.data || ordersResult.orders || [];
-      const soldCounts = {};
-      transactions.forEach((order) => {
-        const status = (order.status || "").toLowerCase();
-        if (
-          [
-            "success",
-            "completed",
-            "shipping",
-            "shipped",
-            "settlement",
-            "capture",
-            "paid",
-          ].includes(status)
-        ) {
-          const items = order.items || order.order_items || [];
-          items.forEach((item) => {
-            const pId = String(
-              item.id || item.productId || item.product_id || "",
-            );
-            const qty = Number(item.quantity || item.qty) || 1;
-            if (pId) {
-              soldCounts[pId] = (soldCounts[pId] || 0) + qty;
-            }
-          });
-        }
-      });
-      setOrderItemsMap(soldCounts);
     } catch (err) {
-      console.error("Gagal memuat data shop:", err);
-      toast.error(shopConfig.toasts.fetchError);
+      console.error("Gagal memuat produk:", err.message);
+      toast.error(
+        shopConfig.toasts?.fetchError || "Gagal memuat katalog produk",
+      );
     } finally {
       setLoading(false);
+    }
+
+    try {
+      const ordersRes = await fetch("/api/orders", { cache: "no-store" });
+      const orderContentType = ordersRes.headers.get("content-type");
+
+      if (
+        ordersRes.ok &&
+        orderContentType &&
+        orderContentType.includes("application/json")
+      ) {
+        const ordersResult = await ordersRes.json();
+        const transactions = Array.isArray(ordersResult)
+          ? ordersResult
+          : ordersResult.data || ordersResult.orders || [];
+
+        setAllOrders(transactions);
+
+        const soldCounts = {};
+        transactions.forEach((order) => {
+          const status = (order.status || "").toLowerCase();
+          if (
+            [
+              "success",
+              "completed",
+              "shipping",
+              "shipped",
+              "settlement",
+              "capture",
+              "paid",
+            ].includes(status)
+          ) {
+            const items = order.items || order.order_items || [];
+            items.forEach((item) => {
+              const pId = String(
+                item.id || item.productId || item.product_id || "",
+              );
+              const qty = Number(item.quantity || item.qty) || 1;
+              if (pId) {
+                soldCounts[pId] = (soldCounts[pId] || 0) + qty;
+              }
+            });
+          }
+        });
+        setOrderItemsMap(soldCounts);
+      }
+    } catch (err) {
+      console.warn("Catatan: Data orders belum tersedia.", err.message);
     }
   };
 
@@ -141,6 +162,55 @@ export default function ShopSection() {
     return result;
   }, [products, selectedCategory, searchQuery, sortBy]);
 
+  // OPTIMASI PERFORMA: Pre-indexing Ulasan menggunakan Hash Map
+  // Memproses seluruh orders satu kali saja saat data orders berubah (O(N)),
+  // sehingga pencarian ulasan saat membuka modal produk menjadi instan (O(1)).
+  const productReviewsMap = useMemo(() => {
+    const map = {};
+    allOrders.forEach((order) => {
+      const items = order.items || order.order_items || [];
+      items.forEach((item) => {
+        const itemId = String(
+          item.id || item.productId || item.product_id || "",
+        );
+        if (!itemId) return;
+
+        if (item.review || item.rating || order.review || order.rating) {
+          if (!map[itemId]) map[itemId] = [];
+          map[itemId].push({
+            id: order.id || order.orderId,
+            customer: order.customerName || order.customerEmail || "Pelanggan",
+            rating: Number(item.rating || order.rating || 5),
+            comment:
+              item.review ||
+              item.comment ||
+              order.review ||
+              "Produk sangat bagus dan berkualitas!",
+            date: order.createdAt
+              ? new Date(
+                  order.createdAt.seconds
+                    ? order.createdAt.seconds * 1000
+                    : order.createdAt,
+                ).toLocaleDateString("id-ID")
+              : "Baru saja",
+          });
+        }
+      });
+    });
+    return map;
+  }, [allOrders]);
+
+  const productReviews = useMemo(() => {
+    if (!selectedProduct) return [];
+    const targetId = String(selectedProduct.id || selectedProduct._id || "");
+    const dynamicReviews = productReviewsMap[targetId] || [];
+
+    if (dynamicReviews.length === 0 && Array.isArray(selectedProduct.reviews)) {
+      return selectedProduct.reviews;
+    }
+    return dynamicReviews;
+  }, [selectedProduct, productReviewsMap]);
+
   const getVariantStock = (variant) =>
     Number(variant?.stock ?? variant?.stok ?? 0);
 
@@ -186,8 +256,8 @@ export default function ShopSection() {
   return (
     <div className={styles.shopContainer}>
       <header className={styles.shopHeader}>
-        <h1 className={styles.shopTitle}>{shopConfig.header.title}</h1>
-        <p className={styles.shopSubtitle}>{shopConfig.header.subtitle}</p>
+        <h1 className={styles.shopTitle}>{shopConfig.header?.title}</h1>
+        <p className={styles.shopSubtitle}>{shopConfig.header?.subtitle}</p>
       </header>
 
       <nav className={styles.categoryNavbar}>
@@ -195,7 +265,7 @@ export default function ShopSection() {
           onClick={() => setSelectedCategory("all")}
           className={`${styles.navCatBtn} ${selectedCategory === "all" ? styles.activeNavCatBtn : ""}`}
         >
-          {shopConfig.filters.allLabel}
+          {shopConfig.filters?.allLabel || "Semua"}
         </button>
         {dynamicCategories.map((kat) => (
           <button
@@ -211,7 +281,9 @@ export default function ShopSection() {
       <div className={styles.toolbar}>
         <input
           type="text"
-          placeholder={shopConfig.filters.searchPlaceholder}
+          placeholder={
+            shopConfig.filters?.searchPlaceholder || "Cari produk..."
+          }
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className={styles.searchInput}
@@ -221,20 +293,26 @@ export default function ShopSection() {
           onChange={(e) => setSortBy(e.target.value)}
           className={styles.sortSelect}
         >
-          <option value="default">{shopConfig.filters.sortDefault}</option>
-          <option value="price-low">{shopConfig.filters.sortPriceLow}</option>
-          <option value="price-high">{shopConfig.filters.sortPriceHigh}</option>
-          <option value="name">{shopConfig.filters.sortName}</option>
+          <option value="default">
+            {shopConfig.filters?.sortDefault || "Urutan"}
+          </option>
+          <option value="price-low">
+            {shopConfig.filters?.sortPriceLow || "Harga Terendah"}
+          </option>
+          <option value="price-high">
+            {shopConfig.filters?.sortPriceHigh || "Harga Tertinggi"}
+          </option>
+          <option value="name">{shopConfig.filters?.sortName || "Nama"}</option>
         </select>
       </div>
 
       {loading ? (
         <div className={styles.stateContainer}>
-          <p>{shopConfig.messages.loading}</p>
+          <p>{shopConfig.messages?.loading || "Memuat produk..."}</p>
         </div>
       ) : processedProducts.length === 0 ? (
         <div className={styles.stateContainer}>
-          <p>{shopConfig.messages.empty}</p>
+          <p>{shopConfig.messages?.empty || "Produk tidak ditemukan."}</p>
         </div>
       ) : (
         <>
@@ -247,7 +325,7 @@ export default function ShopSection() {
                 product.variants?.[0]?.price || product.price || 0;
               const priceFormatted = displayPrice
                 ? `Rp ${Number(displayPrice).toLocaleString("id-ID")}`
-                : shopConfig.card.fallbackPrice;
+                : shopConfig.card?.fallbackPrice || "Rp 0";
               const outOfStock = isProductOutOfStock(product);
               const totalStockLeft = getProductTotalStock(product);
 
@@ -269,15 +347,17 @@ export default function ShopSection() {
                       />
                     ) : (
                       <div className={styles.productCardPlaceholder}>
-                        {shopConfig.card.placeholderImageText}
+                        {shopConfig.card?.placeholderImageText || "No Image"}
                       </div>
                     )}
                     <span className={styles.cardCategoryBadge}>
-                      {product.category || shopConfig.card.defaultCategory}
+                      {product.category ||
+                        shopConfig.card?.defaultCategory ||
+                        "Parfum"}
                     </span>
                     {outOfStock && (
                       <span className={styles.outOfStockBadge}>
-                        {shopConfig.card.soldOutBadge}
+                        {shopConfig.card?.soldOutBadge || "Habis"}
                       </span>
                     )}
                   </div>
@@ -295,11 +375,9 @@ export default function ShopSection() {
                             );
                         }}
                         disabled={outOfStock}
-                        aria-label={shopConfig.card.addToCartTitle}
-                        title={
-                          outOfStock
-                            ? shopConfig.card.outOfStockTitle
-                            : shopConfig.card.addToCartTitle
+                        aria-label={
+                          shopConfig.card?.addToCartTitle ||
+                          "Tambah ke keranjang"
                         }
                       >
                         <svg>
@@ -310,7 +388,7 @@ export default function ShopSection() {
                     <div className={styles.cardPriceRow}>
                       <span className={styles.cardPrice}>
                         {outOfStock
-                          ? shopConfig.card.outOfStockTitle
+                          ? shopConfig.card?.outOfStockTitle || "Stok Habis"
                           : priceFormatted}
                       </span>
                     </div>
@@ -320,7 +398,7 @@ export default function ShopSection() {
                         {outOfStock ? "" : `• Sisa: ${totalStockLeft}`}
                       </span>
                       <span className={styles.viewDetailText}>
-                        {shopConfig.card.viewDetail}
+                        {shopConfig.card?.viewDetail || "Detail"}
                       </span>
                     </div>
                   </div>
@@ -336,7 +414,7 @@ export default function ShopSection() {
                 }
                 className={styles.loadMoreBtn}
               >
-                {shopConfig.buttons.loadMore}
+                {shopConfig.buttons?.loadMore || "Muat Lebih Banyak"}
               </button>
             </div>
           )}
@@ -371,23 +449,26 @@ export default function ShopSection() {
                   />
                 ) : (
                   <div className={styles.modalPlaceholderImg}>
-                    {shopConfig.card.placeholderImageText}
+                    {shopConfig.card?.placeholderImageText || "No Image"}
                   </div>
                 )}
               </div>
               <div className={styles.modalDetails}>
                 <span className={styles.productCategory}>
-                  {selectedProduct.category || shopConfig.card.defaultCategory}
+                  {selectedProduct.category ||
+                    shopConfig.card?.defaultCategory ||
+                    "Parfum"}
                 </span>
                 <h2 className={styles.modalTitle}>{selectedProduct.name}</h2>
                 <p className={styles.modalDesc}>
                   {selectedProduct.description ||
-                    shopConfig.card.defaultDescription}
+                    shopConfig.card?.defaultDescription ||
+                    "Deskripsi belum tersedia."}
                 </p>
                 {selectedProduct.variants?.length > 0 && (
                   <div className={styles.variantBox}>
                     <span className={styles.variantLabel}>
-                      {shopConfig.card.variantLabel}
+                      {shopConfig.card?.variantLabel || "Pilih Varian"}
                     </span>
                     <div className={styles.variantChips}>
                       {selectedProduct.variants.map((v, idx) => {
@@ -411,6 +492,37 @@ export default function ShopSection() {
                     </div>
                   </div>
                 )}
+
+                {/* Bagian Ulasan Pelanggan Teroptimasi */}
+                <div className={styles.reviewsSection}>
+                  <h4 className={styles.reviewsTitle}>
+                    {shopConfig.reviews?.title || "Ulasan Pelanggan"} (
+                    {productReviews.length})
+                  </h4>
+                  <div className={styles.reviewsList}>
+                    {productReviews.length === 0 ? (
+                      <p className={styles.emptyReviews}>
+                        {shopConfig.reviews?.empty ||
+                          "Belum ada ulasan untuk produk ini."}
+                      </p>
+                    ) : (
+                      productReviews.map((rev, rIdx) => (
+                        <div key={rIdx} className={styles.reviewItem}>
+                          <div className={styles.reviewHeader}>
+                            <span className={styles.reviewCustomer}>
+                              {rev.customer}
+                            </span>
+                            <span className={styles.reviewStars}>
+                              {"★".repeat(rev.rating)}
+                            </span>
+                          </div>
+                          <p className={styles.reviewComment}>{rev.comment}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
                 <div className={styles.modalPriceAction}>
                   <span className={styles.modalPrice}>
                     {`Rp ${Number(selectedProduct.variants?.[activeVariantIdx]?.price || selectedProduct.price || 0).toLocaleString("id-ID")}`}
@@ -435,8 +547,8 @@ export default function ShopSection() {
                         </svg>
                         <span>
                           {isSoldOut
-                            ? shopConfig.buttons.outOfStock
-                            : shopConfig.buttons.addToCart}
+                            ? shopConfig.buttons?.outOfStock || "Habis"
+                            : shopConfig.buttons?.addToCart || "Beli Sekarang"}
                         </span>
                       </button>
                     );

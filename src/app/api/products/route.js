@@ -1,16 +1,25 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// Inisialisasi Supabase Server Client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Helper untuk inisialisasi Supabase secara aman (mencegah crash di tingkat modul)
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      "Supabase environment variables are missing or not loaded.",
+    );
+  }
+  return createClient(supabaseUrl, supabaseKey);
+}
 
 // GET -> Mengambil semua produk atau satu produk berdasarkan ID (?id=...)
 export async function GET(request) {
   try {
+    const supabase = getSupabaseClient();
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("id");
 
@@ -34,20 +43,34 @@ export async function GET(request) {
     }
   } catch (error) {
     console.error("Gagal mengambil data produk dari Supabase:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
   }
 }
 
 // POST -> Menambahkan produk baru ke tabel products
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const supabase = getSupabaseClient();
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON body" },
+        { status: 400 },
+      );
+    }
+
     const { name, category, description, imageUrl, imagePublicId, variants } =
-      body;
+      body || {};
 
     if (!name || !imageUrl) {
       return NextResponse.json(
-        { error: "Name and main image are required" },
+        { success: false, error: "Name and main image are required" },
         { status: 400 },
       );
     }
@@ -72,20 +95,34 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Gagal menambahkan produk ke Supabase:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
   }
 }
 
 // PUT -> Memperbarui data produk dan variannya di tabel products
 export async function PUT(request) {
   try {
-    const body = await request.json();
+    const supabase = getSupabaseClient();
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON body" },
+        { status: 400 },
+      );
+    }
+
     const { productId, name, description, imageUrl, imagePublicId, variants } =
-      body;
+      body || {};
 
     if (!productId) {
       return NextResponse.json(
-        { error: "productId is required" },
+        { success: false, error: "productId is required" },
         { status: 400 },
       );
     }
@@ -109,28 +146,30 @@ export async function PUT(request) {
     });
   } catch (error) {
     console.error("Gagal memperbarui produk di Supabase:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
   }
 }
 
 // DELETE -> Menghapus produk dari tabel products berdasarkan ID
 export async function DELETE(request) {
   try {
+    const supabase = getSupabaseClient();
     let productId;
 
-    // Coba ambil productId dari body JSON (jika dikirim via body)
     try {
       const body = await request.json();
-      productId = body.productId;
+      productId = body?.productId;
     } catch {
-      // Jika body kosong, coba ambil dari query parameter (?id=...)
       const { searchParams } = new URL(request.url);
       productId = searchParams.get("id");
     }
 
     if (!productId) {
       return NextResponse.json(
-        { error: "productId is required" },
+        { success: false, error: "productId is required" },
         { status: 400 },
       );
     }
@@ -148,6 +187,9 @@ export async function DELETE(request) {
     });
   } catch (error) {
     console.error("Gagal menghapus produk di Supabase:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
   }
 }

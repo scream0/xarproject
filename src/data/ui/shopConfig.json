@@ -33,5 +33,9 @@
   },
   "toasts": {
     "fetchError": "Gagal memuat produk dari database."
+  },
+  "reviews": {
+    "title": "Ulasan Pelanggan",
+    "empty": "Belum ada ulasan untuk produk ini."
   }
 }
