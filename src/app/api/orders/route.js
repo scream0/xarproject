@@ -126,7 +126,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { orderId, status } = body;
+    const { orderId, status, shippingReceiptNumber } = body;
     // status bisa berupa: "success", "processing", "shipping", "completed", "cancelled"
 
     if (!orderId || !status) {
@@ -195,14 +195,19 @@ export async function PUT(request) {
       }
     }
 
-    // Update status pesanan di Firestore
-    await orderRef.set(
-      {
+    // Siapkan data untuk diupdate di Firestore
+    const updateData = {
         status: status,
         updated_at: new Date(),
-      },
-      { merge: true },
-    );
+    };
+
+    // Tambahkan nomor resi jika ada
+    if (shippingReceiptNumber) {
+        updateData.shippingReceiptNumber = shippingReceiptNumber;
+    }
+
+    // Update status (dan nomor resi jika ada) pesanan di Firestore
+    await orderRef.set(updateData, { merge: true });
 
     return NextResponse.json({
       success: true,

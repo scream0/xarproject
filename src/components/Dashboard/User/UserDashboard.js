@@ -64,15 +64,15 @@ export default function UserDashboard() {
               currentUser.displayName ||
               currentUser.email?.split("@")[0] ||
               currentUser.phoneNumber ||
-              "VALUED CUSTOMER";
+              "Valued Customer";
 
-            setUserName(resolvedName.toUpperCase());
+            setUserName(resolvedName);
           } else {
             const defaultName =
               currentUser.displayName ||
               currentUser.email?.split("@")[0] ||
               currentUser.phoneNumber ||
-              "VALUED CUSTOMER";
+              "Valued Customer";
 
             try {
               await setDoc(
@@ -90,7 +90,7 @@ export default function UserDashboard() {
               console.error("Gagal inisialisasi dokumen user baru:", createErr);
             }
 
-            setUserName(defaultName.toUpperCase());
+            setUserName(defaultName);
           }
         } catch (err) {
           console.error("Gagal mengambil data profil dari database:", err);
@@ -99,9 +99,9 @@ export default function UserDashboard() {
             currentUser.displayName ||
             currentUser.email?.split("@")[0] ||
             currentUser.phoneNumber ||
-            "USER";
+            "User";
 
-          setUserName(fallbackName.toUpperCase());
+          setUserName(fallbackName);
         } finally {
           setLoading(false);
         }
@@ -119,6 +119,8 @@ export default function UserDashboard() {
     }
   };
 
+  const activeTabLabel = userConfig.nav.find(item => item.id === activeTab)?.label;
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -135,45 +137,18 @@ export default function UserDashboard() {
         <div className={styles.brandLogo}>
           {userConfig.brand.name} <span>{userConfig.brand.suffix}</span>
         </div>
-        <div
-          className={styles.mobileTopActions}
-          style={{ display: "flex", gap: "10px", alignItems: "center" }}
-        >
+        <div className={styles.mobileTopActions}>
           {/* Tombol Keranjang SVG di Mobile Topbar */}
           <button
             className={styles.cartIconBtnMobile}
             onClick={() => setIsCartOpen(true)}
             aria-label="Buka Keranjang"
-            style={{
-              background: "#27272a",
-              border: "none",
-              color: "#fff",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              position: "relative",
-            }}
           >
-            <svg
-              className={styles.feather}
-              style={{ width: "18px", height: "18px" }}
-            >
+            <svg className={styles.svgIcon}>
               <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
             </svg>
             {isMounted && cartQuantity > 0 && (
-              <span
-                style={{
-                  background: "#fbbf24",
-                  color: "#000",
-                  padding: "1px 5px",
-                  borderRadius: "4px",
-                  fontSize: "0.7rem",
-                  fontWeight: "bold",
-                }}
-              >
+              <span className={`${styles.cartQuantityBadge} ${animate ? styles.pop : ''}`}>
                 {cartQuantity}
               </span>
             )}
@@ -184,22 +159,8 @@ export default function UserDashboard() {
             className={styles.hamburgerBtn}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Menu Navigasi"
-            style={{
-              background: "#27272a",
-              border: "none",
-              color: "#fff",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
           >
-            <svg
-              className={styles.feather}
-              style={{ width: "20px", height: "20px" }}
-            >
+            <svg className={styles.svgIcon}>
               <use
                 href={`/assets/icon/feather-sprite.svg#${
                   isMobileMenuOpen ? "x" : "menu"
@@ -255,20 +216,11 @@ export default function UserDashboard() {
         <header className={styles.header}>
           <div className={styles.extraNavLeft}>
             <span className={styles.navIndicator}>
-              {activeTab === "shop"
-                ? "Katalog Toko"
-                : activeTab === "overview"
-                  ? "Ringkasan"
-                  : activeTab === "orders"
-                    ? "Riwayat Pesanan"
-                    : "Profil Saya"}
+              {activeTabLabel}
             </span>
           </div>
 
-          <div
-            className={styles.extraNavRight}
-            style={{ display: "flex", alignItems: "center", gap: "15px" }}
-          >
+          <div className={styles.extraNavRight}>
             <h1 className={styles.welcomeTitle}>
               WELCOME, {userName || "USER"}
             </h1>

@@ -3,10 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import styles from "./OverviewSection.module.css";
 import { auth } from "@/lib/firebaseClient";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useStore } from "@/context/StoreContext";
-
-const db = getFirestore();
+import toast from "react-hot-toast";
 
 export default function OverviewSection({ setActiveTab }) {
   const router = useRouter();
@@ -15,13 +13,15 @@ export default function OverviewSection({ setActiveTab }) {
 
   const [stats, setStats] = useState({
     totalOrders: 0,
-    completedOrders: 0,
+    totalSpent: 0,
     processingOrders: 0,
   });
   const [userProfile, setUserProfile] = useState({
     fullName: "",
     username: "",
   });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const currentUser = auth.currentUser;
@@ -31,281 +31,155 @@ export default function OverviewSection({ setActiveTab }) {
       if (!currentUser) return;
 
       try {
-        // 1. Ambil data profil user dari Firestore
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data();
-          setUserProfile({
-            fullName:
-              userData.full_name || currentUser.displayName || "Pelanggan",
-            username: userData.username ? `@${userData.username}` : "",
-          });
-        }
-
-        // 2. Ambil total pesanan dari endpoint API terpusat (/api/orders)
+        // Data diambil dari /api/orders yang sudah mengambil dari Firestore
         const orderRes = await fetch(`/api/orders?userId=${currentUser.uid}`);
+        if (!orderRes.ok) throw new Error("Gagal memuat data pesanan.");
+        
         const orderResult = await orderRes.json();
-        const orderData = Array.isArray(orderResult)
-          ? orderResult
-          : orderResult.orders || orderResult.data || [];
+        const orderData = orderResult.orders || [];
 
-        if (orderRes.ok && orderData.length > 0) {
-          const total = orderData.length;
-          const completed = orderData.filter((o) =>
-            ["settlement", "capture", "completed", "success"].includes(
-              (o.transaction_status || o.status || "").toLowerCase(),
-            ),
-          ).length;
-          const processing = total - completed;
+        // Set User Profile from fetched address data
+        setUserProfile({
+          fullName: orderResult.primaryAddress?.split(" - ")[0]?.split(" (")[0] || currentUser.displayName || "Pelanggan",
+          username: currentUser.email,
+        });
 
-          setStats({
-            totalOrders: total,
-            completedOrders: completed,
-            processingOrders: processing,
-          });
+        // Calculate Stats
+        const total = orderData.length;
+        const completedOrders = orderData.filter((o) => ["completed", "success", "shipping"].includes(o.status));
+        const totalSpent = completedOrders.reduce((sum, o) => sum + Number(o.price || o.rawPrice || 0), 0);
+        const processing = total - completedOrders.length;
+
+        setStats({
+          totalOrders: total,
+          totalSpent: totalSpent,
+          processingOrders: processing,
+        });
+
+        // Set Recent Orders (max 3)
+        setRecentOrders(orderData.slice(0, 3));
+
+        // Generate Personalized Recommendations
+        if (products.length > 0) {
+          const purchasedProductIds = new Set(orderData.flatMap(o => o.items.map(i => i.id)));
+          let recommendations = products.filter(p => purchasedProductIds.has(p.id));
+          
+          if (recommendations.length < 3) {
+            const additionalProducts = products.filter(p => !purchasedProductIds.has(p.id));
+            recommendations = [...recommendations, ...additionalProducts.slice(0, 3 - recommendations.length)];
+          }
+          setRecommendedProducts(recommendations.slice(0, 3));
         }
+
       } catch (err) {
         console.error("Gagal memuat ringkasan dashboard:", err);
+        toast.error("Gagal memuat data ringkasan.");
       } finally {
         setLoading(false);
       }
     }
 
     fetchDashboardData();
-  }, [currentUser]);
+  }, [currentUser, products]);
 
-  // Handler Tombol "Jelajahi Katalog"
-  const handleExploreCatalog = () => {
+  const handleNavigation = (tab) => {
     if (typeof setActiveTab === "function") {
-      setActiveTab("shop");
+      setActiveTab(tab);
     } else {
       const basePath = pathname.split("?")[0];
-      router.push(`${basePath}?tab=shop`);
+      router.push(`${basePath}?tab=${tab}`);
     }
   };
-
-  // Handler Tombol "Cek Status Pesanan"
-  const handleCheckOrders = () => {
-    if (typeof setActiveTab === "function") {
-      setActiveTab("orders");
-    } else {
-      const basePath = pathname.split("?")[0];
-      router.push(`${basePath}?tab=orders`);
-    }
-  };
-
-  // Ambil 3 produk pertama untuk showcase eksklusif
-  const curatedProducts = products.slice(0, 3);
+  
+  const formatRupiah = (number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(number);
 
   return (
     <div className={styles.overviewWorkspace}>
-      {/* 1. Metric Cards Grid dengan Desain E-Commerce Modern & SVG Lokal */}
+      {/* 1. Metric Cards Grid */}
       <div className={styles.metricsGrid}>
         <div className={styles.metricCard}>
-          <div className={styles.metricHeaderRow}>
-            <p className={styles.metricTitle}>Total Pesanan</p>
-            <span className={styles.metricIconBox}>
-              <svg
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  stroke: "currentColor",
-                  strokeWidth: 2,
-                  fill: "none",
-                  strokeLinecap: "round",
-                  strokeLinejoin: "round",
-                }}
-              >
-                <use href="/assets/icon/feather-sprite.svg#package" />
-              </svg>
-            </span>
-          </div>
-          <h3 className={styles.metricValue}>
-            {loading ? "..." : stats.totalOrders}{" "}
-            <span className={styles.unitText}>Botol</span>
-          </h3>
+          <p className={styles.metricTitle}>Total Belanja</p>
+          <h3 className={styles.metricValue}>{loading ? "..." : formatRupiah(stats.totalSpent)}</h3>
+          <p className={styles.metricDesc}>Dari pesanan yang tuntas</p>
+        </div>
+        <div className={styles.metricCard}>
+          <p className={styles.metricTitle}>Total Pesanan</p>
+          <h3 className={styles.metricValue}>{loading ? "..." : stats.totalOrders}</h3>
           <p className={styles.metricDesc}>Akumulasi seluruh transaksi</p>
         </div>
-
         <div className={styles.metricCard}>
-          <div className={styles.metricHeaderRow}>
-            <p className={styles.metricTitle}>Pesanan Selesai</p>
-            <span className={styles.metricIconBox} style={{ color: "#10b981" }}>
-              <svg
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  stroke: "currentColor",
-                  strokeWidth: 2,
-                  fill: "none",
-                  strokeLinecap: "round",
-                  strokeLinejoin: "round",
-                }}
-              >
-                <use href="/assets/icon/feather-sprite.svg#check-circle" />
-              </svg>
-            </span>
-          </div>
-          <h3 className={styles.metricValue}>
-            {loading ? "..." : stats.completedOrders}
-          </h3>
-          <p className={styles.metricDesc}>Telah diterima & dinikmati</p>
-        </div>
-
-        <div className={styles.metricCard}>
-          <div className={styles.metricHeaderRow}>
-            <p className={styles.metricTitle}>Dalam Proses</p>
-            <span className={styles.metricIconBox} style={{ color: "#fbbf24" }}>
-              <svg
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  stroke: "currentColor",
-                  strokeWidth: 2,
-                  fill: "none",
-                  strokeLinecap: "round",
-                  strokeLinejoin: "round",
-                }}
-              >
-                <use href="/assets/icon/feather-sprite.svg#clock" />
-              </svg>
-            </span>
-          </div>
-          <h3 className={styles.metricValue}>
-            {loading ? "..." : stats.processingOrders}
-          </h3>
-          <p className={styles.metricDesc}>Kurasi / proses pengiriman</p>
+          <p className={styles.metricTitle}>Dalam Proses</p>
+          <h3 className={styles.metricValue}>{loading ? "..." : stats.processingOrders}</h3>
+          <p className={styles.metricDesc}>Peracikan / pengiriman</p>
         </div>
       </div>
 
-      {/* 2. Welcome Banner & Curated Exclusives */}
+      {/* 2. Welcome Banner & Recent Orders */}
       <div className={styles.overviewGridTwo}>
         <div className={styles.sectionCard}>
           <div className={styles.welcomeBadge}>AREA ANGGOTA VIP</div>
           <h3 className={styles.cardTitle}>
-            SELAMAT DATANG,{" "}
-            <span>{userProfile.fullName.toUpperCase() || "VALUED GUEST"}</span>
+            SELAMAT DATANG, <span>{userProfile.fullName.toUpperCase() || "VALUED GUEST"}</span>
           </h3>
           <p className={styles.cardDesc}>
-            Nikmati kemudahan berbelanja koleksi Extrait de Parfum eksklusif
-            kami. Pantau status pengiriman atau akses keranjang belanja Anda
-            langsung dari panel kontrol ini.
+            Akses cepat untuk melihat status pesanan terbaru Anda atau jelajahi kembali koleksi parfum eksklusif kami.
           </p>
           <div className={styles.actionButtonGroup}>
-            <button
-              className={styles.btnPrimary}
-              onClick={handleExploreCatalog}
-            >
-              Jelajahi Katalog
-            </button>
-            <button className={styles.btnOutline} onClick={handleCheckOrders}>
-              Riwayat Pesanan
-            </button>
-            <button
-              className={styles.btnOutline}
-              onClick={() => setIsCartOpen(true)}
-              style={{
-                borderColor: "rgba(251, 191, 36, 0.4)",
-                color: "#fbbf24",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                style={{
-                  width: "16px",
-                  height: "16px",
-                  stroke: "currentColor",
-                  strokeWidth: 2,
-                  fill: "none",
-                  strokeLinecap: "round",
-                  strokeLinejoin: "round",
-                }}
-              >
-                <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
-              </svg>
-              <span>Buka Keranjang</span>
+            <button className={styles.btnPrimary} onClick={() => handleNavigation("shop")}>Jelajahi Katalog</button>
+            <button className={styles.btnOutline} onClick={() => handleNavigation("orders")}>Semua Pesanan</button>
+            <button className={styles.btnOutline} onClick={() => setIsCartOpen(true)} style={{ borderColor: "rgba(251, 191, 36, 0.4)", color: "#fbbf24" }}>
+              Buka Keranjang
             </button>
           </div>
         </div>
 
-        {/* Curated Exclusives with Direct Add to Cart Feature */}
         <div className={styles.sectionCard}>
+            <h3 className={styles.cardTitle}>Aktivitas Terbaru</h3>
+            <div className={styles.recentOrdersList}>
+                {loading ? <p className={styles.smallLoadingText}>Memuat pesanan...</p> : 
+                 recentOrders.length > 0 ? (
+                    recentOrders.map(order => (
+                        <div key={order.id} className={styles.recentOrderItem}>
+                            <div className={styles.orderItemInfo}>
+                                <span className={styles.orderId}>#{order.id.substring(0, 12)}...</span>
+                                <p className={styles.orderItemName}>{order.name}</p>
+                            </div>
+                            <div className={styles.orderItemStatus}>
+                                <span className={`${styles.statusBadge} ${styles[order.status]}`}>{order.status}</span>
+                                <button onClick={() => handleNavigation("orders")} className={styles.detailsLink}>Detail</button>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <p className={styles.smallLoadingText}>Belum ada pesanan.</p>
+                )}
+            </div>
+        </div>
+      </div>
+      
+      {/* 3. Personalized Recommendations */}
+      <div className={`${styles.sectionCard} ${styles.fullWidthCard}`}>
           <div className={styles.curatedHeaderRow}>
-            <h3 className={styles.cardTitle} style={{ margin: 0 }}>
-              REKOMENDASI UNGGULAN
-            </h3>
-            <button
-              onClick={handleExploreCatalog}
-              className={styles.seeAllLink}
-            >
-              Lihat Semua →
-            </button>
+            <h3 className={styles.cardTitle}>Direkomendasikan Untuk Anda</h3>
+            <button onClick={() => handleNavigation("shop")} className={styles.seeAllLink}>Lihat Semua →</button>
           </div>
-
           <div className={styles.curatedList}>
-            {curatedProducts.length > 0 ? (
-              curatedProducts.map((prod) => {
+            {loading ? <p className={styles.smallLoadingText}>Mencari rekomendasi...</p> : 
+             recommendedProducts.map((prod) => {
                 const firstVariant = prod.variants?.[0] || {};
-                const price = firstVariant.price
-                  ? Number(firstVariant.price).toLocaleString("id-ID")
-                  : prod.price
-                    ? Number(prod.price).toLocaleString("id-ID")
-                    : "0";
-
+                const price = firstVariant.price ? Number(firstVariant.price).toLocaleString("id-ID") : prod.price ? Number(prod.price).toLocaleString("id-ID") : "0";
                 return (
                   <div key={prod.id || prod._id} className={styles.curatedItem}>
-                    <div className={styles.curatedImgWrap}>
-                      <img
-                        src={
-                          prod.image_url ||
-                          prod.imageUrl ||
-                          "/assets/placeholder.jpg"
-                        }
-                        alt={prod.name}
-                        className={styles.curatedThumb}
-                      />
-                    </div>
+                    <img src={prod.image_url || prod.imageUrl || "/assets/placeholder.jpg"} alt={prod.name} className={styles.curatedThumb} />
                     <div className={styles.curatedInfo}>
                       <p className={styles.curatedName}>{prod.name}</p>
-                      <p className={styles.curatedSub}>
-                        {firstVariant.size ? `${firstVariant.size} • ` : ""}
-                        Rp {price}
-                      </p>
+                      <p className={styles.curatedSub}>{firstVariant.size ? `${firstVariant.size} • ` : ""}Rp {price}</p>
                     </div>
-                    <button
-                      className={styles.curatedQuickAddBtn}
-                      onClick={() => addToCart(prod, firstVariant, 1)}
-                      title="Tambah ke Keranjang"
-                    >
-                      <svg
-                        style={{
-                          width: "16px",
-                          height: "16px",
-                          stroke: "currentColor",
-                          strokeWidth: 2,
-                          fill: "none",
-                          strokeLinecap: "round",
-                          strokeLinejoin: "round",
-                        }}
-                      >
-                        <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
-                      </svg>
-                    </button>
+                    <button className={styles.curatedQuickAddBtn} onClick={() => addToCart(prod, firstVariant, 1)} title="Tambah ke Keranjang">+</button>
                   </div>
                 );
-              })
-            ) : (
-              <p style={{ fontSize: "0.85rem", color: "#71717a", margin: 0 }}>
-                Memuat rekomendasi produk terbaik...
-              </p>
-            )}
+              })}
           </div>
-        </div>
       </div>
     </div>
   );

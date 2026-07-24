@@ -1,168 +1,161 @@
-/* cart sidebar */
-
-.feather {
-  width: 24px;
-  height: 24px;
-  stroke: var(--text-light); /* Warna default */
-  stroke-width: 1.5;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: all 0.3s ease;
-  transform-origin: center;
-}
-
 .sidebarOverlay {
   position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0.4s;
+}
+.sidebarOverlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.cartSidebar {
+  position: fixed;
   top: 0;
-  right: -400px; /* Sembunyi ke luar layar sejauh lebarnya */
-  width: 400px;
+  right: -100%;
+  width: 100%;
+  max-width: 420px;
   height: 100vh;
   background-color: #0d0d0d;
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 2.5rem 2rem;
-  z-index: 9999;
+  border-left: 1px solid #27272a;
+  z-index: 1000;
   transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
 }
-
-.sidebarOverlay.active {
-  right: 0; /* Muncul ke layar */
-}
-
-/* Responsif untuk HP agar tidak melebar */
-@media (max-width: 480px) {
-  .sidebarOverlay {
-    width: 100%;
-    right: -100%;
-  }
+.cartSidebar.active {
+  right: 0;
 }
 
 .cartHeader {
-  color: #fff;
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin-bottom: 5srem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding-bottom: 1rem;
-}
-/* close btn */
-.cartCloseBtn {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  background: rgba(255, 255, 255, 0.03); /* Lebih menyatu dengan dark mode */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
-  width: 2.8rem;
-  height: 2.8rem;
-  border-radius: 12px; /* Menggunakan rounded square agar konsisten dengan elemen lain */
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.cartCloseBtn:hover {
-  color: var(--text-light); /* Berubah menjadi putih, bukan hitam */
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--primary-color); /* Aksen warna brand saat di-hover */
-  transform: rotate(90deg) scale(1.05); /* Sedikit rotasi membuat animasi terasa lebih "mahal" */
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #27272a;
+  flex-shrink: 0;
 }
 .cartSidebarTitle {
   color: #fff;
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 1rem;
+  margin: 0;
+}
+.cartCloseBtn {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+.cartCloseBtn:hover {
+  color: #fff;
+}
+.svgIcon {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  fill: none;
 }
 
-/* List Item di Keranjang */
 .cartItemsWrapper {
   flex: 1;
   overflow-y: auto;
-  min-height: 120px;
-  padding-right: 5px;
+  padding: 0 1.5rem;
 }
+.cartItemsWrapper::-webkit-scrollbar { width: 4px; }
+.cartItemsWrapper::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
 
 .cartItem {
   display: flex;
   gap: 1.2rem;
-  align-items: center;
-  padding: 1rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #27272a;
 }
-
 .cartItemImg {
   width: 70px;
   height: 70px;
   border-radius: 8px;
-  object-fit: cover;
-  background: #181818;
+  overflow: hidden;
+  background: #18181b;
+  flex-shrink: 0;
 }
-
+.cartItemImg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .cartItemDetails {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
-
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.4rem;
+}
 .cartItemName {
   color: #fff;
   font-size: 0.95rem;
   font-weight: 500;
-  margin-bottom: 0.4rem;
+  margin: 0;
 }
+.removeItemBtn {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+.removeItemBtn:hover { color: #ef4444; }
+.removeItemBtn .svgIcon { width: 18px; height: 18px; }
 
-/* Dropdown Varian */
 .cartVariantSelector {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.8rem;
-  color: #666;
-  margin-bottom: 0.6rem;
+  color: #a1a1aa;
+  margin-bottom: 0.8rem;
 }
-
 .cartVariantSelector select {
-  background: #181818;
-  color: #aaa;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: #18181b;
+  color: #fff;
+  border: 1px solid #3f3f46;
   padding: 2px 6px;
   border-radius: 4px;
   outline: none;
   cursor: pointer;
 }
+.cartVariantSelector select:disabled { opacity: 0.5; }
 
-/* Baris Kontrol Harga & Qty */
 .cartItemPriceRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.85rem;
+  margin-top: auto;
 }
-
 .cartCurrentPrice {
-  color: #888;
+  color: #a1a1aa;
+  font-size: 0.9rem;
 }
 
-.cartItemTotal {
-  color: #fff;
-  font-weight: 600;
-}
-
-/* Tombol Kuantitas Modern (Pill-Style) */
 .cartQtyControl {
   display: flex;
   align-items: center;
-  background: #181818;
+  background: #18181b;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid #3f3f46;
   overflow: hidden;
 }
-
 .cartQtyBtn {
   background: transparent;
   border: none;
@@ -173,152 +166,120 @@
   font-weight: bold;
   transition: background 0.2s;
 }
-
-.cartQtyBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--primary-color);
-}
-
+.cartQtyBtn:hover { background: #27272a; }
+.cartQtyBtn.disabled { cursor: not-allowed; opacity: 0.5; }
 .cartQtyValue {
   color: #fff;
   padding: 0 8px;
   font-weight: 500;
+  font-size: 0.9rem;
 }
 
-/* Footer Keranjang & Form */
+.emptyCartStatus {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+.emptyCartIcon .svgIcon {
+  width: 50px;
+  height: 50px;
+  stroke: #3f3f46;
+}
+.emptyCartStatus p {
+  color: #a1a1aa;
+  margin: 0;
+}
+.btnContinueShopping {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #18181b;
+  color: white;
+  border: 1px solid #3f3f46;
+}
+.btnContinueShopping:hover {
+  background-color: #27272a;
+  border-color: #71717a;
+}
+
 .cartFooterWrapper {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 1.5rem;
-  margin-top: auto;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
+  border-top: 1px solid #27272a;
+  padding: 1.5rem;
+  background: #121214;
+  flex-shrink: 0;
+}
+
+.shippingProgress {
+  margin-bottom: 1.25rem;
+}
+.shippingProgress p {
+  font-size: 0.8rem;
+  color: #a1a1aa;
+  margin: 0 0 0.5rem 0;
+  text-align: center;
+}
+.shippingCongrats {
+  color: #10b981 !important;
+  font-weight: 600;
+}
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: #27272a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background-color: #10b981;
+  border-radius: 4px;
+  transition: width 0.4s ease;
 }
 
 .cartTotalRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
-
-.cartItemRow h4 {
-  color: #888;
-  font-size: 0.95rem;
+.cartTotalRow h4 {
+  color: #fff;
+  font-size: 1rem;
   font-weight: 500;
+  margin: 0;
 }
 .cartGrandTotal {
-  color: var(--primary-color);
+  color: #fff;
   font-size: 1.3rem;
   font-weight: 700;
 }
 
 .cartCheckoutBtn {
   width: 100%;
-  padding: 1.1rem; /* Sedikit lebih tebal agar terasa "kokoh" */
-  background: var(--primary-color);
+  padding: 1rem;
+  background: #fbbf24;
   color: #000;
   border: none;
-  border-radius: 8px; /* Disesuaikan dengan radius tombol lain di web Anda */
+  border-radius: 8px;
   font-weight: 700;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 2px; /* Memberikan kesan eksklusif */
+  font-size: 1rem;
   cursor: pointer;
-  position: relative;
-  overflow: hidden; /* Penting untuk efek kilatan */
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s;
 }
-
-/* Efek Hover High-End */
 .cartCheckoutBtn:hover:not(:disabled) {
-  background: transparent;
-  color: var(--primary-color);
-  box-shadow: inset 0 0 0 1px var(--primary-color); /* Border muncul dari dalam */
-  transform: translateY(-2px);
+  opacity: 0.9;
 }
-
-/* Efek Kilatan (Shimmer) saat idle */
-.cartCheckoutBtn::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: 0.5s;
-}
-
-.cartCheckoutBtn:hover::after {
-  left: 100%;
-}
-
 .cartCheckoutBtn:disabled {
-  background: #111;
-  color: #444;
+  background: #3f3f46;
+  color: #71717a;
   cursor: not-allowed;
-  border: 1px solid #222;
-}
-
-/* Status Kosong */
-.emptyCartStatus {
-  display: flex;
-  flex-direction: column; /* Ini yang membuat icon, teks, dan tombol menumpuk ke bawah */
-  align-items: center; /* Ini yang membuat semuanya rata tengah secara horizontal */
-  justify-content: center; /* Ini yang membuat konten berada di tengah secara vertikal */
-  height: 100%; /* Pastikan parent-nya memiliki tinggi yang cukup */
-  width: 100%;
-  text-align: center; /* Memastikan teks tetap rapi */
-  gap: 1.5rem; /* Memberikan jarak yang cantik antara elemen */
-}
-
-.keranjangKosongIcon svg {
-  display: block;
-  width: 50px; /* Sesuaikan ukuran ikon */
-  height: 50px;
-  stroke: var(--text-light); /* Warna icon sesuai tema */
-}
-
-.emptyCartStatus p {
-  color: #666;
-  margin-bottom: 1.5rem;
-}
-
-.btnContinueShopping {
-  padding: 16px 40px;
-  border-radius: 50px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  font-size: 0.85rem;
-  text-decoration: none;
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  outline: none;
-  background-color: transparent;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.btnContinueShopping:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.6);
-  transform: translateY(-3px);
-}
-
-/* Sembunyikan Scrollbar Bawaan Browser di area Item */
-.cartItemsWrapper::-webkit-scrollbar {
-  width: 4px;
-}
-.cartItemsWrapper::-webkit-scrollbar-thumb {
-  background: #222;
-  border-radius: 10px;
 }

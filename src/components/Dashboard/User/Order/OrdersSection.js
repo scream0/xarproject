@@ -17,6 +17,7 @@ export default function OrdersSection() {
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const currentUser = auth.currentUser;
 
@@ -103,6 +104,8 @@ export default function OrdersSection() {
             id: item.orderId || item.order_id || item.id,
             name: displayName,
             items: item.items || [],
+            hasBeenReviewed: item.hasBeenReviewed || false,
+            shippingReceiptNumber: item.shippingReceiptNumber || null,
             concentration:
               item.concentration ||
               (item.items?.[0]
@@ -329,12 +332,56 @@ Terima kasih telah berbelanja di XAR!`;
     toast.success("Invoice berhasil diunduh!");
   };
 
-  const handleReviewSubmit = (e) => {
+  const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    toast.success("Terima kasih! Ulasan Anda berhasil dikirim.");
-    setReviewModalOrder(null);
-    setComment("");
-    setRating(5);
+    if (!reviewModalOrder || !currentUser || isSubmittingReview) {
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    const toastId = toast.loading("Mengirim ulasan Anda...");
+
+    try {
+      const token = await currentUser.getIdToken();
+      const firstItem = reviewModalOrder.items[0]; // Asumsi ulasan untuk item pertama
+
+      if (!firstItem) {
+        throw new Error("Produk dalam pesanan tidak ditemukan.");
+      }
+      
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: currentUser.uid,
+          orderId: reviewModalOrder.id,
+          productId: firstItem.id || reviewModalOrder.id, // Fallback ke order ID jika item ID tidak ada
+          productName: firstItem.name || reviewModalOrder.name, // Fallback
+          rating,
+          comment,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Gagal mengirim ulasan.");
+      }
+
+      toast.success("Terima kasih! Ulasan Anda berhasil dikirim.", { id: toastId });
+      setReviewModalOrder(null);
+      setComment("");
+      setRating(5);
+      fetchUserOrders(); // Muat ulang data untuk update status tombol
+    } catch (error) {
+      console.error("Gagal mengirim ulasan:", error);
+      toast.error(error.message, { id: toastId });
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   return (
@@ -444,22 +491,18 @@ Terima kasih telah berbelanja di XAR!`;
                     >
                       {ordersConfig.buttons.details}
                     </button>
-                    {isFinished && (
+                    {isFinished && !order.hasBeenReviewed && (
                       <button
                         onClick={() => setReviewModalOrder(order)}
-                        style={{
-                          background: "rgba(251, 191, 36, 0.1)",
-                          border: "1px solid rgba(251, 191, 36, 0.3)",
-                          color: "#fbbf24",
-                          padding: "6px 12px",
-                          borderRadius: "6px",
-                          fontSize: "0.8rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
+                        className={styles.reviewBtn}
                       >
                         Beri Ulasan
                       </button>
+                    )}
+                    {isFinished && order.hasBeenReviewed && (
+                       <button className={styles.reviewBtnDisabled} disabled>
+                         Ulasan Dikirim
+                       </button>
                     )}
                     <button
                       onClick={() => handleReOrder(order)}
@@ -570,6 +613,22 @@ Terima kasih telah berbelanja di XAR!`;
                 </span>
                 <span>{selectedOrder.shippingAddress}</span>
               </div>
+              {selectedOrder.shippingReceiptNumber && (
+                <div className={styles.receiptContainer}>
+                  <span className={styles.modalFieldLabel}>
+                    {ordersConfig.labels.shippingReceipt}
+                  </span>
+                  <div className={styles.receiptInfo}>
+                    <span>{selectedOrder.shippingReceiptNumber}</span>
+                    <button 
+                      onClick={() => window.open(`https://jet.co.id/track?hal=1&track_id=${selectedOrder.shippingReceiptNumber}`, '_blank')}
+                      className={styles.trackButton}
+                    >
+                      Lacak Kiriman
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className={styles.modalPriceRow}>
                 <span className={styles.modalPriceLabel}>
                   {ordersConfig.labels.totalPaid}
@@ -680,8 +739,8 @@ Terima kasih telah berbelanja di XAR!`;
                   }}
                 />
               </div>
-              <button type="submit" className={styles.modalCloseActionBtn}>
-                Kirim Ulasan
+              <button type="submit" className={styles.modalCloseActionBtn} disabled={isSubmittingReview}>
+                {isSubmittingReview ? "Mengirim..." : "Kirim Ulasan"}
               </button>
             </form>
           </div>

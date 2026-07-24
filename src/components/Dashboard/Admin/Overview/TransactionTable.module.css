@@ -1,62 +1,288 @@
-.tableWrapper {
-  width: 100%;
-  overflow-x: auto;
-  background: rgba(18, 18, 18, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+/* Bagian Tabel Manajemen Pesanan Seller */
+.ordersSection {
+  background-color: #121212;
+  border: 1px solid #222;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 24px;
+  margin-top: 10px;
 }
 
-.table {
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.tableResponsive {
+  overflow-x: auto;
+}
+
+.ordersTable {
   width: 100%;
   border-collapse: collapse;
-  color: #e5e5e5;
-  font-size: 0.9rem;
-}
-
-.table th {
-  padding: 1rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
-  color: #737373;
   text-align: left;
-  border-bottom: 1px solid #333;
+  font-size: 14px;
+  color: #e5e7eb;
 }
 
-.table td {
-  padding: 1.2rem 1rem;
-  border-bottom: 1px solid #1a1a1a;
+.ordersTable th,
+.ordersTable td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #222;
 }
 
-.row:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.orderId {
-  font-family: monospace;
-  color: #fbbf24;
+.ordersTable th {
+  background-color: #1a1a1a;
+  color: #9ca3af;
   font-weight: 600;
 }
 
-.statusBadge {
-  padding: 0.25rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
+.badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
 }
 
-.statusSuccess {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+.badgePending {
+  background-color: #374151;
+  color: #9ca3af;
+}
+.badgeSuccess {
+  background-color: #065f46;
+  color: #34d399;
+}
+.badgeProcessing {
+  background-color: #1e40af;
+  color: #60a5fa;
+}
+.badgeShipping {
+  background-color: #7c2d12;
+  color: #fb923c;
+}
+.badgeCompleted {
+  background-color: #14532d;
+  color: #4ade80;
 }
 
-.statusPending {
-  background: rgba(251, 191, 36, 0.1);
+.actionBtn {
+  padding: 6px 12px;
+  background-color: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.actionBtn:hover {
+  opacity: 0.85;
+}
+
+.actionBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.actionBtnConfirm {
+  padding: 6px 12px;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.actionBtnConfirm:hover {
+  opacity: 0.85;
+}
+
+.actionBtnConfirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* === UTILITIES & REPLACEMENT FOR INLINE STYLES === */
+.loadingText,
+.emptyText {
+  color: #888;
+  font-size: 14px;
+  padding: 20px 0;
+  text-align: center;
+}
+
+.orderId {
+  font-weight: 600;
+  font-family: monospace;
   color: #fbbf24;
 }
 
-.statusFailed {
-  background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
+.statusCompletedText {
+  font-size: 12px;
+  color: #4ade80;
+  font-weight: 500;
+}
+
+/* === SEARCH, FILTER, PAGINATION CONTROLS === */
+.controlsContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.searchInput {
+  padding: 8px 12px;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  min-width: 250px;
+}
+
+.filterSelect {
+  padding: 8px 12px;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.pagination button {
+  padding: 6px 14px;
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #2a2a2a;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #aaa;
+}
+
+/* === MODAL STYLES === */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+  background: #18181b;
+  border: 1px solid #333;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.modalSubtitle {
+  font-size: 14px;
+  color: #a1a1aa;
+  margin: -8px 0 0 0;
+}
+
+.modalInput {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #121212;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.modalBtnCancel, .modalBtnConfirm {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modalBtnCancel {
+  background-color: #333;
+  color: #fff;
+}
+
+.modalBtnCancel:hover {
+  background-color: #444;
+}
+
+.modalBtnConfirm {
+  background-color: #2563eb;
+  color: #fff;
+}
+
+.modalBtnConfirm:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.modalBtnConfirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

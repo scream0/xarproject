@@ -1,20 +1,44 @@
 {
-  "title": "INVENTORY MANAGEMENT",
-  "searchPlaceholder": "Cari parfum atau produk eksklusif...",
-  "loadingText": "MEMUAT INVENTARIS...",
-  "emptyText": "Belum ada produk yang terdaftar di arsip.",
+  "title": "Manajemen Produk",
+  "searchPlaceholder": "Cari nama produk...",
+  "loadingText": "Memuat data produk...",
+  "emptyText": "Tidak ada produk yang cocok dengan kriteria Anda.",
+  "emptyState": "Belum ada produk yang terdaftar di arsip.",
   "tableHeaders": {
-    "image": "VISUAL",
-    "name": "NAMA",
-    "variants": "VARIAN (SIZE | HARGA | STOK)",
-    "status": "STATUS",
-    "actions": "AKSI"
+    "image": "Visual",
+    "name": "Nama Produk",
+    "category": "Kategori",
+    "stock": "Total Stok",
+    "status": "Status",
+    "actions": "Aksi"
   },
-  "statusReady": "READY",
-  "statusSoldOut": "SOLD OUT",
+  "filters": {
+    "stockStatus": "Filter Status",
+    "category": "Filter Kategori",
+    "all": "Semua",
+    "ready": "Tersedia",
+    "soldOut": "Habis",
+    "lowStock": "Stok Menipis"
+  },
+  "status": {
+    "ready": "Tersedia",
+    "soldOut": "Habis",
+    "lowStock": "Stok Menipis"
+  },
   "actions": {
     "edit": "Edit",
     "delete": "Hapus"
   },
-  "confirmDelete": "Hapus produk ini dari database?"
+  "deleteModal": {
+    "title": "Konfirmasi Hapus Produk",
+    "message": "Apakah Anda yakin ingin menghapus produk '{productName}' secara permanen? Semua varian dan gambar terkait akan dihapus. Tindakan ini tidak dapat diurungkan.",
+    "confirmButton": "Ya, Hapus",
+    "cancelButton": "Batal"
+  },
+  "pagination": {
+    "page": "Halaman",
+    "of": "dari",
+    "previous": "Sebelumnya",
+    "next": "Berikutnya"
+  }
 }

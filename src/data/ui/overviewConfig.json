@@ -5,5 +5,44 @@
     "orders": "Total Transaksi",
     "products": "Produk Aktif",
     "lowStock": "Stok Menipis"
+  },
+  "cardDescriptions": {
+    "revenue": "Akumulasi transaksi sukses",
+    "orders": "Total pesanan masuk",
+    "products": "Koleksi item di arsip",
+    "lowStockWarning": "Varian perlu restock segera",
+    "lowStockOk": "Stok aman terkendali"
+  },
+  "ordersSection": {
+    "title": "Kelola & Konfirmasi Pesanan Masuk",
+    "loading": "Memuat daftar pesanan...",
+    "empty": "Belum ada pesanan masuk.",
+    "searchPlaceholder": "Cari ID atau nama pemesan...",
+    "filter": {
+      "all": "Semua Status",
+      "pending": "Pending",
+      "success": "Success",
+      "processing": "Processing",
+      "shipping": "Shipping",
+      "completed": "Completed"
+    }
+  },
+  "tableHeaders": [
+    "Order ID",
+    "Pemesan",
+    "Total",
+    "Status",
+    "Aksi Seller"
+  ],
+  "actions": {
+    "confirmPayment": "Konfirmasi Bayar",
+    "confirming": "Mengonfirmasi...",
+    "processOrder": "Proses Pesanan",
+    "processing": "Memproses...",
+    "shipItem": "Kirim Barang",
+    "shipping": "Mengirim...",
+    "completeOrder": "Selesaikan",
+    "completing": "Menyelesaikan...",
+    "completed": "Selesai"
   }
 }

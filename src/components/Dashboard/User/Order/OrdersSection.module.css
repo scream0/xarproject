@@ -445,3 +445,66 @@
   background: #27272a;
   color: #fff;
 }
+
+.reviewBtn {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reviewBtn:hover {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+.reviewBtnDisabled {
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  color: #71717a;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+/* Shipping Receipt Styles */
+.receiptContainer {
+  background: #18181b;
+  border: 1px solid #27272a;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.receiptInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #fbbf24;
+}
+
+.trackButton {
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.trackButton:hover {
+  background: #3f3f46;
+}

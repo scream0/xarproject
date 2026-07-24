@@ -14,6 +14,7 @@ import AdvancedAnalytics from "@/components/Dashboard/Admin/Analytics/AdvancedAn
 import TransactionTable from "@/components/Dashboard/Admin/Overview/TransactionTable";
 import OverviewStats from "@/components/Dashboard/Admin/Overview/OverviewStats";
 import ProductManager from "@/components/Dashboard/Admin/Products/ProductManager";
+import ReviewManager from "@/components/Dashboard/Admin/Reviews/ReviewManager";
 import SettingsView from "@/components/Dashboard/Admin/Settings/SettingsView";
 
 export default function AdminDashboard() {
@@ -163,7 +164,16 @@ export default function AdminDashboard() {
             </section>
           )}
 
-          {/* TAB 3: ANALYTICS */}
+          {/* TAB 3: REVIEWS */}
+          {activeTab === "reviews" && (
+            <section className={styles.workspaceArea}>
+              <div className={styles.workspaceInner}>
+                <ReviewManager />
+              </div>
+            </section>
+          )}
+
+          {/* TAB 4: ANALYTICS */}
           {activeTab === "analytics" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>
@@ -176,7 +186,7 @@ export default function AdminDashboard() {
             </section>
           )}
 
-          {/* TAB 4: SETTINGS */}
+          {/* TAB 5: SETTINGS */}
           {activeTab === "settings" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}>

@@ -4,7 +4,9 @@
     "storeName": "BRAND / STORE NAME",
     "storeEmail": "ADMIN NOTIFICATION EMAIL",
     "currency": "DEFAULT CURRENCY",
-    "lowStockThreshold": "LOW STOCK ALERT THRESHOLD"
+    "lowStockThreshold": "LOW STOCK ALERT THRESHOLD",
+    "midtransServerKey": "MIDTRANS SERVER KEY",
+    "midtransClientKey": "MIDTRANS CLIENT KEY"
   },
   "placeholders": {
     "storeName": "e.g. AWRG Archive / Flowrawr",

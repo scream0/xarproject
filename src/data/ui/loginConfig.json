@@ -42,7 +42,14 @@
       "otpRequired": "Silakan masukkan kode OTP terlebih dahulu.",
       "phoneRequired": "Silakan isi nomor HP Anda terlebih dahulu.",
       "invalidPhoneFormat": "Format nomor HP tidak valid. Gunakan format standar (Contoh: 0812xxx).",
-      "emailRequiredForReset": "Silakan masukkan email Anda terlebih dahulu untuk mereset password."
+      "emailRequiredForReset": "Silakan masukkan email Anda terlebih dahulu untuk mereset password.",
+      "invalidEmail": "Format email tidak valid."
+    },
+    "passwordStrength": {
+        "veryWeak": "Sangat Lemah",
+        "weak": "Lemah",
+        "medium": "Sedang",
+        "strong": "Kuat"
     },
     "messages": {
       "registerSuccess": "Registrasi akun berhasil! Mengalihkan...",

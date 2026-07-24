@@ -18,5 +18,10 @@
     "message": "Keranjang Anda Kosong",
     "buttonText": "Jelajahi Produk",
     "buttonLink": "#product"
+  },
+  "shipping": {
+    "freeShippingThreshold": 500000,
+    "message": "Anda hanya butuh senilai {amount} lagi untuk gratis ongkir!",
+    "congratsMessage": "Selamat! Anda mendapatkan gratis biaya pengiriman."
   }
 }
