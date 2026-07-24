@@ -1,15 +1,12 @@
-"use client";
-import { useParams } from "next/navigation";
-import ProfileSection from "@/components/Dashboard/ProfileSection"; // Sesuaikan jalur komponen Anda
+import ProfileSection from "@/components/Dashboard/User/Profil/ProfileSection";
 
-export default function UserDashboardPage() {
-  const params = useParams();
-  const { username } = params; // Mendapatkan username dari URL
+export default function UserDashboardPage({ params }) {
+  const { username } = params; // Mendapatkan username dari props
 
   return (
     <div>
       {/* Anda bisa memakai username tersebut atau langsung merender ProfileSection */}
-      <ProfileSection />
+      <ProfileSection username={username} />
     </div>
   );
 }
