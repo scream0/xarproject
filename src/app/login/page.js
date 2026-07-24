@@ -1,6 +1,7 @@
 "use client";
 import LoginForm from "@/components/auth/LoginForm";
 import styles from "./login.module.css";
+import "./login.theme.css";
 import config from "@/data/ui/loginConfig.json";
 import { Suspense } from "react";
 

@@ -2,8 +2,8 @@
 .dashboardContainer {
   display: flex;
   height: 100vh; /* Ganti min-height menjadi height penuh */
-  background-color: #0b0b0b;
-  color: #fff;
+  background-color: var(--background);
+  color: var(--text-primary);
   font-family: inherit;
   position: relative;
   overflow: hidden; /* Mencegah body ikut scroll ganda */
@@ -11,8 +11,8 @@
 /* Sidebar Desktop */
 .sidebar {
   width: 260px;
-  background-color: #111;
-  border-right: 1px solid #222;
+  background-color: var(--surface-secondary);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -36,9 +36,9 @@
   display: none;
   align-items: center;
   justify-content: space-between;
-  background-color: #111;
+  background-color: var(--surface-secondary);
   padding: 15px 20px;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid var(--border-color);
   position: fixed;
   top: 0;
   left: 0;
@@ -48,8 +48,8 @@
 
 .hamburgerBtn {
   background: none;
-  border: 1px solid #333;
-  color: #fff;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -68,13 +68,13 @@
 }
 
 .brandLogo span {
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .brandBadge {
   font-size: 0.65rem;
-  background: #222;
-  color: #aaa;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
   padding: 3px 8px;
   border-radius: 3px;
   display: inline-block;
@@ -103,7 +103,7 @@
   text-align: left;
   background: transparent;
   border: none;
-  color: #888;
+  color: var(--text-secondary);
   padding: 12px 16px;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -113,26 +113,26 @@
 }
 
 .navItem:hover {
-  color: #fff;
-  background-color: #1a1a1a;
+  color: var(--text-primary);
+  background-color: var(--surface-primary);
 }
 
 .navItemActive {
-  color: #000 !important;
-  background-color: #fff !important;
+  color: var(--primary-accent-text) !important;
+  background-color: var(--primary-accent) !important;
 }
 
 /* Footer Sidebar */
 .sidebarFooter {
   padding-top: 20px;
-  border-top: 1px solid #222;
+  border-top: 1px solid var(--border-color);
 }
 
 .logoutBtn {
   width: 100%;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #ff5555;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  color: var(--danger-color);
   padding: 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -142,7 +142,7 @@
 }
 
 .logoutBtn:hover {
-  background: #2a1a1a;
+  background: rgba(var(--danger-color-rgb), 0.1);
 }
 
 /* Main Content Area */
@@ -158,13 +158,13 @@
 .header {
   margin-bottom: 25px;
   padding-bottom: 15px;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .welcomeTitle {
   font-size: 1.1rem;
   font-weight: 500;
-  color: #aaa;
+  color: var(--text-secondary);
   letter-spacing: 1px;
 }
 
@@ -177,14 +177,14 @@
 }
 
 .card {
-  background: #121212;
-  border: 1px solid #222;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
   padding: 20px;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: bold;
   letter-spacing: 1px;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 /* Workspace & Tables */
@@ -195,22 +195,22 @@
 }
 
 .workspaceInner {
-  background: #111;
-  border: 1px solid #222;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   padding: 20px;
   border-radius: 8px;
 }
 
 .tableContainer {
-  background: #111;
-  border: 1px solid #222;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 15px;
   overflow-x: auto;
 }
 
 .placeholderText {
-  color: #666;
+  color: var(--text-secondary);
   font-family: monospace;
   font-size: 0.9rem;
 }
@@ -222,15 +222,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #0b0b0b;
-  color: #fff;
+  background: var(--background);
+  color: var(--text-primary);
 }
 
 .pulseScanner {
   width: 40px;
   height: 40px;
-  border: 2px solid #333;
-  border-top-color: #fff;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 15px;
@@ -239,59 +239,27 @@
 .loadingText {
   font-size: 0.85rem;
   letter-spacing: 2px;
-  color: #888;
+  color: var(--text-secondary);
 }
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.mobileOverlayOpen {
+  display: block;
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(var(--background-rgb), 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 100;
 }
-
-/* === RESPONSIVE MEDIA QUERIES (MOBILE) === */
-@media (max-width: 1024px) {
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
+.mainContent {
+  margin-left: 0;
+  width: 100%;
+  height: calc(
+    100vh - 60px
+  ); /* Tinggi layar dikurangi tinggi topbar mobile */
+  overflow-y: auto; /* KUNCI UTAMA untuk mobile */
+  padding: 20px 15px;
+  margin-top: 60px;
 }
-
-@media (max-width: 768px) {
-  .mobileTopBar {
-    display: flex;
-  }
-
-  .sidebar {
-    transform: translateX(-100%);
-    top: 60px; /* Beri ruang untuk mobile top bar */
-    width: 280px;
-    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
-    z-index: 101;
-  }
-
-  .sidebarOpen {
-    transform: translateX(0);
-  }
-
-  /* Backdrop Overlay saat menu mobile terbuka */
-  .mobileOverlayOpen {
-    display: block;
-    position: fixed;
-    top: 60px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(3px);
-    z-index: 100;
-  }
-  .mainContent {
-    margin-left: 0;
-    width: 100%;
-    height: calc(
-      100vh - 60px
-    ); /* Tinggi layar dikurangi tinggi topbar mobile */
-    overflow-y: auto; /* KUNCI UTAMA untuk mobile */
-    padding: 20px 15px;
-    margin-top: 60px;
-  }
 }

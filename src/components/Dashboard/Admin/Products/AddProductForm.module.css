@@ -1,10 +1,10 @@
 .formContainer {
-  background: #0f0f0f;
-  border: 1px solid #222;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
   padding: 30px;
   border-radius: 12px;
-  color: #fff;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  color: var(--text-primary);
+  box-shadow: 0 15px 35px rgba(var(--background-rgb), 0.5);
   max-width: 950px;
   margin: 0 auto;
 }
@@ -13,9 +13,9 @@
   font-size: 1.1rem;
   font-weight: 600;
   letter-spacing: 2px;
-  color: #f5f5f5;
+  color: var(--text-primary);
   margin-bottom: 24px;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 12px;
 }
 
@@ -34,12 +34,12 @@
 .fieldLabel {
   font-size: 0.75rem;
   letter-spacing: 1px;
-  color: #888;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
 .mainFileLabel {
-  color: #3b82f6 !important;
+  color: var(--primary-accent) !important;
   font-weight: 600;
 }
 
@@ -60,13 +60,13 @@
   height: 42px;
   object-fit: cover;
   border-radius: 6px;
-  border: 1px solid #3b82f6;
+  border: 1px solid var(--primary-accent);
 }
 
 .removeImgBtn {
   background: none;
   border: none;
-  color: #ff5555;
+  color: var(--danger-color);
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 600;
@@ -94,11 +94,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #111827;
-  border: 1px dashed #3b82f6;
+  background: var(--surface-secondary);
+  border: 1px dashed var(--primary-accent);
   padding: 12px 16px;
   border-radius: 8px;
-  color: #93c5fd;
+  color: var(--primary-accent);
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -107,12 +107,12 @@
 }
 
 .fileUploadCustomBtn:hover {
-  background: #1e293b;
-  border-color: #60a5fa;
+  background: var(--surface-secondary);
+  border-color: var(--primary-accent);
 }
 
 .fileChosenText {
-  color: #d1d5db;
+  color: var(--text-secondary);
   font-style: italic;
   font-size: 0.8rem;
   overflow: hidden;
@@ -123,10 +123,10 @@
 .inputField,
 .selectField,
 .textareaField {
-  background: #141414;
-  border: 1px solid #2a2a2a;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   padding: 12px 16px;
-  color: #fff;
+  color: var(--text-primary);
   border-radius: 8px;
   font-size: 0.9rem;
   outline: none;
@@ -137,14 +137,14 @@
 .inputField:focus,
 .selectField:focus,
 .textareaField:focus {
-  border-color: #666;
+  border-color: var(--text-secondary);
 }
 
 .variantsBox {
-  border: 1px solid #262626;
+  border: 1px solid var(--border-color);
   padding: 20px;
   border-radius: 8px;
-  background: #111;
+  background: var(--surface-primary);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -155,17 +155,17 @@
   grid-template-columns: 1.2fr 1fr 1fr 1.5fr;
   gap: 10px;
   align-items: center;
-  background: #161616;
+  background: var(--surface-secondary);
   padding: 12px;
   border-radius: 6px;
-  border: 1px solid #222;
+  border: 1px solid var(--border-color);
 }
 
 .variantInput {
-  background: #1b1b1b;
-  border: 1px solid #333;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   padding: 10px 12px;
-  color: #fff;
+  color: var(--text-primary);
   border-radius: 6px;
   font-size: 0.85rem;
   outline: none;
@@ -173,7 +173,7 @@
 }
 
 .variantInput:focus {
-  border-color: #777;
+  border-color: var(--text-secondary);
 }
 
 .variantFileControl {
@@ -188,14 +188,14 @@
   height: 32px;
   object-fit: cover;
   border-radius: 4px;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 
 .variantRemoveBtn {
-  background: rgba(255, 85, 85, 0.1);
-  border: 1px solid rgba(255, 85, 85, 0.3);
-  color: #ff5555;
+  background: rgba(var(--danger-color-rgb), 0.1);
+  border: 1px solid rgba(var(--danger-color-rgb), 0.3);
+  color: var(--danger-color);
   cursor: pointer;
   font-size: 0.7rem;
   padding: 6px 8px;
@@ -225,11 +225,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #121212;
-  border: 1px dashed #4b5563;
+  background: var(--surface-primary);
+  border: 1px dashed var(--border-color);
   padding: 8px 10px;
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -238,14 +238,14 @@
 }
 
 .variantFileCustomBtn:hover {
-  border-color: #9ca3af;
-  background: #1a1a1a;
-  color: #fff;
+  border-color: var(--text-secondary);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
 }
 
 .variantFileChosen {
   font-size: 0.65rem;
-  color: #d1d5db;
+  color: var(--text-secondary);
   font-style: italic;
   max-width: 70px;
   overflow: hidden;
@@ -255,8 +255,8 @@
 
 .addSizeBtn {
   background: transparent;
-  color: #ccc;
-  border: 1px solid #333;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -267,9 +267,9 @@
 }
 
 .addSizeBtn:hover {
-  background: #222;
-  color: #fff;
-  border-color: #555;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .textareaField {
@@ -278,8 +278,8 @@
 }
 
 .submitBtn {
-  background: #fff;
-  color: #000;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
   padding: 14px;
   border: none;
   border-radius: 8px;
@@ -300,7 +300,7 @@
 }
 
 .submitBtn:hover:not(:disabled) {
-  background: #e5e5e5;
+  background: var(--primary-accent);
 }
 
 /* Responsif Mobile */

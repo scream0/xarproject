@@ -17,13 +17,17 @@
   --primary-accent-text: #ffffff;
   --danger-color: #dc2626;
   --success-color: #16a34a;
-  
+
   /* RGB versions for rgba() */
   --surface-primary-rgb: 255, 255, 255;
   --background-rgb: 244, 244, 245;
+  --text-secondary-rgb: 82, 82, 91;
+  --primary-accent-rgb: 245, 158, 11;
+  --danger-color-rgb: 220, 38, 38;
+  --success-color-rgb: 22, 163, 74;
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   /* Dark Theme Palette */
   --background: #09090b;
   --text-primary: #f4f4f5;
@@ -39,6 +43,10 @@
   /* RGB versions for rgba() */
   --surface-primary-rgb: 18, 18, 20;
   --background-rgb: 9, 9, 11;
+  --text-secondary-rgb: 161, 161, 170;
+  --primary-accent-rgb: 251, 191, 36;
+  --danger-color-rgb: 239, 68, 68;
+  --success-color-rgb: 16, 185, 129;
 }
 
 /* ====================================================
@@ -83,11 +91,17 @@ body {
   line-height: 1.6;
   overscroll-behavior: none;
   overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
-h1, h2, h3, h4, .heading {
-  font-family: var(--font-serif);
+h1,
+h2,
+h3,
+h4,
+.heading {
+  font-family: var(--font-serif, "Tenor Sans", sans-serif);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -95,7 +109,20 @@ h1, h2, h3, h4, .heading {
 /* ====================================================
    MEDIA QUERIES (RESPONSIVE ENGINE)
    ==================================================== */
-@media (max-width: 1440px) { html { font-size: 80%; } }
-@media (max-width: 1920px) { html { font-size: 90%; } }
-@media (max-width: 768px) { }
-@media (max-width: 478px) { html { font-size: 75%; } }
+@media (max-width: 1920px) {
+  html {
+    font-size: 90%;
+  }
+}
+@media (max-width: 1440px) {
+  html {
+    font-size: 80%;
+  }
+}
+@media (max-width: 768px) {
+}
+@media (max-width: 478px) {
+  html {
+    font-size: 75%;
+  }
+}

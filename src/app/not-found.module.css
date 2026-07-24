@@ -20,11 +20,11 @@
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  background-color: #000000;
+  background-color: var(--background);
   /* Transisi smooth untuk perubahan background mouse */
   transition: background 0.2s ease-out;
-  font-family: var(--font-inter); /* Gunakan variable Inter */
-  color: #e0e0e0;
+  font-family: var(--font-sans); /* Gunakan variable --font-sans */
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -36,7 +36,11 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
+  background: radial-gradient(
+    circle,
+    transparent 40%,
+    rgba(var(--background-rgb), 0.6) 100%
+  );
   pointer-events: none;
 }
 
@@ -78,10 +82,14 @@
   margin: 0;
   line-height: 1;
   /* Gradient Emas */
-  background: linear-gradient(180deg, #ffffff 0%, #d4af37 100%);
+  background: linear-gradient(
+    180deg,
+    var(--text-primary) 0%,
+    var(--primary-accent) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 15px rgba(212, 175, 55, 0.3));
+  filter: drop-shadow(0 2px 15px rgba(var(--primary-accent-rgb), 0.3));
   letter-spacing: -5px;
 }
 
@@ -91,7 +99,7 @@
   letter-spacing: 0.3em;
   margin-top: 2rem;
   margin-bottom: 1.5rem;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -99,7 +107,7 @@
   font-family: var(--font-cormorant);
   font-style: italic;
   font-size: 1.8rem;
-  color: #d4af37;
+  color: var(--primary-accent);
   margin-bottom: 2.5rem;
   padding: 0 3rem;
   line-height: 1.4;
@@ -107,7 +115,7 @@
 }
 
 .errorDesc {
-  color: #b0b0b0;
+  color: var(--text-secondary);
   margin-bottom: 3rem;
   line-height: 1.8;
   font-weight: 300;
@@ -121,8 +129,8 @@
   display: inline-block;
   padding: 12px 36px;
   background: transparent;
-  border: 1px solid #d4af37;
-  color: #d4af37;
+  border: 1px solid var(--primary-accent);
+  color: var(--primary-accent);
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -140,14 +148,14 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: #d4af37;
+  background: var(--primary-accent);
   transition: all 0.6s ease;
   z-index: -1;
 }
 
 .btnBackHome:hover {
-  color: #000000;
-  border-color: #d4af37;
+  color: var(--primary-accent-text);
+  border-color: var(--primary-accent);
 }
 
 .btnBackHome:hover::before {

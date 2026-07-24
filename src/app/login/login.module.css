@@ -5,25 +5,11 @@
   flex-direction: column;
   height: 100vh;
   width: auto;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-family: var(--font-lato);
   animation: fadeIn 0.8s ease-in;
   overflow: hidden;
-  background-color: #050505;
-
-  /* =======================================================
-     POLA BATU BATA MANUAL MULTI-RECTANGLE (STRICT RUNNING BOND)
-     ======================================================= */
-
-  /* 
-     Di sini kita menggambar 2 baris batu bata secara eksplisit:
-     - Baris 1 (Atas): 1 bata utuh ditengah (lebar 60).
-     - Baris 2 (Bawah): 2 bata setengah di pinggir (lebar 30) yang mengunci efek selang-seling.
-     Warna garis pembatas (stroke): #262626 dengan opasitas 0.4
-  */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30' viewBox='0 0 60 30'%3E%3Crect x='0' y='0' width='60' height='15' fill='none' stroke='%23262626' stroke-opacity='0.4' stroke-width='1'/%3E%3Crect x='-30' y='15' width='60' height='15' fill='none' stroke='%23262626' stroke-opacity='0.4' stroke-width='1'/%3E%3Crect x='30' y='15' width='60' height='15' fill='none' stroke='%23262626' stroke-opacity='0.4' stroke-width='1'/%3E%3C/svg%3E");
-
-  /* Ukuran pattern: Lebar 60px, Tinggi 30px (tiap baris bata tingginya 15px) */
+  background-color: var(--background);
   background-size: 60px 30px;
 }
 
@@ -35,7 +21,7 @@
   padding: 60px 24px 50px 24px;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
 
   /* =======================================================
@@ -45,16 +31,16 @@
     /* Layer 1: Sorotan Utama Lampu Gantung (Pusat Cahaya Pekat Terbuka) */
     radial-gradient(
       circle at 50% 10%,
-      rgba(255, 255, 255, 0.07) 0%,
-      rgba(255, 255, 255, 0.02) 25%,
+      rgba(var(--surface-primary-rgb), 0.07) 0%,
+      rgba(var(--surface-primary-rgb), 0.02) 25%,
       transparent 60%
     ),
     /* Layer 2: Pendaran Glow Hangat yang membias ke sela-sela tekstur bata */
     radial-gradient(
         circle at 50% 20%,
-        rgba(38, 38, 38, 0.4) 0%,
-        rgba(10, 10, 10, 0.8) 70%,
-        #050505 100%
+        rgba(var(--surface-secondary-rgb), 0.4) 0%,
+        rgba(var(--background-rgb), 0.8) 70%,
+        var(--background) 100%
       );
 
   position: relative;
@@ -73,7 +59,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.1),
+    rgba(var(--surface-primary-rgb), 0.1),
     transparent
   );
   pointer-events: none;
@@ -107,7 +93,7 @@
   font-size: 2.6rem;
   font-weight: 200;
   letter-spacing: 0.35em;
-  color: var(--text-light);
+  color: var(--text-primary);
   text-transform: uppercase;
   text-align: center;
   padding-left: 0.35em;
@@ -127,13 +113,13 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(192, 192, 192, 0.5),
+    rgba(var(--text-secondary-rgb), 0.5),
     transparent
   );
 }
 
 .brandSub {
-  color: #737373;
+  color: var(--text-secondary);
   font-weight: 300;
   letter-spacing: 0.6em;
   margin-top: 2rem;
@@ -150,16 +136,16 @@
   font-size: 0.8rem;
 
   /* Warna & Kontras yang ditingkatkan (Industrial Muted Grey) */
-  color: #8a8a8a;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.15em;
   text-decoration: none;
 
   /* Layouting & Border halus ala panel industrial */
   padding: 0.6rem 1.2rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(var(--surface-primary-rgb), 0.05);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(var(--surface-primary-rgb), 0.02);
 
   /* Transisi halus menggunakan cubic-bezier yang konsisten dengan tema form */
   transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
@@ -167,14 +153,14 @@
 }
 
 .backLink:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  background: rgba(var(--surface-primary-rgb), 0.07);
+  border-color: rgba(var(--surface-primary-rgb), 0.2);
   letter-spacing: 0.25em;
 
   /* Efek pendaran lampu tipis (Glow) */
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(var(--surface-primary-rgb), 0.05);
+  text-shadow: 0 0 8px rgba(var(--surface-primary-rgb), 0.4);
 }
 /* --- RESPONSIVE LAYAR LEBAR (LAPTOP / PC) --- */
 @media (min-width: 1024px) {
@@ -186,7 +172,7 @@
     width: 50%;
     height: 100vh;
     padding: 40px;
-    border-right: 1px solid #262626;
+    border-right: 1px solid var(--border-color);
     border-bottom: none;
   }
 
@@ -226,9 +212,9 @@
   height: 100%;
   background: linear-gradient(
     to right,
-    rgba(30, 30, 30, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(30, 30, 30, 0) 100%
+    rgba(var(--background-rgb), 0) 0%,
+    rgba(var(--surface-primary-rgb), 0.05) 50%,
+    rgba(var(--background-rgb), 0) 100%
   );
   filter: blur(2px);
   animation: shimmer 2s infinite;

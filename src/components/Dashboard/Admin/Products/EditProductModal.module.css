@@ -4,7 +4,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(var(--background-rgb), 0.85);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -15,23 +15,23 @@
 }
 
 .modal {
-  background: #0f0f0f;
-  border: 1px solid #262626;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
   padding: 30px;
   border-radius: 12px;
   width: 100%;
   max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
-  color: #fff;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  color: var(--text-primary);
+  box-shadow: 0 25px 50px -12px rgba(var(--background-rgb), 0.7);
 }
 
 .modal::-webkit-scrollbar {
   width: 4px;
 }
 .modal::-webkit-scrollbar-thumb {
-  background: #333;
+  background: var(--border-color);
   border-radius: 4px;
 }
 
@@ -40,8 +40,8 @@
   font-weight: 600;
   letter-spacing: 2px;
   margin-bottom: 24px;
-  color: #e5e5e5;
-  border-bottom: 1px solid #222;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 12px;
 }
 
@@ -52,7 +52,7 @@
 .sectionLabel {
   font-size: 0.7rem;
   letter-spacing: 1px;
-  color: #888;
+  color: var(--text-secondary);
   display: block;
   margin-bottom: 8px;
   text-transform: uppercase;
@@ -67,7 +67,7 @@
 
 .previewImage {
   border-radius: 6px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   object-fit: cover;
   width: 90px;
   height: 90px;
@@ -76,20 +76,20 @@
 .noImageBox {
   width: 90px;
   height: 90px;
-  background: #161616;
-  border: 1px dashed #333;
+  background: var(--surface-secondary);
+  border: 1px dashed var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  color: #666;
+  color: var(--text-secondary);
   border-radius: 6px;
   text-align: center;
 }
 
 .cancelImageBtn {
-  background: #333;
-  color: #ff5555;
+  background: var(--border-color);
+  color: var(--danger-color);
   border: none;
   padding: 6px 12px;
   border-radius: 4px;
@@ -100,7 +100,7 @@
 }
 
 .cancelImageBtn:hover {
-  background: #3d1a1a;
+  background: rgba(var(--danger-color-rgb), 0.1);
 }
 
 /* === CUSTOM TOMBOL FILE UTAMA === */
@@ -127,11 +127,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #141414;
-  border: 1px dashed #3b82f6;
+  background: var(--surface-secondary);
+  border: 1px dashed var(--primary-accent);
   padding: 12px 16px;
   border-radius: 8px;
-  color: #93c5fd;
+  color: var(--primary-accent);
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -140,12 +140,12 @@
 }
 
 .fileUploadCustomBtn:hover {
-  background: #1e293b;
-  border-color: #60a5fa;
+  background: var(--surface-secondary);
+  border-color: var(--primary-accent);
 }
 
 .fileChosenText {
-  color: #d1d5db;
+  color: var(--text-secondary);
   font-style: italic;
   font-size: 0.8rem;
   overflow: hidden;
@@ -157,10 +157,10 @@
 .inputField,
 .textareaField {
   width: 100%;
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   padding: 12px 14px;
-  color: #fff;
+  color: var(--text-primary);
   border-radius: 6px;
   font-size: 0.9rem;
   margin-bottom: 16px;
@@ -170,14 +170,14 @@
 
 .inputField:focus,
 .textareaField:focus {
-  border-color: #fff;
+  border-color: var(--text-primary);
 }
 
 .variantsContainer {
-  border: 1px solid #222;
+  border: 1px solid var(--border-color);
   padding: 16px;
   border-radius: 8px;
-  background: #121212;
+  background: var(--surface-primary);
   margin-bottom: 16px;
 }
 
@@ -188,17 +188,17 @@
   gap: 10px;
   margin-bottom: 12px;
   align-items: center;
-  background: #181818;
+  background: var(--surface-secondary);
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid #262626;
+  border: 1px solid var(--border-color);
 }
 
 .variantInput {
-  background: #121212;
-  border: 1px solid #333;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
   padding: 9px 10px;
-  color: #fff;
+  color: var(--text-primary);
   border-radius: 6px;
   font-size: 0.85rem;
   width: 100%;
@@ -207,7 +207,7 @@
 }
 
 .variantInput:focus {
-  border-color: #777;
+  border-color: var(--text-secondary);
 }
 
 .variantFileWrapper {
@@ -221,10 +221,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #141414;
+  background: var(--surface-secondary);
   padding: 4px;
   border-radius: 6px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .variantThumb {
@@ -232,14 +232,14 @@
   height: 34px;
   object-fit: cover;
   border-radius: 4px;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 
 .removeVariantImgBtn {
-  background: rgba(255, 85, 85, 0.1);
-  border: 1px solid rgba(255, 85, 85, 0.3);
-  color: #ff5555;
+  background: rgba(var(--danger-color-rgb), 0.1);
+  border: 1px solid rgba(var(--danger-color-rgb), 0.3);
+  color: var(--danger-color);
   cursor: pointer;
   font-size: 0.65rem;
   font-weight: 600;
@@ -250,7 +250,7 @@
 }
 
 .removeVariantImgBtn:hover {
-  background: rgba(255, 85, 85, 0.25);
+  background: rgba(var(--danger-color-rgb), 0.25);
 }
 
 /* === CUSTOM TOMBOL FILE VARIAN (CLEAN & MODERN) === */
@@ -276,11 +276,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #121212;
-  border: 1px dashed #4b5563;
+  background: var(--surface-primary);
+  border: 1px dashed var(--border-color);
   padding: 9px 12px;
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -289,14 +289,14 @@
 }
 
 .variantFileCustomBtn:hover {
-  border-color: #60a5fa;
-  background: #1a1a1a;
-  color: #fff;
+  border-color: var(--primary-accent);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
 }
 
 .variantFileChosen {
   font-size: 0.65rem;
-  color: #93c5fd;
+  color: var(--primary-accent);
   font-style: italic;
   max-width: 70px;
   overflow: hidden;
@@ -306,8 +306,8 @@
 
 .addSizeBtn {
   background: transparent;
-  color: #ccc;
-  border: 1px dashed #444;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
   padding: 10px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -320,9 +320,9 @@
 }
 
 .addSizeBtn:hover {
-  background: #1a1a1a;
-  color: #fff;
-  border-color: #666;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .textareaField {
@@ -337,8 +337,8 @@
 }
 
 .saveBtn {
-  background: #fff;
-  color: #000;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
   padding: 12px;
   flex: 1;
   cursor: pointer;
@@ -356,26 +356,26 @@
 }
 
 .saveBtn:hover:not(:disabled) {
-  background: #e0e0e0;
+  background: var(--primary-accent);
 }
 
 .cancelBtn {
-  background: #1a1a1a;
-  color: #aaa;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
   padding: 12px;
   flex: 1;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.8rem;
   letter-spacing: 1px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   transition: all 0.2s;
 }
 
 .cancelBtn:hover {
-  background: #262626;
-  color: #fff;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
 }
 
 /* === RESPONSIF MOBILE === */
