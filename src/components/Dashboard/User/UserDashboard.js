@@ -11,10 +11,10 @@ import styles from "./UserDashboard.module.css";
 import userConfig from "@/data/ui/userDashboardConfig.json";
 
 // Import Komponen Section
-import OverviewSection from "@/components/Dashboard/User/Overview/OverviewSection";
+import OverviewSection from "@/components/Dashboard/User/Overview/OverviewUser";
 import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
-import ProfileSection from "@/components/Dashboard/User/Profil/ProfileSection";
-import ShopPage from "@/components/Dashboard/User/Shop/ShopSection";
+import ProfileSection from "@/components/Dashboard/User/Profil/UserProfil";
+import ShopPage from "@/components/Dashboard/User/Shop/Shop";
 import { CartSidebar } from "@/components/UI/Sidebar/CartSidebar";
 
 const db = getFirestore();
@@ -58,21 +58,23 @@ export default function UserDashboard() {
 
           if (docSnap.exists()) {
             const data = docSnap.data();
+
+            // Prioritaskan Nama Asli (full_name atau displayName). Jika tidak ada, gunakan nomor telepon atau alternatif lain.
             const resolvedName =
-              data.full_name ||
-              data.username ||
-              currentUser.displayName ||
-              currentUser.email?.split("@")[0] ||
+              data.full_name?.trim() ||
+              currentUser.displayName?.trim() ||
+              data.username?.trim() ||
               currentUser.phoneNumber ||
-              "Valued Customer";
+              currentUser.email?.split("@")[0] ||
+              userConfig.defaultCustomer;
 
             setUserName(resolvedName);
           } else {
             const defaultName =
-              currentUser.displayName ||
-              currentUser.email?.split("@")[0] ||
+              currentUser.displayName?.trim() ||
               currentUser.phoneNumber ||
-              "Valued Customer";
+              currentUser.email?.split("@")[0] ||
+              userConfig.defaultCustomer;
 
             try {
               await setDoc(
@@ -87,19 +89,19 @@ export default function UserDashboard() {
                 { merge: true },
               );
             } catch (createErr) {
-              console.error("Gagal inisialisasi dokumen user baru:", createErr);
+              console.error(userConfig.toasts.initError, createErr);
             }
 
             setUserName(defaultName);
           }
         } catch (err) {
-          console.error("Gagal mengambil data profil dari database:", err);
+          console.error(userConfig.toasts.fetchError, err);
 
           const fallbackName =
-            currentUser.displayName ||
-            currentUser.email?.split("@")[0] ||
+            currentUser.displayName?.trim() ||
             currentUser.phoneNumber ||
-            "User";
+            currentUser.email?.split("@")[0] ||
+            userConfig.defaultUser;
 
           setUserName(fallbackName);
         } finally {
@@ -115,11 +117,13 @@ export default function UserDashboard() {
       await signOut(auth);
       window.location.href = "/login";
     } catch (error) {
-      console.error("Gagal logout:", error);
+      console.error(userConfig.toasts.logoutError, error);
     }
   };
 
-  const activeTabLabel = userConfig.nav.find(item => item.id === activeTab)?.label;
+  const activeTabLabel = userConfig.nav.find(
+    (item) => item.id === activeTab,
+  )?.label;
 
   if (loading) {
     return (
@@ -142,13 +146,15 @@ export default function UserDashboard() {
           <button
             className={styles.cartIconBtnMobile}
             onClick={() => setIsCartOpen(true)}
-            aria-label="Buka Keranjang"
+            aria-label={userConfig.aria.cart}
           >
             <svg className={styles.svgIcon}>
               <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
             </svg>
             {isMounted && cartQuantity > 0 && (
-              <span className={`${styles.cartQuantityBadge} ${animate ? styles.pop : ''}`}>
+              <span
+                className={`${styles.cartQuantityBadge} ${animate ? styles.pop : ""}`}
+              >
                 {cartQuantity}
               </span>
             )}
@@ -158,7 +164,7 @@ export default function UserDashboard() {
           <button
             className={styles.hamburgerBtn}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Menu Navigasi"
+            aria-label={userConfig.aria.menu}
           >
             <svg className={styles.svgIcon}>
               <use
@@ -215,14 +221,12 @@ export default function UserDashboard() {
       <main className={styles.mainContent}>
         <header className={styles.header}>
           <div className={styles.extraNavLeft}>
-            <span className={styles.navIndicator}>
-              {activeTabLabel}
-            </span>
+            <span className={styles.navIndicator}>{activeTabLabel}</span>
           </div>
 
           <div className={styles.extraNavRight}>
             <h1 className={styles.welcomeTitle}>
-              WELCOME, {userName || "USER"}
+              WELCOME, {userName || userConfig.defaultUser}
             </h1>
           </div>
         </header>

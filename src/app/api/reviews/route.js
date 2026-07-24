@@ -2,6 +2,8 @@ import { db } from "@/lib/firebaseAdmin";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue } from "firebase-admin/firestore";
 
+export const dynamic = "force-dynamic";
+
 // Helper untuk verifikasi token Firebase dari client
 async function verifyUser(authHeader) {
   if (!authHeader) {
@@ -14,38 +16,74 @@ async function verifyUser(authHeader) {
   return getAuth().verifyIdToken(token);
 }
 
-// Helper untuk verifikasi bahwa user adalah admin
+// Helper untuk verifikasi bahwa user adalah admin (Mendukung Custom Claims & Firestore users collection)
 async function verifyAdmin(authHeader) {
-    const decodedToken = await verifyUser(authHeader);
-    const user = await getAuth().getUser(decodedToken.uid);
-    if (user.customClaims?.role !== 'admin') {
-        throw new Error("User is not an administrator.");
-    }
+  const decodedToken = await verifyUser(authHeader);
+  const uid = decodedToken.uid;
+
+  if (decodedToken.role === "admin" || decodedToken.admin === true) {
     return decodedToken;
+  }
+
+  try {
+    const user = await getAuth().getUser(uid);
+    if (
+      user.customClaims?.role === "admin" ||
+      user.customClaims?.admin === true
+    ) {
+      return decodedToken;
+    }
+  } catch (e) {}
+
+  try {
+    const userDoc = await db.collection("users").doc(uid).get();
+    if (userDoc.exists && userDoc.data()?.role === "admin") {
+      return decodedToken;
+    }
+  } catch (e) {}
+
+  throw new Error("User is not an administrator.");
 }
 
-
+// POST -> Kirim Review Baru
 export async function POST(request) {
-  let decodedToken;
   try {
-    decodedToken = await verifyUser(request.headers.get("Authorization"));
-  } catch (error) {
-    return new Response(JSON.stringify({ error: `Authentication failed: ${error.message}` }), { status: 401, headers: { "Content-Type": "application/json" } });
-  }
+    let decodedToken;
+    try {
+      decodedToken = await verifyUser(request.headers.get("Authorization"));
+    } catch (error) {
+      return Response.json(
+        { error: `Authentication failed: ${error.message}` },
+        { status: 401 },
+      );
+    }
 
-  const { userId, orderId, productId, productName, rating, comment } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const { userId, orderId, productId, productName, rating, comment } = body;
 
-  // 1. Validasi input
-  if (decodedToken.uid !== userId) {
-    return new Response(JSON.stringify({ error: "User ID mismatch. You can only submit reviews for yourself." }), { status: 403, headers: { "Content-Type": "application/json" } });
-  }
-  if (!orderId || !productId || !rating || !comment) {
-    return new Response(JSON.stringify({ error: "Missing required fields: orderId, productId, rating, comment." }), { status: 400, headers: { "Content-Type": "application/json" } });
-  }
+    if (decodedToken.uid !== userId) {
+      return Response.json(
+        {
+          error: "User ID mismatch. You can only submit reviews for yourself.",
+        },
+        { status: 403 },
+      );
+    }
+    if (!orderId || !productId || !rating || !comment) {
+      return Response.json(
+        {
+          error:
+            "Missing required fields: orderId, productId, rating, comment.",
+        },
+        { status: 400 },
+      );
+    }
 
-  try {
     const orderRef = db.collection("orders").doc(orderId);
-    const reviewRef = db.collection("reviews").where("orderId", "==", orderId).limit(1);
+    const reviewRef = db
+      .collection("reviews")
+      .where("orderId", "==", orderId)
+      .limit(1);
 
     const result = await db.runTransaction(async (transaction) => {
       const orderDoc = await transaction.get(orderRef);
@@ -55,105 +93,155 @@ export async function POST(request) {
 
       const orderData = orderDoc.data();
       if (orderData.userId !== userId) {
-          throw new Error("You are not authorized to review this order.");
+        throw new Error("You are not authorized to review this order.");
       }
       if (orderData.hasBeenReviewed) {
         throw new Error("This order has already been reviewed.");
       }
 
-      // Pastikan belum ada review dengan orderId yang sama
       const reviewSnapshot = await transaction.get(reviewRef);
       if (!reviewSnapshot.empty) {
         throw new Error("A review for this order already exists.");
       }
 
-      // 2. Buat dokumen review baru
       const newReviewRef = db.collection("reviews").doc();
       transaction.create(newReviewRef, {
         userId,
-        userName: decodedToken.name || decodedToken.email, // Ambil dari token
+        userName: decodedToken.name || decodedToken.email || "Pelanggan",
         orderId,
         productId,
-        productName: productName || "Product", // Fallback
+        productName: productName || "Product",
         rating: Number(rating),
         comment,
         createdAt: FieldValue.serverTimestamp(),
-        approved: false, // Default review butuh approval admin
+        approved: false,
       });
-      
-      // 3. Update status order menjadi sudah direview
+
       transaction.update(orderRef, { hasBeenReviewed: true });
-      
+
       return { reviewId: newReviewRef.id };
     });
 
-    return new Response(JSON.stringify({ message: "Review submitted successfully!", reviewId: result.reviewId }), { status: 201, headers: { "Content-Type": "application/json" } });
-
+    return Response.json(
+      {
+        message: "Review submitted successfully!",
+        reviewId: result.reviewId,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Error submitting review:", error);
-    return new Response(JSON.stringify({ error: error.message || "Failed to submit review." }), { status: 500, headers: { "Content-Type": "application/json" } });
+    return Response.json(
+      { error: error.message || "Failed to submit review." },
+      { status: 500 },
+    );
   }
 }
 
+// GET -> Ambil Daftar Review (Admin)
 export async function GET(request) {
+  try {
     try {
-        await verifyAdmin(request.headers.get("Authorization"));
+      await verifyAdmin(request.headers.get("Authorization"));
     } catch (error) {
-        return new Response(JSON.stringify({ error: `Admin verification failed: ${error.message}` }), { status: 403, headers: { "Content-Type": "application/json" } });
+      return Response.json(
+        { error: `Admin verification failed: ${error.message}` },
+        { status: 403 },
+      );
     }
 
-    try {
-        const reviewsSnapshot = await db.collection("reviews").orderBy("createdAt", "desc").get();
-        const reviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return new Response(JSON.stringify({ reviews }), { status: 200, headers: { "Content-Type": "application/json" } });
-    } catch (error) {
-        console.error("Error fetching reviews:", error);
-        return new Response(JSON.stringify({ error: "Failed to fetch reviews." }), { status: 500, headers: { "Content-Type": "application/json" } });
-    }
+    const reviewsSnapshot = await db
+      .collection("reviews")
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const reviews = reviewsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return Response.json({ reviews }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    return Response.json(
+      { error: "Failed to fetch reviews." },
+      { status: 500 },
+    );
+  }
 }
 
+// PUT -> Update Status Approval Review (Admin)
 export async function PUT(request) {
+  try {
     try {
-        await verifyAdmin(request.headers.get("Authorization"));
+      await verifyAdmin(request.headers.get("Authorization"));
     } catch (error) {
-        return new Response(JSON.stringify({ error: `Admin verification failed: ${error.message}` }), { status: 403, headers: { "Content-Type": "application/json" } });
+      return Response.json(
+        { error: `Admin verification failed: ${error.message}` },
+        { status: 403 },
+      );
     }
 
-    const { reviewId, approved } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const { reviewId, approved } = body;
 
-    if (!reviewId || typeof approved !== 'boolean') {
-        return new Response(JSON.stringify({ error: "Missing required fields: reviewId and approved status." }), { status: 400, headers: { "Content-Type": "application/json" } });
+    if (!reviewId || typeof approved !== "boolean") {
+      return Response.json(
+        { error: "Missing required fields: reviewId and approved status." },
+        { status: 400 },
+      );
     }
 
-    try {
-        const reviewRef = db.collection("reviews").doc(reviewId);
-        await reviewRef.update({ approved });
-        return new Response(JSON.stringify({ message: `Review ${reviewId} status updated to ${approved}.` }), { status: 200, headers: { "Content-Type": "application/json" } });
-    } catch (error) {
-        console.error("Error updating review:", error);
-        return new Response(JSON.stringify({ error: "Failed to update review." }), { status: 500, headers: { "Content-Type": "application/json" } });
-    }
+    const reviewRef = db.collection("reviews").doc(reviewId);
+    await reviewRef.update({ approved });
+
+    return Response.json(
+      { message: `Review ${reviewId} status updated to ${approved}.` },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Error updating review:", error);
+    return Response.json(
+      { error: "Failed to update review." },
+      { status: 500 },
+    );
+  }
 }
 
+// DELETE -> Hapus Review (Admin)
 export async function DELETE(request) {
+  try {
     try {
-        await verifyAdmin(request.headers.get("Authorization"));
+      await verifyAdmin(request.headers.get("Authorization"));
     } catch (error) {
-        return new Response(JSON.stringify({ error: `Admin verification failed: ${error.message}` }), { status: 403, headers: { "Content-Type": "application/json" } });
+      return Response.json(
+        { error: `Admin verification failed: ${error.message}` },
+        { status: 403 },
+      );
     }
 
-    const { reviewId } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const { reviewId } = body;
 
     if (!reviewId) {
-        return new Response(JSON.stringify({ error: "Missing required field: reviewId." }), { status: 400, headers: { "Content-Type": "application/json" } });
+      return Response.json(
+        { error: "Missing required field: reviewId." },
+        { status: 400 },
+      );
     }
 
-    try {
-        const reviewRef = db.collection("reviews").doc(reviewId);
-        await reviewRef.delete();
-        return new Response(JSON.stringify({ message: `Review ${reviewId} deleted successfully.` }), { status: 200, headers: { "Content-Type": "application/json" } });
-    } catch (error) {
-        console.error("Error deleting review:", error);
-        return new Response(JSON.stringify({ error: "Failed to delete review." }), { status: 500, headers: { "Content-Type": "application/json" } });
-    }
+    const reviewRef = db.collection("reviews").doc(reviewId);
+    await reviewRef.delete();
+
+    return Response.json(
+      { message: `Review ${reviewId} deleted successfully.` },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Error deleting review:", error);
+    return Response.json(
+      { error: "Failed to delete review." },
+      { status: 500 },
+    );
+  }
 }

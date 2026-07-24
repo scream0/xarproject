@@ -1,71 +1,115 @@
+/* ====================================================
+   CONFIRMATION MODAL CSS (Luxury High-End Theme)
+   ==================================================== */
 .overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
   background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: confirmOverlayFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes confirmOverlayFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
-  background-color: #1a1a1a;
-  padding: 24px;
+  background-color: var(--surface-primary);
+  padding: 2.25rem;
   border-radius: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  gap: 1.25rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  animation: confirmModalScale 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes confirmModalScale {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text-primary);
   margin: 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .message {
-  font-size: 14px;
-  color: #ccc;
-  line-height: 1.5;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-weight: 300;
 }
 
 .buttonGroup {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }
 
 .confirmBtn,
 .cancelBtn {
-  padding: 8px 16px;
+  padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 6px;
+  font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.3s ease;
 }
 
 .confirmBtn {
-  background-color: #dc2626; /* Red */
-  color: #fff;
+  background-color: var(--danger-color);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(var(--danger-color-rgb, 220, 38, 38), 0.25);
+}
+
+.confirmBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(var(--danger-color-rgb, 220, 38, 38), 0.35);
 }
 
 .cancelBtn {
-  background-color: #4b5563; /* Gray */
-  color: #fff;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
-.confirmBtn:hover,
 .cancelBtn:hover {
-  opacity: 0.85;
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+  transform: translateY(-1px);
 }

@@ -1,4 +1,4 @@
-import ProfileSection from "@/components/Dashboard/User/Profil/ProfileSection";
+import ProfileSection from "@/components/Dashboard/User/Profil/UserProfil";
 
 export default function UserDashboardPage({ params }) {
   const { username } = params; // Mendapatkan username dari props

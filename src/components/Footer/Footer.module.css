@@ -1,8 +1,10 @@
-/* footer */
+/* ====================================================
+   FOOTER CSS (Luxury High-End Theme)
+   ==================================================== */
 .feather {
   width: 24px;
   height: 24px;
-  stroke: var(--text-light); /* Warna default */
+  stroke: var(--text-secondary);
   stroke-width: 1.5;
   fill: none;
   stroke-linecap: round;
@@ -12,77 +14,89 @@
 }
 
 .siteFooter {
-  background-color: #080808;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 5rem 7% 2rem 7%;
+  background-color: var(--surface-primary);
+  border-top: 1px solid var(--border-color);
+  padding: 6rem 7% 2.5rem 7%;
   font-family: var(--font-sans);
+  transition:
+    background-color 0.4s ease,
+    border-color 0.4s ease;
 }
 
 .footerContainer {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
   display: grid;
-  /* Disesuaikan menjadi 3 kolom utama karena kolom kontak dihapus */
   grid-template-columns: 1.5fr 1fr 1.2fr;
-  gap: 3rem;
+  gap: 4rem;
 }
 
 .footerBox h3 {
-  color: #ffffff;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 400;
   margin-bottom: 1.8rem;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 /* Branding */
 .footerLogo {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #fff;
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 300;
+  color: var(--text-primary);
   text-decoration: none;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  display: inline-block;
 }
+
 .footerLogo span {
-  color: var(--primary-color);
+  color: var(--primary-accent);
+  font-weight: 500;
 }
+
 .footerDesc {
-  color: #888;
+  color: var(--text-secondary);
   font-size: 0.9rem;
-  line-height: 1.6;
-  margin: 1.2rem 0 1.8rem 0;
+  line-height: 1.8;
+  margin: 1.2rem 0 2rem 0;
   max-width: 320px;
+  font-weight: 300;
 }
 
 .footerSocial {
   display: flex;
-  gap: 1.5rem; /* Memberikan ruang antar ikon agar tidak sesak */
+  gap: 1rem;
   margin-top: 1rem;
 }
 
 .footerSocial a {
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.02);
-  width: 44px; /* Sedikit lebih besar untuk kenyamanan jempol */
-  height: 44px;
+  color: var(--text-secondary);
+  background: var(--surface-secondary);
+  width: 40px;
+  height: 40px;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 12px; /* Menggunakan radius 12px agar selaras dengan desain form/info box */
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); /* Transisi lebih smooth */
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .footerSocial a:hover {
-  color: #000;
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  transform: translateY(-5px); /* Lompatan lebih halus */
-  box-shadow: 0 10px 20px rgba(var(--primary-color-rgb), 0.2);
+  color: var(--primary-accent-text);
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(var(--primary-accent-rgb), 0.25);
 }
 
 .footerSocial a svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   stroke-width: 1.5;
   stroke: currentColor;
 }
@@ -91,74 +105,90 @@
 .linksGrid {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.85rem;
 }
+
 .linksGrid a {
-  color: #888;
+  color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.95rem;
-  transition: color 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
 }
+
 .linksGrid a:hover {
-  color: var(--primary-color);
-  padding-left: 4px;
+  color: var(--primary-accent);
+  padding-left: 6px;
 }
 
 /* Payment */
 .mutedText {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-bottom: 1rem;
+  font-weight: 300;
+  letter-spacing: 0.5px;
 }
+
 .paymentBadges {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
+
 .badgePayment {
-  background: rgba(255, 255, 255, 0.03);
-  color: #aaa;
-  padding: 0.5rem 1rem;
-  font-size: 0.8rem;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  padding: 0.6rem 1rem;
+  font-size: 0.75rem;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
   text-align: center;
   font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   transition: all 0.3s ease;
 }
+
 .badgePayment:hover {
-  border-color: var(--primary-color);
-  color: #fff;
+  border-color: var(--primary-accent);
+  color: var(--text-primary);
+  background: rgba(var(--primary-accent-rgb), 0.05);
 }
 
 /* Bottom */
 .footerBottom {
   margin-top: 5rem;
-  padding-top: 1.8rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
   text-align: center;
 }
+
 .footerBottom p {
-  color: #555;
-  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 /* Responsive */
 @media (max-width: 991px) {
   .footerContainer {
     grid-template-columns: 1fr 1fr;
-    gap: 3rem;
+    gap: 3.5rem;
   }
 }
+
 @media (max-width: 576px) {
   .footerContainer {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    gap: 3rem;
   }
   .siteFooter {
-    padding: 4rem 7% 2rem 7%;
+    padding: 4rem 5% 2rem 5%;
   }
   .footerBottom {
-    margin-top: 3rem;
+    margin-top: 3.5rem;
   }
 }

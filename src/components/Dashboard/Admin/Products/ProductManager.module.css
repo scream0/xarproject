@@ -1,26 +1,37 @@
+/* ====================================================
+   PRODUCT MANAGER CSS (Luxury High-End Theme)
+   ==================================================== */
 .container {
-  color: #fff;
+  color: var(--text-primary);
   padding: 10px 0;
   max-width: 1400px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 32px;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #f5f5f5;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--text-primary);
   margin: 0;
+  text-transform: uppercase;
 }
 
 /* --- Controls Section --- */
 .controlsContainer {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
+
 @media (min-width: 768px) {
   .controlsContainer {
     flex-direction: row;
@@ -29,45 +40,60 @@
   }
 }
 
-.searchInput {
-  background: #1a1a1a;
-  color: #fff;
-  padding: 10px 14px;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 350px;
-  border: 1px solid #333;
+.searchInput,
+.filterSelect {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
   outline: none;
-  font-size: 0.9rem;
-  transition: border-color 0.2s;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
-.searchInput:focus {
-  border-color: #888;
+
+.searchInput {
+  width: 100%;
+  max-width: 340px;
+}
+
+.searchInput::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.searchInput:focus,
+.filterSelect:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
 }
 
 .filters {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .filterSelect {
-  background: #1a1a1a;
-  color: #fff;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid #333;
-  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 /* --- Inventory Section --- */
 .inventorySection {
-  background: #121212;
-  border: 1px solid #2a2a2a;
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 20px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
 }
 
 .headerRow {
@@ -78,103 +104,201 @@
 
 .tableWrapper {
   overflow-x: auto;
+  width: 100%;
+}
+
+.tableWrapper::-webkit-scrollbar {
+  height: 5px;
+}
+.tableWrapper::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  font-family: var(--font-sans);
 }
+
 .table th {
-  padding: 12px 14px;
-  font-size: 0.8rem;
-  color: #888;
-  border-bottom: 1px solid #2a2a2a;
+  padding: 12px 16px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
   text-transform: uppercase;
+  background: var(--surface-secondary);
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
 }
+
 .table td {
-  padding: 16px 14px;
-  border-bottom: 1px solid #2a2a2a;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover td {
+  background-color: rgba(var(--primary-accent-rgb), 0.02);
 }
 
 .productImage {
   border-radius: 6px;
   object-fit: cover;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   width: 50px;
   height: 50px;
+  background: var(--surface-secondary);
 }
 
 .productNameCell {
-  font-weight: 600;
-  color: #eee;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
 }
 
 .statusBadge {
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
   text-align: center;
   white-space: nowrap;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.statusTersedia { background-color: #166534; color: #a7f3d0; }
-.statusStokMenipis { background-color: #854d0e; color: #fde68a; }
-.statusHabis { background-color: #991b1b; color: #fecaca; }
+
+.statusTersedia {
+  background-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.1);
+  color: var(--success-color);
+  border: 1px solid rgba(var(--success-color-rgb, 16, 185, 129), 0.25);
+}
+
+.statusStokMenipis {
+  background-color: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.25);
+}
+
+.statusHabis {
+  background-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+  color: var(--danger-color);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.25);
+}
 
 .actionButtons {
   display: flex;
   gap: 8px;
 }
-.editBtn, .deleteBtn {
+
+.editBtn,
+.deleteBtn {
   cursor: pointer;
-  background: #2a2a2a;
-  border: 1px solid #444;
-  color: #ddd;
-  font-size: 0.8rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 8px 12px;
+  padding: 0.5rem 0.85rem;
   border-radius: 6px;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.editBtn:hover { background: #3a3a3a; color: #fff; }
-.deleteBtn:hover { background: #b91c1c; color: #fff; border-color: #ef4444; }
+
+@media (hover: hover) and (pointer: fine) {
+  .editBtn:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+
+  .deleteBtn:hover {
+    background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
+}
+
+.editBtn:active,
+.deleteBtn:active {
+  transform: scale(0.98);
+}
 
 /* --- Pagination --- */
 .pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 15px;
-  color: #aaa;
+  padding-top: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
 }
-.paginationButtons { display: flex; gap: 10px; }
-.pagination button {
-  padding: 8px 16px;
-  background-color: #1a1a1a;
-  color: #fff;
-  border: 1px solid #333;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.pagination button:hover:not(:disabled) { background-color: #2a2a2a; }
-.pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.emptyState, .loadingState {
+.paginationButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pagination button:hover:not(:disabled) {
+    background-color: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.emptyState,
+.loadingState {
   text-align: center;
   padding: 80px 20px;
-  color: #888;
-  font-size: 1rem;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 /* --- Form Section --- */
 .formSection {
-  background: #121212;
-  border: 1px solid #2a2a2a;
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 25px;
+  padding: 28px;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
 }

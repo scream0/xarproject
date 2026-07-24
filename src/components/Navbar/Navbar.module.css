@@ -1,10 +1,13 @@
+/* ====================================================
+   NAVBAR CSS (Luxury High-End Theme)
+   ==================================================== */
 .navbar {
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background-color: rgba(var(--surface-primary-rgb), 0.6);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  background-color: rgba(var(--surface-primary-rgb), 0.85);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
@@ -18,18 +21,20 @@
   z-index: 1000;
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .scrolled {
-  background-color: rgba(var(--background-rgb), 0.85);
+  background-color: rgba(var(--background-rgb), 0.95);
   height: 75px;
   padding: 1rem 7%;
   border-bottom-color: var(--border-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .logo {
   font-family: var(--font-serif);
   font-size: 1.8rem;
   color: var(--text-primary);
-  letter-spacing: 4px;
+  letter-spacing: 5px;
   text-transform: uppercase;
   font-weight: 300;
   cursor: pointer;
@@ -38,51 +43,60 @@
   gap: 12px;
   text-decoration: none;
 }
+
 .logo span {
   color: var(--primary-accent);
-  font-weight: 600;
+  font-weight: 500;
 }
+
 .logoSvg {
   width: 35px;
   height: auto;
   fill: currentColor;
-  transition: all 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .logo:hover .logoSvg {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .navbarNav {
   display: flex;
   align-items: center;
 }
+
 .navbarNav a {
   color: var(--text-primary);
   opacity: 0.7;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-left: 1.2rem;
-  transition: all 0.4s ease;
+  letter-spacing: 2.5px;
+  margin-left: 1.8rem;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   position: relative;
   text-decoration: none;
+  font-weight: 400;
 }
+
 .navbarNav a:hover {
   opacity: 1;
   color: var(--primary-accent);
 }
+
 .navbarNav a::after {
   content: "";
   position: absolute;
-  bottom: -5px;
+  bottom: -6px;
   left: 0;
   width: 100%;
   height: 1px;
   background-color: var(--primary-accent);
   transform: scaleX(0);
-  transition: transform 0.4s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .navbarNav a:hover::after {
   transform: scaleX(1);
 }
@@ -90,25 +104,33 @@
 .navbarExtra {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
 }
+
 .navbarExtra > button {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 6px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
 }
+
+.navbarExtra > button:hover {
+  background-color: rgba(var(--primary-accent-rgb), 0.08);
+}
+
 .navbarExtra button:hover .svgIcon {
   stroke: var(--primary-accent);
 }
 
 .svgIcon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   stroke: var(--text-primary);
   stroke-width: 1.5;
   fill: none;
@@ -118,29 +140,42 @@
 .cartButton {
   position: relative;
 }
+
 .quantityBadge {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: 0;
+  right: 0;
   background-color: var(--primary-accent);
   color: var(--primary-accent-text);
   font-size: 0.6rem;
-  font-weight: 800;
-  width: 16px;
-  height: 16px;
+  font-weight: 700;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
+
 .cartBounce {
-  animation: cartBounce 0.5s ease;
+  animation: cartBounce 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
+
 @keyframes cartBounce {
-  0%, 100% { transform: scale(1); }
-  30% { transform: scale(1.25); }
-  50% { transform: scale(0.9); }
-  70% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(0.92);
+  }
+  70% {
+    transform: scale(1.08);
+  }
 }
 
 .hamburger {
@@ -148,35 +183,56 @@
   z-index: 1001;
 }
 
-/* Auth Section */
+/* --- Auth Section --- */
 .authContainer {
   display: flex;
   align-items: center;
-  margin-left: 0.75rem;
+  margin-left: 0.5rem;
 }
+
 .loginBtn {
   background: var(--primary-accent);
   color: var(--primary-accent-text);
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.4rem;
   border-radius: 6px;
+  border: 1px solid var(--primary-accent);
   text-decoration: none;
+  font-family: var(--font-sans);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   white-space: nowrap;
-  transition: opacity 0.2s;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+  z-index: 1;
 }
-.loginBtn:hover {
-  opacity: 0.85;
+
+/* Hover khusus desktop agar aman di ponsel */
+@media (hover: hover) and (pointer: fine) {
+  .loginBtn:hover {
+    background: transparent;
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+  }
+}
+
+.loginBtn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
 .userMenu {
   position: relative;
 }
+
 .userAvatarBtn {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--border-color);
+  border: 1.5px solid var(--primary-accent);
   background: var(--surface-secondary);
   cursor: pointer;
   display: flex;
@@ -184,46 +240,77 @@
   justify-content: center;
   padding: 0;
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
+
 .userAvatarBtn:hover {
-  border-color: var(--primary-accent);
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.25);
 }
+
 .avatarImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
 .userAvatarBtn .svgIcon {
-  width: 20px;
-  height: 20px;
-  stroke: var(--text-secondary);
+  width: 18px;
+  height: 18px;
+  stroke: var(--primary-accent);
 }
 
 .userDropdown {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 14px);
   right: 0;
-  background: var(--surface-secondary);
+  background: var(--surface-primary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  min-width: 180px;
+  border-radius: 10px;
+  min-width: 200px;
   z-index: 1001;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  animation: fadeIn 0.2s ease-out;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdownHeader {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--surface-secondary);
+}
+
+.dropdownUserEmail {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .dropdownItem {
-  padding: 0.75rem 1rem;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  padding: 0.8rem 1.1rem;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
   text-decoration: none;
   display: block;
   text-align: left;
@@ -231,99 +318,142 @@
   border: none;
   width: 100%;
   cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
+
 .dropdownItem:hover {
-  background: rgba(var(--background-rgb), 0.1);
-  color: var(--text-primary);
+  background: rgba(var(--primary-accent-rgb), 0.08);
+  color: var(--primary-accent);
 }
+
 .logoutBtn {
   border-top: 1px solid var(--border-color);
   color: var(--danger-color);
 }
+
 .logoutBtn:hover {
-  background: rgba(var(--danger-color), 0.1);
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.08);
+  color: var(--danger-color);
 }
 
+.mobileAuthSection {
+  display: none;
+}
+
+/* --- Responsive Media Queries --- */
 @media (max-width: 768px) {
   .hamburger {
     display: inline-flex !important;
   }
   .navbar {
-    height: 70px;
-    padding: 0 5%;
+    height: 75px;
+    padding: 0 6%;
   }
   .logo {
     font-size: 1.4rem;
+    letter-spacing: 3px;
   }
   .navbarNav {
     position: fixed;
-    top: 70px;
+    top: 75px;
     right: -100%;
     width: 85%;
-    height: 100vh;
-    background-color: rgba(var(--background-rgb), 0.95);
+    height: calc(100vh - 75px);
+    background-color: rgba(var(--background-rgb), 0.98);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     justify-content: flex-start;
-    padding: 4rem 2.5rem;
+    padding: 3.5rem 2.5rem;
     gap: 1.5rem;
     transition: right 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     box-sizing: border-box;
+    overflow-y: auto;
+    border-left: 1px solid var(--border-color);
   }
   .navbarNav.active {
     right: 0 !important;
   }
   .navbarNav a {
     margin-right: 0;
-    font-size: 1.8rem;
-    font-weight: 200;
+    font-size: 1.35rem;
+    font-weight: 300;
+    letter-spacing: 3px;
   }
   .navbarNav a:hover {
-    padding-right: 15px;
+    padding-right: 12px;
   }
   .navbarExtra {
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
   .authContainer {
     display: none;
   }
   .themeToggleBtn {
     border-left: 1px solid var(--border-color);
-    padding-left: 0.75rem !important;
+    padding-left: 0.5rem !important;
   }
 
   .mobileAuthSection {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
     border-top: 1px solid var(--border-color);
     padding-top: 1.5rem;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.2rem;
     align-items: flex-end;
   }
+  .mobileUserInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+  .avatarImgMobile {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--primary-accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .avatarPlaceholderMobile {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: var(--surface-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--border-color);
+  }
   .mobileUserName {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    color: var(--text-primary);
     font-weight: 500;
+    text-align: right;
   }
   .mobileAuthLink,
   .mobileLoginBtn {
     background: transparent;
     border: none;
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    font-weight: 500;
     color: var(--text-primary);
     text-decoration: none;
     cursor: pointer;
     transition: color 0.2s;
-    padding: 0.5rem 0;
+    padding: 0.3rem 0;
     text-align: right;
     width: 100%;
+    letter-spacing: 1px;
   }
   .mobileAuthLink:hover,
   .mobileLoginBtn:hover {
@@ -332,14 +462,33 @@
   .mobileLoginBtn {
     background: var(--primary-accent);
     color: var(--primary-accent-text);
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 700;
+    padding: 0.75rem 1.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--primary-accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 2px;
     text-transform: uppercase;
     width: auto;
     align-self: flex-end;
+    box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+    transition: all 0.3s ease;
   }
+
+  /* Perbaikan Hover Mobile agar teks tombol tidak hilang */
+  @media (hover: hover) and (pointer: fine) {
+    .mobileLoginBtn:hover {
+      background: transparent;
+      color: var(--primary-accent);
+      border-color: var(--primary-accent);
+    }
+  }
+
+  .mobileLoginBtn:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+
   .mobileLogoutBtn {
     color: var(--danger-color);
     font-weight: 600;

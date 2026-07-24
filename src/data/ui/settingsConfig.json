@@ -1,23 +1,32 @@
 {
-  "title": "SYSTEM & STORE SETTINGS",
+  "title": "Pengaturan Sistem & Toko",
+  "loading": "Memuat Pengaturan...",
+  "sections": {
+    "storeInfo": "Informasi Toko",
+    "productCurrency": "Konfigurasi Produk & Mata Uang",
+    "paymentKeys": "Kunci API Gateway Pembayaran"
+  },
   "labels": {
-    "storeName": "BRAND / STORE NAME",
-    "storeEmail": "ADMIN NOTIFICATION EMAIL",
-    "currency": "DEFAULT CURRENCY",
-    "lowStockThreshold": "LOW STOCK ALERT THRESHOLD",
-    "midtransServerKey": "MIDTRANS SERVER KEY",
-    "midtransClientKey": "MIDTRANS CLIENT KEY"
+    "storeName": "Nama Toko",
+    "storeEmail": "Email Kontak Toko",
+    "currency": "Mata Uang Utama",
+    "lowStockThreshold": "Batas Peringatan Stok Menipis",
+    "midtransServerKey": "Midtrans Server Key",
+    "midtransClientKey": "Midtrans Client Key"
+  },
+  "descriptions": {
+    "midtransServerKey": "Kunci ini bersifat rahasia dan tidak akan pernah ditampilkan lagi setelah disimpan."
   },
   "placeholders": {
-    "storeName": "e.g. AWRG Archive / Flowrawr",
-    "storeEmail": "admin@xarproject.com"
+    "updateKey": "Isi untuk memperbarui..."
   },
   "buttons": {
-    "save": "SAVE CONFIGURATION",
-    "saving": "SAVING..."
+    "save": "Simpan Perubahan",
+    "saving": "Menyimpan..."
   },
   "toast": {
     "success": "Pengaturan berhasil diperbarui!",
-    "error": "Gagal menyimpan pengaturan."
+    "authRequired": "Authentication required.",
+    "sessionExpired": "Sesi Anda berakhir. Silakan login kembali."
   }
 }

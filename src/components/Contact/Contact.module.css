@@ -1,8 +1,10 @@
-/* Contact.module.css */
+/* ====================================================
+   CONTACT CSS (Luxury High-End Theme)
+   ==================================================== */
 .feather {
   width: 24px;
   height: 24px;
-  stroke: var(--text-primary); /* Warna default */
+  stroke: var(--text-primary);
   stroke-width: 1.5;
   fill: none;
   stroke-linecap: round;
@@ -10,15 +12,18 @@
   transition: all 0.3s ease;
   transform-origin: center;
 }
+
 .contact {
-  padding: 10rem 7% 5rem;
+  padding: 10rem 7% 6rem;
   background-color: var(--background);
+  color: var(--text-primary);
 }
 
 .contactContainer {
   display: flex;
-  gap: 5rem;
-  align-items: stretch;
+  gap: 8s;
+  gap: 8rem;
+  align-items: flex-start;
 }
 
 /* --- Left Info Card --- */
@@ -26,187 +31,191 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 3.5rem;
 }
 
 .infoHeader h5 {
-  color: var(--text-secondary);
+  color: var(--primary-accent);
   text-transform: uppercase;
-  letter-spacing: 3px;
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.3em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
 }
 
 .infoHeader h2 {
   font-family: var(--font-serif);
   font-size: 2.8rem;
+  font-weight: 300;
   color: var(--text-primary);
   line-height: 1.2;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
 }
 
 .infoHeader h2 span {
+  font-weight: 500;
   color: var(--primary-accent);
 }
 
 .infoDetailsList {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  margin-bottom: 3rem;
+  gap: 1.5rem;
 }
 
 .infoItem {
   display: flex;
-  align-items: flex-start; /* Berubah jadi flex-start agar ikon sejajar dengan judul */
+  align-items: flex-start;
   gap: 1.5rem;
-  padding: 1rem;
+  padding: 1.2rem;
   border-radius: 12px;
-  transition: background 0.3s ease;
-}
-/* 1. Pastikan SVG di dalam .infoIcon punya style yang benar */
-.infoItem .infoIcon svg {
-  transition: all 0.4s ease;
-  stroke: var(--primary-accent); /* Warna default */
+  background: rgba(var(--surface-primary-rgb), 0.4);
+  border: 1px solid var(--border-color);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 2. Saat .infoItem di-hover, paksa stroke menjadi hitam */
-.infoItem:hover .infoIcon svg {
-  stroke: var(--primary-accent-text) !important; /* Paksa warna stroke ke hitam */
+.infoItem:hover {
+  border-color: var(--primary-accent);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
-/* 3. Pastikan container-nya juga berubah */
-.infoItem:hover .infoIcon {
-  background-color: var(--primary-accent);
-  color: var(--primary-accent-text) !important;
-  transform: translateY(-5px);
-}
 .infoIcon {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  background-color: rgba(var(--primary-accent-rgb), 0.05);
-  border: 1px solid rgba(var(--primary-accent-rgb), 0.15);
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 10px;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   color: var(--primary-accent);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.4s ease;
+  flex-shrink: 0;
+}
+
+.infoItem .infoIcon svg {
+  transition: all 0.4s ease;
+  stroke: var(--primary-accent);
+}
+
+.infoItem:hover .infoIcon {
+  background-color: var(--primary-accent);
+  border-color: var(--primary-accent);
+  transform: translateY(-2px);
+}
+
+.infoItem:hover .infoIcon svg {
+  stroke: var(--primary-accent-text) !important;
 }
 
 .infoText h4 {
-  font-size: 1.1rem;
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
   color: var(--text-primary);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .infoText p {
-  font-size: 0.95rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
   color: var(--text-secondary);
+  font-weight: 300;
 }
 
-.contactContainer {
-  display: flex;
-  gap: 8rem; /* Ruang lebih lebar agar terasa lebih mewah */
-  align-items: flex-start;
-}
-
-.contactInfoCard {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4rem; /* Jarak antar elemen lebih lega */
-}
-
-/* Mengganti Map dengan Editorial Address */
+/* --- Editorial Address Box --- */
 .addressBox {
-  border-top: 1px solid rgba(var(--surface-primary-rgb), 0.1);
+  border-top: 1px solid var(--border-color);
   padding-top: 2rem;
 }
 
 .addressBox h4 {
   color: var(--text-primary);
   font-family: var(--font-serif);
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
+  font-size: 1.15rem;
+  font-weight: 400;
+  margin-bottom: 0.75rem;
+  letter-spacing: 1px;
 }
 
 .addressBox p {
   color: var(--text-secondary);
   line-height: 1.8;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 300;
 }
 
-/* Tipografi Koordinat (Detail High-End) */
 .coordinates {
   font-family: monospace;
   font-size: 0.75rem;
   color: var(--primary-accent);
-  opacity: 0.6;
-  margin-top: 1rem;
+  opacity: 0.7;
+  margin-top: 0.75rem;
   display: block;
-}
-/* Update Info Icons */
-.infoIcon {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 12px; /* Mengikuti radius modern */
-  background-color: rgba(var(--surface-primary-rgb), 0.03);
-  border: 1px solid rgba(var(--surface-primary-rgb), 0.08);
-  transition: all 0.4s ease;
+  letter-spacing: 1px;
 }
 
-/* Container Form */
+/* --- Form Container --- */
 .contactFormWrapper {
-  background-color: rgba(var(--surface-primary-rgb), 0.02);
-  border: 1px solid rgba(var(--surface-primary-rgb), 0.06);
-  padding: 4rem;
-  border-radius: 24px;
-  box-shadow: 0 10px 30px rgba(var(--background-rgb), 0.3);
+  flex: 1.1;
+  background-color: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  padding: 3.5rem;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .contactForm h3 {
   font-family: var(--font-serif);
-  font-size: 1.8rem;
+  font-size: 1.6rem;
+  font-weight: 400;
   color: var(--text-primary);
-  margin-bottom: 3rem; /* Memberikan ruang napas agar form tidak sesak */
+  margin-bottom: 2.5rem;
   text-transform: uppercase;
   letter-spacing: 2px;
-  text-align: center; /* Center-kan agar lebih fokus */
+  text-align: center;
 }
 
 /* Input Grouping */
 .inputBox {
   position: relative;
-  margin-bottom: 3rem; /* Memberikan jarak antar input */
+  margin-bottom: 2.5rem;
 }
 
 .inputBox input,
 .inputBox textarea {
   width: 100%;
-  padding: 12px 0;
-  font-size: 1rem;
+  padding: 10px 0;
+  font-size: 0.95rem;
+  font-family: var(--font-sans);
   color: var(--text-primary);
   border: none;
-  border-bottom: 1px solid rgba(var(--surface-primary-rgb), 0.2);
+  border-bottom: 1px solid var(--border-color);
   background: transparent;
   outline: none;
   transition: all 0.4s ease;
-  cursor: pointer;
 }
 
 .inputBox textarea {
   height: 100px;
+  resize: none;
 }
 
-/* Label Styling - Elegan dan Minimalis */
+/* Label Styling */
 .inputBox label {
   position: absolute;
-  top: 12px;
+  top: 10px;
   left: 0;
-  font-size: 0.9rem;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   pointer-events: none;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -216,21 +225,20 @@
 .inputBox input:not(:placeholder-shown) ~ label,
 .inputBox textarea:focus ~ label,
 .inputBox textarea:not(:placeholder-shown) ~ label {
-  top: -20px;
+  top: -22px;
   font-size: 0.7rem;
   color: var(--primary-accent);
   letter-spacing: 2px;
-}
-/* Efek Hover yang Elegan (Subtle) */
-.inputBox input:hover,
-.inputBox textarea:hover {
-  /* Memberikan sedikit cahaya pada border bawah saat di-hover */
-  border-bottom-color: rgba(var(--surface-primary-rgb), 0.4);
+  font-weight: 600;
 }
 
-/* Jika ingin label sedikit bergerak atau berubah warna saat hover (Opsional) */
+.inputBox input:hover,
+.inputBox textarea:hover {
+  border-bottom-color: var(--text-secondary);
+}
+
 .inputBox:hover label {
-  color: var(--text-primary); /* Label sedikit lebih terang saat di-hover */
+  color: var(--text-primary);
 }
 
 .inputBox input:focus,
@@ -238,40 +246,40 @@
   border-bottom-color: var(--primary-accent);
 }
 
+/* --- Submit Button --- */
 .btnSubmit {
   width: 100%;
-  padding: 18px 20px; /* Sedikit disesuaikan agar proporsinya proporsional */
+  padding: 16px 20px;
   background-color: var(--primary-accent);
   color: var(--primary-accent-text);
-
-  /* PERBAIKAN: Pasang border transparan sejak awal agar saat hover tombol tidak bergeser/bergetar */
   border: 1px solid transparent;
-  border-radius: 8px;
-
-  font-weight: 700;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
 }
 
 .btnSubmit:hover {
   background-color: transparent !important;
   color: var(--primary-accent);
-  border-color: var(--primary-accent); /* Hanya mengubah warna border */
-  transform: translateY(-4px);
-  letter-spacing: 4px;
-  box-shadow: 0 10px 20px rgba(var(--background-rgb), 0.4); /* Efek bayangan saat melayang */
+  border-color: var(--primary-accent);
+  transform: translateY(-2px);
+  letter-spacing: 3px;
+  box-shadow: 0 8px 25px rgba(var(--primary-accent-rgb), 0.3);
 }
 
-/* Interaksi saat ditekan (click) */
 .btnSubmit:active {
-  transform: translateY(-1px);
+  transform: translateY(0);
 }
 
-/* Kilatan Cahaya Premium (Berjalan otomatis secara berkala untuk kesan hidup) */
+/* Kilatan Cahaya Premium */
 .btnSubmit::after {
   content: "";
   position: absolute;
@@ -282,31 +290,38 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(var(--surface-primary-rgb), 0.4),
+    rgba(255, 255, 255, 0.3),
     transparent
   );
-  transform: skewX(-20deg); /* Membuat efek kilatan miring yang estetis */
-  animation: lightSweep 4s infinite ease-in-out;
+  transform: skewX(-20deg);
+  animation: lightSweep 5s infinite ease-in-out;
 }
 
 @keyframes lightSweep {
   0% {
     left: -150%;
   }
-  30% {
+  25% {
     left: 150%;
   }
   100% {
     left: 150%;
-  } /* Jeda waktu diam sebelum menyapu kembali */
+  }
 }
 
+/* --- Responsive Media Queries --- */
 @media (max-width: 991px) {
+  .contact {
+    padding: 6rem 5%;
+  }
   .contactContainer {
     flex-direction: column;
-    gap: 3rem;
+    gap: 4rem;
   }
   .contactFormWrapper {
-    padding: 2rem;
+    padding: 2.25rem 1.5rem;
+  }
+  .infoHeader h2 {
+    font-size: 2.2rem;
   }
 }

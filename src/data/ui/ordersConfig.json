@@ -1,28 +1,43 @@
 {
   "header": {
     "title": "Riwayat Pesanan",
-    "subtitle": "Pantau status pengiriman, lacak proses peracikan parfum, dan kelola pesanan Anda."
+    "subtitle": "Kelola dan lacak status pesanan parfum mewah Anda"
   },
+  "searchPlaceholder": "Cari ID pesanan / nama parfum...",
   "tabs": ["all", "processing", "completed"],
-  "loadingText": "Memuat riwayat pesanan Anda...",
-  "emptyText": "Belum ada riwayat pesanan yang tercatat.",
+  "loadingText": "Memuat data pesanan...",
+  "emptyText": "Belum ada riwayat pesanan yang ditemukan.",
   "buttons": {
     "details": "Detail Pesanan",
-    "reorder": "Beli Lagi",
-    "copyId": "Salin ID",
-    "downloadInvoice": "Unduh Invoice"
-  },
-  "modal": {
-    "title": "Detail & Status Pesanan",
-    "closeBtn": "Tutup"
+    "reorder": "Pesan Lagi",
+    "review": "Beri Ulasan",
+    "reviewSent": "Ulasan Dikirim"
   },
   "labels": {
-    "orderId": "ID Transaksi:",
-    "product": "Produk:",
-    "specsAndNotes": "Spesifikasi & Catatan:",
-    "paymentMethod": "Metode Pembayaran:",
-    "shippingAddress": "Alamat Pengiriman:",
-    "shippingReceipt": "Nomor Resi Pengiriman:",
-    "totalPaid": "Total Pembayaran:"
-  }
+    "orderId": "ID Pesanan",
+    "product": "Produk",
+    "specsAndNotes": "Spesifikasi & Catatan",
+    "paymentMethod": "Metode Pembayaran",
+    "shippingAddress": "Alamat Pengiriman",
+    "shippingReceipt": "Nomor Resi Pengiriman",
+    "totalPaid": "Total Pembayaran",
+    "reviewTitle": "Beri Ulasan Produk",
+    "ratingLabel": "Rating (Bintang)",
+    "commentLabel": "Komentar Ulasan",
+    "commentPlaceholder": "Bagaimana aroma dan ketahanan parfum pilihan Anda?",
+    "submitReview": "Kirim Ulasan",
+    "submittingReview": "Mengirim...",
+    "trackShipping": "Lacak Kiriman"
+  },
+  "modal": {
+    "title": "Detail Transaksi Pesanan",
+    "closeBtn": "Tutup"
+  },
+  "ratingOptions": [
+    { "value": 5, "label": "⭐⭐⭐⭐⭐ (Sempurna - 5 Bintang)" },
+    { "value": 4, "label": "⭐⭐⭐⭐ (Puas - 4 Bintang)" },
+    { "value": 3, "label": "⭐⭐⭐ (Cukup - 3 Bintang)" },
+    { "value": 2, "label": "⭐⭐ (Kurang - 2 Bintang)" },
+    { "value": 1, "label": "⭐ (Buruk - 1 Bintang)" }
+  ]
 }

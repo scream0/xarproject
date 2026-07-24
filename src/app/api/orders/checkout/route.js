@@ -9,7 +9,30 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabase =
+  supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null;
+
+// Helper untuk membersihkan nilai undefined agar tidak error di Firestore
+function sanitizeData(obj) {
+  const cleanObj = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      if (
+        typeof obj[key] === "object" &&
+        obj[key] !== null &&
+        !Array.isArray(obj[key]) &&
+        !(obj[key] instanceof Date)
+      ) {
+        cleanObj[key] = sanitizeData(obj[key]);
+      } else {
+        cleanObj[key] = obj[key];
+      }
+    }
+  }
+  return cleanObj;
+}
 
 // GET -> Mengambil Alamat Utama User & Daftar Pesanan dari Firestore
 export async function GET(request) {
@@ -58,10 +81,9 @@ export async function GET(request) {
       ordersData.push({
         id: doc.id,
         ...order,
-        // Ubah Firestore Timestamp ke ISO string agar aman dikirim ke client
         createdAt: order.createdAt?.toDate
           ? order.createdAt.toDate().toISOString()
-          : order.createdAt,
+          : order.createdAt || new Date().toISOString(),
       });
     });
 
@@ -75,14 +97,17 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("Gagal mengambil data orders dari Firestore:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
 
 // POST -> Menyimpan pesanan baru (Termasuk array items keranjang) ke Firestore
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const { userId, orderId, order, items, address, status, paymentType } =
       body;
 
@@ -95,22 +120,24 @@ export async function POST(request) {
 
     const orderRef = db.collection("orders").doc(orderId);
 
-    await orderRef.set(
-      {
-        userId: userId,
-        orderId: orderId,
-        items: items || [], // Menyimpan daftar item belanjaan agar bisa dibaca saat pembaruan stok
-        product_name: order?.name || "Katalog Belanja",
-        concentration: order?.concentration || "",
-        notes: order?.notes || "",
-        price: Number(order?.rawPrice || order?.price || 0),
-        status: status || "pending",
-        payment_type: paymentType || "Midtrans",
-        shipping_address: address || null,
-        createdAt: new Date(),
-      },
-      { merge: true },
-    );
+    const rawPayload = {
+      userId: userId,
+      orderId: orderId,
+      items: items || [],
+      product_name: order?.name || "Katalog Belanja",
+      concentration: order?.concentration || "",
+      notes: order?.notes || "",
+      price: Number(order?.rawPrice || order?.price || 0),
+      status: status || "pending",
+      payment_type: paymentType || "Midtrans",
+      shipping_address: address || null,
+      createdAt: new Date(),
+    };
+
+    // Bersihkan dari nilai undefined agar aman untuk Firestore
+    const cleanPayload = sanitizeData(rawPayload);
+
+    await orderRef.set(cleanPayload, { merge: true });
 
     return NextResponse.json({
       success: true,
@@ -118,18 +145,21 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Gagal menyimpan pesanan ke Firestore:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
 
 // PUT -> Memperbarui status pesanan (Pembayaran sukses / Konfirmasi Seller) & Mengurangi Stok di Supabase
 export async function PUT(request) {
   try {
-    const body = await request.json();
-    const { orderId, status, shippingReceiptNumber } = body;
-    // status bisa berupa: "success", "processing", "shipping", "completed", "cancelled"
+    const body = await request.json().catch(() => ({}));
+    const { orderId, status, newStatus, shippingReceiptNumber } = body;
+    const targetStatus = newStatus || status;
 
-    if (!orderId || !status) {
+    if (!orderId || !targetStatus) {
       return NextResponse.json(
         { error: "orderId and status are required" },
         { status: 400 },
@@ -148,9 +178,17 @@ export async function PUT(request) {
 
     const orderData = orderDoc.data();
 
-    // JIKA STATUS BERUBAH MENJADI "success" (Pembayaran Berhasil):
+    // JIKA STATUS BERUBAH MENJADI "success" atau "settlement" (Pembayaran Berhasil):
     // Kurangi stok produk yang ada di Supabase berdasarkan item yang dibeli
-    if (status === "success" && orderData.status !== "success") {
+    const isSuccessStatus =
+      targetStatus.toLowerCase() === "success" ||
+      targetStatus.toLowerCase() === "settlement";
+
+    const wasAlreadySuccess =
+      orderData.status?.toLowerCase() === "success" ||
+      orderData.status?.toLowerCase() === "settlement";
+
+    if (isSuccessStatus && !wasAlreadySuccess && supabase) {
       const items = orderData.items || [];
 
       for (const item of items) {
@@ -158,22 +196,20 @@ export async function PUT(request) {
           item.id || item.productId || item.product_id || "",
         );
         const orderedSize = String(item.size);
-        const orderedQty = Number(item.quantity || item.qty) || 0;
+        const orderedQty = Number(item.quantity || item.qty) || 1;
 
-        if (productId && orderedQty > 0) {
-          // Ambil data produk dari tabel products di Supabase
+        if (productId) {
           const { data: product, error: fetchError } = await supabase
             .from("products")
-            .select("*")
+            .select("variants")
             .eq("id", productId)
             .single();
 
-          if (!fetchError && product) {
-            const variants = product.variants || [];
+          if (!fetchError && product && product.variants) {
+            let variants = product.variants;
 
-            // Kurangi stok pada varian ukuran yang sesuai (mendukung key stock / stok)
-            const updatedVariants = variants.map((v) => {
-              if (String(v.size) === orderedSize) {
+            variants = variants.map((v) => {
+              if (String(v.size).trim() === orderedSize.trim()) {
                 const currentStock = Number(v.stock ?? v.stok ?? 0);
                 const newStock = Math.max(0, currentStock - orderedQty);
                 return {
@@ -185,10 +221,9 @@ export async function PUT(request) {
               return v;
             });
 
-            // Update kembali varian dengan stok baru ke Supabase
             await supabase
               .from("products")
-              .update({ variants: updatedVariants })
+              .update({ variants: variants })
               .eq("id", productId);
           }
         }
@@ -197,24 +232,25 @@ export async function PUT(request) {
 
     // Siapkan data untuk diupdate di Firestore
     const updateData = {
-        status: status,
-        updated_at: new Date(),
+      status: targetStatus,
+      updated_at: new Date(),
     };
 
-    // Tambahkan nomor resi jika ada
     if (shippingReceiptNumber) {
-        updateData.shippingReceiptNumber = shippingReceiptNumber;
+      updateData.shippingReceiptNumber = shippingReceiptNumber;
     }
 
-    // Update status (dan nomor resi jika ada) pesanan di Firestore
-    await orderRef.set(updateData, { merge: true });
+    await orderRef.set(sanitizeData(updateData), { merge: true });
 
     return NextResponse.json({
       success: true,
-      message: `Status pesanan berhasil diperbarui menjadi ${status} dan stok Supabase diperbarui`,
+      message: `Status pesanan berhasil diperbarui menjadi ${targetStatus} dan stok Supabase diperbarui`,
     });
   } catch (error) {
     console.error("Gagal memperbarui status pesanan & stok:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }

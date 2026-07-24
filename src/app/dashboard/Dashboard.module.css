@@ -1,3 +1,6 @@
+/* ====================================================
+   LOADING SCREEN CSS (Luxury High-End Theme)
+   ==================================================== */
 .loadingContainer {
   height: 100vh;
   width: 100vw;
@@ -7,40 +10,44 @@
   justify-content: center;
   background: var(--background);
   color: var(--text-primary);
-  font-family: inherit;
+  font-family: var(--font-sans);
   position: fixed;
   top: 0;
   left: 0;
   z-index: 9999;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  transition: opacity 0.5s ease;
 }
 
 /* Animasi Cincin Pemindai Mewah */
 .pulseScanner {
-  width: 64px;
-  height: 64px;
-  border: 1px solid rgba(var(--surface-primary-rgb), 0.1);
-  border-top: 1px solid var(--text-primary);
+  width: 70px;
+  height: 70px;
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.15);
+  border-top: 1px solid var(--primary-accent);
   border-radius: 50%;
-  animation: spinAndGlow 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-  margin-bottom: 24px;
-  box-shadow: 0 0 20px rgba(var(--surface-primary-rgb), 0.05);
+  animation: spinAndGlow 1.4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  margin-bottom: 2rem;
+  box-shadow: 0 0 25px rgba(var(--primary-accent-rgb), 0.08);
   position: relative;
 }
 
 .pulseScanner::after {
   content: "";
   position: absolute;
-  top: -8px;
-  left: -8px;
-  right: -8px;
-  bottom: -8px;
-  border: 1px dashed rgba(var(--surface-primary-rgb), 0.2);
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  border: 1px dashed rgba(var(--primary-accent-rgb), 0.3);
   border-radius: 50%;
-  animation: reverseSpin 5s linear infinite;
+  animation: reverseSpin 6s linear infinite;
 }
 
 /* Animasi Teks Berdenyut & Spasi Huruf Elegan */
 .loadingText {
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   letter-spacing: 4px;
   color: var(--text-secondary);
@@ -52,14 +59,14 @@
 @keyframes spinAndGlow {
   0% {
     transform: rotate(0deg);
-    box-shadow: 0 0 10px rgba(var(--surface-primary-rgb), 0.03);
+    box-shadow: 0 0 10px rgba(var(--primary-accent-rgb), 0.05);
   }
   50% {
-    box-shadow: 0 0 25px rgba(var(--surface-primary-rgb), 0.15);
+    box-shadow: 0 0 35px rgba(var(--primary-accent-rgb), 0.25);
   }
   100% {
     transform: rotate(360deg);
-    box-shadow: 0 0 10px rgba(var(--surface-primary-rgb), 0.03);
+    box-shadow: 0 0 10px rgba(var(--primary-accent-rgb), 0.05);
   }
 }
 
@@ -71,11 +78,11 @@
 
 @keyframes textPulse {
   0% {
-    opacity: 0.35;
-    letter-spacing: 3px;
+    opacity: 0.4;
+    letter-spacing: 3.5px;
   }
   100% {
     opacity: 1;
-    letter-spacing: 5px;
+    letter-spacing: 5.5px;
   }
 }

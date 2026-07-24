@@ -1,27 +1,32 @@
-/* Workspace Utama Riwayat Pesanan */
+/* ====================================================
+   ORDERS SECTION CSS (Luxury High-End Theme)
+   ==================================================== */
 .workspaceInner {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 28px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
 /* Header & Filter Card */
 .cardHeader {
-  background: #121214;
-  border: 1px solid #27272a;
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
 }
 
 .headerTopRow {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
   justify-content: space-between;
 }
 
@@ -33,120 +38,147 @@
 }
 
 .headerTitle {
+  font-family: var(--font-serif);
   font-size: 1.25rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 0.35rem 0;
-  letter-spacing: 0.03em;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
 }
 
 .headerSubtitle {
+  font-family: var(--font-sans);
   font-size: 0.85rem;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   margin: 0;
+  letter-spacing: 0.5px;
 }
 
 /* Search Box */
 .searchBox {
   display: flex;
   align-items: center;
-  background: #18181b;
-  border: 1px solid #27272a;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  gap: 0.5rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  gap: 10px;
   width: 100%;
   max-width: 320px;
-  transition: border-color 0.2s;
+  transition: all 0.3s ease;
 }
 
 .searchBox:focus-within {
-  border-color: #fbbf24;
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
 }
 
 .searchInput {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   font-size: 0.85rem;
   outline: none;
   width: 100%;
 }
 
 .searchInput::placeholder {
-  color: #71717a;
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 /* Filter Buttons */
 .filterGroup {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .filterBtn {
-  background: #18181b;
-  border: 1px solid #27272a;
-  color: #a1a1aa;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   padding: 0.5rem 1rem;
   border-radius: 6px;
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
-.filterBtn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .filterBtn:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
 }
 
 .filterBtnActive {
-  background: #fbbf24 !important;
-  color: #000 !important;
-  border-color: #fbbf24 !important;
+  background: var(--primary-accent) !important;
+  color: var(--primary-accent-text) !important;
+  border-color: var(--primary-accent) !important;
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
 }
 
 /* Orders List Container */
 .ordersListContainer {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .centerStateCard {
-  background: #121214;
-  border: 1px solid #27272a;
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 3rem 1.5rem;
+  padding: 3.5rem 1.5rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
 }
 
 .loadingText,
 .emptyText {
-  font-size: 0.9rem;
-  color: #71717a;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
   margin: 0;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 /* Order Card */
 .orderCard {
-  background: #121214;
-  border: 1px solid #27272a;
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  transition: border-color 0.2s;
+  gap: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.orderCard:hover {
-  border-color: #3f3f46;
+@media (hover: hover) and (pointer: fine) {
+  .orderCard:hover {
+    border-color: rgba(var(--primary-accent-rgb), 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  }
 }
 
 @media (min-width: 768px) {
@@ -160,63 +192,71 @@
 .orderInfoCol {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 6px;
   flex: 1;
 }
 
 .orderIdRow {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.25rem;
+  gap: 12px;
+  margin-bottom: 4px;
 }
 
 .orderIdText {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #fbbf24;
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-accent);
+  letter-spacing: 0.5px;
 }
 
 .statusBadge {
+  font-family: var(--font-sans);
   font-size: 0.65rem;
-  font-weight: 700;
-  padding: 0.2rem 0.5rem;
+  font-weight: 600;
+  padding: 4px 10px;
   border-radius: 4px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .statusCompleted {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: rgba(var(--success-color-rgb, 16, 185, 129), 0.1);
+  color: var(--success-color);
+  border: 1px solid rgba(var(--success-color-rgb, 16, 185, 129), 0.25);
 }
 
 .statusProcessing {
-  background: rgba(251, 191, 36, 0.1);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.25);
 }
 
 .orderName {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #fff;
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: var(--text-primary);
   margin: 0;
+  letter-spacing: 0.5px;
 }
 
 .orderSpec,
 .orderNotes,
 .orderDate {
+  font-family: var(--font-sans);
   font-size: 0.8rem;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   margin: 0;
+  letter-spacing: 0.5px;
 }
 
 .orderActionCol {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 @media (min-width: 768px) {
@@ -226,101 +266,149 @@
 }
 
 .orderPrice {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #fff;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
 }
 
 .buttonGroup {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .detailBtn {
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  color: #fff;
-  padding: 6px 12px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.5rem 1rem;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
 }
 
-.detailBtn:hover {
-  background: #3f3f46;
+@media (hover: hover) and (pointer: fine) {
+  .detailBtn:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
 }
 
 .reorderBtn {
-  background: #fbbf24;
-  border: none;
-  color: #000;
-  padding: 6px 14px;
+  background: var(--primary-accent);
+  border: 1px solid var(--primary-accent);
+  color: var(--primary-accent-text);
+  padding: 0.5rem 1.25rem;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s;
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.reorderBtn:hover {
-  background: #f59e0b;
+@media (hover: hover) and (pointer: fine) {
+  .reorderBtn:hover {
+    background: transparent;
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+  }
 }
 
 /* Modal Styling */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-  backdrop-filter: blur(4px);
+  z-index: 9999;
+  padding: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeInOverlay 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modalContent {
-  background: #121214;
-  border: 1px solid #27272a;
-  border-radius: 14px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
   width: 100%;
   max-width: 500px;
-  padding: 1.75rem;
+  padding: 30px;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  animation: scaleUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUpModal {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modalHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #27272a;
-  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
 }
 
 .modalTitle {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #fff;
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--text-primary);
   margin: 0;
+  text-transform: uppercase;
 }
 
 .modalCloseBtn {
   background: transparent;
   border: none;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: color 0.3s ease;
 }
 
-.modalCloseBtn:hover {
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .modalCloseBtn:hover {
+    color: var(--text-primary);
+  }
 }
 
 /* Stepper Pelacakan */
@@ -328,13 +416,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   padding: 1rem;
   border-radius: 8px;
-  margin-bottom: 0.5rem;
-  font-size: 0.75rem;
-  color: #a1a1aa;
+  margin-bottom: 4px;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .stepItem,
@@ -342,169 +433,239 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   text-align: center;
 }
 
 .stepItemActive {
-  color: #fbbf24;
+  color: var(--primary-accent);
   font-weight: 600;
 }
 
 .stepDot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #27272a;
+  background: var(--border-color);
+  transition: all 0.3s ease;
 }
 
 .stepItemActive .stepDot {
-  background: #fbbf24;
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+  background: var(--primary-accent);
+  box-shadow: 0 0 10px rgba(var(--primary-accent-rgb), 0.6);
 }
 
 .modalBody {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 12px;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
-  color: #d4d4d8;
+  color: var(--text-primary);
 }
 
 .modalFieldLabel {
   display: block;
-  font-size: 0.75rem;
-  color: #71717a;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.15rem;
+  letter-spacing: 1.5px;
+  margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .modalFieldValueAccent {
-  color: #fbbf24;
+  color: var(--primary-accent);
+  font-weight: 600;
 }
 
 .modalPriceRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid #27272a;
-  padding-top: 0.85rem;
-  margin-top: 0.25rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+  margin-top: 4px;
 }
 
 .modalPriceLabel {
+  font-family: var(--font-sans);
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
 }
 
 .modalPriceValue {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #fbbf24;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--primary-accent);
+  letter-spacing: 0.5px;
 }
 
 .modalActionRow {
   display: flex;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .modalActionBtn {
   flex: 1;
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  color: #fff;
-  padding: 0.65rem;
-  border-radius: 8px;
+  background: var(--primary-accent);
+  border: 1px solid var(--primary-accent);
+  color: var(--primary-accent-text);
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-family: var(--font-sans);
   font-weight: 600;
   font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
 }
 
-.modalActionBtn:hover {
-  background: #3f3f46;
+@media (hover: hover) and (pointer: fine) {
+  .modalActionBtn:hover {
+    background: transparent;
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+  }
 }
 
 .modalCloseActionBtn {
-  background: #18181b;
-  border: 1px solid #27272a;
-  color: #a1a1aa;
-  padding: 0.65rem;
-  border-radius: 8px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-family: var(--font-sans);
   font-weight: 600;
   font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   text-align: center;
   width: 100%;
 }
 
-.modalCloseActionBtn:hover {
-  background: #27272a;
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .modalCloseActionBtn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+  }
 }
 
 .reviewBtn {
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  color: #fbbf24;
-  padding: 6px 12px;
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.3);
+  color: var(--primary-accent);
+  padding: 0.5rem 1rem;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
-.reviewBtn:hover {
-  background: rgba(251, 191, 36, 0.2);
-  border-color: rgba(251, 191, 36, 0.5);
+@media (hover: hover) and (pointer: fine) {
+  .reviewBtn:hover {
+    background: rgba(var(--primary-accent-rgb), 0.2);
+    border-color: var(--primary-accent);
+  }
 }
 
 .reviewBtnDisabled {
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  color: #71717a;
-  padding: 6px 12px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   cursor: not-allowed;
 }
 
 /* Shipping Receipt Styles */
 .receiptContainer {
-  background: #18181b;
-  border: 1px solid #27272a;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
 }
 
 .receiptInfo {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
   font-family: monospace;
   font-size: 0.9rem;
-  color: #fbbf24;
+  color: var(--primary-accent);
 }
 
 .trackButton {
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  color: #fff;
-  padding: 4px 10px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.35rem 0.75rem;
   border-radius: 6px;
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
   white-space: nowrap;
 }
 
-.trackButton:hover {
-  background: #3f3f46;
+@media (hover: hover) and (pointer: fine) {
+  .trackButton:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+}
+
+/* Form Review Modal Styles */
+.formInput,
+.formTextarea {
+  width: 100%;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.formInput::placeholder,
+.formTextarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 100px;
 }

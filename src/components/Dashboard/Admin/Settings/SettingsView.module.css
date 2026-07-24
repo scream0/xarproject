@@ -1,103 +1,165 @@
+/* ====================================================
+   SETTINGS VIEW CSS (Luxury High-End Theme)
+   ==================================================== */
 .settingsContainer {
-  background: #121214;
-  border: 1px solid #27272a;
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 1.5rem;
-  color: #fff;
+  padding: 2rem;
+  color: var(--text-primary);
   max-width: 800px;
+  width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
 }
 
 .settingsTitle {
+  font-family: var(--font-serif);
   font-size: 1.25rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 1.5rem 0;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  margin: 0 0 2rem 0;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
 }
 
 .loadingText {
-    text-align: center;
-    color: #a1a1aa;
-    padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3rem 0;
 }
 
 .formSection {
-    background: #18181b;
-    border: 1px solid #27272a;
-    border-radius: 10px;
-    padding: 1.25rem;
-    margin-bottom: 1.5rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sectionTitle {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #fff;
-    margin: 0 0 1.25rem 0;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 1.5px;
+  color: var(--text-primary);
+  margin: 0 0 1.25rem 0;
+  text-transform: uppercase;
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .inputGroup:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .fieldLabel {
-  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
   font-weight: 500;
-  color: #a1a1aa;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
 }
 
 .inputField,
 .selectField {
-  background: #121212;
-  border: 1px solid #3f3f46;
-  padding: 10px 14px;
-  color: #fff;
-  border-radius: 8px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.85rem 1rem;
+  color: var(--text-primary);
+  border-radius: 6px;
+  font-family: var(--font-sans);
   font-size: 0.9rem;
   outline: none;
   width: 100%;
-  transition: border-color 0.2s;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.inputField::placeholder,
+.selectField::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 .inputField:focus,
 .selectField:focus {
-  border-color: #3b82f6;
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.selectField {
+  cursor: pointer;
 }
 
 .fieldDesc {
-    font-size: 0.8rem;
-    color: #71717a;
-    margin-top: 4px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  letter-spacing: 0.5px;
 }
 
 .saveBtn {
-  background: #fff;
-  color: #000;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  padding: 0.85rem 1.75rem;
+  border: 1px solid var(--primary-accent);
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   width: 100%;
-  margin-top: 1rem;
+  box-sizing: border-box;
+  margin-top: 1.5rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .saveBtn:hover:not(:disabled) {
+    background: transparent;
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+  }
+}
+
+.saveBtn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .saveBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
-}
-
-.saveBtn:hover:not(:disabled) {
-  background: #e5e5e5;
+  box-shadow: none !important;
+  transform: none !important;
 }

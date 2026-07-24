@@ -36,8 +36,7 @@ export default function TransactionTable() {
         ordersResult.orders ||
         []
       ).sort(
-        (a, b) =>
-          new Date(b.created_at || 0) - new Date(a.created_at || 0),
+        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0),
       );
 
       setAllOrders(transactions);
@@ -49,7 +48,11 @@ export default function TransactionTable() {
     }
   };
 
-  const handleUpdateOrder = async (orderId, newStatus, receiptNumber = null) => {
+  const handleUpdateOrder = async (
+    orderId,
+    newStatus,
+    receiptNumber = null,
+  ) => {
     try {
       setUpdatingId(orderId);
       const payload = { orderId, status: newStatus };
@@ -68,7 +71,7 @@ export default function TransactionTable() {
         throw new Error(result.error || "Gagal memperbarui status pesanan");
 
       toast.success(`Pesanan ${orderId} berhasil diubah ke: ${newStatus}`);
-      
+
       setAllOrders((prev) =>
         prev.map((o) => {
           if (o.id === orderId || o.orderId === orderId) {
@@ -79,9 +82,8 @@ export default function TransactionTable() {
             return updatedOrder;
           }
           return o;
-        })
+        }),
       );
-
     } catch (error) {
       console.error(error);
       toast.error(error.message);
@@ -91,7 +93,7 @@ export default function TransactionTable() {
       setShippingReceipt("");
     }
   };
-  
+
   const handleShipOrderClick = (order) => {
     setShippingModalOrder(order);
   };
@@ -134,11 +136,11 @@ export default function TransactionTable() {
       .filter((order) => {
         const searchTermLower = searchTerm.toLowerCase();
         const customerName =
-          order.customerName ||
-          order.shipping_address?.recipientName ||
-          "";
+          order.customerName || order.shipping_address?.recipientName || "";
         return (
-          (order.orderId || order.id)?.toLowerCase().includes(searchTermLower) ||
+          (order.orderId || order.id)
+            ?.toLowerCase()
+            .includes(searchTermLower) ||
           customerName.toLowerCase().includes(searchTermLower)
         );
       });
@@ -159,8 +161,10 @@ export default function TransactionTable() {
   return (
     <>
       <div className={styles.ordersSection}>
-        <h3 className={styles.sectionTitle}>{overviewConfig.ordersSection.title}</h3>
-        
+        <h3 className={styles.sectionTitle}>
+          {overviewConfig.ordersSection.title}
+        </h3>
+
         <div className={styles.controlsContainer}>
           <input
             type="text"
@@ -174,29 +178,42 @@ export default function TransactionTable() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            {Object.entries(overviewConfig.ordersSection.filter).map(([key, value]) => (
-              <option key={key} value={key}>{value}</option>
-            ))}
+            {Object.entries(overviewConfig.ordersSection.filter).map(
+              ([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ),
+            )}
           </select>
         </div>
 
         {loading ? (
-          <p className={styles.loadingText}>{overviewConfig.ordersSection.loading}</p>
+          <p className={styles.loadingText}>
+            {overviewConfig.ordersSection.loading}
+          </p>
         ) : paginatedOrders.length === 0 ? (
-          <p className={styles.emptyText}>{overviewConfig.ordersSection.empty}</p>
+          <p className={styles.emptyText}>
+            {overviewConfig.ordersSection.empty}
+          </p>
         ) : (
           <>
             <div className={styles.tableResponsive}>
               <table className={styles.ordersTable}>
                 <thead>
                   <tr>
-                    {overviewConfig.tableHeaders.map(header => <th key={header}>{header}</th>)}
+                    {overviewConfig.tableHeaders.map((header) => (
+                      <th key={header}>{header}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedOrders.map((order) => {
                     const currentId = order.orderId || order.id;
-                    const customerName = order.customerName || order.shipping_address?.recipientName || "Customer";
+                    const customerName =
+                      order.customerName ||
+                      order.shipping_address?.recipientName ||
+                      "Customer";
                     const orderTotal = Number(order.amount || order.price || 0);
 
                     return (
@@ -205,33 +222,67 @@ export default function TransactionTable() {
                         <td>{customerName}</td>
                         <td>{formatRupiah(orderTotal)}</td>
                         <td>
-                          <span className={`${styles.badge} ${getBadgeClass(order.status)}`}>
+                          <span
+                            className={`${styles.badge} ${getBadgeClass(order.status)}`}
+                          >
                             {order.status || "pending"}
                           </span>
                         </td>
                         <td>
                           {order.status === "pending" && (
-                            <button className={styles.actionBtnConfirm} onClick={() => handleUpdateOrder(currentId, "success")} disabled={updatingId === currentId}>
-                              {updatingId === currentId ? overviewConfig.actions.confirming : overviewConfig.actions.confirmPayment}
+                            <button
+                              className={styles.actionBtnConfirm}
+                              onClick={() =>
+                                handleUpdateOrder(currentId, "success")
+                              }
+                              disabled={updatingId === currentId}
+                            >
+                              {updatingId === currentId
+                                ? overviewConfig.actions.confirming
+                                : overviewConfig.actions.confirmPayment}
                             </button>
                           )}
                           {order.status === "success" && (
-                            <button className={styles.actionBtn} onClick={() => handleUpdateOrder(currentId, "processing")} disabled={updatingId === currentId}>
-                              {updatingId === currentId ? overviewConfig.actions.processing : overviewConfig.actions.processOrder}
+                            <button
+                              className={styles.actionBtn}
+                              onClick={() =>
+                                handleUpdateOrder(currentId, "processing")
+                              }
+                              disabled={updatingId === currentId}
+                            >
+                              {updatingId === currentId
+                                ? overviewConfig.actions.processing
+                                : overviewConfig.actions.processOrder}
                             </button>
                           )}
                           {order.status === "processing" && (
-                            <button className={styles.actionBtn} onClick={() => handleShipOrderClick(order)} disabled={updatingId === currentId}>
-                              {updatingId === currentId ? overviewConfig.actions.shipping : overviewConfig.actions.shipItem}
+                            <button
+                              className={styles.actionBtn}
+                              onClick={() => handleShipOrderClick(order)}
+                              disabled={updatingId === currentId}
+                            >
+                              {updatingId === currentId
+                                ? overviewConfig.actions.shipping
+                                : overviewConfig.actions.shipItem}
                             </button>
                           )}
                           {order.status === "shipping" && (
-                            <button className={styles.actionBtn} onClick={() => handleUpdateOrder(currentId, "completed")} disabled={updatingId === currentId}>
-                              {updatingId === currentId ? overviewConfig.actions.completing : overviewConfig.actions.completeOrder}
+                            <button
+                              className={styles.actionBtn}
+                              onClick={() =>
+                                handleUpdateOrder(currentId, "completed")
+                              }
+                              disabled={updatingId === currentId}
+                            >
+                              {updatingId === currentId
+                                ? overviewConfig.actions.completing
+                                : overviewConfig.actions.completeOrder}
                             </button>
                           )}
                           {order.status === "completed" && (
-                            <span className={styles.statusCompletedText}>{overviewConfig.actions.completed}</span>
+                            <span className={styles.statusCompletedText}>
+                              {overviewConfig.actions.completed}
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -242,12 +293,20 @@ export default function TransactionTable() {
             </div>
             {totalPages > 1 && (
               <div className={styles.pagination}>
-                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
-                  Previous
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  {overviewConfig.pagination.prev}
                 </button>
-                <span>Page {currentPage} of {totalPages}</span>
-                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
-                  Next
+                <span>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  {overviewConfig.pagination.next}
                 </button>
               </div>
             )}
@@ -258,9 +317,12 @@ export default function TransactionTable() {
       {shippingModalOrder && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>Masukkan Nomor Resi</h3>
+            <h3 className={styles.modalTitle}>{overviewConfig.modal.title}</h3>
             <p className={styles.modalSubtitle}>
-              Untuk pesanan: <strong>{shippingModalOrder.orderId || shippingModalOrder.id}</strong>
+              {overviewConfig.modal.subtitle}{" "}
+              <strong>
+                {shippingModalOrder.orderId || shippingModalOrder.id}
+              </strong>
             </p>
             <form onSubmit={handleShippingSubmit}>
               <input
@@ -268,15 +330,28 @@ export default function TransactionTable() {
                 className={styles.modalInput}
                 value={shippingReceipt}
                 onChange={(e) => setShippingReceipt(e.target.value)}
-                placeholder="Contoh: JNE00123456789"
+                placeholder={overviewConfig.modal.placeholder}
                 required
               />
               <div className={styles.modalActions}>
-                <button type="button" className={styles.modalBtnCancel} onClick={() => setShippingModalOrder(null)}>
-                  Batal
+                <button
+                  type="button"
+                  className={styles.modalBtnCancel}
+                  onClick={() => setShippingModalOrder(null)}
+                >
+                  {overviewConfig.modal.cancel}
                 </button>
-                <button type="submit" className={styles.modalBtnConfirm} disabled={updatingId === (shippingModalOrder.orderId || shippingModalOrder.id)}>
-                  {updatingId ? "Menyimpan..." : "Simpan & Kirim"}
+                <button
+                  type="submit"
+                  className={styles.modalBtnConfirm}
+                  disabled={
+                    updatingId ===
+                    (shippingModalOrder.orderId || shippingModalOrder.id)
+                  }
+                >
+                  {updatingId
+                    ? overviewConfig.modal.loading
+                    : overviewConfig.modal.confirm}
                 </button>
               </div>
             </form>

@@ -1,9 +1,11 @@
-/* Layout Utama Dashboard */
+/* ====================================================
+   USER DASHBOARD CSS (Adapted to Theme System)
+   ==================================================== */
 .dashboardContainer {
   display: flex;
   height: 100vh;
-  background-color: #09090b;
-  color: #f4f4f5;
+  background-color: var(--background-color);
+  color: var(--text-primary);
   font-family: inherit;
   position: relative;
   overflow: hidden;
@@ -16,15 +18,15 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background-color: #09090b;
-  color: #fff;
+  background-color: var(--background-color);
+  color: var(--text-primary);
 }
 
 .pulseScanner {
   width: 50px;
   height: 50px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #fbbf24;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 1rem;
@@ -39,7 +41,7 @@
 .loadingText {
   font-size: 0.9rem;
   letter-spacing: 0.1em;
-  color: #a1a1aa;
+  color: var(--text-secondary);
 }
 
 /* Mobile Top Navigation Bar */
@@ -52,8 +54,8 @@
   left: 0;
   right: 0;
   height: 60px;
-  background: #121214;
-  border-bottom: 1px solid #27272a;
+  background: var(--surface-primary);
+  border-bottom: 1px solid var(--border-color);
   padding: 0 1.25rem;
   z-index: 100;
 }
@@ -62,11 +64,11 @@
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .mobileTopBar .brandLogo span {
-  color: #fbbf24;
+  color: var(--primary-accent);
 }
 
 .mobileTopActions {
@@ -77,9 +79,9 @@
 
 .cartIconBtnMobile,
 .hamburgerBtn {
-  background: #27272a;
-  border: none;
-  color: #fff;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -91,7 +93,7 @@
 
 .cartIconBtnMobile:hover,
 .hamburgerBtn:hover {
-  background: #3f3f46;
+  background: var(--border-color);
 }
 
 .cartIconBtnMobile {
@@ -100,8 +102,8 @@
 }
 
 .cartQuantityBadge {
-  background: #fbbf24;
-  color: #000;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 0.7rem;
@@ -129,8 +131,8 @@
 /* Sidebar Styling (Desktop & Mobile Drawer) */
 .sidebar {
   width: 260px;
-  background: #121214;
-  border-right: 1px solid #27272a;
+  background: var(--surface-primary);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -154,7 +156,7 @@
 /* Brand Section di Sidebar */
 .brandSection {
   padding: 1.5rem;
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -164,23 +166,23 @@
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .sidebar .brandLogo span {
-  color: #fbbf24;
+  color: var(--primary-accent);
 }
 
 .brandBadge {
   font-size: 0.65rem;
-  background: rgba(251, 191, 36, 0.1);
-  color: #fbbf24;
+  background: rgba(var(--primary-accent-rgb), 0.15);
+  color: var(--primary-accent);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   width: fit-content;
   font-weight: 600;
   letter-spacing: 0.05em;
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.3);
 }
 
 /* Navigasi List */
@@ -203,7 +205,7 @@
   width: 100%;
   background: transparent;
   border: none;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   padding: 0.75rem 1rem;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -216,27 +218,27 @@
 }
 
 .navItem:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: #fff;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
 }
 
 .navItemActive {
-  background: #fbbf24 !important;
-  color: #000 !important;
+  background: var(--primary-accent) !important;
+  color: var(--primary-accent-text) !important;
   font-weight: 600;
 }
 
 /* Sidebar Footer & Logout Button */
 .sidebarFooter {
   padding: 1rem 1.25rem;
-  border-top: 1px solid #27272a;
+  border-top: 1px solid var(--border-color);
 }
 
 .logoutBtn {
   width: 100%;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  background: rgba(var(--danger-color-rgb), 0.15);
+  border: 1px solid rgba(var(--danger-color-rgb), 0.3);
+  color: var(--danger-color);
   padding: 0.75rem;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -246,8 +248,8 @@
 }
 
 .logoutBtn:hover {
-  background: #ef4444;
-  color: #fff;
+  background: var(--danger-color);
+  color: #ffffff;
 }
 
 /* Konten Utama */
@@ -257,7 +259,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background-color: #09090b;
+  min-height: 0; /* KRUSIAL: Memungkinkan area konten utama untuk melakukan scroll */
+  background-color: var(--background-color);
   height: calc(100vh - 60px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -273,8 +276,8 @@
 
 /* Header Atas Konten */
 .header {
-  background: #121214;
-  border-bottom: 1px solid #27272a;
+  background: var(--surface-primary);
+  border-bottom: 1px solid var(--border-color);
   padding: 0.85rem 1.5rem;
   display: flex;
   align-items: center;
@@ -282,6 +285,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  flex-shrink: 0;
 }
 
 .extraNavLeft {
@@ -291,10 +295,14 @@
 
 .navIndicator {
   font-size: 0.85rem;
-  color: #71717a;
-  font-weight: 500;
+  color: var(--primary-accent);
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
 }
 
 .extraNavRight {
@@ -307,7 +315,7 @@
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -319,8 +327,8 @@
 
 /* SVG Icons */
 .svgIcon {
-  width: 18px; /* Default for all SVG icons */
-  height: 18px; /* Default for all SVG icons */
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
   stroke-width: 2;
   stroke-linecap: round;
@@ -329,10 +337,9 @@
 }
 
 .svgIcon use {
-  fill: none; /* Ensure no default fill */
+  fill: none;
 }
 
-/* Hamburger button specific SVG size */
 .hamburgerBtn .svgIcon {
   width: 20px;
   height: 20px;
@@ -341,6 +348,7 @@
 /* Area Tampilan Konten Dinamis */
 .viewWrapper {
   flex: 1;
+  min-height: 0;
   padding: 1.5rem 1rem;
 }
 

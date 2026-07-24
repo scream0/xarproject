@@ -1,13 +1,23 @@
+/* ====================================================
+   CHART & ANALYTICS CONTAINER CSS (Luxury High-End Theme)
+   ==================================================== */
 .chartContainer {
   width: 100%;
-  background: rgba(var(--surface-primary-rgb), 0.4);
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 10px 30px rgba(var(--background-rgb), 0.4);
+  padding: 2rem;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chartContainer:hover {
+  border-color: rgba(var(--primary-accent-rgb), 0.2);
 }
 
 .headerRow {
@@ -15,28 +25,32 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .chartTitle {
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 1.5px;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 2px;
   color: var(--text-primary);
   text-transform: uppercase;
+  margin: 0;
 }
 
 .actionGroup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .tabGroup {
   display: flex;
   gap: 4px;
-  background: var(--surface-primary);
+  background: var(--surface-secondary);
   padding: 4px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -46,48 +60,61 @@
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 6px 12px;
+  padding: 6px 14px;
+  font-family: var(--font-sans);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.5px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tabBtn:hover:not(.tabBtnActive) {
+  color: var(--text-primary);
 }
 
 .tabBtnActive {
-  background: var(--surface-secondary);
+  background: var(--surface-primary);
   color: var(--primary-accent);
   border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .exportBtn {
   background: var(--surface-secondary);
   color: var(--primary-accent);
   border: 1px solid var(--primary-accent);
-  padding: 7px 14px;
+  padding: 7px 16px;
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 1px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .exportBtn:hover {
   background: var(--primary-accent);
   color: var(--primary-accent-text);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.25);
 }
 
 .chartWrapper {
   width: 100%;
-  height: 260px;
+  height: 280px;
 }
 
 .loadingState {
   text-align: center;
   color: var(--text-secondary);
+  font-family: var(--font-sans);
   font-size: 0.85rem;
-  letter-spacing: 1px;
-  height: 260px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,17 +122,18 @@
 
 /* --- Tabel Rincian Tahunan --- */
 .yearlySection {
-  margin-top: 10px;
+  margin-top: 12px;
   border-top: 1px solid var(--border-color);
-  padding-top: 20px;
+  padding-top: 24px;
 }
 
 .sectionSubtitle {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 1px;
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 1.5px;
   color: var(--text-secondary);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   text-transform: uppercase;
 }
 
@@ -113,32 +141,43 @@
   overflow-x: auto;
 }
 
+.tableWrapper::-webkit-scrollbar {
+  height: 5px;
+}
+
+.tableWrapper::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+
 .yearlyTable {
   width: 100%;
   border-collapse: collapse;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
   text-align: left;
 }
 
 .yearlyTable th {
-  background: var(--surface-primary);
+  background: var(--surface-secondary);
   color: var(--text-secondary);
-  padding: 10px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.7rem;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
 }
 
 .yearlyTable td {
-  padding: 12px;
+  padding: 16px;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
+  transition: background-color 0.2s ease;
 }
 
 .yearlyTable tr:hover td {
-  background: rgba(var(--surface-primary-rgb), 0.02);
+  background: rgba(var(--primary-accent-rgb), 0.02);
 }
 
 /* Print mode untuk cetak PDF yang bersih */

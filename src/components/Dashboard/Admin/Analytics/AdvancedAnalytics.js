@@ -36,7 +36,6 @@ export default function AdvancedAnalytics() {
 
   const fetchAdvancedData = async () => {
     try {
-      // Mengambil data dari endpoint orders dan products yang sudah ada
       const [ordersRes, productsRes] = await Promise.all([
         fetch("/api/orders"),
         fetch("/api/products"),
@@ -45,7 +44,6 @@ export default function AdvancedAnalytics() {
       const ordersResult = await ordersRes.json();
       const productsResult = await productsRes.json();
 
-      // Menyesuaikan dengan struktur data yang dikembalikan oleh route masing-masing
       const orders = Array.isArray(ordersResult)
         ? ordersResult
         : ordersResult.data || ordersResult.orders || [];
@@ -148,11 +146,10 @@ export default function AdvancedAnalytics() {
     const variantMap = {};
 
     orders.forEach((order) => {
-      // Menyesuaikan struktur item pesanan baik dalam bentuk array maupun objek tunggal
       const items = order.items || (order.order ? [order.order] : []);
       if (Array.isArray(items)) {
         items.forEach((item) => {
-          const name = `${item.name || "Product"} (${item.size || item.concentration || item.variant || "Standard"})`;
+          const name = `${item.name || config.labels.defaultVariantName} (${item.size || item.concentration || item.variant || config.labels.defaultVariantSize})`;
           const qty = Number(item.quantity || item.qty || 1);
 
           if (!variantMap[name]) variantMap[name] = 0;
@@ -210,23 +207,28 @@ export default function AdvancedAnalytics() {
           </span>
           <span
             className={`${styles.metricTrend} ${
-              metrics.momGrowth >= 0
+              metrics.momGrowth > 0
                 ? styles.trendPositive
-                : styles.trendNegative
+                : metrics.momGrowth < 0
+                  ? styles.trendNegative
+                  : styles.trendNeutral
             }`}
           >
             {metrics.momGrowth >= 0
-              ? "▲ Meningkat dari bulan lalu"
-              : "▼ Menurun dari bulan lalu"}
+              ? config.labels.trendUp
+              : config.labels.trendDown}
           </span>
         </div>
         <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>Pendapatan Bulan Ini</span>
+          <span className={styles.metricLabel}>
+            {config.labels.currentMonthLabel}
+          </span>
           <span className={styles.metricValue}>
             Rp {metrics.currentMonthRev.toLocaleString("id-ID")}
           </span>
-          <span className={styles.metricTrend} style={{ color: "#888" }}>
-            Bulan lalu: Rp {metrics.lastMonthRev.toLocaleString("id-ID")}
+          <span className={`${styles.metricTrend} ${styles.trendNeutral}`}>
+            {config.labels.lastMonthPrefix}
+            {metrics.lastMonthRev.toLocaleString("id-ID")}
           </span>
         </div>
       </div>
@@ -237,22 +239,26 @@ export default function AdvancedAnalytics() {
           <div className={styles.chartBox}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={variantData} layout="vertical">
-                <XAxis type="number" stroke="#525252" fontSize={11} hide />
+                <XAxis type="number" hide />
                 <YAxis
                   dataKey="name"
                   type="category"
-                  stroke="#ccc"
+                  stroke="currentColor"
                   fontSize={11}
                   width={120}
                   tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#0a0a0a",
-                    border: "1px solid #333",
+                    backgroundColor: "var(--surface-primary)",
+                    borderColor: "var(--border-color)",
                     borderRadius: "8px",
+                    color: "var(--text-primary)",
                   }}
-                  formatter={(value) => [`${value} unit`, "Terjual"]}
+                  formatter={(value) => [
+                    `${value} ${config.labels.unitsSold}`,
+                    config.labels.soldTooltip,
+                  ]}
                 />
                 <Bar dataKey="sold" fill="#3b82f6" radius={[0, 4, 4, 0]} />
               </BarChart>
@@ -290,11 +296,15 @@ export default function AdvancedAnalytics() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#0a0a0a",
-                    border: "1px solid #333",
+                    backgroundColor: "var(--surface-primary)",
+                    borderColor: "var(--border-color)",
                     borderRadius: "8px",
+                    color: "var(--text-primary)",
                   }}
-                  formatter={(value) => [`${value} pesanan`, "Jumlah"]}
+                  formatter={(value) => [
+                    `${value} ${config.labels.ordersCount}`,
+                    config.labels.jumlahTooltip,
+                  ]}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -320,9 +330,7 @@ export default function AdvancedAnalytics() {
               {inventoryList.length > 0 ? (
                 inventoryList.map((item, idx) => (
                   <tr key={idx}>
-                    <td style={{ fontWeight: 600, color: "#fff" }}>
-                      {item.name}
-                    </td>
+                    <td className={styles.tableItemName}>{item.name}</td>
                     <td>{item.stock} pcs</td>
                     <td>
                       <span
@@ -340,11 +348,8 @@ export default function AdvancedAnalytics() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="4"
-                    style={{ textAlign: "center", color: "#666" }}
-                  >
-                    Belum ada data inventaris untuk dianalisis
+                  <td colSpan="4" className={styles.emptyTableText}>
+                    {config.labels.emptyInventory}
                   </td>
                 </tr>
               )}

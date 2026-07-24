@@ -1,22 +1,32 @@
 {
   "sections": {
-    "growthRate": "MONTHLY GROWTH (MoM)",
-    "topVariants": "TOP-SELLING VARIANTS & SIZES",
-    "orderStatus": "ORDER STATUS BREAKDOWN",
-    "inventoryMovement": "INVENTORY TURNOVER ANALYSIS"
+    "growthRate": "Pertumbuhan MoM",
+    "topVariants": "Varian Parfum Terlaris",
+    "orderStatus": "Distribusi Status Pesanan",
+    "inventoryMovement": "Pergerakan Stok & Analisis Inventaris"
   },
   "headers": {
-    "productName": "Produk & Varian",
-    "unitsSold": "Terjual",
-    "revenue": "Pendapatan",
-    "status": "Status Pesanan",
-    "stockStatus": "Perputaran Stok",
-    "action": "Rekomendasi"
+    "productName": "Nama Produk & Varian",
+    "status": "Status Stok",
+    "action": "Rekomendasi Tindakan"
   },
   "statusLabels": {
-    "paid": "Selesai / Dibayar",
-    "pending": "Menunggu",
-    "failed": "Gagal"
+    "paid": "Berhasil",
+    "pending": "Tertunda",
+    "failed": "Gagal",
+    "settlement": "Selesai"
   },
-  "loadingText": "Memuat analitik lanjutan..."
+  "labels": {
+    "unitsSold": "unit",
+    "ordersCount": "pesanan",
+    "soldTooltip": "Terjual",
+    "jumlahTooltip": "Jumlah",
+    "emptyInventory": "Belum ada data inventaris untuk dianalisis",
+    "defaultVariantName": "Product",
+    "defaultVariantSize": "Standard",
+    "trendUp": "▲ Meningkat dari bulan lalu",
+    "trendDown": "▼ Menurun dari bulan lalu",
+    "currentMonthLabel": "Pendapatan Bulan Ini",
+    "lastMonthPrefix": "Bulan lalu: Rp "
+  }
 }

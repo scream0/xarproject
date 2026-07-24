@@ -1,37 +1,37 @@
 {
-  "brandName": "MAKE ME KOOL",
-  "backButton": "← Kembali ke Dashboard",
   "header": {
-    "title": "Koleksi Ekstra Parfum",
-    "subtitle": "Pilih racikan extrait de parfum 30% pilihan terbaik Anda."
+    "title": "Koleksi Eksklusif XAR",
+    "subtitle": "Temukan aroma signature mewah yang diracik khusus untuk kepribadian Anda"
   },
   "filters": {
-    "allLabel": "Semua",
-    "searchPlaceholder": "Cari parfum...",
-    "sortDefault": "Urutkan",
-    "sortPriceLow": "Harga: Rendah",
-    "sortPriceHigh": "Harga: Tinggi",
-    "sortName": "Nama: A-Z"
-  },
-  "card": {
-    "placeholderImageText": "✨ AWRG AROMA",
-    "defaultCategory": "Parfum",
-    "defaultDescription": "Formula eksklusif pilihan terbaik.",
-    "variantLabel": "Ukuran:",
-    "buyButtonText": "Pesan",
-    "fallbackPrice": "Hubungi Admin"
+    "allLabel": "Semua Koleksi",
+    "searchPlaceholder": "Cari nama parfum atau deskripsi aroma...",
+    "sortDefault": "Urutan Default",
+    "sortPriceLow": "Harga: Rendah ke Tinggi",
+    "sortPriceHigh": "Harga: Tinggi ke Rendah",
+    "sortName": "Nama Produk (A-Z)"
   },
   "messages": {
-    "loading": "Memuat koleksi produk...",
-    "empty": "Produk tidak ditemukan."
+    "loading": "Memuat katalog parfum...",
+    "empty": "Belum ada produk yang tersedia dalam kategori ini."
   },
-  "toast": {
-    "loginRequired": "Silakan login terlebih dahulu untuk checkout.",
-    "invalidPrice": "Harga produk tidak valid.",
-    "loadingMidtrans": "Menyiapkan transaksi Midtrans...",
-    "success": "Pembayaran berhasil!",
-    "pending": "Menunggu pembayaran...",
-    "error": "Pembayaran gagal!",
-    "closed": "Popup pembayaran ditutup."
+  "card": {
+    "fallbackPrice": "Harga tidak tersedia",
+    "placeholderImageText": "XAR PARFUM",
+    "defaultCategory": "Parfum Eksklusif",
+    "defaultDescription": "Parfum mewah racikan tangan dengan kualitas bahan terbaik yang tahan sepanjang hari.",
+    "variantLabel": "Pilih Varian Ukuran & Konsentrasi:",
+    "soldOutBadge": "HABIS",
+    "viewDetail": "Detail →",
+    "addToCartTitle": "Tambah ke Keranjang",
+    "outOfStockTitle": "Stok Habis"
+  },
+  "buttons": {
+    "loadMore": "Lihat Lebih Banyak",
+    "addToCart": "Tambah ke Keranjang",
+    "outOfStock": "Stok Varian Habis"
+  },
+  "toasts": {
+    "fetchError": "Gagal memuat produk dari database."
   }
 }

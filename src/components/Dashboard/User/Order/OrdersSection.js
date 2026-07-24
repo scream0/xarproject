@@ -13,15 +13,28 @@ export default function OrdersSection() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [userPrimaryAddress, setUserPrimaryAddress] = useState("Belum diatur");
 
+  // State untuk currentUser yang mendengarkan status Auth Firebase secara real-time
+  const [currentUser, setCurrentUser] = useState(null);
+
   // State untuk modal ulasan produk
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  const currentUser = auth.currentUser;
+  // 1. Pantau status Auth Firebase secara dinamis
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setLoading(false);
+        setOrders([]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // 1. Muat Script Midtrans Snap secara dinamis
+  // 2. Muat Script Midtrans Snap secara dinamis
   useEffect(() => {
     const snapScriptUrl = "https://app.sandbox.midtrans.com/snap/snap.js";
     const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
@@ -36,13 +49,13 @@ export default function OrdersSection() {
     }
   }, []);
 
-  // 2. Ambil data alamat & pesanan via API Route `/api/orders`
-  const fetchUserOrders = async () => {
-    if (!currentUser) return;
+  // 3. Ambil data alamat & pesanan via API Route `/api/orders`
+  const fetchUserOrders = async (user) => {
+    if (!user) return;
 
     try {
       setLoading(true);
-      const res = await fetch(`/api/orders?userId=${currentUser.uid}`);
+      const res = await fetch(`/api/orders?userId=${user.uid}`);
       const result = await res.json();
 
       if (!res.ok)
@@ -54,7 +67,6 @@ export default function OrdersSection() {
         const formattedOrders = result.orders.map((item) => {
           const rawStatus = (item.status || "pending").toLowerCase();
 
-          // Petakan status backend ke status UI
           let mappedStatus = "processing";
           if (
             [
@@ -71,7 +83,6 @@ export default function OrdersSection() {
             mappedStatus = "processing";
           }
 
-          // Ambil ringkasan nama produk dari array items jika ada, atau fallback ke properti tunggal
           let displayName =
             item.product_name || item.name || "Extrait de Parfum";
           if (
@@ -114,8 +125,8 @@ export default function OrdersSection() {
             notes: item.notes || "-",
             price: `Rp ${rawAmount.toLocaleString("id-ID")}`,
             rawPrice: rawAmount,
-            status: item.status || "pending", // status asli dari database untuk stepper & badge
-            mappedStatus: mappedStatus, // untuk tab filter
+            status: item.status || "pending",
+            mappedStatus: mappedStatus,
             date:
               item.createdAt || item.created_at
                 ? new Date(
@@ -147,11 +158,11 @@ export default function OrdersSection() {
 
   useEffect(() => {
     if (currentUser) {
-      fetchUserOrders();
+      fetchUserOrders(currentUser);
     }
   }, [currentUser]);
 
-  // 3. Filter & Search Logic
+  // 4. Filter & Search Logic
   const filteredOrders = useMemo(() => {
     let result = orders;
 
@@ -181,7 +192,7 @@ export default function OrdersSection() {
     return result;
   }, [orders, filter, searchQuery]);
 
-  // 4. Fungsi Re-Order Terintegrasi Midtrans Snap via API Route
+  // 5. Fungsi Re-Order Terintegrasi Midtrans Snap via API Route
   const handleReOrder = async (order) => {
     const toastId = toast.loading("Menyiapkan transaksi Midtrans...");
     try {
@@ -231,7 +242,7 @@ export default function OrdersSection() {
               "success",
               resultData.payment_type,
             );
-            fetchUserOrders();
+            fetchUserOrders(currentUser);
           },
           onPending: async function (resultData) {
             toast("Menunggu pembayaran Anda...", { icon: "⏳" });
@@ -242,14 +253,14 @@ export default function OrdersSection() {
               "pending",
               resultData.payment_type || "Midtrans",
             );
-            fetchUserOrders();
+            fetchUserOrders(currentUser);
           },
           onError: function () {
             toast.error("Pembayaran gagal!");
           },
           onClose: function () {
             toast("Popup pembayaran ditutup.");
-            fetchUserOrders();
+            fetchUserOrders(currentUser);
           },
         });
       } else {
@@ -343,12 +354,12 @@ Terima kasih telah berbelanja di XAR!`;
 
     try {
       const token = await currentUser.getIdToken();
-      const firstItem = reviewModalOrder.items[0]; // Asumsi ulasan untuk item pertama
+      const firstItem = reviewModalOrder.items[0];
 
       if (!firstItem) {
         throw new Error("Produk dalam pesanan tidak ditemukan.");
       }
-      
+
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: {
@@ -358,8 +369,8 @@ Terima kasih telah berbelanja di XAR!`;
         body: JSON.stringify({
           userId: currentUser.uid,
           orderId: reviewModalOrder.id,
-          productId: firstItem.id || reviewModalOrder.id, // Fallback ke order ID jika item ID tidak ada
-          productName: firstItem.name || reviewModalOrder.name, // Fallback
+          productId: firstItem.id || reviewModalOrder.id,
+          productName: firstItem.name || reviewModalOrder.name,
           rating,
           comment,
         }),
@@ -371,11 +382,13 @@ Terima kasih telah berbelanja di XAR!`;
         throw new Error(result.error || "Gagal mengirim ulasan.");
       }
 
-      toast.success("Terima kasih! Ulasan Anda berhasil dikirim.", { id: toastId });
+      toast.success("Terima kasih! Ulasan Anda berhasil dikirim.", {
+        id: toastId,
+      });
       setReviewModalOrder(null);
       setComment("");
       setRating(5);
-      fetchUserOrders(); // Muat ulang data untuk update status tombol
+      fetchUserOrders(currentUser);
     } catch (error) {
       console.error("Gagal mengirim ulasan:", error);
       toast.error(error.message, { id: toastId });
@@ -412,7 +425,7 @@ Terima kasih telah berbelanja di XAR!`;
             </svg>
             <input
               type="text"
-              placeholder="Cari ID pesanan / nama parfum..."
+              placeholder={ordersConfig.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
@@ -496,13 +509,13 @@ Terima kasih telah berbelanja di XAR!`;
                         onClick={() => setReviewModalOrder(order)}
                         className={styles.reviewBtn}
                       >
-                        Beri Ulasan
+                        {ordersConfig.buttons.review}
                       </button>
                     )}
                     {isFinished && order.hasBeenReviewed && (
-                       <button className={styles.reviewBtnDisabled} disabled>
-                         Ulasan Dikirim
-                       </button>
+                      <button className={styles.reviewBtnDisabled} disabled>
+                        {ordersConfig.buttons.reviewSent}
+                      </button>
                     )}
                     <button
                       onClick={() => handleReOrder(order)}
@@ -620,11 +633,16 @@ Terima kasih telah berbelanja di XAR!`;
                   </span>
                   <div className={styles.receiptInfo}>
                     <span>{selectedOrder.shippingReceiptNumber}</span>
-                    <button 
-                      onClick={() => window.open(`https://jet.co.id/track?hal=1&track_id=${selectedOrder.shippingReceiptNumber}`, '_blank')}
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `https://jet.co.id/track?hal=1&track_id=${selectedOrder.shippingReceiptNumber}`,
+                          "_blank",
+                        )
+                      }
                       className={styles.trackButton}
                     >
-                      Lacak Kiriman
+                      {ordersConfig.labels.trackShipping}
                     </button>
                   </div>
                 </div>
@@ -644,13 +662,13 @@ Terima kasih telah berbelanja di XAR!`;
                 onClick={() => handleCopyId(selectedOrder.id)}
                 className={styles.modalActionBtn}
               >
-                {ordersConfig.buttons.copyId}
+                {ordersConfig.buttons.copyId || "Salin ID"}
               </button>
               <button
                 onClick={() => handleDownloadInvoice(selectedOrder)}
                 className={styles.modalActionBtn}
               >
-                {ordersConfig.buttons.downloadInvoice}
+                {ordersConfig.buttons.downloadInvoice || "Unduh Invoice"}
               </button>
             </div>
 
@@ -675,7 +693,9 @@ Terima kasih telah berbelanja di XAR!`;
             onClick={(e) => e.stopPropagation()}
           >
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Beri Ulasan Produk</h3>
+              <h3 className={styles.modalTitle}>
+                {ordersConfig.labels.reviewTitle}
+              </h3>
               <button
                 onClick={() => setReviewModalOrder(null)}
                 className={styles.modalCloseBtn}
@@ -696,51 +716,48 @@ Terima kasih telah berbelanja di XAR!`;
 
             <form onSubmit={handleReviewSubmit} className={styles.modalBody}>
               <div>
-                <span className={styles.modalFieldLabel}>Produk</span>
+                <span className={styles.modalFieldLabel}>
+                  {ordersConfig.labels.product}
+                </span>
                 <strong>{reviewModalOrder.name}</strong>
               </div>
               <div>
-                <span className={styles.modalFieldLabel}>Rating (Bintang)</span>
+                <span className={styles.modalFieldLabel}>
+                  {ordersConfig.labels.ratingLabel}
+                </span>
                 <select
                   value={rating}
                   onChange={(e) => setRating(Number(e.target.value))}
-                  style={{
-                    width: "100%",
-                    background: "#18181b",
-                    border: "1px solid #27272a",
-                    color: "#fff",
-                    padding: "8px",
-                    borderRadius: "6px",
-                  }}
+                  className={styles.formInput}
                 >
-                  <option value={5}>⭐⭐⭐⭐⭐ (Sempurna - 5 Bintang)</option>
-                  <option value={4}>⭐⭐⭐⭐ (Puas - 4 Bintang)</option>
-                  <option value={3}>⭐⭐⭐ (Cukup - 3 Bintang)</option>
-                  <option value={2}>⭐⭐ (Kurang - 2 Bintang)</option>
-                  <option value={1}>⭐ (Buruk - 1 Bintang)</option>
+                  {ordersConfig.ratingOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
-                <span className={styles.modalFieldLabel}>Komentar Ulasan</span>
+                <span className={styles.modalFieldLabel}>
+                  {ordersConfig.labels.commentLabel}
+                </span>
                 <textarea
                   rows={3}
                   required
-                  placeholder="Bagaimana aroma dan ketahanan parfum pilihan Anda?"
+                  placeholder={ordersConfig.labels.commentPlaceholder}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  style={{
-                    width: "100%",
-                    background: "#18181b",
-                    border: "1px solid #27272a",
-                    color: "#fff",
-                    padding: "8px",
-                    borderRadius: "6px",
-                    resize: "none",
-                  }}
+                  className={styles.formTextarea}
                 />
               </div>
-              <button type="submit" className={styles.modalCloseActionBtn} disabled={isSubmittingReview}>
-                {isSubmittingReview ? "Mengirim..." : "Kirim Ulasan"}
+              <button
+                type="submit"
+                className={styles.modalCloseActionBtn}
+                disabled={isSubmittingReview}
+              >
+                {isSubmittingReview
+                  ? ordersConfig.labels.submittingReview
+                  : ordersConfig.labels.submitReview}
               </button>
             </form>
           </div>

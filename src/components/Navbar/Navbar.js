@@ -19,6 +19,7 @@ export function Navbar() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const {
     products,
@@ -30,7 +31,7 @@ export function Navbar() {
     isCartOpen,
     setIsCartOpen,
   } = useStore();
-  
+
   const { theme, toggleTheme } = useTheme();
 
   const authItems = config?.authSection?.auth?.authenticated || [];
@@ -40,7 +41,8 @@ export function Navbar() {
   const userMenuRef = useRef(null);
 
   useEffect(() => {
-    document.body.style.overflow = activePanel === "navbar" ? "hidden" : "unset";
+    document.body.style.overflow =
+      activePanel === "navbar" ? "hidden" : "unset";
   }, [activePanel]);
 
   useEffect(() => {
@@ -71,12 +73,22 @@ export function Navbar() {
     }
   }, [cartQuantity]);
 
-  const productList = Array.isArray(products) ? products : (products?.data || []);
-  const filtered = productList.filter((p) => p?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const productList = Array.isArray(products) ? products : products?.data || [];
+  const filtered = productList.filter((p) =>
+    p?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   const togglePanel = (panelName) => {
     setActivePanel(activePanel === panelName ? null : panelName);
   };
+
+  const userAvatar = user?.photoURL || user?.photo_url;
+  const userName =
+    user?.full_name ||
+    user?.username ||
+    user?.displayName ||
+    user?.email?.split("@")[0] ||
+    "User";
 
   return (
     <>
@@ -87,27 +99,73 @@ export function Navbar() {
           <span>{config.logo.subtext}</span>.
         </Link>
 
-        <div className={`${styles.navbarNav} ${activePanel === "navbar" ? styles.active : ""}`}>
+        <div
+          className={`${styles.navbarNav} ${activePanel === "navbar" ? styles.active : ""}`}
+        >
           {config.menuItems.map((item, index) => (
-            <Link key={index} href={item.href} onClick={() => setActivePanel(null)}>
+            <Link
+              key={index}
+              href={item.href}
+              onClick={() => setActivePanel(null)}
+            >
               {item.label}
             </Link>
           ))}
-          
+
           <div className={styles.mobileAuthSection}>
             {user ? (
               <>
-                <span className={styles.mobileUserName}>Halo, {user.displayName || user.email?.split('@')[0] || "User"}</span>
-                {authItems.map((item, index) => (
-                  item.type === 'link' ? (
-                    <Link key={index} href={item.href} className={styles.mobileAuthLink} onClick={() => setActivePanel(null)}>{item.label}</Link>
+                <div className={styles.mobileUserInfo}>
+                  {userAvatar && !imageError ? (
+                    <img
+                      src={userAvatar}
+                      alt="User Avatar"
+                      className={styles.avatarImgMobile}
+                      onError={() => setImageError(true)}
+                    />
                   ) : (
-                    <button key={index} onClick={() => {logout(); setActivePanel(null);}} className={`${styles.mobileAuthLink} ${styles.mobileLogoutBtn}`}>{item.label}</button>
-                  )
-                ))}
+                    <div className={styles.avatarPlaceholderMobile}>
+                      <svg className={styles.svgIcon}>
+                        <use href="/assets/icon/feather-sprite.svg#user" />
+                      </svg>
+                    </div>
+                  )}
+                  <span className={styles.mobileUserName}>{userName}</span>
+                </div>
+                {authItems.map((item, index) =>
+                  item.type === "link" ? (
+                    <Link
+                      key={index}
+                      href={item.href}
+                      className={styles.mobileAuthLink}
+                      onClick={() => setActivePanel(null)}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        logout();
+                        setActivePanel(null);
+                      }}
+                      className={`${styles.mobileAuthLink} ${styles.mobileLogoutBtn}`}
+                    >
+                      {item.label}
+                    </button>
+                  ),
+                )}
               </>
             ) : (
-              unauthItem && <Link href={unauthItem.href} className={styles.mobileLoginBtn} onClick={() => setActivePanel(null)}>{unauthItem.label}</Link>
+              unauthItem && (
+                <Link
+                  href={unauthItem.href}
+                  className={styles.mobileLoginBtn}
+                  onClick={() => setActivePanel(null)}
+                >
+                  {unauthItem.label}
+                </Link>
+              )
             )}
           </div>
         </div>
@@ -129,50 +187,132 @@ export function Navbar() {
         <CartSidebar />
 
         <div className={styles.navbarExtra}>
-          <button onClick={() => togglePanel("search")} aria-label="Cari Produk">
-            <svg className={styles.svgIcon}><use href={`/assets/icon/feather-sprite.svg#${config?.features?.search?.icon}`} /></svg>
+          <button
+            onClick={() => togglePanel("search")}
+            aria-label="Cari Produk"
+          >
+            <svg className={styles.svgIcon}>
+              <use
+                href={`/assets/icon/feather-sprite.svg#${config?.features?.search?.icon}`}
+              />
+            </svg>
           </button>
 
-          <button className={styles.cartButton} onClick={() => setIsCartOpen(!isCartOpen)} aria-label={config?.features?.cart?.ariaLabel}>
-            <svg className={`${styles.svgIcon} ${animate ? styles.cartBounce : ""}`}><use href={`/assets/icon/feather-sprite.svg#${config?.features?.cart?.icon}`} /></svg>
+          <button
+            className={styles.cartButton}
+            onClick={() => setIsCartOpen(!isCartOpen)}
+            aria-label={config?.features?.cart?.ariaLabel}
+          >
+            <svg
+              className={`${styles.svgIcon} ${animate ? styles.cartBounce : ""}`}
+            >
+              <use
+                href={`/assets/icon/feather-sprite.svg#${config?.features?.cart?.icon}`}
+              />
+            </svg>
             {isMounted && cartQuantity > 0 && (
               <span className={styles.quantityBadge}>{cartQuantity}</span>
             )}
           </button>
 
-          <button onClick={toggleTheme} className={styles.themeToggleBtn} aria-label="Toggle Theme">
-            <svg className={styles.svgIcon}><use href={`/assets/icon/feather-sprite.svg#${theme === 'dark' ? 'sun' : 'moon'}`} /></svg>
+          <button
+            onClick={toggleTheme}
+            className={styles.themeToggleBtn}
+            aria-label="Toggle Theme"
+          >
+            <svg className={styles.svgIcon}>
+              <use
+                href={`/assets/icon/feather-sprite.svg#${theme === "dark" ? "sun" : "moon"}`}
+              />
+            </svg>
           </button>
-          
+
           <div className={styles.authContainer}>
             {user ? (
               <div className={styles.userMenu} ref={userMenuRef}>
-                <button className={styles.userAvatarBtn} onClick={() => setIsUserMenuOpen(prev => !prev)}>
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="User Avatar" className={styles.avatarImg} />
+                <button
+                  className={styles.userAvatarBtn}
+                  onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                  aria-label="Menu Pengguna"
+                >
+                  {userAvatar && !imageError ? (
+                    <img
+                      src={userAvatar}
+                      alt="User Avatar"
+                      className={styles.avatarImg}
+                      onError={() => setImageError(true)}
+                    />
                   ) : (
-                    <svg className={styles.svgIcon}><use href="/assets/icon/feather-sprite.svg#user" /></svg>
+                    <svg className={styles.svgIcon}>
+                      <use href="/assets/icon/feather-sprite.svg#user" />
+                    </svg>
                   )}
                 </button>
                 {isUserMenuOpen && (
                   <div className={styles.userDropdown}>
-                    {authItems.map((item, index) => (
-                      item.type === 'link' ? (
-                        <Link key={index} href={item.href} className={styles.dropdownItem}>{item.label}</Link>
+                    <div className={styles.dropdownHeader}>
+                      <span
+                        className={styles.dropdownUserName}
+                        style={{
+                          fontWeight: "600",
+                          display: "block",
+                          marginBottom: "2px",
+                        }}
+                      >
+                        {userName}
+                      </span>
+                      <span
+                        className={styles.dropdownUserEmail}
+                        style={{ fontSize: "0.8rem", opacity: 0.8 }}
+                      >
+                        {user.email}
+                      </span>
+                    </div>
+                    {authItems.map((item, index) =>
+                      item.type === "link" ? (
+                        <Link
+                          key={index}
+                          href={item.href}
+                          className={styles.dropdownItem}
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {item.label}
+                        </Link>
                       ) : (
-                        <button key={index} onClick={logout} className={`${styles.dropdownItem} ${styles.logoutBtn}`}>{item.label}</button>
-                      )
-                    ))}
+                        <button
+                          key={index}
+                          onClick={() => {
+                            logout();
+                            setIsUserMenuOpen(false);
+                          }}
+                          className={`${styles.dropdownItem} ${styles.logoutBtn}`}
+                        >
+                          {item.label}
+                        </button>
+                      ),
+                    )}
                   </div>
                 )}
               </div>
             ) : (
-              unauthItem && <Link href={unauthItem.href} className={styles.loginBtn}>{unauthItem.label}</Link>
+              unauthItem && (
+                <Link href={unauthItem.href} className={styles.loginBtn}>
+                  {unauthItem.label}
+                </Link>
+              )
             )}
           </div>
 
-          <button onClick={() => togglePanel("navbar")} className={styles.hamburger} aria-label="Menu Navigasi">
-            <svg className={styles.svgIcon}><use href={`/assets/icon/feather-sprite.svg#${activePanel === "navbar" ? config?.features?.hamburger?.iconClose : config?.features?.hamburger?.iconOpen}`} /></svg>
+          <button
+            onClick={() => togglePanel("navbar")}
+            className={styles.hamburger}
+            aria-label="Menu Navigasi"
+          >
+            <svg className={styles.svgIcon}>
+              <use
+                href={`/assets/icon/feather-sprite.svg#${activePanel === "navbar" ? config?.features?.hamburger?.iconClose : config?.features?.hamburger?.iconOpen}`}
+              />
+            </svg>
           </button>
         </div>
       </nav>

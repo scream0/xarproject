@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import styles from "./SettingsView.module.css";
 import { auth } from "@/lib/firebaseClient";
-
+import { onAuthStateChanged } from "firebase/auth";
 import settingsConfig from "@/data/ui/settingsConfig.json";
 
 export default function SettingsView() {
@@ -18,34 +18,38 @@ export default function SettingsView() {
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
-  // Fetch settings from the secure API endpoint
+  // Menggunakan onAuthStateChanged agar aman saat inisialisasi sesi halaman dimuat / refresh
   useEffect(() => {
-    const fetchSettings = async () => {
-      const currentUser = auth.currentUser;
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
-        toast.error("Authentication required.");
+        toast.error(settingsConfig.toast.authRequired);
         setIsFetching(false);
         return;
       }
-      
+
       try {
-        const token = await currentUser.getIdToken();
+        // Menggunakan true untuk memaksa refresh token dan memuat custom claims terbaru
+        const token = await currentUser.getIdToken(true);
         const res = await fetch("/api/settings", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!res.ok) throw new Error("Gagal memuat pengaturan dari server.");
-        
         const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Gagal memuat pengaturan dari server.");
+        }
+
         setSettings(data);
       } catch (error) {
-        console.error("Fetch Settings Error:", error);
+        console.error("Fetch Settings Error:", error.message);
         toast.error(error.message);
       } finally {
         setIsFetching(false);
       }
-    };
-    fetchSettings();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleSave = async (e) => {
@@ -55,48 +59,55 @@ export default function SettingsView() {
 
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      toast.error("Sesi Anda berakhir. Silakan login kembali.", { id: toastId });
+      toast.error(settingsConfig.toast.sessionExpired, { id: toastId });
       setLoading(false);
       return;
     }
 
     try {
-      const token = await currentUser.getIdToken();
+      // Memaksa refresh token dengan parameter true saat menyimpan data
+      const token = await currentUser.getIdToken(true);
       const res = await fetch("/api/settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(settings),
       });
 
+      const result = await res.json();
+
       if (!res.ok) {
-        const result = await res.json();
         throw new Error(result.error || "Gagal menyimpan pengaturan.");
       }
 
       // To visually confirm, refetch the masked data from server
-      const updatedSettingsRes = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
+      const updatedSettingsRes = await fetch("/api/settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const updatedData = await updatedSettingsRes.json();
       setSettings(updatedData);
 
       toast.success(settingsConfig.toast.success, { id: toastId });
     } catch (error) {
-      console.error("Save Settings Error:", error);
+      console.error("Save Settings Error:", error.message);
       toast.error(error.message, { id: toastId });
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setSettings(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
+    setSettings((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
     }));
-  }
+  };
 
   if (isFetching) {
-    return <p className={styles.loadingText}>Memuat Pengaturan...</p>;
+    return <p className={styles.loadingText}>{settingsConfig.loading}</p>;
   }
 
   return (
@@ -105,47 +116,110 @@ export default function SettingsView() {
 
       <form onSubmit={handleSave}>
         <div className={styles.formSection}>
-          <h4 className={styles.sectionTitle}>Informasi Toko</h4>
+          <h4 className={styles.sectionTitle}>
+            {settingsConfig.sections.storeInfo}
+          </h4>
           <div className={styles.inputGroup}>
-            <label className={styles.fieldLabel}>{settingsConfig.labels.storeName}</label>
-            <input type="text" name="storeName" value={settings.storeName} onChange={handleInputChange} className={styles.inputField} required />
+            <label className={styles.fieldLabel}>
+              {settingsConfig.labels.storeName}
+            </label>
+            <input
+              type="text"
+              name="storeName"
+              value={settings.storeName}
+              onChange={handleInputChange}
+              className={styles.inputField}
+              required
+            />
           </div>
           <div className={styles.inputGroup}>
-            <label className={styles.fieldLabel}>{settingsConfig.labels.storeEmail}</label>
-            <input type="email" name="storeEmail" value={settings.storeEmail} onChange={handleInputChange} className={styles.inputField} required />
+            <label className={styles.fieldLabel}>
+              {settingsConfig.labels.storeEmail}
+            </label>
+            <input
+              type="email"
+              name="storeEmail"
+              value={settings.storeEmail}
+              onChange={handleInputChange}
+              className={styles.inputField}
+              required
+            />
           </div>
         </div>
 
         <div className={styles.formSection}>
-          <h4 className={styles.sectionTitle}>Konfigurasi Produk & Mata Uang</h4>
+          <h4 className={styles.sectionTitle}>
+            {settingsConfig.sections.productCurrency}
+          </h4>
           <div className={styles.inputGroup}>
-            <label className={styles.fieldLabel}>{settingsConfig.labels.currency}</label>
-            <select name="currency" value={settings.currency} onChange={handleInputChange} className={styles.selectField}>
+            <label className={styles.fieldLabel}>
+              {settingsConfig.labels.currency}
+            </label>
+            <select
+              name="currency"
+              value={settings.currency}
+              onChange={handleInputChange}
+              className={styles.selectField}
+            >
               <option value="IDR">IDR (Indonesian Rupiah)</option>
               <option value="USD">USD (US Dollar)</option>
             </select>
           </div>
           <div className={styles.inputGroup}>
-            <label className={styles.fieldLabel}>{settingsConfig.labels.lowStockThreshold}</label>
-            <input type="number" name="lowStockThreshold" value={settings.lowStockThreshold} onChange={handleInputChange} className={styles.inputField} min="0" required />
+            <label className={styles.fieldLabel}>
+              {settingsConfig.labels.lowStockThreshold}
+            </label>
+            <input
+              type="number"
+              name="lowStockThreshold"
+              value={settings.lowStockThreshold}
+              onChange={handleInputChange}
+              className={styles.inputField}
+              min="0"
+              required
+            />
           </div>
         </div>
-        
+
         <div className={styles.formSection}>
-          <h4 className={styles.sectionTitle}>Kunci API Gateway Pembayaran</h4>
-           <div className={styles.inputGroup}>
-            <label className={styles.fieldLabel}>{settingsConfig.labels.midtransServerKey}</label>
-            <input type="password" name="midtransServerKey" value={settings.midtransServerKey} onChange={handleInputChange} className={styles.inputField} placeholder="Isi untuk memperbarui..." />
-            <small className={styles.fieldDesc}>Kunci ini bersifat rahasia dan tidak akan pernah ditampilkan lagi setelah disimpan.</small>
+          <h4 className={styles.sectionTitle}>
+            {settingsConfig.sections.paymentKeys}
+          </h4>
+          <div className={styles.inputGroup}>
+            <label className={styles.fieldLabel}>
+              {settingsConfig.labels.midtransServerKey}
+            </label>
+            <input
+              type="password"
+              name="midtransServerKey"
+              value={settings.midtransServerKey}
+              onChange={handleInputChange}
+              className={styles.inputField}
+              placeholder={settingsConfig.placeholders.updateKey}
+            />
+            <small className={styles.fieldDesc}>
+              {settingsConfig.descriptions.midtransServerKey}
+            </small>
           </div>
-           <div className={styles.inputGroup}>
-            <label className={styles.fieldLabel}>{settingsConfig.labels.midtransClientKey}</label>
-            <input type="password" name="midtransClientKey" value={settings.midtransClientKey} onChange={handleInputChange} className={styles.inputField} placeholder="Isi untuk memperbarui..." />
+          <div className={styles.inputGroup}>
+            <label className={styles.fieldLabel}>
+              {settingsConfig.labels.midtransClientKey}
+            </label>
+            <input
+              type="password"
+              name="midtransClientKey"
+              value={settings.midtransClientKey}
+              onChange={handleInputChange}
+              className={styles.inputField}
+              placeholder={settingsConfig.placeholders.updateKey}
+            />
           </div>
         </div>
 
         <button type="submit" disabled={loading} className={styles.saveBtn}>
-          {loading ? settingsConfig.buttons.saving : settingsConfig.buttons.save}
+          {loading
+            ? settingsConfig.buttons.saving
+            : settingsConfig.buttons.save}
         </button>
       </form>
     </div>

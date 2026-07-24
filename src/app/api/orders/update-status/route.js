@@ -9,7 +9,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase =
+  supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 // PUT / POST -> Seller/Sistem mengupdate status pesanan & Otomatis Memotong Stok Supabase
 export async function PUT(request) {
@@ -22,8 +23,8 @@ export async function POST(request) {
 
 async function handleUpdateStatus(request) {
   try {
-    const body = await request.json();
-    const { orderId, newStatus, status } = body;
+    const body = await request.json().catch(() => ({}));
+    const { orderId, newStatus, status, shippingReceiptNumber } = body;
 
     const targetStatus = newStatus || status;
 
@@ -48,12 +49,15 @@ async function handleUpdateStatus(request) {
 
     // JIKA STATUS BERUBAH MENJADI SUCCESS / SETTLEMENT (Pembayaran Berhasil):
     // Potong stok di Supabase jika status sebelumnya belum success
-    if (
-      (targetStatus.toLowerCase() === "success" ||
-        targetStatus.toLowerCase() === "settlement") &&
-      orderData.status?.toLowerCase() !== "success" &&
-      orderData.status?.toLowerCase() !== "settlement"
-    ) {
+    const isSuccessStatus =
+      targetStatus.toLowerCase() === "success" ||
+      targetStatus.toLowerCase() === "settlement";
+
+    const wasAlreadySuccess =
+      orderData.status?.toLowerCase() === "success" ||
+      orderData.status?.toLowerCase() === "settlement";
+
+    if (isSuccessStatus && !wasAlreadySuccess && supabase) {
       const items = orderData.items || [];
 
       for (const item of items) {
@@ -105,14 +109,19 @@ async function handleUpdateStatus(request) {
       }
     }
 
+    // Siapkan data untuk diupdate di Firestore
+    const updatePayload = {
+      status: targetStatus,
+      updated_at: new Date(),
+    };
+
+    // Tambahkan nomor resi jika dikirimkan oleh admin
+    if (shippingReceiptNumber) {
+      updatePayload.shippingReceiptNumber = shippingReceiptNumber;
+    }
+
     // Update status pesanan di Firestore
-    await orderRef.set(
-      {
-        status: targetStatus,
-        updated_at: new Date(),
-      },
-      { merge: true },
-    );
+    await orderRef.set(updatePayload, { merge: true });
 
     return NextResponse.json({
       success: true,

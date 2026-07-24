@@ -1,5 +1,11 @@
 "use client";
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
@@ -42,30 +48,37 @@ export function StoreProvider({ children }) {
     }
   }, [cart, isInitialized]);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch("/api/products");
-        const result = await res.json();
-        const data = result.data || result || [];
+  // Bungkus fetchProducts dengan useCallback agar dapat dipanggil ulang secara dinamis
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/products");
+      const result = await res.json();
+      const data = result.data || result || [];
 
-        const mapped = data.map((p) => ({
-          ...p,
-          imageUrl: p.image_url || p.imageUrl,
-          isAvailable: p.is_available ?? p.isAvailable,
-        }));
-        setProducts(mapped);
-      } catch (error) {
-        console.error("Gagal ambil produk dari API:", error);
-      }
-    };
-    fetchProducts();
+      const mapped = data.map((p) => ({
+        ...p,
+        imageUrl: p.image_url || p.imageUrl,
+        isAvailable: p.is_available ?? p.isAvailable,
+      }));
+      setProducts(mapped);
+    } catch (error) {
+      console.error("Gagal ambil produk dari API:", error);
+    }
   }, []);
 
   useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
+        // Default awal menggunakan data dari Firebase Auth
+        let mergedUser = {
+          ...currentUser,
+          photoURL: currentUser.photoURL || "",
+        };
+
         setCustomer({
           name:
             currentUser.displayName ||
@@ -80,6 +93,17 @@ export function StoreProvider({ children }) {
           const result = await res.json();
           if (res.ok && result.exists && result.data) {
             const dbData = result.data;
+
+            // Sinkronisasi foto profil dari Database / Cloudinary
+            const photoFromDb = dbData.photo_url || currentUser.photoURL || "";
+
+            mergedUser = {
+              ...currentUser,
+              ...dbData,
+              photoURL: photoFromDb,
+              photo_url: photoFromDb,
+            };
+
             setCustomer({
               name:
                 dbData.full_name ||
@@ -94,7 +118,10 @@ export function StoreProvider({ children }) {
         } catch (err) {
           console.error("Gagal memuat profil user untuk navbar:", err);
         }
+
+        setUser(mergedUser);
       } else {
+        setUser(null);
         setCustomer({ name: "", email: "", phone: "" });
       }
     });
@@ -359,18 +386,19 @@ export function StoreProvider({ children }) {
             toast.success("Pembayaran Berhasil!");
             setCart({ items: [] });
 
-            // Update status pesanan di Firestore & kurangi stok produk di Supabase
             try {
               await fetch("/api/orders/update-status", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ orderId, status: "success" }),
               });
+
+              await fetchProducts();
+              window.dispatchEvent(new Event("product-stock-updated"));
             } catch (err) {
               console.error("Gagal memperbarui status order & stok:", err);
             }
 
-            // Mencegah lemparan ke example.com dengan mengarahkan langsung ke halaman orders lokal
             router.push(`/dashboard`);
           },
           onPending: (result) => {

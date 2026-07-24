@@ -14,9 +14,20 @@ export function useProductForm(initialProduct = null, onSuccess) {
     description: "",
   });
   const [variants, setVariants] = useState([
-    { size: "10ml", price: "", stock: 0, imageFile: null, imageUrl: "", imagePublicId: "" },
+    {
+      size: "10ml",
+      price: "",
+      stock: 0,
+      imageFile: null,
+      imageUrl: "",
+      imagePublicId: "",
+    },
   ]);
-  const [mainImage, setMainImage] = useState({ file: null, previewUrl: "", publicId: "" });
+  const [mainImage, setMainImage] = useState({
+    file: null,
+    previewUrl: "",
+    publicId: "",
+  });
   const [isUploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -34,12 +45,22 @@ export function useProductForm(initialProduct = null, onSuccess) {
           imageUrl: v.image_url || v.imageUrl || "",
           imagePublicId: v.imagePublicId || "",
           imageFile: null,
-        })) || [{ size: "10ml", price: "", stock: 0, imageFile: null, imageUrl: "", imagePublicId: "" }]
+        })) || [
+          {
+            size: "10ml",
+            price: "",
+            stock: 0,
+            imageFile: null,
+            imageUrl: "",
+            imagePublicId: "",
+          },
+        ],
       );
       setMainImage({
         file: null,
         previewUrl: initialProduct.image_url || initialProduct.imageUrl || "",
-        publicId: initialProduct.image_public_id || initialProduct.imagePublicId || "",
+        publicId:
+          initialProduct.image_public_id || initialProduct.imagePublicId || "",
       });
     }
   }, [initialProduct, isEditMode]);
@@ -53,7 +74,7 @@ export function useProductForm(initialProduct = null, onSuccess) {
     newVariants[index][field] = value;
     setVariants(newVariants);
   };
-  
+
   const handleVariantFileChange = (index, file) => {
     const newVariants = [...variants];
     newVariants[index].imageFile = file;
@@ -61,22 +82,39 @@ export function useProductForm(initialProduct = null, onSuccess) {
   };
 
   const addVariant = () => {
-    setVariants([...variants, { size: "", price: "", stock: 0, imageFile: null, imageUrl: "", imagePublicId: "" }]);
+    setVariants([
+      ...variants,
+      {
+        size: "",
+        price: "",
+        stock: 0,
+        imageFile: null,
+        imageUrl: "",
+        imagePublicId: "",
+      },
+    ]);
   };
 
   const removeVariant = (index) => {
     if (variants.length > 1) {
-        const newVariants = variants.filter((_, i) => i !== index);
-        setVariants(newVariants);
+      const newVariants = variants.filter((_, i) => i !== index);
+      setVariants(newVariants);
     } else {
-        toast.error("Setidaknya harus ada satu varian produk.");
+      toast.error("Setidaknya harus ada satu varian produk.");
     }
   };
-  
+
   const handleMainFileChange = (file) => {
-      if (file) {
-          setMainImage({ ...mainImage, file, previewUrl: URL.createObjectURL(file) });
-      }
+    if (file) {
+      setMainImage({
+        ...mainImage,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      });
+    } else {
+      // Menangani reset gambar utama jika bernilai null (tombol remove diklik)
+      setMainImage({ file: null, previewUrl: "", publicId: "" });
+    }
   };
 
   const uploadImage = async (file, folderName, oldPublicId = null) => {
@@ -86,14 +124,14 @@ export function useProductForm(initialProduct = null, onSuccess) {
     data.append("file", file);
     data.append("userId", folderName); // Menggunakan userId sebagai nama folder
     if (oldPublicId) {
-        data.append("oldPublicId", oldPublicId);
+      data.append("oldPublicId", oldPublicId);
     }
-    
+
     const res = await fetch("/api/cloudinary", { method: "POST", body: data });
     const result = await res.json();
 
     if (!res.ok) {
-        throw new Error(result.error || "Gagal mengunggah gambar.");
+      throw new Error(result.error || "Gagal mengunggah gambar.");
     }
     return result;
   };
@@ -105,29 +143,45 @@ export function useProductForm(initialProduct = null, onSuccess) {
       return;
     }
 
-    const toastId = toast.loading(isEditMode ? editConfig.buttons.saving : addConfig.toast.uploading);
+    const toastId = toast.loading(
+      isEditMode ? editConfig.buttons.saving : addConfig.toast.uploading,
+    );
     setUploading(true);
 
     try {
       const productId = initialProduct?.id || Date.now();
 
       // 1. Upload main image
-      const mainImageResult = await uploadImage(mainImage.file, `product_${productId}`, mainImage.publicId);
-      const finalImageUrl = mainImage.file ? mainImageResult.secure_url : mainImage.previewUrl;
-      const finalImagePublicId = mainImage.file ? mainImageResult.public_id : mainImage.publicId;
+      const mainImageResult = await uploadImage(
+        mainImage.file,
+        `product_${productId}`,
+        mainImage.publicId,
+      );
+      const finalImageUrl = mainImage.file
+        ? mainImageResult.secure_url
+        : mainImage.previewUrl;
+      const finalImagePublicId = mainImage.file
+        ? mainImageResult.public_id
+        : mainImage.publicId;
 
       // 2. Upload variant images
       const processedVariants = await Promise.all(
         variants.map(async (v, index) => {
-            const variantImageResult = await uploadImage(v.imageFile, `product_${productId}_var_${index}`, v.imagePublicId);
-            return {
-                size: v.size,
-                price: Number(v.price) || 0,
-                stock: Number(v.stock) || 0,
-                imageUrl: v.imageFile ? variantImageResult.secure_url : v.imageUrl,
-                imagePublicId: v.imageFile ? variantImageResult.public_id : v.imagePublicId,
-            };
-        })
+          const variantImageResult = await uploadImage(
+            v.imageFile,
+            `product_${productId}_var_${index}`,
+            v.imagePublicId,
+          );
+          return {
+            size: v.size,
+            price: Number(v.price) || 0,
+            stock: Number(v.stock) || 0,
+            imageUrl: v.imageFile ? variantImageResult.secure_url : v.imageUrl,
+            imagePublicId: v.imageFile
+              ? variantImageResult.public_id
+              : v.imagePublicId,
+          };
+        }),
       );
 
       // 3. Prepare payload
@@ -140,7 +194,7 @@ export function useProductForm(initialProduct = null, onSuccess) {
         variants: processedVariants,
       };
       if (isEditMode) {
-          payload.productId = initialProduct.id;
+        payload.productId = initialProduct.id;
       }
 
       // 4. Submit to products API
@@ -151,10 +205,35 @@ export function useProductForm(initialProduct = null, onSuccess) {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal menyimpan produk.");
-      
-      toast.success(isEditMode ? editConfig.alerts.success : addConfig.toast.success, { id: toastId });
-      onSuccess?.();
 
+      toast.success(
+        isEditMode ? editConfig.alerts.success : addConfig.toast.success,
+        { id: toastId },
+      );
+
+      // ==========================================
+      // RESET FORM KETIKA SUKSES TAMBAH PRODUK BARU
+      // ==========================================
+      if (!isEditMode) {
+        setFormData({
+          name: "",
+          category: "Parfum",
+          description: "",
+        });
+        setVariants([
+          {
+            size: "10ml",
+            price: "",
+            stock: 0,
+            imageFile: null,
+            imageUrl: "",
+            imagePublicId: "",
+          },
+        ]);
+        setMainImage({ file: null, previewUrl: "", publicId: "" });
+      }
+
+      onSuccess?.();
     } catch (error) {
       console.error("Product form submission error:", error);
       toast.error(error.message, { id: toastId });

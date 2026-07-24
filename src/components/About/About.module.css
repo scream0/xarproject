@@ -1,4 +1,6 @@
-/* --- A. Animasi & Setup --- */
+/* ====================================================
+   ABOUT SECTION CSS (Luxury High-End Theme)
+   ==================================================== */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -23,8 +25,12 @@
 }
 
 .about {
-  padding: 8rem 7%;
-  background: radial-gradient(circle at 80% 20%, var(--surface-secondary) 0%, var(--background) 80%);
+  padding: 9rem 7%;
+  background: radial-gradient(
+    circle at 85% 15%,
+    var(--surface-secondary) 0%,
+    var(--background) 75%
+  );
   color: var(--text-primary);
   position: relative;
   overflow: hidden;
@@ -32,21 +38,21 @@
 }
 
 .aboutContainer {
-  max-width: 1300px;
+  max-width: 1350px;
   margin: 0 auto;
 }
 
 .aboutRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8rem;
+  gap: 6rem;
   align-items: center;
 }
 
-/* --- B. Image Wrapper (Luxury Platinum Frame) --- */
+/* --- B. Image Wrapper (Luxury Gold/Platinum Frame) --- */
 .aboutImgWrapper {
   position: relative;
-  height: 650px;
+  height: 620px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -56,28 +62,29 @@
 
 .imgContainer {
   position: relative;
-  width: 90%;
-  height: 90%;
+  width: 88%;
+  height: 88%;
   overflow: hidden;
   z-index: 2;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
-/* Shimmer di dalam container */
+/* Shimmer effect di dalam container */
 .imgContainer::after {
   content: "";
   position: absolute;
   top: 0;
   left: -100%;
-  width: 20%;
+  width: 25%;
   height: 100%;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(var(--surface-primary-rgb), 0.2),
+    rgba(255, 255, 255, 0.25),
     transparent
   );
   transform: skewX(-20deg);
-  animation: shimmer 10s infinite ease-in-out;
+  animation: shimmer 8s infinite ease-in-out;
   pointer-events: none;
   z-index: 3;
 }
@@ -89,14 +96,14 @@
   transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Bingkai Silver */
+/* Bingkai Mewah */
 .imgFrame {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  border: 1px solid rgba(var(--surface-primary-rgb), 0.2);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.3);
   z-index: 1;
   pointer-events: none;
 }
@@ -104,47 +111,50 @@
 .imgFrame::before {
   content: "";
   position: absolute;
-  top: -15px;
-  left: -15px;
-  right: -15px;
-  bottom: -15px;
-  border: 1px solid var(--text-secondary);
-  transition: all 0.6s ease;
+  top: -18px;
+  left: -18px;
+  right: -18px;
+  bottom: -18px;
+  border: 1px solid var(--border-color);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: -1;
 }
 
 /* Hover Effect */
 .aboutImgWrapper:hover .imgFrame::before {
-  top: -25px;
-  left: -25px;
-  right: -25px;
-  bottom: -25px;
-  border-color: rgba(var(--surface-primary-rgb), 0.5);
+  top: -26px;
+  left: -26px;
+  right: -26px;
+  bottom: -26px;
+  border-color: rgba(var(--primary-accent-rgb), 0.5);
 }
 .aboutImgWrapper:hover .aboutImg {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
-/* --- C. Content Section (Platinum Highlight) --- */
-/* Update .aboutContent */
+/* --- C. Content Section (Luxury Highlight) --- */
 .aboutContent {
   flex: 1.2;
   position: relative;
   z-index: 10;
-  padding: 2rem;
-  overflow: hidden; /* Penting untuk mengunci spotlight di dalam box */
-  transition: background 0.3s ease;
+  padding: 2.5rem;
+  overflow: hidden;
+  transition: background 0.4s ease;
   animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
   opacity: 0;
-  /* Menggunakan linear gradient yang arahnya mengikuti kursor */
   background: linear-gradient(
     135deg,
-    rgba(var(--surface-primary-rgb), 0.15) 0%,
-    transparent 50%
+    rgba(var(--surface-primary-rgb), 0.6) 0%,
+    rgba(var(--surface-secondary-rgb, 29, 29, 32), 0.2) 100%
   );
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
 }
 
-/* Update Layer Spotlight */
+/* Layer Spotlight interaktif */
 .aboutContent::before {
   content: "";
   position: absolute;
@@ -152,68 +162,66 @@
   left: 0;
   width: 100%;
   height: 100%;
-  /* Menggunakan linear gradient yang arahnya mengikuti kursor */
-  background: linear-gradient(
-    135deg,
-    rgba(var(--surface-primary-rgb), 0.15) 0%,
-    transparent 80%
+  background: radial-gradient(
+    800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(var(--primary-accent-rgb), 0.08),
+    transparent 60%
   );
   opacity: 0;
   transition: opacity 0.5s ease;
   pointer-events: none;
-  z-index: -1;
-  /* Kita gunakan transform untuk menggeser gradasi sedikit mengikuti mouse */
-  transform: translate(
-    calc(var(--x, 0) / 10 - 20px),
-    calc(var(--y, 0) / 10 - 20px)
-  );
+  z-index: 1;
 }
 
 .aboutContent:hover::before {
   opacity: 1;
 }
-/* Garis Aksen Platinum */
+
+/* Garis Aksen Emas/Platinum di sisi kiri */
 .aboutContent::after {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 1px;
+  width: 2px;
   height: 100%;
-  background: linear-gradient(to bottom, var(--text-secondary), transparent);
+  background: linear-gradient(to bottom, var(--primary-accent), transparent);
 }
 
 .aboutTagline {
-  color: var(--text-secondary);
+  color: var(--primary-accent);
   text-transform: uppercase;
-  letter-spacing: 0.4rem;
-  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .aboutContent h3 {
-  font-family: var(--font-tenor);
-  font-size: 3rem;
-  font-weight: 400;
+  font-family: var(--font-serif);
+  font-size: 2.8rem;
+  font-weight: 300;
   line-height: 1.2;
-  margin-bottom: 2.5rem;
-  letter-spacing: -0.5px;
+  margin-bottom: 2rem;
+  letter-spacing: 1px;
+  color: var(--text-primary);
 }
 
 .aboutLead {
-  font-size: 1.3rem;
-  font-weight: 300;
-  color: var(--text-secondary);
-  margin-bottom: 2.5rem;
-  line-height: 1.6;
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-bottom: 1.8rem;
+  line-height: 1.7;
 }
 
 .aboutContent p {
   color: var(--text-secondary);
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1.8;
   margin-bottom: 2rem;
+  font-weight: 300;
 }
 
 /* Features */
@@ -221,42 +229,56 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  border-top: 1px solid rgba(var(--surface-primary-rgb), 0.1);
+  border-top: 1px solid var(--border-color);
   padding-top: 2rem;
 }
 
 .featureItem {
   display: flex;
   gap: 1.5rem;
+  align-items: flex-start;
 }
 
 .featureNumber {
-  font-family: var(--font-tenor);
-  font-size: 1.2rem;
-  color: var(--text-secondary);
-  opacity: 0.8;
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--primary-accent);
+  font-weight: 500;
+  opacity: 0.9;
 }
 
 .featureText h4 {
+  font-family: var(--font-sans);
   font-size: 1rem;
   color: var(--text-primary);
-  font-weight: 500;
-  margin-bottom: 0.2rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.5px;
 }
 
 .featureText p {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin: 0;
+  line-height: 1.6;
 }
 
 /* Responsive */
 @media (max-width: 991px) {
+  .about {
+    padding: 6rem 5%;
+  }
   .aboutRow {
     grid-template-columns: 1fr;
     gap: 4rem;
   }
+  .aboutImgWrapper {
+    height: 450px;
+  }
   .aboutContent h3 {
     font-size: 2.2rem;
+  }
+  .aboutContent {
+    padding: 1.75rem;
   }
 }

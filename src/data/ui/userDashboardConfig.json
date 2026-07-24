@@ -1,15 +1,26 @@
 {
   "brand": {
-    "name": "MAKE ME KOOL",
+    "name": "XAR",
     "suffix": "PARFUM",
-    "badge": "CLIENT PORTAL"
+    "badge": "MEMBER AREA"
   },
-  "loading": "Accessing your personal scent archive...",
-  "logoutText": "Sign Out",
   "nav": [
-    { "id": "shop", "label": "Katalog Toko" },
-    { "id": "overview", "label": "Ringkasan / Overview" },
-    { "id": "orders", "label": "Pesanan Saya" },
-    { "id": "profile", "label": "Profil Akun" }
-  ]
+    { "id": "shop", "label": "Katalog Parfum" },
+    { "id": "overview", "label": "Dashboard Overview" },
+    { "id": "orders", "label": "Riwayat Pesanan" },
+    { "id": "profile", "label": "Profil Pengguna" }
+  ],
+  "logoutText": "Keluar Akun",
+  "loading": "Memuat portal pengguna...",
+  "defaultCustomer": "Valued Customer",
+  "defaultUser": "USER",
+  "aria": {
+    "cart": "Buka Keranjang",
+    "menu": "Menu Navigasi"
+  },
+  "toasts": {
+    "initError": "Gagal inisialisasi dokumen user baru:",
+    "fetchError": "Gagal mengambil data profil dari database:",
+    "logoutError": "Gagal logout:"
+  }
 }

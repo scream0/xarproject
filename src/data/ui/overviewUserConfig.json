@@ -1,0 +1,43 @@
+{
+  "metrics": {
+    "totalSpent": {
+      "title": "Total Belanja",
+      "desc": "Dari pesanan yang tuntas"
+    },
+    "totalOrders": {
+      "title": "Total Pesanan",
+      "desc": "Akumulasi seluruh transaksi"
+    },
+    "processingOrders": {
+      "title": "Dalam Proses",
+      "desc": "Peracikan / pengiriman"
+    }
+  },
+  "welcomeBanner": {
+    "badge": "AREA ANGGOTA VIP",
+    "titlePrefix": "SELAMAT DATANG,",
+    "defaultGuest": "VALUED GUEST",
+    "desc": "Akses cepat untuk melihat status pesanan terbaru Anda atau jelajahi kembali koleksi parfum eksklusif kami.",
+    "buttons": {
+      "catalog": "Jelajahi Katalog",
+      "orders": "Semua Pesanan",
+      "cart": "Buka Keranjang"
+    }
+  },
+  "recentOrders": {
+    "title": "Aktivitas Terbaru",
+    "loading": "Memuat pesanan...",
+    "empty": "Belum ada pesanan.",
+    "detailBtn": "Detail"
+  },
+  "recommendations": {
+    "title": "Direkomendasikan Untuk Anda",
+    "seeAll": "Lihat Semua →",
+    "loading": "Mencari rekomendasi...",
+    "quickAddTitle": "Tambah ke Keranjang"
+  },
+  "toasts": {
+    "fetchOrdersError": "Gagal memuat data pesanan.",
+    "fetchSummaryError": "Gagal memuat data ringkasan."
+  }
+}

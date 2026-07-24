@@ -1,68 +1,98 @@
+/* ====================================================
+   PRODUCT EDIT / MODAL FORM CSS (Luxury High-End Theme)
+   ==================================================== */
 .overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(var(--background-rgb), 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 15px;
+  z-index: 9999; /* Dinaikkan agar selalu berada di atas Navbar & Sidebar */
+  padding: 20px;
   overflow-y: auto;
+  animation: fadeInOverlay 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
   background: var(--surface-primary);
   border: 1px solid var(--border-color);
-  padding: 30px;
+  padding: 35px 30px;
   border-radius: 12px;
   width: 100%;
   max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
   color: var(--text-primary);
-  box-shadow: 0 25px 50px -12px rgba(var(--background-rgb), 0.7);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  animation: scaleUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUpModal {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 .modal::-webkit-scrollbar-thumb {
   background: var(--border-color);
-  border-radius: 4px;
+  border-radius: 10px;
 }
 
 .modalTitle {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
   letter-spacing: 2px;
   margin-bottom: 24px;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 12px;
+  padding-bottom: 1rem;
+  text-transform: uppercase;
 }
 
 .imageSection {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .sectionLabel {
+  font-family: var(--font-sans);
   font-size: 0.7rem;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   color: var(--text-secondary);
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   text-transform: uppercase;
+  font-weight: 500;
 }
 
 .imagePreviewRow {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
+  gap: 16px;
+  margin-bottom: 12px;
 }
 
 .previewImage {
@@ -71,6 +101,7 @@
   object-fit: cover;
   width: 90px;
   height: 90px;
+  background: var(--surface-secondary);
 }
 
 .noImageBox {
@@ -81,26 +112,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--font-sans);
   font-size: 0.7rem;
   color: var(--text-secondary);
   border-radius: 6px;
   text-align: center;
+  letter-spacing: 0.5px;
 }
 
 .cancelImageBtn {
-  background: var(--border-color);
+  background: var(--surface-secondary);
   color: var(--danger-color);
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
   cursor: pointer;
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
-  transition: background 0.2s;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
 }
 
-.cancelImageBtn:hover {
-  background: rgba(var(--danger-color-rgb), 0.1);
+@media (hover: hover) and (pointer: fine) {
+  .cancelImageBtn:hover {
+    background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+    border-color: var(--danger-color);
+  }
 }
 
 /* === CUSTOM TOMBOL FILE UTAMA === */
@@ -129,19 +167,23 @@
   justify-content: space-between;
   background: var(--surface-secondary);
   border: 1px dashed var(--primary-accent);
-  padding: 12px 16px;
-  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
   color: var(--primary-accent);
+  font-family: var(--font-sans);
   font-size: 0.85rem;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   width: 100%;
   box-sizing: border-box;
 }
 
-.fileUploadCustomBtn:hover {
-  background: var(--surface-secondary);
-  border-color: var(--primary-accent);
+@media (hover: hover) and (pointer: fine) {
+  .fileUploadCustomBtn:hover {
+    background: rgba(var(--primary-accent-rgb), 0.05);
+    border-color: var(--primary-accent);
+  }
 }
 
 .fileChosenText {
@@ -159,55 +201,67 @@
   width: 100%;
   background: var(--surface-secondary);
   border: 1px solid var(--border-color);
-  padding: 12px 14px;
+  padding: 0.85rem 1rem;
   color: var(--text-primary);
   border-radius: 6px;
+  font-family: var(--font-sans);
   font-size: 0.9rem;
   margin-bottom: 16px;
   outline: none;
-  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.inputField::placeholder,
+.textareaField::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 .inputField:focus,
 .textareaField:focus {
-  border-color: var(--text-primary);
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
 }
 
 .variantsContainer {
   border: 1px solid var(--border-color);
-  padding: 16px;
+  padding: 20px;
   border-radius: 8px;
   background: var(--surface-primary);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 /* === VARIAN ROW YANG LEBIH BERSIH & RESPONSIF === */
 .variantRow {
   display: grid;
   grid-template-columns: 1fr 0.8fr 0.8fr 1.4fr;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 12px;
   align-items: center;
   background: var(--surface-secondary);
-  padding: 10px;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 6px;
   border: 1px solid var(--border-color);
 }
 
 .variantInput {
   background: var(--surface-primary);
   border: 1px solid var(--border-color);
-  padding: 9px 10px;
+  padding: 0.6rem 0.75rem;
   color: var(--text-primary);
   border-radius: 6px;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
   width: 100%;
   outline: none;
   box-sizing: border-box;
+  transition: all 0.3s ease;
 }
 
 .variantInput:focus {
-  border-color: var(--text-secondary);
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
 }
 
 .variantFileWrapper {
@@ -220,7 +274,7 @@
 .variantFileInner {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: var(--surface-secondary);
   padding: 4px;
   border-radius: 6px;
@@ -228,29 +282,33 @@
 }
 
 .variantThumb {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   object-fit: cover;
   border-radius: 4px;
   border: 1px solid var(--border-color);
   flex-shrink: 0;
+  background: var(--surface-primary);
 }
 
 .removeVariantImgBtn {
-  background: rgba(var(--danger-color-rgb), 0.1);
-  border: 1px solid rgba(var(--danger-color-rgb), 0.3);
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
   color: var(--danger-color);
   cursor: pointer;
+  font-family: var(--font-sans);
   font-size: 0.65rem;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 0.3rem 0.6rem;
   border-radius: 4px;
   transition: background 0.2s;
   white-space: nowrap;
 }
 
-.removeVariantImgBtn:hover {
-  background: rgba(var(--danger-color-rgb), 0.25);
+@media (hover: hover) and (pointer: fine) {
+  .removeVariantImgBtn:hover {
+    background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.25);
+  }
 }
 
 /* === CUSTOM TOMBOL FILE VARIAN (CLEAN & MODERN) === */
@@ -278,20 +336,23 @@
   justify-content: space-between;
   background: var(--surface-primary);
   border: 1px dashed var(--border-color);
-  padding: 9px 12px;
+  padding: 0.6rem 0.75rem;
   border-radius: 6px;
   color: var(--text-secondary);
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   width: 100%;
   box-sizing: border-box;
 }
 
-.variantFileCustomBtn:hover {
-  border-color: var(--primary-accent);
-  background: var(--surface-secondary);
-  color: var(--text-primary);
+@media (hover: hover) and (pointer: fine) {
+  .variantFileCustomBtn:hover {
+    border-color: var(--primary-accent);
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+  }
 }
 
 .variantFileChosen {
@@ -308,84 +369,110 @@
   background: transparent;
   color: var(--text-secondary);
   border: 1px dashed var(--border-color);
-  padding: 10px 14px;
+  padding: 0.75rem 1rem;
   border-radius: 6px;
   cursor: pointer;
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   letter-spacing: 1px;
-  transition: all 0.2s;
-  margin-top: 4px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  margin-top: 8px;
   width: 100%;
   text-align: center;
 }
 
-.addSizeBtn:hover {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-  border-color: var(--text-secondary);
+@media (hover: hover) and (pointer: fine) {
+  .addSizeBtn:hover {
+    background: var(--surface-secondary);
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+  }
 }
 
 .textareaField {
-  min-height: 100px;
+  min-height: 120px;
   resize: vertical;
 }
 
 .buttonGroup {
   display: flex;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 28px;
+}
+
+.saveBtn,
+.cancelBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.5rem;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  flex: 1;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
 .saveBtn {
   background: var(--primary-accent);
   color: var(--primary-accent-text);
-  padding: 12px;
-  flex: 1;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 1px;
-  border: none;
-  border-radius: 6px;
-  transition: opacity 0.2s;
+  border: 1px solid var(--primary-accent);
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .saveBtn:hover:not(:disabled) {
+    background: transparent;
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+  }
+}
+
+.saveBtn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .saveBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
-}
-
-.saveBtn:hover:not(:disabled) {
-  background: var(--primary-accent);
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 .cancelBtn {
   background: var(--surface-secondary);
   color: var(--text-secondary);
-  padding: 12px;
-  flex: 1;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.8rem;
-  letter-spacing: 1px;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  transition: all 0.2s;
 }
 
-.cancelBtn:hover {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
+@media (hover: hover) and (pointer: fine) {
+  .cancelBtn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+  }
+}
+
+.cancelBtn:active {
+  transform: scale(0.98);
 }
 
 /* === RESPONSIF MOBILE === */
 @media (max-width: 768px) {
   .modal {
-    padding: 20px 15px;
+    padding: 24px 16px;
   }
   .variantRow {
     grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 12px;
+    gap: 10px;
+    padding: 14px;
   }
 }
