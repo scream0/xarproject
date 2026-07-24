@@ -33,7 +33,6 @@
     },
     "auth": {
       "authenticated": [
-        { "type": "text", "key": "greeting", "label": "Hi, {name}" },
         { "type": "link", "label": "Dashboard", "href": "/dashboard" },
         { "type": "button", "label": "Logout", "action": "logout" }
       ],

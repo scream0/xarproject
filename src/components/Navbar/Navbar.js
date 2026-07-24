@@ -17,6 +17,7 @@ export function Navbar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const {
     products,
@@ -24,33 +25,35 @@ export function Navbar() {
     rupiah,
     cartQuantity,
     user,
-    customer,
     logout,
     isCartOpen,
     setIsCartOpen,
   } = useStore();
 
-  // Tentukan item mana yang harus ditampilkan berdasarkan status auth
-  const getAuthItems = () => {
-    const authConfig = config?.authSection?.auth;
-    if (!authConfig) return [];
-    return user
-      ? authConfig.authenticated || []
-      : authConfig.unauthenticated || [];
-  };
+  const authItems = config?.authSection?.auth?.authenticated || [];
+  const unauthItem = config?.authSection?.auth?.unauthenticated?.[0];
 
-  const authItems = getAuthItems();
   const navRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   useEffect(() => {
-    document.body.style.overflow =
-      activePanel === "navbar" ? "hidden" : "unset";
+    document.body.style.overflow = activePanel === "navbar" ? "hidden" : "unset";
   }, [activePanel]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -65,14 +68,8 @@ export function Navbar() {
     }
   }, [cartQuantity]);
 
-  // Menyesuaikan struktur data produk terpusat dari API/Store
-  const productList = Array.isArray(products)
-    ? products
-    : products?.data || products?.produkItems || [];
-
-  const filtered = productList.filter((p) =>
-    p?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const productList = Array.isArray(products) ? products : (products?.data || []);
+  const filtered = productList.filter((p) => p?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const togglePanel = (panelName) => {
     setActivePanel(activePanel === panelName ? null : panelName);
@@ -80,69 +77,19 @@ export function Navbar() {
 
   return (
     <>
-      <nav
-        className={`${styles.navbar} ${isScrolled ? styles.scrolled : ""} animate-navbar-load`}
-        ref={navRef}
-      >
-        {/* LOGO DINAMIS */}
+      <nav className={`${styles.navbar} ${isScrolled ? styles.scrolled : ""}`}>
         <Link href={config.logo.href} className={styles.logo}>
           <Logo className={styles.logoSvg} />
           {config.logo.text}
           <span>{config.logo.subtext}</span>.
         </Link>
 
-        {/* MENU DINAMIS SEBAGAI LINK */}
-        <div
-          className={`${styles.navbarNav} ${activePanel === "navbar" ? styles.active : ""}`}
-        >
+        <div className={`${styles.navbarNav} ${activePanel === "navbar" ? styles.active : ""}`}>
           {config.menuItems.map((item, index) => (
-            <Link
-              key={index}
-              href={item.href}
-              onClick={() => setActivePanel(null)}
-            >
+            <Link key={index} href={item.href} onClick={() => setActivePanel(null)}>
               {item.label}
             </Link>
           ))}
-
-          {/* USER AUTH SECTION DINAMIS */}
-          <div className={styles.authSection}>
-            {authItems.map((item, index) => {
-              if (item.type === "text") {
-                return (
-                  <span key={index} className={styles.userName}>
-                    {item.label.replace(
-                      "{name}",
-                      customer?.name || user?.email?.split("@")[0] || "User",
-                    )}
-                  </span>
-                );
-              }
-              if (item.type === "link") {
-                return (
-                  <Link
-                    key={index}
-                    href={item.href}
-                    className={styles.authLink}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              }
-              if (item.type === "button" && item.action === "logout") {
-                return (
-                  <button
-                    key={index}
-                    onClick={logout}
-                    className={styles.authLink}
-                  >
-                    {item.label}
-                  </button>
-                );
-              }
-              return null;
-            })}
-          </div>
         </div>
 
         <SearchForm
@@ -162,52 +109,46 @@ export function Navbar() {
         <CartSidebar />
 
         <div className={styles.navbarExtra}>
-          {/* TOMBOL SEARCH */}
-          <button
-            onClick={() => togglePanel("search")}
-            className="animate-elastic-bounce"
-            aria-label="Cari Produk"
-          >
-            <svg className={styles.feather}>
-              <use
-                href={`/assets/icon/feather-sprite.svg#${config?.features?.search?.icon}`}
-              />
-            </svg>
+          <button onClick={() => togglePanel("search")} aria-label="Cari Produk">
+            <svg className={styles.svgIcon}><use href={`/assets/icon/feather-sprite.svg#${config?.features?.search?.icon}`} /></svg>
           </button>
 
-          {/* TOMBOL CART */}
-          <button
-            className={`${styles.cartButton} animate-elastic-bounce`}
-            onClick={() => setIsCartOpen(!isCartOpen)}
-            aria-label={config?.features?.cart?.ariaLabel}
-          >
-            <svg
-              className={`${styles.feather} ${animate ? styles.cartBounce : ""}`}
-            >
-              <use
-                href={`/assets/icon/feather-sprite.svg#${config?.features?.cart?.icon}`}
-              />
-            </svg>
+          <button className={styles.cartButton} onClick={() => setIsCartOpen(!isCartOpen)} aria-label={config?.features?.cart?.ariaLabel}>
+            <svg className={`${styles.svgIcon} ${animate ? styles.cartBounce : ""}`}><use href={`/assets/icon/feather-sprite.svg#${config?.features?.cart?.icon}`} /></svg>
             {isMounted && cartQuantity > 0 && (
               <span className={styles.quantityBadge}>{cartQuantity}</span>
             )}
           </button>
+          
+          <div className={styles.authContainer}>
+            {user ? (
+              <div className={styles.userMenu} ref={userMenuRef}>
+                <button className={styles.userAvatarBtn} onClick={() => setIsUserMenuOpen(prev => !prev)}>
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="User Avatar" className={styles.avatarImg} />
+                  ) : (
+                    <svg className={styles.svgIcon}><use href="/assets/icon/feather-sprite.svg#user" /></svg>
+                  )}
+                </button>
+                {isUserMenuOpen && (
+                  <div className={styles.userDropdown}>
+                    {authItems.map((item, index) => (
+                      item.type === 'link' ? (
+                        <Link key={index} href={item.href} className={styles.dropdownItem}>{item.label}</Link>
+                      ) : (
+                        <button key={index} onClick={logout} className={`${styles.dropdownItem} ${styles.logoutBtn}`}>{item.label}</button>
+                      )
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              unauthItem && <Link href={unauthItem.href} className={styles.loginBtn}>{unauthItem.label}</Link>
+            )}
+          </div>
 
-          {/* TOMBOL HAMBURGER */}
-          <button
-            onClick={() => togglePanel("navbar")}
-            className={`${styles.hamburger} animate-elastic-bounce`}
-            aria-label="Menu Navigasi"
-          >
-            <svg className={styles.feather}>
-              <use
-                href={`/assets/icon/feather-sprite.svg#${
-                  activePanel === "navbar"
-                    ? config?.features?.hamburger?.iconClose
-                    : config?.features?.hamburger?.iconOpen
-                }`}
-              />
-            </svg>
+          <button onClick={() => togglePanel("navbar")} className={styles.hamburger} aria-label="Menu Navigasi">
+            <svg className={styles.svgIcon}><use href={`/assets/icon/feather-sprite.svg#${activePanel === "navbar" ? config?.features?.hamburger?.iconClose : config?.features?.hamburger?.iconOpen}`} /></svg>
           </button>
         </div>
       </nav>
