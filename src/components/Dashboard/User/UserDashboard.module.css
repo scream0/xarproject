@@ -44,7 +44,7 @@
   color: var(--text-secondary);
 }
 
-/* Mobile Top Navigation Bar */
+/* Mobile Top Navigation Bar — HANYA MUNCUL DI MOBILE (< 1024px) */
 .mobileTopBar {
   display: flex;
   justify-content: space-between;
@@ -125,6 +125,38 @@
   }
   100% {
     transform: scale(1);
+  }
+}
+
+/* Sembunyikan Mobile Top Bar secara otomatis di layar Desktop (>= 1024px) */
+@media (min-width: 1024px) {
+  .mobileTopBar {
+    display: none;
+  }
+}
+
+/* Mobile Backdrop Overlay */
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 102;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobileBackdrop {
+    display: none;
   }
 }
 
@@ -214,6 +246,7 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  gap: 0.75rem;
   transition: all 0.2s ease;
 }
 
@@ -226,6 +259,17 @@
   background: var(--primary-accent) !important;
   color: var(--primary-accent-text) !important;
   font-weight: 600;
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
 }
 
 /* Sidebar Footer & Logout Button */
@@ -244,6 +288,9 @@
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
 }
 
@@ -259,7 +306,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 0; /* KRUSIAL: Memungkinkan area konten utama untuk melakukan scroll */
+  min-height: 0;
   background-color: var(--background-color);
   height: calc(100vh - 60px);
   overflow-y: auto;

@@ -18,6 +18,7 @@
     "loading": "Memuat daftar pesanan...",
     "empty": "Belum ada pesanan masuk.",
     "searchPlaceholder": "Cari ID atau nama pemesan...",
+    "filterAll": "Semua Status",
     "filter": {
       "all": "Semua Status",
       "pending": "Pending",
@@ -25,6 +26,20 @@
       "processing": "Processing",
       "shipping": "Shipping",
       "completed": "Completed"
+    },
+    "table": {
+      "orderId": "Order ID",
+      "customer": "Pemesan",
+      "total": "Total",
+      "status": "Status",
+      "action": "Aksi Seller"
+    },
+    "buttons": {
+      "process": "Proses Pesanan",
+      "ship": "Kirim Barang",
+      "success": "Selesaikan",
+      "prev": "Sebelumnya",
+      "next": "Berikutnya"
     }
   },
   "tableHeaders": ["Order ID", "Pemesan", "Total", "Status", "Aksi Seller"],
@@ -38,5 +53,17 @@
     "completeOrder": "Selesaikan",
     "completing": "Menyelesaikan...",
     "completed": "Selesai"
+  },
+  "pagination": {
+    "prev": "Sebelumnya",
+    "next": "Berikutnya"
+  },
+  "modal": {
+    "title": "Input Nomor Resi",
+    "subtitle": "Masukkan nomor resi pengiriman untuk pesanan",
+    "placeholder": "Contoh: JX1234567890",
+    "cancel": "Batal",
+    "confirm": "Konfirmasi Kirim",
+    "loading": "Menyimpan..."
   }
 }

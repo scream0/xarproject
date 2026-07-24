@@ -6,6 +6,51 @@ import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import { useStore } from "@/context/StoreContext";
 
+// Mapping status mentah dari Firestore/Admin -> label & tahap yang ditampilkan
+// ke customer. Ini HARUS selalu sinkron dengan alur status di TransactionTable.js
+// (admin): pending -> success -> processing -> shipping -> completed
+const STATUS_INFO = {
+  pending: {
+    label: "Menunggu Pembayaran",
+    badgeClass: "statusProcessing",
+  },
+  success: {
+    label: "Pembayaran Diterima",
+    badgeClass: "statusProcessing",
+  },
+  processing: {
+    label: "Sedang Diracik",
+    badgeClass: "statusProcessing",
+  },
+  shipping: {
+    label: "Dalam Pengiriman",
+    badgeClass: "statusProcessing",
+  },
+  completed: {
+    label: "Pesanan Selesai",
+    badgeClass: "statusCompleted",
+  },
+  // fallback untuk status dari Midtrans yang belum sempat di-mapping admin
+  settlement: {
+    label: "Pembayaran Diterima",
+    badgeClass: "statusProcessing",
+  },
+  capture: {
+    label: "Pembayaran Diterima",
+    badgeClass: "statusProcessing",
+  },
+};
+
+function getStatusInfo(rawStatus) {
+  const key = (rawStatus || "pending").toLowerCase();
+  return (
+    STATUS_INFO[key] || {
+      label: (rawStatus || "PENDING").toUpperCase(),
+      badgeClass: "statusProcessing",
+    }
+  );
+}
+
 export default function OrdersSection() {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,23 +111,10 @@ export default function OrdersSection() {
 
       if (result.orders && result.orders.length > 0) {
         const formattedOrders = result.orders.map((item) => {
+          // Status APA ADANYA dari Firestore (di-set oleh admin lewat
+          // TransactionTable.js). Ini satu-satunya sumber kebenaran status,
+          // jadi tidak perlu di-"map" ulang jadi kategori lain di sini.
           const rawStatus = (item.status || "pending").toLowerCase();
-
-          let mappedStatus = "processing";
-          if (
-            [
-              "success",
-              "completed",
-              "settlement",
-              "capture",
-              "shipping",
-            ].includes(rawStatus)
-          ) {
-            mappedStatus =
-              rawStatus === "completed" ? "completed" : "processing";
-          } else {
-            mappedStatus = "processing";
-          }
 
           let displayName =
             item.product_name || item.name || "Extrait de Parfum";
@@ -126,8 +158,8 @@ export default function OrdersSection() {
             notes: item.notes || "-",
             price: `Rp ${rawAmount.toLocaleString("id-ID")}`,
             rawPrice: rawAmount,
-            status: item.status || "pending",
-            mappedStatus: mappedStatus,
+            // status mentah (dipakai untuk filter tab & logika internal)
+            status: rawStatus,
             date:
               item.createdAt || item.created_at
                 ? new Date(
@@ -164,16 +196,19 @@ export default function OrdersSection() {
   }, [currentUser]);
 
   // 4. Filter & Search Logic
+  // Tab "completed" HANYA menampilkan pesanan yang benar-benar sudah selesai
+  // (barang sudah diterima), bukan sekadar "sudah dibayar" atau "sedang dikirim".
+  // Status lain (pending/success/processing/shipping) tetap dianggap "berjalan".
   const filteredOrders = useMemo(() => {
     let result = orders;
 
     if (filter !== "all") {
       if (filter === "completed") {
-        result = result.filter(
-          (o) =>
-            o.status === "completed" ||
-            o.status === "success" ||
-            o.status === "shipping",
+        result = result.filter((o) => o.status === "completed");
+      } else if (filter === "processing") {
+        // "Berjalan" mencakup semua tahap sebelum selesai
+        result = result.filter((o) =>
+          ["pending", "success", "processing", "shipping"].includes(o.status),
         );
       } else {
         result = result.filter((o) => o.status === filter);
@@ -341,7 +376,7 @@ export default function OrdersSection() {
 =====================================
 ID Transaksi     : ${order.id}
 Tanggal          : ${order.date}
-Status Pesanan   : ${order.status.toUpperCase()}
+Status Pesanan   : ${getStatusInfo(order.status).label}
 -------------------------------------
 PRODUK
 Nama Produk      : ${order.name}
@@ -499,18 +534,21 @@ Terima kasih telah berbelanja di XAR!`;
           </div>
         ) : (
           filteredOrders.map((order) => {
-            const isFinished = ["completed", "success", "shipping"].includes(
-              order.status,
-            );
+            // "Selesai" (boleh diulas) HANYA kalau status persis "completed" —
+            // bukan lagi termasuk success/shipping, karena barang belum tentu
+            // sudah diterima customer di tahap-tahap itu.
+            const isFinished = order.status === "completed";
+            const statusInfo = getStatusInfo(order.status);
+
             return (
               <div key={order.id} className={`card ${styles.orderCard}`}>
                 <div className={styles.orderInfoCol}>
                   <div className={styles.orderIdRow}>
                     <span className={styles.orderIdText}>{order.id}</span>
                     <span
-                      className={`${styles.statusBadge} ${isFinished ? styles.statusCompleted : styles.statusProcessing}`}
+                      className={`${styles.statusBadge} ${styles[statusInfo.badgeClass]}`}
                     >
-                      {order.status.toUpperCase()}
+                      {statusInfo.label}
                     </span>
                   </div>
                   <h4 className={styles.orderName}>{order.name}</h4>
@@ -587,15 +625,28 @@ Terima kasih telah berbelanja di XAR!`;
               </button>
             </div>
 
-            {/* Stepper Status Pelacakan Dinamis */}
+            {/* Stepper Status Pelacakan Dinamis — 4 tahap, sinkron persis
+                dengan alur status admin: pending -> success -> processing -> shipping/completed */}
             <div className={styles.trackingStepper}>
               <div className={styles.stepItemActive}>
                 <div className={styles.stepDot}></div>
-                <span>Dibuat</span>
+                <span>Pesanan Dibuat</span>
               </div>
               <div
                 className={
-                  ["processing", "success", "shipping", "completed"].includes(
+                  ["success", "processing", "shipping", "completed"].includes(
+                    selectedOrder.status,
+                  )
+                    ? styles.stepItemActive
+                    : styles.stepItem
+                }
+              >
+                <div className={styles.stepDot}></div>
+                <span>Pembayaran Dikonfirmasi</span>
+              </div>
+              <div
+                className={
+                  ["processing", "shipping", "completed"].includes(
                     selectedOrder.status,
                   )
                     ? styles.stepItemActive

@@ -7,6 +7,27 @@ import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewUserConfig.json";
 
+// Mapping status agar kelas warna badge sinkron dengan OrdersSection
+const STATUS_INFO = {
+  pending: { label: "Menunggu Pembayaran", badgeClass: "statusPending" },
+  success: { label: "Pembayaran Diterima", badgeClass: "statusSuccess" },
+  processing: { label: "Sedang Diracik", badgeClass: "statusProcessing" },
+  shipping: { label: "Dalam Pengiriman", badgeClass: "statusShipping" },
+  completed: { label: "Pesanan Selesai", badgeClass: "statusCompleted" },
+  settlement: { label: "Pembayaran Diterima", badgeClass: "statusSuccess" },
+  capture: { label: "Pembayaran Diterima", badgeClass: "statusSuccess" },
+};
+
+function getStatusInfo(rawStatus) {
+  const key = (rawStatus || "pending").toLowerCase();
+  return (
+    STATUS_INFO[key] || {
+      label: (rawStatus || "PENDING").toUpperCase(),
+      badgeClass: "statusPending",
+    }
+  );
+}
+
 export default function OverviewUser({ setActiveTab }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -32,24 +53,40 @@ export default function OverviewUser({ setActiveTab }) {
       if (!currentUser) return;
 
       try {
+        // Ambil data pesanan dan profil dari database secara paralel
         const orderRes = await fetch(`/api/orders?userId=${currentUser.uid}`);
         if (!orderRes.ok)
           throw new Error(overviewConfig.toasts.fetchOrdersError);
 
         const orderResult = await orderRes.json();
-        // Menyesuaikan struktur data API orders (bisa terbungkus dalam .data atau berupa array langsung)
         const orderData = Array.isArray(orderResult)
           ? orderResult
           : orderResult.data || orderResult.orders || [];
 
+        // Ambil nama profil asli dari database user jika tersedia
+        let fetchedFullName = currentUser.displayName || "";
+        try {
+          // Fallback ekstraksi dari primaryAddress jika displayName kosong
+          if (
+            !fetchedFullName &&
+            orderResult.primaryAddress &&
+            orderResult.primaryAddress !== "Belum diatur"
+          ) {
+            fetchedFullName = orderResult.primaryAddress
+              .split(" - ")[0]
+              ?.split(" (")[0];
+          }
+        } catch (e) {
+          console.error("Gagal parse nama dari alamat:", e);
+        }
+
         setUserProfile({
           fullName:
-            orderResult.primaryAddress?.split(" - ")[0]?.split(" (")[0] ||
-            currentUser.displayName ||
-            overviewConfig.welcomeBanner.defaultGuest,
-          username: currentUser.email,
+            fetchedFullName || overviewConfig.welcomeBanner.defaultGuest,
+          username: currentUser.email || "",
         });
 
+        // Kalkulasi Statistik dari Database
         const total = orderData.length;
         const completedOrders = orderData.filter((o) =>
           [
@@ -62,11 +99,22 @@ export default function OverviewUser({ setActiveTab }) {
             "paid",
           ].includes((o.status || "").toLowerCase()),
         );
+
         const totalSpent = completedOrders.reduce(
           (sum, o) => sum + Number(o.amount || o.price || o.rawPrice || 0),
           0,
         );
-        const processing = total - completedOrders.length;
+
+        // Pesanan aktif/proses adalah pesanan yang belum selesai/completed
+        const processing = orderData.filter((o) =>
+          [
+            "pending",
+            "success",
+            "processing",
+            "shipping",
+            "settlement",
+          ].includes((o.status || "").toLowerCase()),
+        ).length;
 
         setStats({
           totalOrders: total,
@@ -74,18 +122,30 @@ export default function OverviewUser({ setActiveTab }) {
           processingOrders: processing,
         });
 
-        setRecentOrders(orderData.slice(0, 3));
+        // Urutkan pesanan dari yang terbaru berdasarkan tanggal
+        const sortedOrders = [...orderData].sort((a, b) => {
+          const dateA = new Date(a.createdAt || a.created_at || 0);
+          const dateB = new Date(b.createdAt || b.created_at || 0);
+          return dateB - dateA;
+        });
 
-        if (products.length > 0) {
+        setRecentOrders(sortedOrders.slice(0, 3));
+
+        // Rekomendasi Produk Berbasis Database Produk & Riwayat Pesanan User
+        if (products && products.length > 0) {
           const purchasedProductIds = new Set(
             orderData.flatMap((o) =>
-              (o.items || []).map((i) => String(i.id || i.product_id)),
+              (o.items || []).map((i) =>
+                String(i.id || i.product_id || i.productId),
+              ),
             ),
           );
+
           let recommendations = products.filter((p) =>
             purchasedProductIds.has(String(p.id || p._id)),
           );
 
+          // Jika rekomendasi dari riwayat kurang dari 3, lengkapi dengan produk unggulan lainnya dari database
           if (recommendations.length < 3) {
             const additionalProducts = products.filter(
               (p) => !purchasedProductIds.has(String(p.id || p._id)),
@@ -215,7 +275,25 @@ export default function OverviewUser({ setActiveTab }) {
             ) : recentOrders.length > 0 ? (
               recentOrders.map((order) => {
                 const displayId = order.orderId || order.id || "";
-                const itemName = order.items?.[0]?.name || "Pesanan Produk";
+
+                // Ekstraksi nama produk dinamis dari database
+                let itemName = order.product_name || order.name || "";
+                if (
+                  !itemName &&
+                  order.items &&
+                  Array.isArray(order.items) &&
+                  order.items.length > 0
+                ) {
+                  const firstItem = order.items[0];
+                  itemName = `${firstItem.name || "Produk"} (${firstItem.size || "Standard"})`;
+                  if (order.items.length > 1) {
+                    itemName += ` +${order.items.length - 1} lainnya`;
+                  }
+                }
+                if (!itemName) itemName = "Extrait de Parfum";
+
+                const statusInfo = getStatusInfo(order.status);
+
                 return (
                   <div
                     key={order.id || order.orderId}
@@ -229,9 +307,9 @@ export default function OverviewUser({ setActiveTab }) {
                     </div>
                     <div className={styles.orderItemStatus}>
                       <span
-                        className={`${styles.statusBadge} ${styles[order.status]}`}
+                        className={`${styles.statusBadge} ${styles[statusInfo.badgeClass]}`}
                       >
-                        {order.status}
+                        {statusInfo.label}
                       </span>
                       <button
                         onClick={() => handleNavigation("orders")}

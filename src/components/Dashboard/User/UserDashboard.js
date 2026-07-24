@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../../../lib/firebaseClient";
@@ -59,11 +58,11 @@ export default function UserDashboard() {
           if (docSnap.exists()) {
             const data = docSnap.data();
 
-            // Prioritaskan Nama Asli (full_name atau displayName). Jika tidak ada, gunakan nomor telepon atau alternatif lain.
+            // Ambil Nama Asli secara dinamis dari database Firestore (full_name atau username)
             const resolvedName =
               data.full_name?.trim() ||
-              currentUser.displayName?.trim() ||
               data.username?.trim() ||
+              currentUser.displayName?.trim() ||
               currentUser.phoneNumber ||
               currentUser.email?.split("@")[0] ||
               userConfig.defaultCustomer;

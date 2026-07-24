@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import {
   AreaChart,
@@ -37,7 +36,6 @@ export default function AnalyticsChart() {
       const res = await fetch("/api/orders");
       const result = await res.json();
 
-      // Menyesuaikan dengan format respons dari endpoint orders
       const transactions = Array.isArray(result)
         ? result
         : result.data || result.orders || [];
@@ -47,15 +45,8 @@ export default function AnalyticsChart() {
         processChartData(transactions, timeframe);
         processYearlySummary(transactions);
       } else {
-        setChartData([
-          { name: "Mon", sales: 0 },
-          { name: "Tue", sales: 0 },
-          { name: "Wed", sales: 0 },
-          { name: "Thu", sales: 0 },
-          { name: "Fri", sales: 0 },
-          { name: "Sat", sales: 0 },
-          { name: "Sun", sales: 0 },
-        ]);
+        // Murni data kosong dari database, tanpa data dummy statis
+        setChartData([]);
         setYearlySummary([]);
       }
     } catch (error) {
@@ -77,7 +68,7 @@ export default function AnalyticsChart() {
         Sun: 0,
       };
       transactions.forEach((tx) => {
-        const dateField = tx.created_at || tx.date;
+        const dateField = tx.created_at || tx.date || tx.createdAt;
         if (dateField) {
           const dayName = new Date(dateField).toLocaleDateString("en-US", {
             weekday: "short",
@@ -108,7 +99,7 @@ export default function AnalyticsChart() {
         Dec: 0,
       };
       transactions.forEach((tx) => {
-        const dateField = tx.created_at || tx.date;
+        const dateField = tx.created_at || tx.date || tx.createdAt;
         if (dateField) {
           const monthName = new Date(dateField).toLocaleDateString("en-US", {
             month: "short",
@@ -139,7 +130,7 @@ export default function AnalyticsChart() {
       }
 
       transactions.forEach((tx) => {
-        const dateField = tx.created_at || tx.date;
+        const dateField = tx.created_at || tx.date || tx.createdAt;
         if (dateField) {
           const dStr = new Date(dateField).toLocaleDateString("id-ID", {
             day: "2-digit",
@@ -162,12 +153,12 @@ export default function AnalyticsChart() {
     }
   };
 
-  // Proses rincian data per tahun untuk tabel laporan
+  // Proses rincian data per tahun untuk tabel laporan dari database
   const processYearlySummary = (transactions) => {
     const yearsMap = {};
 
     transactions.forEach((tx) => {
-      const dateField = tx.created_at || tx.date;
+      const dateField = tx.created_at || tx.date || tx.createdAt;
       if (dateField) {
         const year = new Date(dateField).getFullYear().toString();
         const month = new Date(dateField).toLocaleString("en-US", {
@@ -265,7 +256,7 @@ export default function AnalyticsChart() {
           <div className={styles.loadingState}>
             {analyticsConfig.loadingText}
           </div>
-        ) : (
+        ) : chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
@@ -315,6 +306,19 @@ export default function AnalyticsChart() {
               />
             </AreaChart>
           </ResponsiveContainer>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "#666",
+              fontSize: "0.9rem",
+            }}
+          >
+            Belum ada data transaksi dari database
+          </div>
         )}
       </div>
 
