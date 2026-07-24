@@ -1,28 +1,44 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* ====================================================
-   PALET WARNA, FONT, & ROOT VARIABLES
-   ==================================================== */
 :root {
-  --font-tenor: "Tenor Sans", sans-serif;
-  --font-lato: "Lato", sans-serif;
+  --font-serif: "Tenor Sans", sans-serif;
+  --font-sans: "Lato", sans-serif;
 
-  --primary-color: #e5f500;
-  --primary-light: #d4af37;
-  --bg-dark: #0a0a0a;
-  --text-light: #ffffff;
-  --text-muted: #666666;
-  --bg-hero: url("/assets/images/hero-bg.jpg");
-  --bg-about: url("/assets/images/about-bg.jpg");
-
-  /* Tailwind Theme Mapping */
-  --font-serif: var(--font-tenor);
-  --font-sans: var(--font-lato);
+  /* Light Theme Palette (Default) */
+  --background: #f4f4f5;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f4f4f5;
+  --border-color: #e4e4e7;
+  --primary-accent: #f59e0b;
+  --primary-accent-text: #ffffff;
+  --danger-color: #dc2626;
+  --success-color: #16a34a;
+  
+  /* RGB versions for rgba() */
+  --surface-primary-rgb: 255, 255, 255;
+  --background-rgb: 244, 244, 245;
 }
 
-@theme {
-  --font-serif: var(--font-tenor);
-  --font-sans: var(--font-lato);
+[data-theme='dark'] {
+  /* Dark Theme Palette */
+  --background: #09090b;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --surface-primary: #121214;
+  --surface-secondary: #18181b;
+  --border-color: #27272a;
+  --primary-accent: #fbbf24;
+  --primary-accent-text: #000000;
+  --danger-color: #ef4444;
+  --success-color: #10b981;
+
+  /* RGB versions for rgba() */
+  --surface-primary-rgb: 18, 18, 20;
+  --background-rgb: 9, 9, 11;
 }
 
 /* ====================================================
@@ -37,94 +53,49 @@
   text-decoration: none;
 }
 /* --- Global Scrollbar Styling --- */
-
-/* Chrome, Safari, Edge */
 ::-webkit-scrollbar {
-  width: 8px; /* Sedikit lebih lebar untuk navigasi desktop */
+  width: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #050505; /* Warna background gelap web Anda */
+  background: var(--surface-secondary);
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1); /* Tipis dan tidak mencolok */
+  background: var(--border-color);
   border-radius: 10px;
-  transition: background 0.3s ease;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2); /* Sedikit lebih terang saat di-hover */
+  background: var(--text-secondary);
 }
 
 html {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) #050505;
+  scrollbar-color: var(--border-color) var(--surface-secondary);
   scroll-behavior: smooth;
-  font-size: 100%; /* Default */
+  font-size: 100%;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-dark);
-  color: var(--text-light);
+  background-color: var(--background);
+  color: var(--text-primary);
   line-height: 1.6;
   overscroll-behavior: none;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.feather {
-  width: 24px;
-  height: 24px;
-  stroke: var(--text-light); /* Warna default */
-  stroke-width: 1.5;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: all 0.3s ease;
-  transform-origin: center;
-}
-
-h1,
-h2,
-h3,
-h4,
-.heading {
+h1, h2, h3, h4, .heading {
   font-family: var(--font-serif);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 /* ====================================================
    MEDIA QUERIES (RESPONSIVE ENGINE)
    ==================================================== */
-@media (max-width: 1440px) {
-  html {
-    font-size: 80%;
-  }
-}
-@media (max-width: 1920px) {
-  html {
-    font-size: 90%;
-  }
-}
-
-@media (max-width: 768px) {
-  /* Global adjustments for smaller screens */
-  .contact-container {
-    flex-direction: column;
-    gap: 4rem;
-  }
-}
-
-@media (max-width: 478px) {
-  html {
-    font-size: 75%;
-  }
-  .product,
-  .contact {
-    padding: 8rem 7% 2rem;
-  }
-}
+@media (max-width: 1440px) { html { font-size: 80%; } }
+@media (max-width: 1920px) { html { font-size: 90%; } }
+@media (max-width: 768px) { }
+@media (max-width: 478px) { html { font-size: 75%; } }

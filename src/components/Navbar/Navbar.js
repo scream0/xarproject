@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useStore } from "@/context/StoreContext";
+import { useTheme } from "@/context/ThemeContext";
 import { SearchForm } from "./SearchForm";
 import { CartSidebar } from "../UI/Sidebar/CartSidebar";
 import { Modal } from "../UI/Modal/ProductModal";
@@ -29,6 +30,8 @@ export function Navbar() {
     isCartOpen,
     setIsCartOpen,
   } = useStore();
+  
+  const { theme, toggleTheme } = useTheme();
 
   const authItems = config?.authSection?.auth?.authenticated || [];
   const unauthItem = config?.authSection?.auth?.unauthenticated?.[0];
@@ -135,6 +138,10 @@ export function Navbar() {
             {isMounted && cartQuantity > 0 && (
               <span className={styles.quantityBadge}>{cartQuantity}</span>
             )}
+          </button>
+
+          <button onClick={toggleTheme} className={styles.themeToggleBtn} aria-label="Toggle Theme">
+            <svg className={styles.svgIcon}><use href={`/assets/icon/feather-sprite.svg#${theme === 'dark' ? 'sun' : 'moon'}`} /></svg>
           </button>
           
           <div className={styles.authContainer}>

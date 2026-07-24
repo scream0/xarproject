@@ -4,8 +4,8 @@
   box-sizing: border-box;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background-color: rgba(10, 10, 10, 0.4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: rgba(var(--surface-primary-rgb), 0.6);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -19,15 +19,16 @@
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .scrolled {
-  background-color: rgba(5, 5, 5, 0.95);
+  background-color: rgba(var(--background-rgb), 0.85);
   height: 75px;
   padding: 1rem 7%;
+  border-bottom-color: var(--border-color);
 }
 
 .logo {
   font-family: var(--font-serif);
   font-size: 1.8rem;
-  color: var(--text-light);
+  color: var(--text-primary);
   letter-spacing: 4px;
   text-transform: uppercase;
   font-weight: 300;
@@ -38,7 +39,7 @@
   text-decoration: none;
 }
 .logo span {
-  color: var(--primary-color);
+  color: var(--primary-accent);
   font-weight: 600;
 }
 .logoSvg {
@@ -56,8 +57,8 @@
   align-items: center;
 }
 .navbarNav a {
-  color: var(--text-light);
-  opacity: 0.6;
+  color: var(--text-primary);
+  opacity: 0.7;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -69,7 +70,7 @@
 }
 .navbarNav a:hover {
   opacity: 1;
-  color: var(--primary-color);
+  color: var(--primary-accent);
 }
 .navbarNav a::after {
   content: "";
@@ -78,7 +79,7 @@
   left: 0;
   width: 100%;
   height: 1px;
-  background-color: var(--primary-color);
+  background-color: var(--primary-accent);
   transform: scaleX(0);
   transition: transform 0.4s ease;
 }
@@ -102,13 +103,13 @@
   justify-content: center;
 }
 .navbarExtra button:hover .svgIcon {
-  stroke: var(--primary-color);
+  stroke: var(--primary-accent);
 }
 
 .svgIcon {
   width: 24px;
   height: 24px;
-  stroke: var(--text-light);
+  stroke: var(--text-primary);
   stroke-width: 1.5;
   fill: none;
   transition: all 0.3s ease;
@@ -121,8 +122,8 @@
   position: absolute;
   top: -2px;
   right: -2px;
-  background-color: var(--primary-color);
-  color: #000;
+  background-color: var(--primary-accent);
+  color: var(--primary-accent-text);
   font-size: 0.6rem;
   font-weight: 800;
   width: 16px;
@@ -154,8 +155,8 @@
   margin-left: 0.75rem;
 }
 .loginBtn {
-  background: var(--primary-color);
-  color: #000;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
   padding: 0.5rem 1rem;
   border-radius: 6px;
   text-decoration: none;
@@ -175,8 +176,8 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  border: 2px solid #3f3f46;
-  background: #1a1a1a;
+  border: 2px solid var(--border-color);
+  background: var(--surface-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -186,7 +187,7 @@
   transition: border-color 0.2s;
 }
 .userAvatarBtn:hover {
-  border-color: var(--primary-color);
+  border-color: var(--primary-accent);
 }
 .avatarImg {
   width: 100%;
@@ -196,22 +197,22 @@
 .userAvatarBtn .svgIcon {
   width: 20px;
   height: 20px;
-  stroke: #a1a1aa;
+  stroke: var(--text-secondary);
 }
 
 .userDropdown {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   min-width: 180px;
   z-index: 1001;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
   animation: fadeIn 0.2s ease-out;
 }
 @keyframes fadeIn {
@@ -221,7 +222,7 @@
 
 .dropdownItem {
   padding: 0.75rem 1rem;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   text-decoration: none;
   display: block;
@@ -232,15 +233,15 @@
   cursor: pointer;
 }
 .dropdownItem:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  background: rgba(var(--background-rgb), 0.1);
+  color: var(--text-primary);
 }
 .logoutBtn {
-  border-top: 1px solid #27272a;
-  color: #ef4444;
+  border-top: 1px solid var(--border-color);
+  color: var(--danger-color);
 }
 .logoutBtn:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(var(--danger-color), 0.1);
 }
 
 @media (max-width: 768px) {
@@ -260,7 +261,7 @@
     right: -100%;
     width: 85%;
     height: 100vh;
-    background-color: rgba(5, 5, 5, 0.95);
+    background-color: rgba(var(--background-rgb), 0.95);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
     display: flex;
@@ -287,22 +288,26 @@
     gap: 0.5rem;
   }
   .authContainer {
-    display: none; /* Hide desktop auth on mobile nav */
+    display: none;
+  }
+  .themeToggleBtn {
+    border-left: 1px solid var(--border-color);
+    padding-left: 0.75rem !important;
   }
 
   .mobileAuthSection {
     margin-top: 2rem;
-    border-top: 1px solid #3f3f46;
+    border-top: 1px solid var(--border-color);
     padding-top: 1.5rem;
     width: 100%;
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    align-items: flex-end; /* Align items to the right in the mobile drawer */
+    align-items: flex-end;
   }
   .mobileUserName {
     font-size: 0.9rem;
-    color: #a1a1aa;
+    color: var(--text-secondary);
     text-transform: uppercase;
     font-weight: 500;
   }
@@ -312,34 +317,34 @@
     border: none;
     font-size: 1.2rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-primary);
     text-decoration: none;
     cursor: pointer;
     transition: color 0.2s;
-    padding: 0.5rem 0; /* Add padding for better touch target */
-    text-align: right; /* Align text to the right */
-    width: 100%; /* Take full width for easier tapping */
+    padding: 0.5rem 0;
+    text-align: right;
+    width: 100%;
   }
   .mobileAuthLink:hover,
   .mobileLoginBtn:hover {
-    color: var(--primary-color);
+    color: var(--primary-accent);
   }
   .mobileLoginBtn {
-    background: var(--primary-color);
-    color: #000;
+    background: var(--primary-accent);
+    color: var(--primary-accent-text);
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     font-size: 1rem;
     font-weight: 700;
     text-transform: uppercase;
-    width: auto; /* Adjust width for button styling */
-    align-self: flex-end; /* Align button to the right */
+    width: auto;
+    align-self: flex-end;
   }
   .mobileLogoutBtn {
-    color: #ef4444;
+    color: var(--danger-color);
     font-weight: 600;
   }
   .mobileLogoutBtn:hover {
-    color: #f43f5e;
+    color: var(--danger-color);
   }
 }

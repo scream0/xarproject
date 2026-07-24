@@ -1,11 +1,8 @@
-/* ==========================================
-   1. MAIN LAYOUT & CONTAINER
-   ========================================== */
 .loginContainer {
   display: flex;
   flex-direction: column;
   width: 100%;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-family: var(--font-lato);
   animation: fadeIn 0.8s ease-in;
   height: auto;
@@ -15,9 +12,6 @@
 }
 
 .loginCard {
-  /* =======================================================
-     1. DIMENSI & STRUKTUR DASAR (Sinkron dengan 500px)
-     ======================================================= */
   width: 100%;
   max-width: 100%;
   padding: 3rem 2.5rem;
@@ -25,230 +19,27 @@
   position: relative;
   border-radius: 20px;
   overflow: hidden;
-
-  /* Keadaan awal: Neon mati / standby redup */
-  border: 1px solid rgba(251, 191, 36, 0.15);
-
-  /* Base Background Gelap Transparan */
-  background: rgba(8, 8, 8, 0.85);
+  border: 1px solid var(--border-color);
+  background: rgba(var(--surface-primary-rgb), 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-
-  /* Shadow Dasar Saat Standby */
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
-
-  /* Transisi halus */
-  transition:
-    box-shadow 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    border-color 0.4s ease;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transition: all 0.4s ease;
 }
 
-/* =======================================================
-   2. BORDER NEON BERPUTAR (Warna Warm Amber & Gold)
-   ======================================================= */
-.loginCard::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-
-  /* Menggunakan gradasi Warm Gold & Burnt Orange untuk efek percikan api/listrik pijar */
-  background: conic-gradient(
-    transparent,
-    rgba(245, 158, 11, 0.1) 25%,
-    rgba(251, 191, 36, 0.9) 45%,
-    /* Inti kilatan Emas (Gold) */ rgba(239, 68, 68, 0.8) 50%,
-    /* Bias percikan Oranye Kemerahan */ transparent 60%
-  );
-  border-radius: 50%;
-  z-index: 1;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-/* Layer dalam pembatas border 1px & Spotlight background */
-.loginCard::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: 19px;
-  z-index: 2;
-
-  background:
-    radial-gradient(
-      circle at 50% 0%,
-      rgba(245, 158, 11, 0.18) 0%,
-      /* Ditingkatkan sedikit agar ambient menyatu */ rgba(217, 119, 6, 0.04)
-        40%,
-      transparent 75%
-    ),
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(251, 191, 36, 0.03) 0%,
-      transparent 70%
-    ),
-    rgba(8, 8, 8, 1);
-}
-
-/* Memastikan konten form berada di paling depan */
 .loginCard > * {
   position: relative;
   z-index: 3;
 }
 
-/* =======================================================
-   3. INTERAKSI STATE: HOVER vs FOCUS-WITHIN
-   ======================================================= */
-
-/* --- A. STATE HOVER: Efek Korsleting (Sama seperti sebelumnya) --- */
-.loginCard:hover {
-  transform: translateY(-4px);
-  border-color: transparent;
-  animation: flickerWarmGlow 4s linear infinite;
+.loginTitle {
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
 }
 
-.loginCard:hover::before {
-  opacity: 1;
-  animation:
-    putaranNeon 3s linear infinite,
-    electricSparks 4s linear infinite,
-    flickerLight 4s linear infinite;
-}
-
-/* --- B. STATE FOCUS: Putaran Lambat & Ambient Menyatu Sempurna --- */
-.loginCard:focus-within {
-  transform: translateY(-4px);
-  border-color: transparent;
-  animation: none;
-
-  /* Pendaran luar dibuat lebih tebal dan menyebar halus agar menyatu dengan bodi */
-  box-shadow:
-    0 30px 60px -15px rgba(0, 0, 0, 0.9),
-    0 0 30px rgba(251, 191, 36, 0.25),
-    /* Glow luar yang lebih soft & wide */ 0 0 60px rgba(245, 158, 11, 0.15),
-    inset 0 0 20px rgba(251, 191, 36, 0.08); /* Ambient cahaya masuk ke dalam bodi */
-}
-
-.loginCard:focus-within::before {
-  opacity: 1;
-  /* 
-    - Durasi diperlambat menjadi 8 detik (Sangat anggun)
-    - Ditambahkan efek blur (4px) mendadak saat fokus agar garis gradasi 
-      yang tajam meleleh/menyatu menjadi pendaran cahaya organik.
-  */
-  animation: putaranNeon 8s linear infinite;
-  filter: blur(4px);
-  transition:
-    filter 0.4s ease,
-    opacity 0.3s ease;
-}
-/* =======================================================
-   4. KEYFRAMES TIMELINE (Jeda Rusak Lebih Lama & Teratur)
-   ======================================================= */
-
-/* Rotasi Utama Lampu (Berputar halus tanpa patah-patah agar kontras saat glitch muncul) */
-@keyframes putaranNeon {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* 
-   Guncangan Jalur Arus Listrik:
-   Hanya rusak di 0% - 15% awal, sisanya 15% - 100% diam stabil (Jeda Lama).
-*/
-@keyframes electricSparks {
-  0%,
-  15%,
-  100% {
-    transform: scale(1) translate(0, 0);
-    filter: brightness(1);
-  }
-  3% {
-    transform: scale(1.04) translate(-2px, 2px);
-    filter: brightness(1.8); /* Kilatan pertama */
-  }
-  6% {
-    transform: scale(0.97) translate(2px, -1px);
-    filter: brightness(0.5);
-  }
-  9% {
-    transform: scale(1.06) translate(-1px, -2px);
-    filter: brightness(2.2); /* Ledakan arus puncak */
-  }
-  12% {
-    transform: scale(0.95) translate(2px, 1px);
-    filter: brightness(0.3);
-  }
-}
-
-/* 
-   Kedipan Hilang Daya Sesaat:
-   Hanya mati/drop di rentang 0% - 15%, sisanya menyala normal konstan.
-*/
-@keyframes flickerLight {
-  0%,
-  2.99%,
-  5%,
-  7.99%,
-  10%,
-  13.99%,
-  15%,
-  100% {
-    opacity: 1; /* Menyala Normal */
-  }
-  3%,
-  4.99%,
-  8%,
-  9.99%,
-  11%,
-  13.99% {
-    opacity: 0.05; /* Arus drop mati mendadak */
-  }
-}
-
-/* 
-   Pendaran Dinding Luar:
-   Sinkron dengan drop cahaya di atas. 0% - 15% ikut bergetar redup, 
-   sisanya 15% - 100% memancarkan luxury warm glow yang tenang.
-*/
-@keyframes flickerWarmGlow {
-  0%,
-  2.99%,
-  5%,
-  7.99%,
-  10%,
-  13.99%,
-  15%,
-  100% {
-    box-shadow:
-      0 30px 60px -15px rgba(0, 0, 0, 0.9),
-      0 0 20px rgba(251, 191, 36, 0.4),
-      0 0 40px rgba(245, 158, 11, 0.25),
-      inset 0 0 15px rgba(251, 191, 36, 0.15);
-  }
-  3%,
-  4.99%,
-  8%,
-  9.99%,
-  11%,
-  13.99% {
-    box-shadow:
-      0 30px 60px -15px rgba(0, 0, 0, 0.9),
-      0 0 4px rgba(251, 191, 36, 0.05),
-      0 0 8px rgba(245, 158, 11, 0.02),
-      inset 0 0 2px rgba(251, 191, 36, 0.01);
-  }
-}
-/* ==========================================
-   2. INPUT FIELDS & FORM LOGIC
-   ========================================== */
 .loginForm {
   display: flex;
   flex-direction: column;
@@ -258,316 +49,165 @@
 .inputWrapper {
   position: relative;
   width: 100%;
-  /* Ditambahkan kurva cubic-bezier premium untuk animasi penambahan tinggi dinamis */
-  transition:
-    max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    margin-bottom 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: max-height, opacity, transform, margin-bottom;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .inputField {
   width: 100%;
   padding: 16px;
   margin-bottom: 1.25rem;
-  background-color: #1a1a1a; /* Charcoal Solid Matte */
-  border: none;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 0.9rem;
   font-weight: 500;
   outline: none;
   box-sizing: border-box;
-  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: all 0.2s ease;
 }
-
 .inputField::placeholder {
-  color: #666666;
-  transition: color 0.3s ease;
+  color: var(--text-secondary);
 }
-
-/* Kontras Ekstrem saat Input Aktif */
 .inputField:focus {
-  background-color: #ffffff;
-  color: #000000;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  border-color: var(--primary-accent);
 }
 
-.inputField:focus::placeholder {
-  color: #999999;
-}
-
-/* ==========================================
-   TAMBAHAN: DUAL-STATE FLUID TRANSITION
-   ========================================== */
-/* State saat Input Tambahan Sembunyi (Login Mode) */
 .fieldHidden {
   max-height: 0;
   opacity: 0;
-  transform: translateY(-10px) scale(0.97);
+  transform: translateY(-10px);
   margin-bottom: 0 !important;
   overflow: hidden;
   pointer-events: none;
 }
-
-/* State saat Input Tambahan Muncul (Register Mode) */
 .fieldVisible {
-  max-height: 70px; /* Memberi ruang ideal untuk field & margin input */
+  max-height: 90px;
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
 }
 
-/* ==========================================
-   3. PASSWORD TOGGLE
-   ========================================== */
 .togglePassword {
   position: absolute;
   right: 16px;
-  top: 40%; /* Disesuaikan agar tetap center-vertical di atas margin input */
-  transform: translateY(-50%);
+  top: 16px;
   background: none;
   border: none;
-  color: #666666;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    color 0.3s ease,
-    opacity 0.3s ease;
 }
-
 .togglePassword svg {
   width: 20px;
   height: 20px;
 }
 
-.togglePassword:hover {
-  opacity: 0.7;
+.passwordStrengthMeter {
+    display: flex;
+    gap: 4px;
+    height: 4px;
+    margin: -1rem 0 1.25rem 0;
 }
-
-/* Membalikkan warna ikon menjadi hitam saat input bertransisi ke putih */
-.inputWrapper:focus-within .togglePassword {
-  color: #000000;
+.strengthBar {
+    flex: 1;
+    height: 100%;
+    background-color: var(--border-color);
+    border-radius: 2px;
+    transition: background-color 0.3s ease;
 }
+.strengthBar[data-strength-level="1"] { background-color: #ef4444; }
+.strengthBar[data-strength-level="2"] { background-color: #f97316; }
+.strengthBar[data-strength-level="3"] { background-color: #f59e0b; }
+.strengthBar[data-strength-level="4"] { background-color: #10b981; }
 
-/* ==========================================
-   4. BUTTONS & ACTIONS
-   ========================================== */
+.strengthText {
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: auto;
+    width: 60px;
+    text-align: right;
+}
+.strengthText[data-strength-level="1"] { color: #ef4444; }
+.strengthText[data-strength-level="2"] { color: #f97316; }
+.strengthText[data-strength-level="3"] { color: #f59e0b; }
+.strengthText[data-strength-level="4"] { color: #10b981; }
+
 .btnLogin {
   width: 100%;
-  padding: 18px 20px;
-  background-color: var(--primary-color);
-  color: #000000;
+  padding: 16px 20px;
+  background-color: var(--primary-accent);
+  color: var(--primary-accent-text);
   border: 1px solid transparent;
   border-radius: 8px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s ease;
+}
+.btnLogin:hover:not(:disabled) {
+  opacity: 0.85;
 }
 
-.btnLogin:hover {
-  background-color: transparent !important;
-  color: var(--primary-color);
-  border-color: var(--primary-color);
-  transform: translateY(-4px);
-  letter-spacing: 4px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-}
-
-.btnLogin:active {
-  transform: translateY(-1px);
-}
-
-/* Otomatisasi Kilatan Cahaya Shimmer */
-.btnLogin::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -150%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.4),
-    transparent
-  );
-  transform: skewX(-20deg);
-  animation: lightSweep 4s infinite ease-in-out;
-}
-
-/* Tombol Request SMS OTP */
 .btnOtpRequest {
   width: 100%;
   padding: 0.85rem;
   font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  letter-spacing: 1px;
   cursor: pointer;
   margin-top: 0.75rem;
   margin-bottom: 1.25rem;
-  outline: none;
-  box-sizing: border-box;
-  background-color: #141414;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  color: #cccccc;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.02);
-  transition:
-    background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, background-color, border-color, box-shadow;
+  color: var(--text-primary);
 }
 
-.btnOtpRequest:hover,
-.btnOtpRequest:focus-visible {
-  background-color: #1c1c1e;
-  border-color: rgba(255, 235, 180, 0.3);
-  color: #ffffff;
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.6),
-    0 0 15px rgba(255, 214, 102, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transform: translateY(-1px);
-}
-
-.btnOtpRequest:active {
-  transform: translateY(1px);
-  background-color: #111112;
-  border-color: rgba(255, 235, 180, 0.15);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.4),
-    inset 0 1px 2px rgba(0, 0, 0, 0.5);
-  transition:
-    transform 0.08s ease,
-    background-color 0.08s ease;
-}
-
-.btnOtpRequest:disabled {
-  background-color: #0d0d0d;
-  border-color: rgba(255, 255, 255, 0.02);
-  color: #444444;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Tombol Switch Metode Login/Register */
 .switchModeBtn {
   background: none;
   border: none;
   font-size: 0.8rem;
-  font-weight: 400;
   cursor: pointer;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   width: 100%;
   text-align: center;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #8a8a8a;
-  position: relative;
-  display: inline-block;
-  padding: 6px 0;
-  outline: none;
-  transition:
-    color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    text-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, color;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+.switchModeBtn:hover {
+  color: var(--text-primary);
 }
 
-.switchModeBtn::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(255, 235, 180, 0.6),
-    transparent
-  );
-  transform: translateX(-50%);
-  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: width;
-}
-
-.switchModeBtn:hover,
-.switchModeBtn:focus-visible {
-  color: #ffffff;
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
-}
-
-.switchModeBtn:hover::after,
-.switchModeBtn:focus-visible::after {
-  width: 45px;
-}
-
-.switchModeBtn:active {
-  transform: scale(0.97);
-  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ==========================================
-   5. STATES & VALIDATION MESSAGES
-   ========================================== */
 .btnLoading {
   cursor: not-allowed;
   opacity: 0.7;
 }
-
 .spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(var(--primary-accent-text-rgb), 0.3);
   border-radius: 50%;
-  border-top-color: #ffffff;
+  border-top-color: var(--primary-accent-text);
   animation: spin 0.8s linear infinite;
   display: inline-block;
 }
 
-.errorMessage {
-  background-color: rgba(255, 77, 79, 0.1);
-  border: 1px solid rgba(255, 77, 79, 0.2);
-  color: #ff4d4f;
+.errorMessage, .successMessage {
   padding: 12px;
   border-radius: 8px;
   font-size: 0.85rem;
   margin-bottom: 1.25rem;
   text-align: center;
 }
-
-.errorText {
-  color: #ef5350;
-  font-size: 0.85rem;
-  text-align: center;
-  margin-bottom: 1rem;
+.errorMessage {
+  background-color: rgba(var(--danger-color-rgb), 0.1);
+  border: 1px solid rgba(var(--danger-color-rgb), 0.2);
+  color: var(--danger-color);
 }
-
 .successMessage {
-  background-color: rgba(0, 255, 102, 0.05);
-  border: 1px solid rgba(0, 255, 102, 0.2);
-  color: #00ff66;
-  padding: 0.75rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  margin-bottom: 1rem;
-  text-align: center;
+  background-color: rgba(var(--success-color-rgb), 0.1);
+  border: 1px solid rgba(var(--success-color-rgb), 0.2);
+  color: var(--success-color);
 }
 
 .optionsRow {
@@ -575,24 +215,18 @@
   justify-content: space-between;
   align-items: center;
   margin: 0.5rem 0 1.5rem 0;
-  width: 100%;
 }
-
 .forgotPasswordLink {
   background: none;
   border: none;
-  color: #666666;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   cursor: pointer;
-  padding: 0;
-  transition: color 0.2s ease;
 }
-
 .forgotPasswordLink:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
-/* Custom Checkbox */
 .checkboxLabel {
   display: flex;
   align-items: center;
@@ -600,18 +234,12 @@
   padding-left: 1.5rem;
   cursor: pointer;
   font-size: 0.75rem;
-  color: #888888;
-  user-select: none;
+  color: var(--text-secondary);
 }
-
 .checkboxLabel input {
   position: absolute;
   opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
 }
-
 .customCheckmark {
   position: absolute;
   top: 50%;
@@ -619,64 +247,45 @@
   transform: translateY(-50%);
   height: 14px;
   width: 14px;
-  background-color: #121212;
-  border: 1px solid #222222;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 3px;
 }
-
 .checkboxLabel input:checked ~ .customCheckmark {
-  background-color: #ffffff;
-  border-color: #ffffff;
+  background-color: var(--primary-accent);
+  border-color: var(--primary-accent);
 }
-
 .customCheckmark:after {
   content: "";
   position: absolute;
   display: none;
-}
-
-.checkboxLabel input:checked ~ .customCheckmark:after {
-  display: block;
   left: 4px;
   top: 1px;
   width: 4px;
   height: 7px;
-  border: solid #000000;
+  border: solid var(--primary-accent-text);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
+.checkboxLabel input:checked ~ .customCheckmark:after {
+  display: block;
+}
 
-/* ==========================================
-   6. VISUAL DIVIDER & SOCIAL BUTTON
-   ========================================== */
 .divider {
   display: flex;
   align-items: center;
   text-align: center;
   margin: 1.75rem 0;
   font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #737373;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  color: var(--text-secondary);
 }
-
-.divider::before,
-.divider::after {
+.divider::before, .divider::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--border-color);
 }
-
-.divider::after {
-  background: linear-gradient(to left, transparent, rgba(255, 255, 255, 0.08));
-}
-
 .divider span {
   padding: 0 1rem;
-  flex-shrink: 0;
 }
 
 .socialWrapper {
@@ -685,7 +294,6 @@
   justify-content: center;
   margin-top: 0.5rem;
 }
-
 .btnGoogle {
   width: 52px;
   height: 52px;
@@ -693,197 +301,23 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  outline: none;
-  box-sizing: border-box;
-  background-color: #121212;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background-color: var(--surface-primary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  color: #737373;
-  box-shadow:
-    0 4px 10px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.02);
-  transition:
-    background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, background-color, border-color, color;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
 }
-
-.btnGoogle:hover,
-.btnGoogle:focus-visible {
-  background-color: #1a1a1c;
-  border-color: rgba(255, 235, 180, 0.25);
-  color: #ffffff;
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.5),
-    0 0 15px rgba(255, 214, 102, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transform: translateY(-2px);
-}
-
-.btnGoogle:active {
-  transform: translateY(0px) scale(0.96);
-  background-color: #0e0e0f;
-  border-color: rgba(255, 235, 180, 0.1);
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.4),
-    inset 0 1px 2px rgba(0, 0, 0, 0.6);
-  transition:
-    transform 0.08s ease,
-    background-color 0.08s ease;
-}
-
-.googleIcon {
-  flex-shrink: 0;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.btnGoogle:hover .googleIcon {
-  transform: scale(1.05);
-}
-
-/* ==========================================
-   7. INDUSTRIAL PENDANT LAMP STRUCTURE
-   ========================================== */
-.lampContainer {
-  width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  height: 140px !important;
-  z-index: 10 !important;
-  pointer-events: none;
-}
-
-.lampSvg {
-  width: 40px !important;
-  height: 140px !important;
-  overflow: visible !important;
-  display: block !important;
-}
-
-.lampCord {
-  stroke: #1a1a1a;
-  stroke-width: 1.5;
-  transition: stroke 0.4s ease;
-}
-
-.lampOuterBody {
-  stroke: #1a1a1a;
-  stroke-width: 1;
-  transition: opacity 0.4s ease;
-}
-
-.lampInnerRim {
-  fill: #0a0a0a;
-  stroke: #1a1a1a;
-  stroke-width: 0.5;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.lampBulb {
-  fill: #171717;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* REALISTIC SPOTLIGHT CONE LIGHT EFFECT */
-.lampConeLight {
-  opacity: 0.3;
-  animation: flicker 0.8s infinite ease-in-out;
-  position: absolute;
-  top: 123px;
-  left: 50%;
-  transform: translateX(-50%) scaleY(0.8);
-  width: 550px;
-  height: 500px;
-  z-index: 1;
-  pointer-events: none;
-  clip-path: polygon(48.5% 0%, 51.5% 0%, 100% 100%, 0% 100%);
-  background: linear-gradient(
-    to bottom,
-    rgba(251, 191, 36, 0.45) 0%,
-    rgba(251, 191, 36, 0.15) 35%,
-    rgba(251, 191, 36, 0.02) 75%,
-    transparent 100%
-  );
-  mix-blend-mode: screen;
-  filter: blur(5px);
-  transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-  transform-origin: top center;
-}
-
-/* ACTIVE LIGHT STATES */
-.lampActive .lampCord {
-  stroke: #262626;
-}
-
-.lampActive .lampBulb {
-  fill: #fffbeb;
-  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 1));
-}
-
-.lampActive .lampInnerRim {
-  fill: #d97706;
-  stroke: #fbbf24;
-  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.6));
-}
-
-.lampActive .lampConeLight {
-  opacity: 1;
-  animation: none;
-  transform: translateX(-50%) scaleY(1);
-}
-
-/* ==========================================
-   8. GLOBAL KEYFRAMES
-   ========================================== */
-@keyframes flicker {
-  0%,
-  19%,
-  21%,
-  23%,
-  25%,
-  54%,
-  56%,
-  100% {
-    opacity: 0.3;
-  }
-  20%,
-  24%,
-  55% {
-    opacity: 0;
-  } /* Efek kedip mendadak */
-}
-
-@keyframes lightSweep {
-  0% {
-    left: -150%;
-  }
-  30% {
-    left: 150%;
-  }
-  100% {
-    left: 150%;
-  }
+.btnGoogle:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
-
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+/* Lamp animations removed for simplicity and performance */
+.lampContainer { display: none; }
