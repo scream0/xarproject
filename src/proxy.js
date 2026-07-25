@@ -1,7 +1,7 @@
-// src/middleware.js
+// src/proxy.js
 import { NextResponse } from "next/server";
 
-export function middleware(request) {
+export function proxy(request) {
   const sessionCookie = request.cookies.get("session")?.value;
   const { pathname } = request.url ? new URL(request.url) : request.nextUrl;
 
@@ -21,7 +21,7 @@ export function middleware(request) {
   return NextResponse.next();
 }
 
-// Konfigurasi rute mana saja yang dipantau middleware
+// Konfigurasi rute mana saja yang dipantau proxy
 export const config = {
   matcher: ["/dashboard/:path*", "/login", "/register"],
 };
