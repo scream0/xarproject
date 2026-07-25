@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   BarChart,
   Bar,
@@ -19,6 +19,14 @@ import config from "@/data/ui/advancedAnalyticsConfig.json";
 
 const COLORS = ["#3b82f6", "#10b981", "#fbbf24", "#ef4444", "#8b5cf6"];
 
+const FALLBACK_VARIANTS = [
+  { name: "Extrait Noir (50ml)", sold: 34 },
+  { name: "Flowrawr Sweet (30ml)", sold: 28 },
+  { name: "AWRG Citrus (10ml)", sold: 19 },
+];
+
+const FALLBACK_STATUS = [{ name: "Selesai", value: 100 }];
+
 export default function AdvancedAnalytics() {
   const [metrics, setMetrics] = useState({
     momGrowth: 0,
@@ -30,45 +38,19 @@ export default function AdvancedAnalytics() {
   const [inventoryList, setInventoryList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAdvancedData();
-  }, []);
-
-  const fetchAdvancedData = async () => {
-    try {
-      const [ordersRes, productsRes] = await Promise.all([
-        fetch("/api/orders"),
-        fetch("/api/products"),
-      ]);
-
-      const ordersResult = await ordersRes.json();
-      const productsResult = await productsRes.json();
-
-      const orders = Array.isArray(ordersResult)
-        ? ordersResult
-        : ordersResult.data || ordersResult.orders || [];
-
-      const products = Array.isArray(productsResult)
-        ? productsResult
-        : productsResult.data || productsResult.products || [];
-
-      if (orders.length > 0) {
-        processMoMGrowth(orders);
-        processOrderStatus(orders);
-        processTopVariants(orders);
-      }
-
-      if (products.length > 0) {
-        processInventoryTurnover(products);
-      }
-    } catch (error) {
-      console.error("Gagal mengambil analitik lanjutan:", error);
-    } finally {
-      setLoading(false);
-    }
+  // Helper aman untuk mengambil tanggal & harga dari berbagai struktur API
+  const getOrderDate = (order) => {
+    const dateField = order.createdAt || order.created_at || order.date;
+    return dateField ? new Date(dateField) : null;
   };
 
-  const processMoMGrowth = (orders) => {
+  const getOrderAmount = (order) => {
+    return Number(
+      order.price || order.total || order.total_price || order.amount || 0,
+    );
+  };
+
+  const processMoMGrowth = useCallback((orders) => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -77,21 +59,39 @@ export default function AdvancedAnalytics() {
     let lastRev = 0;
 
     orders.forEach((order) => {
-      const dateField = order.created_at;
-      if (dateField) {
-        const d = new Date(dateField);
-        const amount = Number(
-          order.total || order.gross_amount || order.rawPrice || 0,
-        );
+      const d = getOrderDate(order);
+      const amount = getOrderAmount(order);
 
-        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-          currentRev += amount;
-        } else if (
-          d.getMonth() === (currentMonth === 0 ? 11 : currentMonth - 1) &&
-          d.getFullYear() ===
-            (currentMonth === 0 ? currentYear - 1 : currentYear)
-        ) {
-          lastRev += amount;
+      if (d && !isNaN(d.getTime())) {
+        // Cek status secara fleksibel (jika field status kosong/berbeda, tetap dihitung)
+        const status = (
+          order.status ||
+          order.transaction_status ||
+          "completed"
+        ).toLowerCase();
+        const isValidStatus = [
+          "paid",
+          "settlement",
+          "completed",
+          "success",
+          "pending",
+          "processing",
+          "",
+        ].includes(status);
+
+        if (isValidStatus) {
+          if (
+            d.getMonth() === currentMonth &&
+            d.getFullYear() === currentYear
+          ) {
+            currentRev += amount;
+          } else if (
+            d.getMonth() === (currentMonth === 0 ? 11 : currentMonth - 1) &&
+            d.getFullYear() ===
+              (currentMonth === 0 ? currentYear - 1 : currentYear)
+          ) {
+            lastRev += amount;
+          }
         }
       }
     });
@@ -108,9 +108,9 @@ export default function AdvancedAnalytics() {
       currentMonthRev: currentRev,
       lastMonthRev: lastRev,
     });
-  };
+  }, []);
 
-  const processOrderStatus = (orders) => {
+  const processOrderStatus = useCallback((orders) => {
     const statusMap = { paid: 0, pending: 0, failed: 0, settlement: 0 };
 
     orders.forEach((order) => {
@@ -119,10 +119,12 @@ export default function AdvancedAnalytics() {
         order.transaction_status ||
         "pending"
       ).toLowerCase();
+
       if (
         status === "settlement" ||
         status === "completed" ||
-        status === "success"
+        status === "success" ||
+        status === "paid"
       ) {
         statusMap.paid += 1;
       } else if (statusMap[status] !== undefined) {
@@ -140,9 +142,9 @@ export default function AdvancedAnalytics() {
       }));
 
     setStatusData(formatted);
-  };
+  }, []);
 
-  const processTopVariants = (orders) => {
+  const processTopVariants = useCallback((orders) => {
     const variantMap = {};
 
     orders.forEach((order) => {
@@ -161,16 +163,12 @@ export default function AdvancedAnalytics() {
     const formatted =
       Object.keys(variantMap).length > 0
         ? Object.keys(variantMap).map((k) => ({ name: k, sold: variantMap[k] }))
-        : [
-            { name: "Extrait Noir (50ml)", sold: 34 },
-            { name: "Flowrawr Sweet (30ml)", sold: 28 },
-            { name: "AWRG Citrus (10ml)", sold: 19 },
-          ];
+        : FALLBACK_VARIANTS;
 
     setVariantData(formatted.sort((a, b) => b.sold - a.sold).slice(0, 5));
-  };
+  }, []);
 
-  const processInventoryTurnover = (products) => {
+  const processInventoryTurnover = useCallback((products) => {
     const report = [];
 
     products.forEach((prod) => {
@@ -189,9 +187,54 @@ export default function AdvancedAnalytics() {
     });
 
     setInventoryList(report.slice(0, 5));
-  };
+  }, []);
+
+  useEffect(() => {
+    const fetchAdvancedData = async () => {
+      try {
+        const [ordersRes, productsRes] = await Promise.all([
+          fetch("/api/orders"),
+          fetch("/api/products"),
+        ]);
+
+        const ordersResult = await ordersRes.json();
+        const productsResult = await productsRes.json();
+
+        const orders = Array.isArray(ordersResult)
+          ? ordersResult
+          : ordersResult.data || ordersResult.orders || [];
+
+        const products = Array.isArray(productsResult)
+          ? productsResult
+          : productsResult.data || productsResult.products || [];
+
+        if (orders.length > 0) {
+          processMoMGrowth(orders);
+          processOrderStatus(orders);
+          processTopVariants(orders);
+        }
+
+        if (products.length > 0) {
+          processInventoryTurnover(products);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil analitik lanjutan:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdvancedData();
+  }, [
+    processMoMGrowth,
+    processOrderStatus,
+    processTopVariants,
+    processInventoryTurnover,
+  ]);
 
   if (loading) return null;
+
+  const activePieData = statusData.length > 0 ? statusData : FALLBACK_STATUS;
 
   return (
     <div className={styles.advancedContainer}>
@@ -272,11 +315,7 @@ export default function AdvancedAnalytics() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={
-                    statusData.length > 0
-                      ? statusData
-                      : [{ name: "Selesai", value: 100 }]
-                  }
+                  data={activePieData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -284,10 +323,7 @@ export default function AdvancedAnalytics() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {(statusData.length > 0
-                    ? statusData
-                    : [{ name: "Selesai", value: 100 }]
-                  ).map((entry, index) => (
+                  {activePieData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}

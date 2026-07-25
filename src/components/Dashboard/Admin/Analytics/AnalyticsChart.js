@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   AreaChart,
   Area,
@@ -21,42 +21,17 @@ export default function AnalyticsChart() {
   const [timeframe, setTimeframe] = useState("weekly"); // "daily" | "weekly" | "yearly"
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTransactionData();
-  }, []);
-
-  useEffect(() => {
-    if (rawTransactions.length > 0) {
-      processChartData(rawTransactions, timeframe);
-    }
-  }, [timeframe, rawTransactions]);
-
-  const fetchTransactionData = async () => {
-    try {
-      const res = await fetch("/api/orders");
-      const result = await res.json();
-
-      const transactions = Array.isArray(result)
-        ? result
-        : result.data || result.orders || [];
-
-      if (transactions && transactions.length > 0) {
-        setRawTransactions(transactions);
-        processChartData(transactions, timeframe);
-        processYearlySummary(transactions);
-      } else {
-        // Murni data kosong dari database, tanpa data dummy statis
-        setChartData([]);
-        setYearlySummary([]);
-      }
-    } catch (error) {
-      console.error("Gagal mengambil data analitik dari API:", error);
-    } finally {
-      setLoading(false);
-    }
+  // Standarisasi pengambilan amount & date (disamakan dengan AdvancedAnalytics)
+  const getTransactionAmount = (tx) => {
+    return Number(tx.price || tx.total || tx.total_price || tx.amount || 0);
   };
 
-  const processChartData = (transactions, currentFrame) => {
+  const getTransactionDate = (tx) => {
+    const dateField = tx.createdAt || tx.created_at || tx.date;
+    return dateField ? new Date(dateField) : null;
+  };
+
+  const processChartData = useCallback((transactions, currentFrame) => {
     if (currentFrame === "weekly") {
       const daysMap = {
         Mon: 0,
@@ -67,19 +42,19 @@ export default function AnalyticsChart() {
         Sat: 0,
         Sun: 0,
       };
+
       transactions.forEach((tx) => {
-        const dateField = tx.created_at || tx.date || tx.createdAt;
-        if (dateField) {
-          const dayName = new Date(dateField).toLocaleDateString("en-US", {
+        const date = getTransactionDate(tx);
+        if (date && !isNaN(date)) {
+          const dayName = date.toLocaleDateString("en-US", {
             weekday: "short",
           });
           if (daysMap[dayName] !== undefined) {
-            daysMap[dayName] += Number(
-              tx.total || tx.total_price || tx.rawPrice || tx.amount || 0,
-            );
+            daysMap[dayName] += getTransactionAmount(tx);
           }
         }
       });
+
       setChartData(
         Object.keys(daysMap).map((day) => ({ name: day, sales: daysMap[day] })),
       );
@@ -98,19 +73,19 @@ export default function AnalyticsChart() {
         Nov: 0,
         Dec: 0,
       };
+
       transactions.forEach((tx) => {
-        const dateField = tx.created_at || tx.date || tx.createdAt;
-        if (dateField) {
-          const monthName = new Date(dateField).toLocaleDateString("en-US", {
+        const date = getTransactionDate(tx);
+        if (date && !isNaN(date)) {
+          const monthName = date.toLocaleDateString("en-US", {
             month: "short",
           });
           if (monthsMap[monthName] !== undefined) {
-            monthsMap[monthName] += Number(
-              tx.total || tx.total_price || tx.rawPrice || tx.amount || 0,
-            );
+            monthsMap[monthName] += getTransactionAmount(tx);
           }
         }
       });
+
       setChartData(
         Object.keys(monthsMap).map((month) => ({
           name: month,
@@ -130,16 +105,14 @@ export default function AnalyticsChart() {
       }
 
       transactions.forEach((tx) => {
-        const dateField = tx.created_at || tx.date || tx.createdAt;
-        if (dateField) {
-          const dStr = new Date(dateField).toLocaleDateString("id-ID", {
+        const date = getTransactionDate(tx);
+        if (date && !isNaN(date)) {
+          const dStr = date.toLocaleDateString("id-ID", {
             day: "2-digit",
             month: "short",
           });
           if (dateMap[dStr] !== undefined) {
-            dateMap[dStr] += Number(
-              tx.total || tx.total_price || tx.rawPrice || tx.amount || 0,
-            );
+            dateMap[dStr] += getTransactionAmount(tx);
           }
         }
       });
@@ -151,22 +124,17 @@ export default function AnalyticsChart() {
         })),
       );
     }
-  };
+  }, []);
 
-  // Proses rincian data per tahun untuk tabel laporan dari database
-  const processYearlySummary = (transactions) => {
+  const processYearlySummary = useCallback((transactions) => {
     const yearsMap = {};
 
     transactions.forEach((tx) => {
-      const dateField = tx.created_at || tx.date || tx.createdAt;
-      if (dateField) {
-        const year = new Date(dateField).getFullYear().toString();
-        const month = new Date(dateField).toLocaleString("en-US", {
-          month: "long",
-        });
-        const amount = Number(
-          tx.total || tx.total_price || tx.rawPrice || tx.amount || 0,
-        );
+      const date = getTransactionDate(tx);
+      if (date && !isNaN(date)) {
+        const year = date.getFullYear().toString();
+        const month = date.toLocaleString("en-US", { month: "long" });
+        const amount = getTransactionAmount(tx);
 
         if (!yearsMap[year]) {
           yearsMap[year] = {
@@ -214,7 +182,41 @@ export default function AnalyticsChart() {
       });
 
     setYearlySummary(formattedSummary);
-  };
+  }, []);
+
+  useEffect(() => {
+    const fetchTransactionData = async () => {
+      try {
+        const res = await fetch("/api/orders");
+        const result = await res.json();
+
+        const transactions = Array.isArray(result)
+          ? result
+          : result.data || result.orders || [];
+
+        if (transactions && transactions.length > 0) {
+          setRawTransactions(transactions);
+          processChartData(transactions, timeframe);
+          processYearlySummary(transactions);
+        } else {
+          setChartData([]);
+          setYearlySummary([]);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data analitik dari API:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactionData();
+  }, [processChartData, processYearlySummary, timeframe]);
+
+  useEffect(() => {
+    if (rawTransactions.length > 0) {
+      processChartData(rawTransactions, timeframe);
+    }
+  }, [timeframe, rawTransactions, processChartData]);
 
   const handleExportPdf = () => {
     window.print();
@@ -284,11 +286,13 @@ export default function AnalyticsChart() {
                   `${analyticsConfig.currencyPrefix}${value >= 1000 ? value / 1000 + "k" : value}`
                 }
               />
+              {/* Tooltip disesuaikan menggunakan CSS Variables seperti AdvancedAnalytics */}
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#0a0a0a",
-                  border: "1px solid #333",
+                  backgroundColor: "var(--surface-primary)",
+                  borderColor: "var(--border-color)",
                   borderRadius: "8px",
+                  color: "var(--text-primary)",
                 }}
                 itemStyle={{ color: "#fbbf24" }}
                 formatter={(value) => [
@@ -341,7 +345,9 @@ export default function AnalyticsChart() {
               {yearlySummary.length > 0 ? (
                 yearlySummary.map((row) => (
                   <tr key={row.year}>
-                    <td style={{ fontWeight: 600, color: "#fff" }}>
+                    <td
+                      style={{ fontWeight: 600, color: "var(--text-primary)" }}
+                    >
                       {row.year}
                     </td>
                     <td>{row.totalTransactions} pesanan</td>

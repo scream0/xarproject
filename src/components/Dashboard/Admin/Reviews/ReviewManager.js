@@ -1,23 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
 import styles from "./ReviewManager.module.css";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import reviewConfig from "@/data/ui/reviewManagerConfig.json";
-
-
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-    if (currentUser) {
-      fetchReviews();
-    } else {
-      setLoading(false);
-    }
-  });
-  return () => unsubscribe();
-}, []);
-
-
 
 export default function ReviewManager() {
   const [reviews, setReviews] = useState([]);
@@ -52,8 +39,20 @@ export default function ReviewManager() {
     }
   };
 
+  // PERBAIKAN: hook ini sekarang di DALAM body komponen (sebelumnya
+  // tertulis di luar `export default function ReviewManager()`, itu
+  // yang menyebabkan error "Invalid hook call").
+  // Juga menggantikan useEffect lama yang langsung panggil fetchReviews()
+  // tanpa menunggu Firebase selesai resolve auth state.
   useEffect(() => {
-    fetchReviews();
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        fetchReviews();
+      } else {
+        setLoading(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleApprove = async (reviewId) => {
