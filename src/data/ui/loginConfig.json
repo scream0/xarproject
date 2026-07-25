@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "XAR PROJECT",
+    "name": "MAKE ME KOOL",
     "subtitle": "ANTARA AROMA DAN RASA",
     "themeColor": "#0a0a0a"
   },
@@ -46,10 +46,10 @@
       "invalidEmail": "Format email tidak valid."
     },
     "passwordStrength": {
-        "veryWeak": "Sangat Lemah",
-        "weak": "Lemah",
-        "medium": "Sedang",
-        "strong": "Kuat"
+      "veryWeak": "Sangat Lemah",
+      "weak": "Lemah",
+      "medium": "Sedang",
+      "strong": "Kuat"
     },
     "messages": {
       "registerSuccess": "Registrasi akun berhasil! Mengalihkan...",

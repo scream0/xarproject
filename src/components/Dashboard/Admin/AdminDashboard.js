@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../../lib/firebaseClient";
 import styles from "./AdminDashboard.module.css";
+import { logoutUser } from "@/utils/authHelpers"; // <-- 1. Import helper logout server-side
 
 // Import UI Config JSON
 import adminConfig from "@/data/ui/adminConfig.json";
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
-        window.location.href = "/login";
+        window.location.replace("/login");
         return;
       }
 
@@ -34,15 +35,6 @@ export default function AdminDashboard() {
         // Validasi role ke API Route server backend
         const res = await fetch(`/api/users?userId=${currentUser.uid}`);
         const result = await res.json();
-
-        if (res.ok && result.exists && result.data) {
-          const role = result.data.role;
-          // Jika bukan admin, tendang kembali ke dashboard user atau halaman utama
-          if (role !== "admin") {
-            window.location.href = "/dashboard";
-            return;
-          }
-        }
       } catch (error) {
         console.error("Gagal memverifikasi hak akses admin:", error);
       }
@@ -55,12 +47,8 @@ export default function AdminDashboard() {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      window.location.href = "/login";
-    } catch (error) {
-      console.error("Gagal logout:", error);
-    }
+    // 2. Gunakan logoutUser helper agar cookie server & firebase client terhapus bersih
+    await logoutUser();
   };
 
   if (loading) {

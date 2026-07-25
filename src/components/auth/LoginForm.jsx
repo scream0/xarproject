@@ -1,21 +1,19 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  sendPasswordResetEmail,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  updateProfile,
-  sendEmailVerification, // <-- 1. Import fungsi verifikasi email
-} from "firebase/auth";
-import { auth } from "../../lib/firebaseClient";
 import loginConfig from "@/data/ui/loginConfig.json";
 import styles from "./LoginForm.module.css";
 import { useStore } from "@/context/StoreContext";
 import { useRouter, useSearchParams } from "next/navigation";
+
+// Import fungsi dari authHelpers.js
+import {
+  loginWithEmail,
+  registerWithEmail,
+  loginWithGoogle,
+  verifyOtpAndLogin,
+  sendOtpCode,
+  resetPassword,
+} from "@/utils/authHelpers";
 
 export default function LoginForm() {
   const { setCustomer } = useStore();
@@ -48,19 +46,6 @@ export default function LoginForm() {
   // Destrukturisasi semua konfigurasi UI dari loginConfig.json
   const { form } = loginConfig || {};
 
-  // Helper untuk sinkronisasi data user ke API Route `/api/users`
-  const syncUserToServer = async (userData) => {
-    try {
-      await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
-      });
-    } catch (err) {
-      console.error("Gagal menyinkronkan user ke server:", err);
-    }
-  };
-
   // ==========================================
   // EFFECT: REMEMBER ME
   // ==========================================
@@ -71,19 +56,6 @@ export default function LoginForm() {
       setRememberMe(true);
     }
   }, []);
-
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: () => {},
-        },
-      );
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -123,33 +95,15 @@ export default function LoginForm() {
       }
 
       try {
-        // 1. Buat akun di Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
+        const user = await registerWithEmail(
+          formData.name,
           formData.email,
           formData.password,
         );
 
-        // 2. Update nama tampilan profil (Display Name)
-        await updateProfile(userCredential.user, {
-          displayName: formData.name,
-        });
-
-        // 3. Kirim Email Verifikasi ke email yang didaftarkan
-        await sendEmailVerification(userCredential.user);
-
-        // 4. Sinkronisasi data ke Firestore via API Route
-        await syncUserToServer({
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          name: formData.name,
-          phone: "",
-          role: "user",
-        });
-
         setCustomer({
           name: formData.name,
-          email: userCredential.user.email,
+          email: user.email,
           phone: "",
         });
 
@@ -158,9 +112,8 @@ export default function LoginForm() {
             "Registrasi berhasil! Link verifikasi telah dikirim ke email Anda. Mengalihkan...",
         );
 
-        // Berikan jeda 2.5 detik agar user sempat membaca pesan sukses verifikasi email
         setTimeout(() => {
-          window.location.href = callbackUrl;
+          window.location.replace(callbackUrl);
         }, 2500);
       } catch (err) {
         console.error("Firebase Register Error:", err.code);
@@ -197,23 +150,15 @@ export default function LoginForm() {
         return;
       }
       try {
-        const result = await confirmationResult.confirm(otpCode);
-
-        await syncUserToServer({
-          uid: result.user.uid,
-          email: result.user.email || "",
-          name: result.user.displayName || "User",
-          phone: result.user.phoneNumber || "",
-          role: "user",
-        });
+        const user = await verifyOtpAndLogin(confirmationResult, otpCode);
 
         setCustomer({
-          name: result.user.displayName || "User",
-          email: result.user.email,
-          phone: "",
+          name: user.displayName || "User",
+          email: user.email || "",
+          phone: user.phoneNumber || "",
         });
 
-        window.location.href = callbackUrl;
+        window.location.replace(callbackUrl);
       } catch (err) {
         console.error("OTP Verification Error:", err.code);
         if (
@@ -232,7 +177,9 @@ export default function LoginForm() {
         }
         setIsLoading(false);
       }
+      return;
     }
+
     // ==========================================
     // FLOW 3: MODE MASUK DENGAN EMAIL & PASSWORD
     // ==========================================
@@ -244,23 +191,12 @@ export default function LoginForm() {
       }
 
       try {
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          formData.email,
-          formData.password,
-        );
-
-        await syncUserToServer({
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          name: userCredential.user.displayName || "User",
-          phone: userCredential.user.phoneNumber || "",
-        });
+        const user = await loginWithEmail(formData.email, formData.password);
 
         setCustomer({
-          name: userCredential.user.displayName || "User",
-          email: userCredential.user.email,
-          phone: "",
+          name: user.displayName || "User",
+          email: user.email,
+          phone: user.phoneNumber || "",
         });
 
         if (rememberMe) {
@@ -269,7 +205,7 @@ export default function LoginForm() {
           localStorage.removeItem("rememberedEmail");
         }
 
-        window.location.href = callbackUrl;
+        window.location.replace(callbackUrl);
       } catch (err) {
         console.error("Firebase Auth Error:", err.code);
         if (err.code === "auth/invalid-credential") {
@@ -304,31 +240,10 @@ export default function LoginForm() {
     setSuccessMessage("");
     setIsLoading(true);
 
-    let formattedPhone = formData.phone.trim();
-    if (formattedPhone.startsWith("0")) {
-      formattedPhone = "+62" + formattedPhone.substring(1);
-    } else if (formattedPhone.startsWith("8")) {
-      formattedPhone = "+62" + formattedPhone;
-    }
-
-    if (!formattedPhone.startsWith("+")) {
-      setError(
-        form?.validation?.invalidPhoneFormat ||
-          "Format nomor HP tidak valid. Gunakan format standar (Contoh: 0812xxx).",
-      );
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      setupRecaptcha();
-      const appVerifier = window.recaptchaVerifier;
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        formattedPhone,
-        appVerifier,
+      const { confirmation, formattedPhone } = await sendOtpCode(
+        formData.phone,
       );
-
       setConfirmationResult(confirmation);
       setSuccessMessage(
         `${form?.messages?.otpSent || "Kode OTP sukses dikirim melalui SMS ke"} ${formattedPhone}`,
@@ -351,11 +266,6 @@ export default function LoginForm() {
             "Gagal mengirim SMS OTP. Periksa jaringan Anda atau coba lagi.",
         );
       }
-
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
     } finally {
       setIsLoading(false);
     }
@@ -374,7 +284,7 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
-      await sendPasswordResetEmail(auth, formData.email);
+      await resetPassword(formData.email);
       setSuccessMessage(
         form?.messages?.resetEmailSent ||
           "Link reset password telah dikirim ke email Anda.",
@@ -393,50 +303,40 @@ export default function LoginForm() {
   // ==========================================
   // TOMBOL GOOGLE LOGIN
   // ==========================================
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setError("");
     setSuccessMessage("");
     setIsLoading(true);
 
-    const provider = new GoogleAuthProvider();
+    try {
+      const user = await loginWithGoogle();
 
-    signInWithPopup(auth, provider)
-      .then(async (result) => {
-        await syncUserToServer({
-          uid: result.user.uid,
-          email: result.user.email,
-          name: result.user.displayName || "User",
-          phone: result.user.phoneNumber || "",
-          role: "user",
-        });
-
-        setCustomer({
-          name: result.user.displayName || "User",
-          email: result.user.email,
-          phone: "",
-        });
-
-        window.location.href = callbackUrl;
-      })
-      .catch((err) => {
-        console.error("Google Auth Popup Error:", err);
-        setIsLoading(false);
-
-        if (err.code === "auth/popup-closed-by-user") {
-          return;
-        }
-
-        if (err.code === "auth/popup-blocked") {
-          setError(
-            "Browser Anda memblokir jendela pop-up. Harap izinkan pop-up untuk situs ini.",
-          );
-          return;
-        }
-
-        setError(
-          form?.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
-        );
+      setCustomer({
+        name: user.displayName || "User",
+        email: user.email,
+        phone: user.phoneNumber || "",
       });
+
+      window.location.replace(callbackUrl);
+    } catch (err) {
+      console.error("Google Auth Popup Error:", err);
+      setIsLoading(false);
+
+      if (err.code === "auth/popup-closed-by-user") {
+        return;
+      }
+
+      if (err.code === "auth/popup-blocked") {
+        setError(
+          "Browser Anda memblokir jendela pop-up. Harap izinkan pop-up untuk situs ini.",
+        );
+        return;
+      }
+
+      setError(
+        form?.messages?.googleAuthFailed || "Gagal masuk menggunakan Google.",
+      );
+    }
   };
 
   const toggleRegisterMode = () => {

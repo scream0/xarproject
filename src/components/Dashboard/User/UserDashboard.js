@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../../lib/firebaseClient";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { useStore } from "@/context/StoreContext";
 import styles from "./UserDashboard.module.css";
+import { logoutUser } from "@/utils/authHelpers"; // <-- 1. Import helper logout server-side
 
 // Import Konfigurasi JSON
 import userConfig from "@/data/ui/userDashboardConfig.json";
@@ -47,7 +48,7 @@ export default function UserDashboard() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
-        window.location.href = "/login";
+        window.location.replace("/login");
       } else {
         setUser(currentUser);
 
@@ -112,12 +113,8 @@ export default function UserDashboard() {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      window.location.href = "/login";
-    } catch (error) {
-      console.error(userConfig.toasts.logoutError, error);
-    }
+    // 2. Gunakan logoutUser helper agar cookie server & firebase client terhapus bersih
+    await logoutUser();
   };
 
   const activeTabLabel = userConfig.nav.find(
