@@ -5,6 +5,20 @@ import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import reviewConfig from "@/data/ui/reviewManagerConfig.json";
 
+
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    if (currentUser) {
+      fetchReviews();
+    } else {
+      setLoading(false);
+    }
+  });
+  return () => unsubscribe();
+}, []);
+
+
+
 export default function ReviewManager() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
