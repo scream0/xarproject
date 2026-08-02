@@ -358,6 +358,34 @@
   gap: 1rem;
 }
 
+/* Tombol Keranjang untuk Desktop/Tab — tampil di header kanan (>= 1024px) */
+.cartIconBtnDesktop {
+  display: none;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.cartIconBtnDesktop:hover {
+  background: var(--border-color);
+  border-color: var(--primary-accent);
+}
+
+/* Tampilkan di layar Desktop/Tab (>= 1024px). Pada < 1024px, top bar
+   mobile-lah yang menampilkan tombol keranjang (cartIconBtnMobile). */
+@media (min-width: 1024px) {
+  .cartIconBtnDesktop {
+    display: flex;
+  }
+}
+
 .welcomeTitle {
   font-size: 0.85rem;
   font-weight: 600;

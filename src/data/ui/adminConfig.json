@@ -5,13 +5,44 @@
     "badge": "OWNER PANEL"
   },
   "nav": [
-    { "id": "overview", "label": "Overview" },
-    { "id": "products", "label": "Inventory" },
-    { "id": "reviews", "label": "Reviews" },
-    { "id": "analytics", "label": "Analytics" },
-    { "id": "settings", "label": "Settings" }
+    {
+      "id": "overview",
+      "label": "Overview"
+    },
+    {
+      "id": "products",
+      "label": "Inventory"
+    },
+    {
+      "id": "reviews",
+      "label": "Reviews"
+    },
+    {
+      "id": "analytics",
+      "label": "Analytics"
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications"
+    },
+    {
+      "id": "customers",
+      "label": "Customers"
+    },
+    {
+      "id": "settings",
+      "label": "Settings"
+    },
+    {
+      "id": "operations",
+      "label": "Operations"
+    }
   ],
-  "stats": ["BRAND MATRICES", "SECURITY NODE", "CORE VAULT"],
+  "stats": [
+    "BRAND MATRICES",
+    "SECURITY NODE",
+    "CORE VAULT"
+  ],
   "placeholders": {
     "analytics": "[ ANALYTICS CORE DATASTREAM ]",
     "settings": "[ SYSTEM CONFIGURATION ]"
@@ -19,3 +50,4 @@
   "loading": "LOADING EXECUTIVE SYSTEM...",
   "logoutText": "Sign Out Control"
 }
+

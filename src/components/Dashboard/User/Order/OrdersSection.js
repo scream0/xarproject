@@ -2,9 +2,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import styles from "./OrdersSection.module.css";
 import ordersConfig from "@/data/ui/ordersConfig.json";
-import { auth } from "@/lib/firebaseClient";
+import { auth, db } from "@/lib/firebaseClient";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { useStore } from "@/context/StoreContext";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
+import { OrdersSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 // Mapping status mentah dari Firestore/Admin -> label & tahap yang ditampilkan
 // ke customer. Ini HARUS selalu sinkron dengan alur status di TransactionTable.js
@@ -26,9 +29,17 @@ const STATUS_INFO = {
     label: "Dalam Pengiriman",
     badgeClass: "statusProcessing",
   },
+  shipped: {
+    label: "Dalam Pengiriman",
+    badgeClass: "statusProcessing",
+  },
   completed: {
     label: "Pesanan Selesai",
     badgeClass: "statusCompleted",
+  },
+  cancelled: {
+    label: "Dibatalkan",
+    badgeClass: "statusCancelled",
   },
   // fallback untuk status dari Midtrans yang belum sempat di-mapping admin
   settlement: {
@@ -51,6 +62,74 @@ function getStatusInfo(rawStatus) {
   );
 }
 
+// Helper untuk memformat 1 dokumen order mentah dari Firestore menjadi
+// struktur yang dipakai UI. Dipakai baik oleh listener real-time maupun
+// (jika diperlukan) fetch manual, supaya format selalu konsisten.
+function formatOrderDoc(item, primaryAddress) {
+  const rawStatus = (item.status || "pending").toLowerCase();
+
+  let displayName = item.product_name || item.name || "Extrait de Parfum";
+  if (item.items && Array.isArray(item.items) && item.items.length > 0) {
+    const firstItem = item.items[0];
+    displayName = `${firstItem.name} (${firstItem.size})`;
+    if (item.items.length > 1) {
+      displayName += ` +${item.items.length - 1} produk lainnya`;
+    }
+  }
+
+  const orderAddressObj = item.shipping_address || item.address;
+  let formattedAddress = "Belum diatur";
+  if (typeof orderAddressObj === "string") {
+    formattedAddress = orderAddressObj;
+  } else if (orderAddressObj) {
+    formattedAddress = `${orderAddressObj.recipientName || ""} (${orderAddressObj.recipientPhone || ""}) - ${orderAddressObj.street || ""}, ${orderAddressObj.city || ""} (${orderAddressObj.postalCode || ""})`;
+  } else {
+    formattedAddress = primaryAddress || "Belum diatur";
+  }
+
+  const rawAmount = Number(item.amount || item.gross_amount || item.price || 0);
+
+  // reviewedItemIds: array id produk yang sudah direview di order ini.
+  // Fallback ke hasBeenReviewed (boolean lama) supaya data lama tetap kompatibel.
+  const reviewedItemIds = Array.isArray(item.reviewedItemIds)
+    ? item.reviewedItemIds
+    : [];
+
+  return {
+    id: item.orderId || item.order_id || item.id,
+    name: displayName,
+    items: item.items || [],
+    hasBeenReviewed: item.hasBeenReviewed || false,
+    reviewedItemIds,
+    shippingReceiptNumber: item.shippingReceiptNumber || null,
+    statusHistory: Array.isArray(item.statusHistory) ? item.statusHistory : [],
+    concentration:
+      item.concentration ||
+      (item.items?.[0] ? `Varian: ${item.items[0].size}` : "30% Bibit (50 ml)"),
+    notes: item.notes || "-",
+    price: `Rp ${rawAmount.toLocaleString("id-ID")}`,
+    rawPrice: rawAmount,
+    status: rawStatus,
+    date:
+      item.createdAt || item.created_at
+        ? new Date(
+            item.createdAt.seconds
+              ? item.createdAt.seconds * 1000
+              : item.createdAt || item.created_at,
+          ).toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })
+        : "Hari ini",
+    paymentMethod:
+      item.payment_type ||
+      item.paymentType ||
+      "Midtrans QRIS / Virtual Account",
+    shippingAddress: formattedAddress,
+  };
+}
+
 export default function OrdersSection() {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,9 +140,11 @@ export default function OrdersSection() {
   const { addToCart } = useStore();
   // State untuk currentUser yang mendengarkan status Auth Firebase secara real-time
   const [currentUser, setCurrentUser] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // State untuk modal ulasan produk
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
+  const [reviewTargetItem, setReviewTargetItem] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -95,104 +176,52 @@ export default function OrdersSection() {
     }
   }, []);
 
-  // 3. Ambil data alamat & pesanan via API Route `/api/orders`
-  const fetchUserOrders = async (user) => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/orders?userId=${user.uid}`);
-      const result = await res.json();
-
-      if (!res.ok)
-        throw new Error(result.error || "Gagal memuat data pesanan.");
-
-      setUserPrimaryAddress(result.primaryAddress || "Belum diatur");
-
-      if (result.orders && result.orders.length > 0) {
-        const formattedOrders = result.orders.map((item) => {
-          // Status APA ADANYA dari Firestore (di-set oleh admin lewat
-          // TransactionTable.js). Ini satu-satunya sumber kebenaran status,
-          // jadi tidak perlu di-"map" ulang jadi kategori lain di sini.
-          const rawStatus = (item.status || "pending").toLowerCase();
-
-          let displayName =
-            item.product_name || item.name || "Extrait de Parfum";
-          if (
-            item.items &&
-            Array.isArray(item.items) &&
-            item.items.length > 0
-          ) {
-            const firstItem = item.items[0];
-            displayName = `${firstItem.name} (${firstItem.size})`;
-            if (item.items.length > 1) {
-              displayName += ` +${item.items.length - 1} produk lainnya`;
-            }
-          }
-
-          const orderAddressObj = item.shipping_address || item.address;
-          let formattedAddress = "Belum diatur";
-          if (typeof orderAddressObj === "string") {
-            formattedAddress = orderAddressObj;
-          } else if (orderAddressObj) {
-            formattedAddress = `${orderAddressObj.recipientName || ""} (${orderAddressObj.recipientPhone || ""}) - ${orderAddressObj.street || ""}, ${orderAddressObj.city || ""} (${orderAddressObj.postalCode || ""})`;
-          } else {
-            formattedAddress = result.primaryAddress;
-          }
-
-          const rawAmount = Number(
-            item.amount || item.gross_amount || item.price || 0,
-          );
-
-          return {
-            id: item.orderId || item.order_id || item.id,
-            name: displayName,
-            items: item.items || [],
-            hasBeenReviewed: item.hasBeenReviewed || false,
-            shippingReceiptNumber: item.shippingReceiptNumber || null,
-            concentration:
-              item.concentration ||
-              (item.items?.[0]
-                ? `Varian: ${item.items[0].size}`
-                : "30% Bibit (50 ml)"),
-            notes: item.notes || "-",
-            price: `Rp ${rawAmount.toLocaleString("id-ID")}`,
-            rawPrice: rawAmount,
-            // status mentah (dipakai untuk filter tab & logika internal)
-            status: rawStatus,
-            date:
-              item.createdAt || item.created_at
-                ? new Date(
-                    item.createdAt || item.created_at,
-                  ).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : "Hari ini",
-            paymentMethod:
-              item.payment_type ||
-              item.paymentType ||
-              "Midtrans QRIS / Virtual Account",
-            shippingAddress: formattedAddress,
-          };
-        });
-        setOrders(formattedOrders);
-      } else {
-        setOrders([]);
-      }
-    } catch (err) {
-      console.error("Gagal mengambil data pesanan:", err);
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 3. LISTENER REAL-TIME: dengarkan perubahan koleksi "orders" milik user ini.
+  // Begitu admin ubah status pesanan di dashboard, UI customer otomatis
+  // ter-update tanpa perlu refresh manual.
   useEffect(() => {
-    if (currentUser) {
-      fetchUserOrders(currentUser);
-    }
+    if (!currentUser) return;
+
+    setLoading(true);
+
+    // Ambil alamat utama sekali lewat endpoint yang sudah ada (bukan real-time,
+    // karena alamat jarang berubah dan tidak butuh listener terpisah)
+    fetch(`/api/orders?userId=${currentUser.uid}`)
+      .then((res) => res.json())
+      .then((result) => {
+        setUserPrimaryAddress(result.primaryAddress || "Belum diatur");
+      })
+      .catch(() => {});
+
+    const ordersQuery = query(
+      collection(db, "orders"),
+      where("userId", "==", currentUser.uid),
+    );
+
+    const unsubscribe = onSnapshot(
+      ordersQuery,
+      (snapshot) => {
+        const formatted = snapshot.docs.map((doc) =>
+          formatOrderDoc({ id: doc.id, ...doc.data() }, userPrimaryAddress),
+        );
+        // Urutkan terbaru dulu
+        formatted.sort((a, b) => {
+          const da = new Date(a.date).getTime() || 0;
+          const db_ = new Date(b.date).getTime() || 0;
+          return db_ - da;
+        });
+        setOrders(formatted);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Gagal mendengarkan perubahan pesanan:", err);
+        toast.error("Gagal memuat data pesanan secara real-time.");
+        setLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   // 4. Filter & Search Logic
@@ -208,7 +237,7 @@ export default function OrdersSection() {
       } else if (filter === "processing") {
         // "Berjalan" mencakup semua tahap sebelum selesai
         result = result.filter((o) =>
-          ["pending", "success", "processing", "shipping"].includes(o.status),
+          ["pending", "success", "processing", "shipping", "shipped"].includes(o.status),
         );
       } else {
         result = result.filter((o) => o.status === filter);
@@ -216,17 +245,18 @@ export default function OrdersSection() {
     }
 
     if (searchQuery.trim() !== "") {
-      const query = searchQuery.toLowerCase();
+      const query_ = searchQuery.toLowerCase();
       result = result.filter(
         (o) =>
-          o.id.toLowerCase().includes(query) ||
-          o.name.toLowerCase().includes(query) ||
-          o.concentration.toLowerCase().includes(query),
+          o.id.toLowerCase().includes(query_) ||
+          o.name.toLowerCase().includes(query_) ||
+          o.concentration.toLowerCase().includes(query_),
       );
     }
 
     return result;
   }, [orders, filter, searchQuery]);
+
   // Fungsi Pesanan Lagi: Validasi stok & masukkan ke keranjang belanja
   const handleReOrder = async (order) => {
     const toastId = toast.loading("Memeriksa ketersediaan stok produk...");
@@ -322,8 +352,6 @@ export default function OrdersSection() {
 
       if (addedCount > 0) {
         toast.success("Produk berhasil dimasukkan ke keranjang!");
-        // Opsional: Buka modal keranjang jika fungsi setIsCartOpen tersedia
-        // setIsCartOpen(true);
       } else {
         toast.error("Gagal menambahkan produk ke keranjang karena stok habis.");
       }
@@ -334,34 +362,41 @@ export default function OrdersSection() {
       });
     }
   };
-  // fungsi menyimpan pesanan ke server
-  const saveOrderToServer = async (
-    orderId,
-    order,
-    address,
-    status,
-    paymentType,
-  ) => {
+
+  // Batalkan pesanan yang masih berstatus "pending" (belum dibayar)
+  const handleCancelOrder = async (order) => {
+    if (isCancelling) return;
+    const confirmCancel = window.confirm(
+      `Batalkan pesanan ${order.id}? Tindakan ini tidak bisa dibatalkan.`,
+    );
+    if (!confirmCancel) return;
+
+    setIsCancelling(true);
+    const toastId = toast.loading("Membatalkan pesanan...");
     try {
-      await fetch("/api/orders", {
+      if (!currentUser) throw new Error("Pengguna tidak terautentikasi.");
+      const token = await currentUser.getIdToken();
+
+      const res = await fetch("/api/orders/cancel", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: currentUser.uid,
-          orderId,
-          order: {
-            name: order.name,
-            rawPrice: order.rawPrice,
-            concentration: order.concentration,
-            notes: order.notes,
-          },
-          address,
-          status,
-          paymentType,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ orderId: order.id }),
       });
-    } catch (dbErr) {
-      console.error("Gagal menyimpan ke database:", dbErr);
+
+      const result = await res.json();
+      if (!res.ok)
+        throw new Error(result.error || "Gagal membatalkan pesanan.");
+
+      toast.success("Pesanan berhasil dibatalkan.", { id: toastId });
+      // Tidak perlu refetch manual — listener onSnapshot akan otomatis update
+    } catch (err) {
+      console.error("Cancel Order Error:", err);
+      toast.error(err.message || "Gagal membatalkan pesanan.", { id: toastId });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -404,9 +439,22 @@ Terima kasih telah berbelanja di XAR!`;
     toast.success("Invoice berhasil diunduh!");
   };
 
+  // Buka modal review untuk item TERTENTU dalam order (bukan selalu item pertama)
+  const openReviewModal = (order, item) => {
+    setReviewModalOrder(order);
+    setReviewTargetItem(item);
+    setRating(5);
+    setComment("");
+  };
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    if (!reviewModalOrder || !currentUser || isSubmittingReview) {
+    if (
+      !reviewModalOrder ||
+      !reviewTargetItem ||
+      !currentUser ||
+      isSubmittingReview
+    ) {
       return;
     }
 
@@ -415,11 +463,6 @@ Terima kasih telah berbelanja di XAR!`;
 
     try {
       const token = await currentUser.getIdToken();
-      const firstItem = reviewModalOrder.items[0];
-
-      if (!firstItem) {
-        throw new Error("Produk dalam pesanan tidak ditemukan.");
-      }
 
       const res = await fetch("/api/reviews", {
         method: "POST",
@@ -430,8 +473,11 @@ Terima kasih telah berbelanja di XAR!`;
         body: JSON.stringify({
           userId: currentUser.uid,
           orderId: reviewModalOrder.id,
-          productId: firstItem.id || reviewModalOrder.id,
-          productName: firstItem.name || reviewModalOrder.name,
+          productId:
+            reviewTargetItem.id ||
+            reviewTargetItem.productId ||
+            reviewModalOrder.id,
+          productName: reviewTargetItem.name || reviewModalOrder.name,
           rating,
           comment,
         }),
@@ -447,15 +493,26 @@ Terima kasih telah berbelanja di XAR!`;
         id: toastId,
       });
       setReviewModalOrder(null);
+      setReviewTargetItem(null);
       setComment("");
       setRating(5);
-      fetchUserOrders(currentUser);
+      // Tidak perlu refetch manual — listener onSnapshot akan otomatis update
     } catch (error) {
       console.error("Gagal mengirim ulasan:", error);
       toast.error(error.message, { id: toastId });
     } finally {
       setIsSubmittingReview(false);
     }
+  };
+
+  // Cek apakah item tertentu dalam order sudah direview
+  const isItemReviewed = (order, item) => {
+    const itemId = String(item.id || item.productId || "");
+    if (order.reviewedItemIds && order.reviewedItemIds.length > 0) {
+      return order.reviewedItemIds.includes(itemId);
+    }
+    // Fallback untuk order lama yang cuma punya flag boolean di level order
+    return order.hasBeenReviewed;
   };
 
   return (
@@ -470,20 +527,12 @@ Terima kasih telah berbelanja di XAR!`;
             </p>
           </div>
           <div className={styles.searchBox}>
-            <svg
-              style={{
-                width: "16px",
-                height: "16px",
-                stroke: "currentColor",
-                strokeWidth: 2,
-                fill: "none",
-                strokeLinecap: "round",
-                strokeLinejoin: "round",
-                color: "#71717a",
-              }}
-            >
-              <use href="/assets/icon/feather-sprite.svg#search" />
-            </svg>
+            <AppIcon
+              name="search"
+              size={16}
+              strokeWidth={2}
+              style={{ color: "#71717a" }}
+            />
             <input
               type="text"
               placeholder={ordersConfig.searchPlaceholder}
@@ -510,35 +559,26 @@ Terima kasih telah berbelanja di XAR!`;
       {/* Orders List Container */}
       <div className={styles.ordersListContainer}>
         {loading ? (
-          <div className={`card ${styles.centerStateCard}`}>
-            <p className={styles.loadingText}>{ordersConfig.loadingText}</p>
-          </div>
+          <OrdersSkeleton count={3} />
         ) : filteredOrders.length === 0 ? (
           <div className={`card ${styles.centerStateCard}`}>
-            <svg
-              style={{
-                width: "36px",
-                height: "36px",
-                stroke: "currentColor",
-                strokeWidth: 1.5,
-                fill: "none",
-                strokeLinecap: "round",
-                strokeLinejoin: "round",
-                color: "#71717a",
-                marginBottom: "0.5rem",
-              }}
-            >
-              <use href="/assets/icon/feather-sprite.svg#package" />
-            </svg>
+            <AppIcon
+              name="package"
+              size={36}
+              strokeWidth={1.5}
+              style={{ color: "#71717a", marginBottom: "0.5rem" }}
+            />
             <p className={styles.emptyText}>{ordersConfig.emptyText}</p>
           </div>
         ) : (
           filteredOrders.map((order) => {
-            // "Selesai" (boleh diulas) HANYA kalau status persis "completed" —
-            // bukan lagi termasuk success/shipping, karena barang belum tentu
-            // sudah diterima customer di tahap-tahap itu.
             const isFinished = order.status === "completed";
+            const isPending = order.status === "pending";
             const statusInfo = getStatusInfo(order.status);
+            const reviewableItems =
+              order.items && order.items.length > 0
+                ? order.items
+                : [{ id: order.id, name: order.name }];
 
             return (
               <div key={order.id} className={`card ${styles.orderCard}`}>
@@ -557,6 +597,33 @@ Terima kasih telah berbelanja di XAR!`;
                   </p>
                   <p className={styles.orderNotes}>Catatan: {order.notes}</p>
                   <p className={styles.orderDate}>Tanggal: {order.date}</p>
+
+                  {/* Tombol review per-item, hanya tampil jika order sudah selesai */}
+                  {isFinished && (
+                    <div className={styles.perItemReviewRow}>
+                      {reviewableItems.map((item, idx) => {
+                        const reviewed = isItemReviewed(order, item);
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() =>
+                              !reviewed && openReviewModal(order, item)
+                            }
+                            disabled={reviewed}
+                            className={
+                              reviewed
+                                ? styles.reviewBtnDisabled
+                                : styles.reviewBtn
+                            }
+                          >
+                            {reviewed
+                              ? `✓ ${item.name} sudah diulas`
+                              : `Ulas ${item.name}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.orderActionCol}>
@@ -568,17 +635,13 @@ Terima kasih telah berbelanja di XAR!`;
                     >
                       {ordersConfig.buttons.details}
                     </button>
-                    {isFinished && !order.hasBeenReviewed && (
+                    {isPending && (
                       <button
-                        onClick={() => setReviewModalOrder(order)}
-                        className={styles.reviewBtn}
+                        onClick={() => handleCancelOrder(order)}
+                        disabled={isCancelling}
+                        className={styles.cancelBtn}
                       >
-                        {ordersConfig.buttons.review}
-                      </button>
-                    )}
-                    {isFinished && order.hasBeenReviewed && (
-                      <button className={styles.reviewBtnDisabled} disabled>
-                        {ordersConfig.buttons.reviewSent}
+                        Batalkan
                       </button>
                     )}
                     <button
@@ -611,63 +674,68 @@ Terima kasih telah berbelanja di XAR!`;
                 onClick={() => setSelectedOrder(null)}
                 className={styles.modalCloseBtn}
               >
-                <svg
-                  style={{
-                    width: "18px",
-                    height: "18px",
-                    stroke: "currentColor",
-                    strokeWidth: 2,
-                    fill: "none",
-                  }}
-                >
-                  <use href="/assets/icon/feather-sprite.svg#x" />
-                </svg>
+                <AppIcon name="x" size={18} strokeWidth={2} />
               </button>
             </div>
 
-            {/* Stepper Status Pelacakan Dinamis — 4 tahap, sinkron persis
-                dengan alur status admin: pending -> success -> processing -> shipping/completed */}
-            <div className={styles.trackingStepper}>
-              <div className={styles.stepItemActive}>
-                <div className={styles.stepDot}></div>
-                <span>Pesanan Dibuat</span>
+            {selectedOrder.status === "cancelled" ? (
+              <div className={styles.cancelledNotice}>
+                Pesanan ini telah dibatalkan.
               </div>
-              <div
-                className={
-                  ["success", "processing", "shipping", "completed"].includes(
-                    selectedOrder.status,
-                  )
-                    ? styles.stepItemActive
-                    : styles.stepItem
-                }
-              >
-                <div className={styles.stepDot}></div>
-                <span>Pembayaran Dikonfirmasi</span>
+            ) : (
+              <div className={styles.trackingStepper}>
+                <div className={styles.stepItemActive}>
+                  <div className={styles.stepDot}></div>
+                  <span>Pesanan Dibuat</span>
+                </div>
+                <div
+                  className={
+                    ["success", "processing", "shipping", "shipped", "completed"].includes(
+                      selectedOrder.status,
+                    )
+                      ? styles.stepItemActive
+                      : styles.stepItem
+                  }
+                >
+                  <div className={styles.stepDot}></div>
+                  <span>Pembayaran Dikonfirmasi</span>
+                </div>
+                <div
+                  className={
+                    ["processing", "shipping", "shipped", "completed"].includes(
+                      selectedOrder.status,
+                    )
+                      ? styles.stepItemActive
+                      : styles.stepItem
+                  }
+                >
+                  <div className={styles.stepDot}></div>
+                  <span>Peracikan / Diproses</span>
+                </div>
+                <div
+                  className={
+                    ["shipping", "shipped", "completed"].includes(selectedOrder.status)
+                      ? styles.stepItemActive
+                      : styles.stepItem
+                  }
+                >
+                  <div className={styles.stepDot}></div>
+                  <span>Dikirim / Selesai</span>
+                </div>
               </div>
-              <div
-                className={
-                  ["processing", "shipping", "completed"].includes(
-                    selectedOrder.status,
-                  )
-                    ? styles.stepItemActive
-                    : styles.stepItem
-                }
-              >
-                <div className={styles.stepDot}></div>
-                <span>Peracikan / Diproses</span>
-              </div>
-              <div
-                className={
-                  ["shipping", "completed"].includes(selectedOrder.status)
-                    ? styles.stepItemActive
-                    : styles.stepItem
-                }
-              >
-                <div className={styles.stepDot}></div>
-                <span>Dikirim / Selesai</span>
-              </div>
-            </div>
+            )}
 
+            {selectedOrder.statusHistory?.length > 0 && (
+              <div className={styles.statusHistory}>
+                <strong>Riwayat status</strong>
+                {selectedOrder.statusHistory.slice().reverse().map((event, index) => (
+                  <p key={`${event.changedAt || event.status}-${index}`}>
+                    <span>{getStatusInfo(event.status).label}</span>
+                    <small>{event.changedAt ? new Date(event.changedAt).toLocaleString("id-ID") : "Baru saja"}</small>
+                  </p>
+                ))}
+              </div>
+            )}
             <div className={styles.modalBody}>
               <div>
                 <span className={styles.modalFieldLabel}>
@@ -759,11 +827,14 @@ Terima kasih telah berbelanja di XAR!`;
         </div>
       )}
 
-      {/* --- MODAL ULASAN PRODUK --- */}
-      {reviewModalOrder && (
+      {/* --- MODAL ULASAN PRODUK (per-item) --- */}
+      {reviewModalOrder && reviewTargetItem && (
         <div
           className={styles.modalOverlay}
-          onClick={() => setReviewModalOrder(null)}
+          onClick={() => {
+            setReviewModalOrder(null);
+            setReviewTargetItem(null);
+          }}
         >
           <div
             className={styles.modalContent}
@@ -774,20 +845,13 @@ Terima kasih telah berbelanja di XAR!`;
                 {ordersConfig.labels.reviewTitle}
               </h3>
               <button
-                onClick={() => setReviewModalOrder(null)}
+                onClick={() => {
+                  setReviewModalOrder(null);
+                  setReviewTargetItem(null);
+                }}
                 className={styles.modalCloseBtn}
               >
-                <svg
-                  style={{
-                    width: "18px",
-                    height: "18px",
-                    stroke: "currentColor",
-                    strokeWidth: 2,
-                    fill: "none",
-                  }}
-                >
-                  <use href="/assets/icon/feather-sprite.svg#x" />
-                </svg>
+                <AppIcon name="x" size={18} strokeWidth={2} />
               </button>
             </div>
 
@@ -796,7 +860,7 @@ Terima kasih telah berbelanja di XAR!`;
                 <span className={styles.modalFieldLabel}>
                   {ordersConfig.labels.product}
                 </span>
-                <strong>{reviewModalOrder.name}</strong>
+                <strong>{reviewTargetItem.name}</strong>
               </div>
               <div>
                 <span className={styles.modalFieldLabel}>

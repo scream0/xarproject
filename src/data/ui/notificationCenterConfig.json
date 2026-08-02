@@ -1,0 +1,47 @@
+{
+  "header": {
+    "title": "Pusat Notifikasi",
+    "subtitle": "Pantau order bermasalah, stok menipis, dan pembayaran gagal dari satu tempat."
+  },
+  "loadingText": "Memuat pusat notifikasi...",
+  "emptyTitle": "Tidak ada notifikasi",
+  "emptyText": "Notifikasi sistem tentang operasional toko akan muncul di sini.",
+  "tabs": {
+    "all": "Semua",
+    "order": "Pesanan",
+    "stock": "Stok",
+    "payment": "Pembayaran"
+  },
+  "typeLabels": {
+    "order": "Pesanan",
+    "stock": "Stok",
+    "payment": "Pembayaran",
+    "system": "Sistem",
+    "promo": "Promo"
+  },
+  "buttons": {
+    "markAllRead": "Tandai Semua Dibaca",
+    "create": "Buat Notifikasi"
+  },
+  "modal": {
+    "createTitle": "Buat Notifikasi",
+    "titleLabel": "Judul",
+    "titlePlaceholder": "Judul notifikasi",
+    "messageLabel": "Pesan",
+    "messagePlaceholder": "Isi pesan notifikasi",
+    "typeLabel": "Tipe",
+    "typeOptions": ["order", "payment", "promo", "system"],
+    "audienceLabel": "Target",
+    "audienceOptions": ["user", "all", "admin"],
+    "submit": "Kirim",
+    "cancel": "Batal",
+    "close": "Tutup"
+  },
+  "toasts": {
+    "createSuccess": "Notifikasi berhasil dibuat.",
+    "createError": "Gagal membuat notifikasi.",
+    "markAllReadSuccess": "Semua notifikasi ditandai sudah dibaca.",
+    "deleteSuccess": "Notifikasi dihapus."
+  }
+}
+

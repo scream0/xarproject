@@ -317,7 +317,8 @@
 .detailBtn,
 .reviewBtn,
 .reviewBtnDisabled,
-.reorderBtn {
+.reorderBtn,
+.cancelBtn {
   font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
@@ -365,6 +366,108 @@
 .reorderBtn:hover {
   background: var(--surface-secondary);
   border-color: var(--primary-accent);
+}
+
+/* Tombol Pembatalan Pesanan Khusus */
+.cancelBtn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.cancelBtn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* --- SKELETON LOADING STYLING --- */
+.skeletonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeletonCard {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: pulseSkeleton 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseSkeleton {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.skeletonLineShort {
+  width: 25%;
+  height: 12px;
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.skeletonLineLong {
+  width: 60%;
+  height: 18px;
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.skeletonLineMedium {
+  width: 40%;
+  height: 12px;
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+/* --- PAGINATION WRAPPER --- */
+.paginationWrapper {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.loadMoreBtn {
+  font-family: var(--font-sans);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.625rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.loadMoreBtn:hover {
+  background: var(--surface-secondary);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+/* Pratinjau Foto Ulasan */
+.reviewPhotoPreview {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  border: 1px solid var(--border-color);
 }
 
 /* --- MODAL STYLING --- */
@@ -695,3 +798,8 @@
     max-height: 95vh;
   }
 }
+
+.statusHistory { margin: 1rem 0; padding: .9rem 1rem; border: 1px solid var(--border-color); border-radius: 10px; background: var(--surface-secondary); }
+.statusHistory > strong { display: block; margin-bottom: .55rem; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+.statusHistory p { display:flex; justify-content:space-between; gap:1rem; margin:.4rem 0; font-size:.8rem; }
+.statusHistory small { color: var(--text-secondary); white-space: nowrap; }

@@ -1,7 +1,8 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { getPublicSettings } from "@/services/settingsService";
 import styles from "./About.module.css";
-import aboutData from "@/data/ui/aboutConfig.json"; // Pastikan path import sesuai
+import aboutData from "@/data/ui/aboutConfig.json"; // Fallback default JSON
 
 // Komponen kecil untuk fitur (tetap dipertahankan)
 const FeatureItem = ({ number, title, desc }) => (
@@ -15,6 +16,49 @@ const FeatureItem = ({ number, title, desc }) => (
 );
 
 export function About() {
+  // Fallback: gambar & konten dari JSON, akan di-override data DB jika tersedia
+  const [aboutImage, setAboutImage] = useState(aboutData?.image?.src || null);
+  const [aboutImageAlt, setAboutImageAlt] = useState(
+    aboutData?.image?.alt || "About image",
+  );
+  const [aboutContent, setAboutContent] = useState(aboutData?.content || {});
+  const [aboutFeatures, setAboutFeatures] = useState(
+    aboutData?.features || [],
+  );
+
+  useEffect(() => {
+    const fetchAbout = async () => {
+      try {
+        const data = await getPublicSettings({ force: true });
+        if (!data) return;
+
+        // Gambar About dari settings DB
+        if (data?.about?.image) setAboutImage(data.about.image);
+        if (data?.about?.imageAlt) setAboutImageAlt(data.about.imageAlt);
+
+        // Konten About dari settings DB (fallback parsial ke JSON)
+        if (data?.about?.content) {
+          setAboutContent({
+            ...(aboutData?.content || {}),
+            ...data.about.content,
+          });
+        }
+
+        // Fitur About dari settings DB
+        if (
+          Array.isArray(data?.about?.features) &&
+          data.about.features.length > 0
+        ) {
+          setAboutFeatures(data.about.features);
+        }
+      } catch (error) {
+        console.error("Failed to load about settings", error);
+      }
+    };
+
+    fetchAbout();
+  }, []);
+
   return (
     <section id="about" className={styles.about}>
       <div className={styles.aboutContainer}>
@@ -26,8 +70,8 @@ export function About() {
             {/* Kontainer Gambar + Shimmer */}
             <div className={styles.imgContainer}>
               <img
-                src={aboutData?.image?.src}
-                alt={aboutData?.image?.alt}
+                src={aboutImage || "/assets/images/about-bg.jpg"}
+                alt={aboutImageAlt}
                 className={styles.aboutImg}
               />
             </div>
@@ -36,17 +80,17 @@ export function About() {
           {/* Sisi Kanan: Konten Luxury */}
           <div className={styles.aboutContent}>
             <h5 className={styles.aboutTagline}>
-              {aboutData?.content?.tagline}
+              {aboutContent?.tagline}
             </h5>
-            <h3>{aboutData?.content?.heading}</h3>
+            <h3>{aboutContent?.heading}</h3>
 
-            <p className={styles.aboutLead}>{aboutData?.content?.leadText}</p>
+            <p className={styles.aboutLead}>{aboutContent?.leadText}</p>
 
-            <p>{aboutData?.content?.bodyText}</p>
+            <p>{aboutContent?.bodyText}</p>
 
-            {/* List Fitur (Mapping dari JSON) */}
+            {/* List Fitur (Mapping dari JSON/Settings) */}
             <div className={styles.aboutFeatures}>
-              {aboutData?.features?.map((feature, index) => (
+              {aboutFeatures?.map((feature, index) => (
                 <FeatureItem
                   key={index}
                   number={feature.number}
@@ -61,3 +105,4 @@ export function About() {
     </section>
   );
 }
+

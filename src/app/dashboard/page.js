@@ -13,6 +13,9 @@ import dashboardConfig from "@/data/ui/dashboardPageConfig.json";
 import AdminDashboard from "@/components/Dashboard/Admin/AdminDashboard";
 import UserDashboard from "@/components/Dashboard/User/UserDashboard";
 
+// Import Skeleton
+import { DashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
 
@@ -110,12 +113,7 @@ export default function DashboardPage() {
   // render dengan role lama/default sebelum akhirnya "loncat" ke role asli. Sekarang kita
   // tunggu sampai role BENAR-BENAR diketahui sebelum render dashboard sama sekali.
   if (loading || role === null) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.pulseScanner}></div>
-        <p className={styles.loadingText}>{dashboardConfig.loadingText}</p>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

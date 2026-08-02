@@ -1,9 +1,24 @@
 {
   "title": "Pengaturan Sistem & Toko",
   "loading": "Memuat Pengaturan...",
+  "tabs": {
+    "store": "Toko",
+    "hero": "Hero",
+    "about": "About",
+    "contact": "Kontak",
+    "footer": "Footer",
+    "promo": "Promo",
+    "payment": "Pembayaran"
+  },
   "sections": {
     "storeInfo": "Informasi Toko",
     "productCurrency": "Konfigurasi Produk & Mata Uang",
+    "visuals": "Visual Section Produk",
+    "hero": "Hero Section (Landing Page)",
+    "about": "About Section (Landing Page)",
+    "contact": "Contact Section (Landing Page)",
+    "footer": "Footer (Landing Page)",
+    "promo": "Banner Promo",
     "paymentKeys": "Kunci API Gateway Pembayaran"
   },
   "labels": {
@@ -11,6 +26,10 @@
     "storeEmail": "Email Kontak Toko",
     "currency": "Mata Uang Utama",
     "lowStockThreshold": "Batas Peringatan Stok Menipis",
+    "productSectionImage": "Gambar Section Produk",
+    "productSectionImageAlt": "Deskripsi Gambar",
+    "promoBannerEnabled": "Tampilkan Banner Promo",
+    "promoBannerText": "Teks Banner Promo",
     "midtransServerKey": "Midtrans Server Key",
     "midtransClientKey": "Midtrans Client Key"
   },
@@ -18,7 +37,9 @@
     "midtransServerKey": "Kunci ini bersifat rahasia dan tidak akan pernah ditampilkan lagi setelah disimpan."
   },
   "placeholders": {
-    "updateKey": "Isi untuk memperbarui..."
+    "updateKey": "Isi untuk memperbarui...",
+    "productSectionImage": "https://example.com/image.jpg",
+    "promoBannerText": "Contoh: Diskon 20% untuk pembelian hari ini"
   },
   "buttons": {
     "save": "Simpan Perubahan",
@@ -30,3 +51,4 @@
     "sessionExpired": "Sesi Anda berakhir. Silakan login kembali."
   }
 }
+

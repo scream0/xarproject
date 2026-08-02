@@ -7,13 +7,13 @@
   box-sizing: border-box;
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
-  background-color: rgba(var(--surface-primary-rgb), 0.85);
+  background-color: rgba(var(--surface-primary-rgb), 0.9);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.2rem 7%;
-  height: 90px;
+  padding: 1rem 7%;
+  height: 84px;
   position: fixed;
   top: 0;
   left: 0;
@@ -24,17 +24,17 @@
 
 .scrolled {
   background-color: rgba(var(--background-rgb), 0.95);
-  height: 75px;
-  padding: 1rem 7%;
+  height: 72px;
+  padding: 0.9rem 7%;
   border-bottom-color: var(--border-color);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .logo {
   font-family: var(--font-serif);
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   color: var(--text-primary);
-  letter-spacing: 5px;
+  letter-spacing: 4px;
   text-transform: uppercase;
   font-weight: 300;
   cursor: pointer;
@@ -69,10 +69,10 @@
   color: var(--text-primary);
   opacity: 0.7;
   font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 2.5px;
-  margin-left: 1.8rem;
+  letter-spacing: 2px;
+  margin-left: 1.4rem;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   position: relative;
@@ -109,30 +109,35 @@
 
 .navbarExtra > button {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  padding: 6px;
+  padding: 8px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.3s ease;
+  border-radius: 999px;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  min-height: 40px;
 }
 
 .navbarExtra > button:hover {
-  background-color: rgba(var(--primary-accent-rgb), 0.08);
+  background-color: rgba(var(--primary-accent-rgb), 0.05);
+  border-color: rgba(var(--primary-accent-rgb), 0.14);
+  transform: translateY(-1px);
 }
 
 .navbarExtra button:hover .svgIcon {
   stroke: var(--primary-accent);
+  transform: scale(1.03);
 }
 
 .svgIcon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   stroke: var(--text-primary);
-  stroke-width: 1.5;
+  stroke-width: 1.7;
   fill: none;
   transition: all 0.3s ease;
 }
@@ -143,19 +148,19 @@
 
 .quantityBadge {
   position: absolute;
-  top: 0;
-  right: 0;
-  background-color: var(--primary-accent);
+  top: -1px;
+  right: -1px;
+  background: linear-gradient(135deg, var(--primary-accent), color-mix(in srgb, var(--primary-accent) 80%, white 20%));
   color: var(--primary-accent-text);
   font-size: 0.6rem;
   font-weight: 700;
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
 
 .cartBounce {
@@ -214,8 +219,8 @@
     background: transparent;
     color: var(--primary-accent);
     border-color: var(--primary-accent);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--primary-accent-rgb), 0.16);
   }
 }
 
@@ -245,8 +250,8 @@
 }
 
 .userAvatarBtn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.25);
+  transform: scale(1.02);
+  box-shadow: 0 4px 10px rgba(var(--primary-accent-rgb), 0.15);
 }
 
 .avatarImg {
@@ -273,7 +278,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -348,19 +353,20 @@
     display: inline-flex !important;
   }
   .navbar {
-    height: 75px;
-    padding: 0 6%;
+    height: 72px;
+    padding: 0 5.5%;
   }
   .logo {
-    font-size: 1.4rem;
-    letter-spacing: 3px;
+    font-size: 1.25rem;
+    letter-spacing: 2.2px;
+    gap: 8px;
   }
   .navbarNav {
     position: fixed;
-    top: 75px;
+    top: 72px;
     right: -100%;
-    width: 85%;
-    height: calc(100vh - 75px);
+    width: 88%;
+    height: calc(100vh - 72px);
     background-color: rgba(var(--background-rgb), 0.98);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
@@ -368,8 +374,8 @@
     flex-direction: column;
     align-items: flex-end;
     justify-content: flex-start;
-    padding: 3.5rem 2.5rem;
-    gap: 1.5rem;
+    padding: 2.8rem 1.8rem;
+    gap: 1.15rem;
     transition: right 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     box-sizing: border-box;
     overflow-y: auto;
@@ -380,15 +386,22 @@
   }
   .navbarNav a {
     margin-right: 0;
-    font-size: 1.35rem;
+    font-size: 1.1rem;
     font-weight: 300;
-    letter-spacing: 3px;
+    letter-spacing: 2.2px;
+    margin-left: 0;
   }
   .navbarNav a:hover {
     padding-right: 12px;
   }
   .navbarExtra {
-    gap: 0.4rem;
+    gap: 0.25rem;
+  }
+
+  .navbarExtra > button {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
   }
   .authContainer {
     display: none;
@@ -399,13 +412,13 @@
   }
 
   .mobileAuthSection {
-    margin-top: 1.5rem;
+    margin-top: 1.2rem;
     border-top: 1px solid var(--border-color);
-    padding-top: 1.5rem;
+    padding-top: 1.1rem;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1.2rem;
+    gap: 0.9rem;
     align-items: flex-end;
   }
   .mobileUserInfo {
@@ -444,7 +457,7 @@
     background: transparent;
     border: none;
     font-family: var(--font-sans);
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 500;
     color: var(--text-primary);
     text-decoration: none;
@@ -462,10 +475,10 @@
   .mobileLoginBtn {
     background: var(--primary-accent);
     color: var(--primary-accent-text);
-    padding: 0.75rem 1.75rem;
+    padding: 0.7rem 1.4rem;
     border-radius: 6px;
     border: 1px solid var(--primary-accent);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     letter-spacing: 2px;
     text-transform: uppercase;

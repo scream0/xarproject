@@ -1,43 +1,57 @@
 {
   "header": {
     "title": "Riwayat Pesanan",
-    "subtitle": "Kelola dan lacak status pesanan parfum mewah Anda"
+    "subtitle": "Pantau status peracikan, pengiriman, dan kelola pesanan Anda di sini."
   },
-  "searchPlaceholder": "Cari ID pesanan / nama parfum...",
-  "tabs": ["all", "processing", "completed"],
-  "loadingText": "Memuat data pesanan...",
-  "emptyText": "Belum ada riwayat pesanan yang ditemukan.",
+  "searchPlaceholder": "Cari berdasarkan ID pesanan atau nama produk...",
+  "tabs": ["all", "processing", "completed", "cancelled"],
+  "loadingText": "Memuat riwayat pesanan...",
+  "emptyText": "Belum ada pesanan ditemukan.",
   "buttons": {
-    "details": "Detail Pesanan",
+    "details": "Detail",
+    "review": "Ulas Produk",
+    "reviewSent": "Sudah Diulas",
     "reorder": "Pesan Lagi",
-    "review": "Beri Ulasan",
-    "reviewSent": "Ulasan Dikirim"
+    "copyId": "Salin ID",
+    "downloadInvoice": "Unduh Invoice",
+    "cancelOrder": "Batalkan",
+    "loadMore": "Muat Lebih Banyak Pesanan"
   },
   "labels": {
-    "orderId": "ID Pesanan",
+    "orderId": "ID Transaksi",
     "product": "Produk",
     "specsAndNotes": "Spesifikasi & Catatan",
     "paymentMethod": "Metode Pembayaran",
     "shippingAddress": "Alamat Pengiriman",
     "shippingReceipt": "Nomor Resi Pengiriman",
+    "trackShipping": "Lacak Kurir",
     "totalPaid": "Total Pembayaran",
-    "reviewTitle": "Beri Ulasan Produk",
-    "ratingLabel": "Rating (Bintang)",
+    "reviewTitle": "Ulas Produk",
+    "ratingLabel": "Rating (1 - 5 Bintang)",
     "commentLabel": "Komentar Ulasan",
-    "commentPlaceholder": "Bagaimana aroma dan ketahanan parfum pilihan Anda?",
-    "submitReview": "Kirim Ulasan",
-    "submittingReview": "Mengirim...",
-    "trackShipping": "Lacak Kiriman"
+    "commentPlaceholder": "Bagaimana pengalaman Anda dengan aroma parfum ini?",
+    "uploadPhoto": "Unggah Foto Ulasan (Opsional)",
+    "submittingReview": "Mengirim Ulasan...",
+    "submitReview": "Kirim Ulasan & Foto"
   },
   "modal": {
-    "title": "Detail Transaksi Pesanan",
+    "title": "Rincian Pesanan",
     "closeBtn": "Tutup"
   },
+  "stepper": {
+    "created": "Pesanan Dibuat",
+    "paid": "Pembayaran Dikonfirmasi",
+    "processing": "Peracikan / Diproses",
+    "shipping": "Dikirim / Selesai"
+  },
   "ratingOptions": [
-    { "value": 5, "label": "⭐⭐⭐⭐⭐ (Sempurna - 5 Bintang)" },
-    { "value": 4, "label": "⭐⭐⭐⭐ (Puas - 4 Bintang)" },
-    { "value": 3, "label": "⭐⭐⭐ (Cukup - 3 Bintang)" },
-    { "value": 2, "label": "⭐⭐ (Kurang - 2 Bintang)" },
-    { "value": 1, "label": "⭐ (Buruk - 1 Bintang)" }
-  ]
+    { "value": 5, "label": "★★★★★ (5 - Luar Biasa)" },
+    { "value": 4, "label": "★★★★☆ (4 - Sangat Bagus)" },
+    { "value": 3, "label": "★★★☆☆ (3 - Cukup)" },
+    { "value": 2, "label": "★★☆☆☆ (2 - Kurang)" },
+    { "value": 1, "label": "★☆☆☆☆ (1 - Buruk)" }
+  ],
+  "confirmations": {
+    "cancelPrompt": "Apakah Anda yakin ingin membatalkan pesanan ini?"
+  }
 }

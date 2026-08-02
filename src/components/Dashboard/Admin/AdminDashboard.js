@@ -17,12 +17,27 @@ import OverviewStats from "@/components/Dashboard/Admin/Overview/OverviewStats";
 import ProductManager from "@/components/Dashboard/Admin/Products/ProductManager";
 import ReviewManager from "@/components/Dashboard/Admin/Reviews/ReviewManager";
 import SettingsView from "@/components/Dashboard/Admin/Settings/SettingsView";
+import OperationsCenter from "@/components/Dashboard/Admin/Operations/OperationsCenter";
+import NotificationCenter from "@/components/Dashboard/Admin/Notifications/NotificationCenter";
+import UserManagement from "@/components/Dashboard/Admin/Operations/UserManagement";
+import { AdminDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navMeta = {
+    overview: "Orders & growth",
+    products: "Catalog & stock",
+    reviews: "Customer feedback",
+    analytics: "Performance insights",
+    notifications: "Alerts & system updates",
+    customers: "Manage customers & roles",
+    settings: "Storefront controls",
+    operations: "Customers, promos & reports",
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -33,8 +48,7 @@ export default function AdminDashboard() {
 
       try {
         // Validasi role ke API Route server backend
-        const res = await fetch(`/api/users?userId=${currentUser.uid}`);
-        const result = await res.json();
+        await fetch(`/api/users?userId=${currentUser.uid}`);
       } catch (error) {
         console.error("Gagal memverifikasi hak akses admin:", error);
       }
@@ -52,12 +66,7 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.pulseScanner}></div>
-        <p className={styles.loadingText}>{adminConfig.loading}</p>
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   return (
@@ -88,6 +97,7 @@ export default function AdminDashboard() {
             <span>{adminConfig.brand.suffix}</span>
           </div>
           <div className={styles.brandBadge}>{adminConfig.brand.badge}</div>
+          <div className={styles.brandCaption}>Commerce command center</div>
         </div>
 
         <nav className={styles.navContainer}>
@@ -103,7 +113,8 @@ export default function AdminDashboard() {
                     activeTab === item.id ? styles.navItemActive : ""
                   }`}
                 >
-                  <span>{item.label}</span>
+                  <span className={styles.navItemText}>{item.label}</span>
+                  <span className={styles.navItemMeta}>{navMeta[item.id]}</span>
                 </button>
               </li>
             ))}
@@ -111,6 +122,13 @@ export default function AdminDashboard() {
         </nav>
 
         <div className={styles.sidebarFooter}>
+          <div className={styles.sidebarStatusCard}>
+            <span className={styles.statusDot} />
+            <div>
+              <p className={styles.statusTitle}>Store is live</p>
+              <p className={styles.statusText}>Orders and inventory are being monitored.</p>
+            </div>
+          </div>
           <button onClick={handleLogout} className={styles.logoutBtn}>
             <span>{adminConfig.logoutText}</span>
           </button>
@@ -129,6 +147,18 @@ export default function AdminDashboard() {
         </header>
 
         <div className={styles.viewWrapper}>
+          <div className={styles.summaryPanel}>
+            <div>
+              <p className={styles.summaryEyebrow}>Commerce control center</p>
+              <h2 className={styles.summaryTitle}>Monitor performance, stock, and customer activity in one place.</h2>
+            </div>
+            <div className={styles.summaryPills}>
+              <span className={styles.summaryPill}>Live operations</span>
+              <span className={styles.summaryPill}>Fast decisions</span>
+              <span className={styles.summaryPill}>Premium store</span>
+            </div>
+          </div>
+
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <>
@@ -171,6 +201,31 @@ export default function AdminDashboard() {
                 <AnalyticsChart />
                 <AdvancedAnalytics />
               </div>
+            </section>
+          )}
+
+          {/* TAB 5a: NOTIFICATIONS */}
+          {activeTab === "notifications" && (
+            <section className={styles.workspaceArea}>
+              <div className={styles.workspaceInner}>
+                <NotificationCenter />
+              </div>
+            </section>
+          )}
+
+          {/* TAB 5b: CUSTOMERS */}
+          {activeTab === "customers" && (
+            <section className={styles.workspaceArea}>
+              <div className={styles.workspaceInner}>
+                <UserManagement />
+              </div>
+            </section>
+          )}
+
+          {/* TAB 6: OPERATIONS */}
+          {activeTab === "operations" && (
+            <section className={styles.workspaceArea}>
+              <div className={styles.workspaceInner}><OperationsCenter /></div>
             </section>
           )}
 

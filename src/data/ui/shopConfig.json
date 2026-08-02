@@ -1,6 +1,6 @@
 {
   "header": {
-    "title": "Koleksi Eksklusif XAR",
+    "title": "Koleksi Eksklusif MAMEKO",
     "subtitle": "Temukan aroma signature mewah yang diracik khusus untuk kepribadian Anda"
   },
   "filters": {
@@ -17,7 +17,7 @@
   },
   "card": {
     "fallbackPrice": "Harga tidak tersedia",
-    "placeholderImageText": "XAR PARFUM",
+    "placeholderImageText": "MAMEKO PARFUM",
     "defaultCategory": "Parfum Eksklusif",
     "defaultDescription": "Parfum mewah racikan tangan dengan kualitas bahan terbaik yang tahan sepanjang hari.",
     "variantLabel": "Pilih Varian Ukuran & Konsentrasi:",
@@ -32,7 +32,9 @@
     "outOfStock": "Stok Varian Habis"
   },
   "toasts": {
-    "fetchError": "Gagal memuat produk dari database."
+    "fetchError": "Gagal memuat produk dari database.",
+    "wishlistAdd": "Berhasil ditambahkan ke wishlist!",
+    "wishlistRemove": "Dihapus dari wishlist."
   },
   "reviews": {
     "title": "Ulasan Pelanggan",

@@ -1,0 +1,25 @@
+{
+  "header": {
+    "title": "Wishlist Saya",
+    "subtitle": "Produk favorit yang ingin Anda beli nanti."
+  },
+  "searchPlaceholder": "Cari di wishlist...",
+  "emptyTitle": "Wishlist masih kosong",
+  "emptyText": "Tekan ikon hati pada produk di katalog untuk menyimpannya di sini.",
+  "loadingText": "Memuat wishlist...",
+  "buttons": {
+    "explore": "Jelajahi Katalog",
+    "addToCart": "Tambah ke Keranjang",
+    "remove": "Hapus"
+  },
+  "toasts": {
+    "removeSuccess": "Dihapus dari wishlist.",
+    "addedSuccess": "Produk ditambahkan ke keranjang!"
+  },
+  "stock": {
+    "available": "Tersedia",
+    "lowStock": "Stok Menipis",
+    "outOfStock": "Stok Habis"
+  }
+}
+

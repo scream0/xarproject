@@ -6,25 +6,37 @@
   --font-serif: "Tenor Sans", sans-serif;
   --font-sans: "Lato", sans-serif;
 
-  /* Light Theme Palette (Luxury Ivory & Champagne Gold) */
-  --background: #f8f7f4;
-  --text-primary: #141414;
-  --text-secondary: #6b6963;
-  --surface-primary: #ffffff;
-  --surface-secondary: #f0eee9;
-  --border-color: #e2dfd8;
+  /* Light Theme Palette (Clean Ivory & Warm Cream) */
+  --background: #fcfaf6;
+  --text-primary: #161311;
+  --text-secondary: #766c62;
+  --surface-primary: #fffdf9;
+  --surface-secondary: #f8efe2;
+  --border-color: #eadfcb;
   --primary-accent: #c5a059;
   --primary-accent-text: #ffffff;
   --danger-color: #b91c1c;
   --success-color: #15803d;
 
   /* RGB versions for rgba() */
-  --surface-primary-rgb: 255, 255, 255;
-  --background-rgb: 248, 247, 244;
-  --text-secondary-rgb: 107, 105, 99;
+  --surface-primary-rgb: 255, 253, 249;
+  --background-rgb: 252, 250, 246;
+  --text-secondary-rgb: 118, 108, 98;
   --primary-accent-rgb: 197, 160, 89;
   --danger-color-rgb: 185, 28, 28;
   --success-color-rgb: 21, 128, 61;
+
+  /* Hero surface treatments */
+  --hero-panel-bg: rgba(255, 253, 249, 0.72);
+  --hero-panel-border: rgba(22, 19, 17, 0.12);
+  --hero-panel-shadow: rgba(17, 13, 10, 0.08);
+  --hero-pill-bg: rgba(255, 255, 255, 0.78);
+  --hero-pill-border: rgba(22, 19, 17, 0.12);
+  --hero-pill-shadow: rgba(17, 13, 10, 0.07);
+
+  /* Skeleton loading colors (Light theme) */
+  --skeleton-base: rgba(118, 108, 98, 0.14);
+  --skeleton-shine: rgba(255, 255, 255, 0.55);
 }
 
 [data-theme="dark"] {
@@ -47,6 +59,18 @@
   --primary-accent-rgb: 212, 175, 55;
   --danger-color-rgb: 239, 68, 68;
   --success-color-rgb: 16, 185, 129;
+
+  /* Hero surface treatments */
+  --hero-panel-bg: rgba(20, 20, 22, 0.84);
+  --hero-panel-border: rgba(244, 243, 238, 0.16);
+  --hero-panel-shadow: rgba(0, 0, 0, 0.38);
+  --hero-pill-bg: rgba(20, 20, 22, 0.86);
+  --hero-pill-border: rgba(244, 243, 238, 0.16);
+  --hero-pill-shadow: rgba(0, 0, 0, 0.28);
+
+  /* Skeleton loading colors (Dark theme) */
+  --skeleton-base: rgba(163, 160, 153, 0.12);
+  --skeleton-shine: rgba(255, 255, 255, 0.06);
 }
 
 /* ====================================================

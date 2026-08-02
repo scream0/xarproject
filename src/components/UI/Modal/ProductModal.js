@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import styles from "./ProductModal.module.css";
 import modalData from "@/data/ui/productModalConfig.json";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
 
 export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
   const [currentSize, setCurrentSize] = useState("");
@@ -87,11 +88,7 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
           onClick={handleClose}
           aria-label={modalData?.accessibility?.closeAriaLabel}
         >
-          <svg className={styles.feather}>
-            <use
-              href={`/assets/icon/feather-sprite.svg#${modalData?.icons?.close}`}
-            />
-          </svg>
+          <AppIcon name={modalData?.icons?.close} className={styles.feather} />
         </button>
 
         <div className={styles.modalGrid}>

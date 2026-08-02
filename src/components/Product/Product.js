@@ -1,7 +1,8 @@
 "use client";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useProductFilter } from "@/hooks/useProductFilter";
 import { useStore } from "@/context/StoreContext";
+import { getPublicSettings } from "@/services/settingsService";
 import { Swiper, SwiperSlide, useSwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 
@@ -12,7 +13,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-// Import UI Config JSON
+// Import UI Config JSON (fallback)
 import productData from "@/data/ui/productConfig.json";
 
 function SlideWrapper({ children }) {
@@ -32,6 +33,8 @@ function SlideWrapper({ children }) {
 
 export function Product({ onBukaDetail }) {
   const { products, addToCart, rupiah } = useStore();
+  const [productSectionSettings, setProductSectionSettings] = useState(null);
+  const [resolvedHeader, setResolvedHeader] = useState(productData?.header);
 
   // Menyesuaikan struktur data produk terpusat dari API/Store (bisa array langsung atau terbungkus di .data/.produkItems)
   const productList = Array.isArray(products)
@@ -40,6 +43,32 @@ export function Product({ onBukaDetail }) {
 
   const { kategoriItems, currentCategory, setCurrentCategory, filteredItems } =
     useProductFilter(productList);
+
+  useEffect(() => {
+    const fetchSectionSettings = async () => {
+      try {
+        const data = await getPublicSettings({ force: true });
+        if (!data) return;
+        setProductSectionSettings(data);
+
+        // Header section produk dari settings DB (fallback ke JSON)
+        if (data?.product?.header) {
+          setResolvedHeader({
+            ...(productData?.header || {}),
+            ...data.product.header,
+            title: {
+              ...(productData?.header?.title || {}),
+              ...(data.product.header?.title || {}),
+            },
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load product section settings", error);
+      }
+    };
+
+    fetchSectionSettings();
+  }, []);
 
   const handleAddToCart = useCallback(
     (item, variant) => addToCart(item, variant),
@@ -70,14 +99,26 @@ export function Product({ onBukaDetail }) {
 
   return (
     <section id="product" className={styles.product}>
-      {/* Header Data Driven */}
+      {/* Header Data Driven (DB override JSON) */}
       <div className={styles.productHeader}>
-        <h5>{productData.header.tagline}</h5>
+        <h5>{resolvedHeader?.tagline}</h5>
         <h2>
-          {productData.header.title.main}{" "}
-          <span>{productData.header.title.highlight}</span>
+          {resolvedHeader?.title?.main}{" "}
+          <span>{resolvedHeader?.title?.highlight}</span>
         </h2>
       </div>
+
+      {productSectionSettings?.productSectionImage && (
+        <div className={styles.featuredImageCard}>
+          <img
+            src={productSectionSettings.productSectionImage}
+            alt={
+              productSectionSettings.productSectionImageAlt || "Produk unggulan"
+            }
+            className={styles.featuredImage}
+          />
+        </div>
+      )}
 
       <div className={styles.produkFilterTabs}>
         {kategoriItems.map((kat) => (
@@ -218,3 +259,4 @@ function ProductCard({ item, onDetail, onAdd, rupiah }) {
     </div>
   );
 }
+

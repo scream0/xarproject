@@ -45,7 +45,7 @@ async function verifyAdmin(authHeader) {
   throw new Error("User is not an administrator.");
 }
 
-// POST -> Kirim Review Baru
+// POST -> Kirim Review Baru (per-item, auto-approved)
 export async function POST(request) {
   try {
     let decodedToken;
@@ -80,10 +80,7 @@ export async function POST(request) {
     }
 
     const orderRef = db.collection("orders").doc(orderId);
-    const reviewRef = db
-      .collection("reviews")
-      .where("orderId", "==", orderId)
-      .limit(1);
+    const productIdStr = String(productId);
 
     const result = await db.runTransaction(async (transaction) => {
       const orderDoc = await transaction.get(orderRef);
@@ -95,13 +92,26 @@ export async function POST(request) {
       if (orderData.userId !== userId) {
         throw new Error("You are not authorized to review this order.");
       }
-      if (orderData.hasBeenReviewed) {
-        throw new Error("This order has already been reviewed.");
+
+      const reviewedItemIds = Array.isArray(orderData.reviewedItemIds)
+        ? orderData.reviewedItemIds
+        : [];
+
+      if (reviewedItemIds.includes(productIdStr)) {
+        throw new Error("Produk ini pada pesanan tersebut sudah diulas.");
       }
 
-      const reviewSnapshot = await transaction.get(reviewRef);
-      if (!reviewSnapshot.empty) {
-        throw new Error("A review for this order already exists.");
+      // Cek juga apakah sudah ada review dengan orderId + productId yang sama
+      // (double-check di luar transaction-read agar tidak duplikat)
+      const existingReviewSnap = await db
+        .collection("reviews")
+        .where("orderId", "==", orderId)
+        .where("productId", "==", productIdStr)
+        .limit(1)
+        .get();
+
+      if (!existingReviewSnap.empty) {
+        throw new Error("Produk ini pada pesanan tersebut sudah diulas.");
       }
 
       const newReviewRef = db.collection("reviews").doc();
@@ -109,15 +119,25 @@ export async function POST(request) {
         userId,
         userName: decodedToken.name || decodedToken.email || "Pelanggan",
         orderId,
-        productId,
+        productId: productIdStr,
         productName: productName || "Product",
         rating: Number(rating),
         comment,
         createdAt: FieldValue.serverTimestamp(),
-        approved: false,
+        // Auto-approve: review langsung tayang di halaman produk.
+        // Admin tetap bisa sembunyikan (approved:false) atau hapus lewat PUT/DELETE
+        // di bawah kalau ada review yang spam/tidak pantas.
+        approved: true,
       });
 
-      transaction.update(orderRef, { hasBeenReviewed: true });
+      const updatedReviewedItemIds = [...reviewedItemIds, productIdStr];
+
+      transaction.update(orderRef, {
+        reviewedItemIds: updatedReviewedItemIds,
+        // Tetap set hasBeenReviewed:true untuk kompatibilitas data lama,
+        // artinya "order ini sudah punya minimal 1 review"
+        hasBeenReviewed: true,
+      });
 
       return { reviewId: newReviewRef.id };
     });
@@ -138,9 +158,30 @@ export async function POST(request) {
   }
 }
 
-// GET -> Ambil Daftar Review (Admin)
+// GET -> Ambil Daftar Review
+// - Mode publik (?public=true): review yang approved saja, tanpa perlu login.
+//   Dipakai halaman Shop untuk menampilkan ulasan di setiap produk.
+// - Mode admin (default, tanpa ?public=true): semua review, perlu token admin.
+//   Dipakai dashboard admin untuk moderasi.
 export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const productId = searchParams.get("productId");
+  const isPublicRequest = searchParams.get("public") === "true";
+
   try {
+    if (isPublicRequest) {
+      let reviewsQuery = db.collection("reviews").where("approved", "==", true);
+      if (productId) {
+        reviewsQuery = reviewsQuery.where("productId", "==", String(productId));
+      }
+      const snapshot = await reviewsQuery.get();
+      const reviews = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      return Response.json({ reviews }, { status: 200 });
+    }
+
     try {
       await verifyAdmin(request.headers.get("Authorization"));
     } catch (error) {
@@ -170,7 +211,8 @@ export async function GET(request) {
   }
 }
 
-// PUT -> Update Status Approval Review (Admin)
+// PUT -> Update Status Approval Review (Admin) — dipakai untuk sembunyikan
+// review spam/tidak pantas tanpa menghapusnya permanen.
 export async function PUT(request) {
   try {
     try {
@@ -208,7 +250,7 @@ export async function PUT(request) {
   }
 }
 
-// DELETE -> Hapus Review (Admin)
+// DELETE -> Hapus Review Permanen (Admin)
 export async function DELETE(request) {
   try {
     try {

@@ -3,6 +3,8 @@ import { getAuth } from "firebase-admin/auth";
 import { promises as fs } from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+
 // Helper to check for admin privileges (Supports Custom Claims & Firestore users collection)
 async function verifyAdmin(authHeader) {
   if (!authHeader) throw new Error("No authorization header.");
@@ -26,7 +28,7 @@ async function verifyAdmin(authHeader) {
     ) {
       return decodedToken;
     }
-  } catch (e) {
+  } catch {
     // Abaikan jika gagal ambil user record
   }
 
@@ -36,7 +38,7 @@ async function verifyAdmin(authHeader) {
     if (userDoc.exists && userDoc.data()?.role === "admin") {
       return decodedToken;
     }
-  } catch (e) {
+  } catch {
     // Abaikan jika gagal cek database
   }
 
@@ -45,30 +47,224 @@ async function verifyAdmin(authHeader) {
 
 const settingsDocRef = db.collection("store_config").doc("main");
 
-// GET -> Fetch current store settings (Auto-create if not exists)
+/**
+ * Default lengkap settings — dipakai saat dokumen belum pernah dibuat,
+ * dan sebagai dasar akuisisi data landing page dari JSON config statis.
+ */
+const DEFAULT_SETTINGS = {
+  storeName: "XAR Perfume",
+  storeEmail: "contact@xar.com",
+  currency: "IDR",
+  lowStockThreshold: 10,
+  midtransServerKey: "",
+  midtransClientKey: "",
+
+  // Hero Section
+  hero: {
+    tagline: "Artisanal Craftsmanship",
+    title: {
+      main: "Meracik Batas Antara",
+      highlight: "Aroma & Rasa",
+    },
+    description: {
+      prefix: "Eksplorasi mahakarya ",
+      italic: "Extrait de Parfum",
+      suffix:
+        " berkonsentrasi tinggi dan kopi arabica pilihan. Dibuat manual dalam jumlah terbatas untuk Anda yang menghargai identitas.",
+    },
+    buttons: {
+      primary: { label: "Jelajahi Koleksi", href: "#product" },
+      secondary: { label: "The Story", href: "#about" },
+    },
+  },
+
+  // About Section
+  about: {
+    image: "/assets/images/about-bg.jpg",
+    imageAlt: "Artisanal Craftsmanship",
+    content: {
+      tagline: "The Story Behind",
+      heading: "The Essence of Artisanal Perfection.",
+      leadText:
+        "MAMEKO mendefinisikan ulang kemewahan melalui keheningan aroma dan kedalaman karakter yang terakurasi.",
+      bodyText:
+        "Kami percaya bahwa apa yang Anda kenakan adalah representasi paling jujur dari identitas diri. Setiap rilisan diracik secara manual dalam jumlah terbatas untuk memastikan eksklusivitas.",
+    },
+    features: [
+      {
+        number: "01",
+        title: "Premium Concentration",
+        desc: "Konsentrat tertinggi untuk ketahanan aroma sepanjang hari.",
+      },
+      {
+        number: "02",
+        title: "Artisanal Blend",
+        desc: "Racikan manual yang menjaga keaslian setiap karakter aroma.",
+      },
+    ],
+  },
+
+  // Product Section
+  product: {
+    header: {
+      tagline: "our curated collection",
+      title: { main: "Produk", highlight: "Kami" },
+    },
+  },
+
+  // Contact Section
+  contact: {
+    whatsappNumber: "6285171723607",
+    header: {
+      tagline: "Get In Touch",
+      title: { main: "Ada Pertanyaan?", highlight: "Hubungi Kami" },
+    },
+    infoItems: [
+      {
+        icon: "mail",
+        title: "Email Resmi",
+        value: "support@mameko.my.id",
+      },
+      {
+        icon: "clock",
+        title: "Jam Operasional",
+        value: "Setiap Hari (18:00 - 21:00 WIB)",
+      },
+      {
+        icon: "map-pin",
+        title: "Lokasi Galeri",
+        value: "Sleman, Yogyakarta, Indonesia",
+      },
+    ],
+    headquarters: {
+      title: "Headquarters",
+      address: [
+        "Tegalrejo Wedomartani, Kabupaten Sleman,",
+        "Daerah Istimewa Yogyakarta 55584",
+      ],
+      coordinates: '07° 43\' 36.2" S | 110° 25\' 35.3" E',
+    },
+    form: {
+      title: "Kirim Pesan Instan",
+      fields: {
+        name: "Nama Lengkap",
+        email: "Alamat Email",
+        phone: "Nomor WhatsApp",
+        message: "Tulis Pesan Anda...",
+      },
+      submitText: "Kirim via WhatsApp",
+    },
+  },
+
+  // Footer Section
+  footer: {
+    branding: {
+      logo: { text: "MAKE ", subtext: "ME KOOL", href: "#" },
+      description:
+        "Meracik setiap produk dengan penuh perhatian untuk memberikan kualitas aroma dan rasa terbaik langsung ke tangan Anda.",
+      socials: [
+        {
+          href: "https://www.instagram.com/xar.project/",
+          icon: "instagram",
+          label: "Instagram",
+        },
+        { href: "#product", icon: "shopping-bag", label: "Shop" },
+      ],
+    },
+    navigation: {
+      title: "Penjelajahan",
+      links: [
+        { label: "Home", href: "#home" },
+        { label: "Tentang Kami", href: "#about" },
+        { label: "Produk", href: "#product" },
+        { label: "Kontak", href: "#contact" },
+      ],
+    },
+    payment: {
+      title: "Pembayaran",
+      subtitle: "Didukung secara aman oleh:",
+      methods: ["Midtrans", "QRIS"],
+    },
+    copyright: { text: "Make Me Kool. All rights reserved." },
+  },
+
+  // Promo Section
+  promoBannerEnabled: false,
+  promoBannerText: "Diskon khusus untuk pelanggan setia",
+
+  // Visual Produk
+  productSectionImage: "/assets/produk/crush.jpg",
+  productSectionImageAlt: "Produk unggulan XAR",
+};
+
+// Helper: sanitasi data undefined agar aman untuk Firestore
+function sanitizeData(obj) {
+  const cleanObj = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      if (
+        typeof obj[key] === "object" &&
+        obj[key] !== null &&
+        !Array.isArray(obj[key]) &&
+        !(obj[key] instanceof Date)
+      ) {
+        cleanObj[key] = sanitizeData(obj[key]);
+      } else {
+        cleanObj[key] = obj[key];
+      }
+    }
+  }
+  return cleanObj;
+}
+
+// Helper: pastikan doc settings dibuat + isi field yang hilang dengan default
+async function ensureSettingsDoc() {
+  const doc = await settingsDocRef.get();
+  if (!doc.exists) {
+    await settingsDocRef.set(DEFAULT_SETTINGS);
+    return { ...DEFAULT_SETTINGS };
+  }
+
+  const existing = doc.data();
+  const merged = {
+    ...DEFAULT_SETTINGS,
+    ...existing,
+    // Gabungkan objek bersarang secara shallow agar field baru tetap muncul
+    hero: { ...DEFAULT_SETTINGS.hero, ...(existing.hero || {}) },
+    about: { ...DEFAULT_SETTINGS.about, ...(existing.about || {}) },
+    product: { ...DEFAULT_SETTINGS.product, ...(existing.product || {}) },
+    contact: { ...DEFAULT_SETTINGS.contact, ...(existing.contact || {}) },
+    footer: { ...DEFAULT_SETTINGS.footer, ...(existing.footer || {}) },
+  };
+  return merged;
+}
+
+// GET -> Fetch store settings
+// - Tanpa token + ?public=true => data aman untuk landing page publik
+// - Dengan token admin => data lengkap (termasuk midtrans masked)
 export async function GET(request) {
   try {
-    await verifyAdmin(request.headers.get("Authorization"));
+    const { searchParams } = new URL(request.url);
+    const isPublic = searchParams.get("public") === "true";
 
-    let doc = await settingsDocRef.get();
-
-    if (!doc.exists) {
-      const defaultSettings = {
-        storeName: "XAR Perfume",
-        storeEmail: "contact@xar.com",
-        currency: "IDR",
-        lowStockThreshold: 10,
-        midtransServerKey: "",
-        midtransClientKey: "",
-      };
-
-      await settingsDocRef.set(defaultSettings);
-      doc = await settingsDocRef.get();
+    // Mode publik: tidak perlu auth
+    if (isPublic) {
+      const settings = await ensureSettingsDoc();
+      // Hapus semua field sensitif dari respon publik
+      const publicSafe = { ...settings };
+      delete publicSafe.midtransServerKey;
+      delete publicSafe.midtransClientKey;
+      return new Response(JSON.stringify(publicSafe), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const settings = doc.data();
+    // Mode admin: wajib auth
+    await verifyAdmin(request.headers.get("Authorization"));
+    const settings = await ensureSettingsDoc();
 
-    // IMPORTANT: Mask sensitive keys before sending to the client
+    // Mask sensitive keys before sending to the client
     const clientSafeSettings = {
       ...settings,
       midtransServerKey: settings.midtransServerKey
@@ -91,20 +287,98 @@ export async function GET(request) {
   }
 }
 
-// PUT -> Update store settings
+// PUT -> Update store settings (admin only)
 export async function PUT(request) {
   try {
     await verifyAdmin(request.headers.get("Authorization"));
     const newSettings = await request.json();
 
+    // Ambil settings saat ini agar merge object bersarang tetap lengkap
+    const current = await ensureSettingsDoc();
+
     const updateData = {};
 
-    // Only update fields that are actually provided in the request
-    if (newSettings.storeName) updateData.storeName = newSettings.storeName;
-    if (newSettings.storeEmail) updateData.storeEmail = newSettings.storeEmail;
-    if (newSettings.currency) updateData.currency = newSettings.currency;
-    if (newSettings.lowStockThreshold)
+    // Fields store
+    if (newSettings.storeName !== undefined)
+      updateData.storeName = newSettings.storeName;
+    if (newSettings.storeEmail !== undefined)
+      updateData.storeEmail = newSettings.storeEmail;
+    if (newSettings.currency !== undefined)
+      updateData.currency = newSettings.currency;
+    if (newSettings.lowStockThreshold !== undefined)
       updateData.lowStockThreshold = Number(newSettings.lowStockThreshold);
+    if (newSettings.productSectionImage !== undefined)
+      updateData.productSectionImage = newSettings.productSectionImage;
+    if (newSettings.productSectionImageAlt !== undefined)
+      updateData.productSectionImageAlt = newSettings.productSectionImageAlt;
+    if (newSettings.productSectionImagePublicId !== undefined)
+      updateData.productSectionImagePublicId =
+        newSettings.productSectionImagePublicId;
+    if (newSettings.promoBannerEnabled !== undefined)
+      updateData.promoBannerEnabled = Boolean(newSettings.promoBannerEnabled);
+    if (newSettings.promoBannerText !== undefined)
+      updateData.promoBannerText = newSettings.promoBannerText;
+
+    // Landing object bersarang
+    if (newSettings.hero) {
+      updateData.hero = sanitizeData({
+        ...(current.hero || {}),
+        ...newSettings.hero,
+      });
+    }
+    if (newSettings.about) {
+      updateData.about = sanitizeData({
+        ...(current.about || {}),
+        ...newSettings.about,
+        content: {
+          ...(current.about?.content || {}),
+          ...(newSettings.about.content || {}),
+        },
+      });
+      // Pasang image/alt jika dikirim sebagai bagian about
+      if (newSettings.about.image !== undefined)
+        updateData.about.image = newSettings.about.image;
+      if (newSettings.about.imageAlt !== undefined)
+        updateData.about.imageAlt = newSettings.about.imageAlt;
+    }
+    if (newSettings.product) {
+      updateData.product = sanitizeData({
+        ...(current.product || {}),
+        ...newSettings.product,
+      });
+    }
+    if (newSettings.contact) {
+      updateData.contact = sanitizeData({
+        ...(current.contact || {}),
+        ...newSettings.contact,
+        header: {
+          ...(current.contact?.header || {}),
+          ...(newSettings.contact.header || {}),
+        },
+        headquarters: {
+          ...(current.contact?.headquarters || {}),
+          ...(newSettings.contact.headquarters || {}),
+        },
+      });
+    }
+    if (newSettings.footer) {
+      updateData.footer = sanitizeData({
+        ...(current.footer || {}),
+        ...newSettings.footer,
+        branding: {
+          ...(current.footer?.branding || {}),
+          ...(newSettings.footer.branding || {}),
+        },
+        navigation: {
+          ...(current.footer?.navigation || {}),
+          ...(newSettings.footer.navigation || {}),
+        },
+        payment: {
+          ...(current.footer?.payment || {}),
+          ...(newSettings.footer.payment || {}),
+        },
+      });
+    }
 
     // Handle sensitive keys: only update if a new, non-placeholder value is provided
     let envFileContent = "";
@@ -112,12 +386,13 @@ export async function PUT(request) {
 
     try {
       envFileContent = await fs.readFile(envPath, "utf8");
-    } catch (e) {
+    } catch {
       // .env.local might not exist, that's okay
     }
 
     if (
       newSettings.midtransServerKey &&
+      typeof newSettings.midtransServerKey === "string" &&
       !newSettings.midtransServerKey.includes("•")
     ) {
       updateData.midtransServerKey = newSettings.midtransServerKey;
@@ -129,6 +404,7 @@ export async function PUT(request) {
     }
     if (
       newSettings.midtransClientKey &&
+      typeof newSettings.midtransClientKey === "string" &&
       !newSettings.midtransClientKey.includes("•")
     ) {
       updateData.midtransClientKey = newSettings.midtransClientKey;
@@ -140,7 +416,7 @@ export async function PUT(request) {
     }
 
     if (Object.keys(updateData).length > 0) {
-      await settingsDocRef.set(updateData, { merge: true });
+      await settingsDocRef.set(sanitizeData(updateData), { merge: true });
     }
 
     if (envFileContent) {
@@ -169,3 +445,4 @@ function updateEnvVariable(content, key, value) {
     return content + `\n${newEntry}`;
   }
 }
+

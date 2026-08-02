@@ -24,8 +24,9 @@
       "pending": "Pending",
       "success": "Success",
       "processing": "Processing",
-      "shipping": "Shipping",
-      "completed": "Completed"
+      "shipped": "Shipped",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
     },
     "table": {
       "orderId": "Order ID",

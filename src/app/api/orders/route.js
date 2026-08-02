@@ -202,11 +202,13 @@ export async function PUT(request) {
     // Kurangi stok produk yang ada di Supabase berdasarkan item yang dibeli
     const isSuccessStatus =
       targetStatus.toLowerCase() === "success" ||
-      targetStatus.toLowerCase() === "settlement";
+      targetStatus.toLowerCase() === "settlement" ||
+      targetStatus.toLowerCase() === "processing";
 
     const wasAlreadySuccess =
       orderData.status?.toLowerCase() === "success" ||
-      orderData.status?.toLowerCase() === "settlement";
+      orderData.status?.toLowerCase() === "settlement" ||
+      orderData.status?.toLowerCase() === "processing";
 
     if (isSuccessStatus && !wasAlreadySuccess && supabase) {
       const items = orderData.items || [];
@@ -254,6 +256,10 @@ export async function PUT(request) {
     const updateData = {
       status: targetStatus,
       updated_at: new Date(),
+      statusHistory: [
+        ...(Array.isArray(orderData.statusHistory) ? orderData.statusHistory : []),
+        { status: targetStatus, changedAt: new Date().toISOString(), source: "admin" },
+      ].slice(-50),
     };
 
     if (shippingReceiptNumber) {

@@ -1,8 +1,13 @@
 "use client";
+
 import { useState, useEffect, useMemo } from "react";
 import { useStore } from "@/context/StoreContext";
 import styles from "./Shop.module.css";
 import toast from "react-hot-toast";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
+
+// Import Skeleton
+import { ShopSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 // Import Konfigurasi JSON
 import shopConfig from "@/data/ui/shopConfig.json";
@@ -14,17 +19,57 @@ export default function Shop() {
   const [products, setProducts] = useState([]);
   const [orderItemsMap, setOrderItemsMap] = useState({});
   const [allOrders, setAllOrders] = useState([]);
+  const [allReviews, setAllReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE);
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 0, activeMin: 0, activeMax: 0 });
+
+  // Wishlist State (LocalStorage persistence)
+  const [wishlist, setWishlist] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("shop_wishlist");
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
 
   // State untuk Modal Detail Produk
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeVariantIdx, setActiveVariantIdx] = useState(0);
 
-  // Fetch Produk & Orders secara terpisah
+  const toggleWishlist = (productId, e) => {
+    e.stopPropagation();
+    // Hitung state berikutnya di LUAR updater dan pindahkan semua side-effect
+    // (toast + localStorage) ke sini. React bisa memanggil updater setWishlist
+    // secara eagar saat render, sehingga memanggil toast.success di dalamnya
+    // memicu "Cannot update a component while rendering a different component".
+    const isExist = wishlist.includes(productId);
+    const updated = isExist
+      ? wishlist.filter((id) => id !== productId)
+      : [...wishlist, productId];
+
+    setWishlist(updated);
+
+    try {
+      localStorage.setItem("shop_wishlist", JSON.stringify(updated));
+    } catch {}
+
+    toast.success(
+      isExist
+        ? shopConfig.toasts?.wishlistRemove || "Dihapus dari wishlist."
+        : shopConfig.toasts?.wishlistAdd ||
+            "Berhasil ditambahkan ke wishlist!",
+    );
+  };
+
+  // Fetch Produk, Orders & Reviews secara terpisah
   const fetchShopData = async () => {
     try {
       const productsRes = await fetch("/api/products", { cache: "no-store" });
@@ -43,6 +88,21 @@ export default function Shop() {
       const fetchedProducts =
         productsResult.data || productsResult.products || productsResult || [];
       setProducts(fetchedProducts);
+
+      // Compute price range from fetched products
+      const prices = fetchedProducts
+        .map((p) => p.variants?.[0]?.price || p.price || 0)
+        .filter((price) => price > 0);
+      if (prices.length > 0) {
+        const min = Math.floor(Math.min(...prices) / 10000) * 10000;
+        const max = Math.ceil(Math.max(...prices) / 10000) * 10000;
+        setPriceRange({
+          min,
+          max,
+          activeMin: min,
+          activeMax: max,
+        });
+      }
     } catch (err) {
       console.error("Gagal memuat produk:", err.message);
       toast.error(
@@ -99,6 +159,25 @@ export default function Shop() {
     } catch (err) {
       console.warn("Catatan: Data orders belum tersedia.", err.message);
     }
+
+    // Fetch review yang sudah approved dari collection "reviews" (bukan dari orders)
+    try {
+      const reviewsRes = await fetch("/api/reviews?public=true", {
+        cache: "no-store",
+      });
+      const reviewContentType = reviewsRes.headers.get("content-type");
+
+      if (
+        reviewsRes.ok &&
+        reviewContentType &&
+        reviewContentType.includes("application/json")
+      ) {
+        const reviewsResult = await reviewsRes.json();
+        setAllReviews(reviewsResult.reviews || []);
+      }
+    } catch (err) {
+      console.warn("Catatan: Data ulasan belum tersedia.", err.message);
+    }
   };
 
   useEffect(() => {
@@ -138,6 +217,16 @@ export default function Shop() {
       );
     }
 
+    // Filter harga (rentang aktif)
+    if (priceRange.activeMin > 0 || priceRange.activeMax > 0) {
+      result = result.filter((p) => {
+        const price = p.variants?.[0]?.price || p.price || 0;
+        const minOk = priceRange.activeMin <= 0 || price >= priceRange.activeMin;
+        const maxOk = priceRange.activeMax <= 0 || price <= priceRange.activeMax;
+        return minOk && maxOk;
+      });
+    }
+
     switch (sortBy) {
       case "price-low":
         result.sort(
@@ -160,45 +249,36 @@ export default function Shop() {
         break;
     }
     return result;
-  }, [products, selectedCategory, searchQuery, sortBy]);
+  }, [products, selectedCategory, searchQuery, sortBy, priceRange]);
 
   // OPTIMASI PERFORMA: Pre-indexing Ulasan menggunakan Hash Map
-  // Memproses seluruh orders satu kali saja saat data orders berubah (O(N)),
-  // sehingga pencarian ulasan saat membuka modal produk menjadi instan (O(1)).
+  // Sumber data: collection "reviews" (via /api/reviews?public=true),
+  // BUKAN field di dalam dokumen orders — review disimpan terpisah oleh
+  // endpoint /api/reviews saat customer submit ulasan dari halaman pesanan.
   const productReviewsMap = useMemo(() => {
     const map = {};
-    allOrders.forEach((order) => {
-      const items = order.items || order.order_items || [];
-      items.forEach((item) => {
-        const itemId = String(
-          item.id || item.productId || item.product_id || "",
-        );
-        if (!itemId) return;
+    allReviews.forEach((rev) => {
+      const pId = String(rev.productId || "");
+      if (!pId) return;
 
-        if (item.review || item.rating || order.review || order.rating) {
-          if (!map[itemId]) map[itemId] = [];
-          map[itemId].push({
-            id: order.id || order.orderId,
-            customer: order.customerName || order.customerEmail || "Pelanggan",
-            rating: Number(item.rating || order.rating || 5),
-            comment:
-              item.review ||
-              item.comment ||
-              order.review ||
-              "Produk sangat bagus dan berkualitas!",
-            date: order.createdAt
-              ? new Date(
-                  order.createdAt.seconds
-                    ? order.createdAt.seconds * 1000
-                    : order.createdAt,
-                ).toLocaleDateString("id-ID")
-              : "Baru saja",
-          });
-        }
+      if (!map[pId]) map[pId] = [];
+      map[pId].push({
+        id: rev.id,
+        customer: rev.userName || "Pelanggan",
+        rating: Number(rev.rating || 5),
+        comment: rev.comment || "Produk sangat bagus dan berkualitas!",
+        photo: rev.photo || rev.review_photo || null,
+        date: rev.createdAt
+          ? new Date(
+              rev.createdAt.seconds
+                ? rev.createdAt.seconds * 1000
+                : rev.createdAt,
+            ).toLocaleDateString("id-ID")
+          : "Baru saja",
       });
     });
     return map;
-  }, [allOrders]);
+  }, [allReviews]);
 
   const productReviews = useMemo(() => {
     if (!selectedProduct) return [];
@@ -304,12 +384,65 @@ export default function Shop() {
           </option>
           <option value="name">{shopConfig.filters?.sortName || "Nama"}</option>
         </select>
+        <div className={styles.priceFilter}>
+          <div className={styles.priceFilterHeader}>
+            <span className={styles.priceFilterLabel}>Harga</span>
+            {(priceRange.activeMin !== priceRange.min ||
+              priceRange.activeMax !== priceRange.max) && (
+              <button
+                className={styles.priceResetBtn}
+                onClick={() =>
+                  setPriceRange((prev) => ({
+                    ...prev,
+                    activeMin: prev.min,
+                    activeMax: prev.max,
+                  }))
+                }
+              >
+                Reset
+              </button>
+            )}
+          </div>
+          <div className={styles.priceRangeValues}>
+            <span>Rp {Number(priceRange.activeMin).toLocaleString("id-ID")}</span>
+            <span>—</span>
+            <span>Rp {Number(priceRange.activeMax).toLocaleString("id-ID")}</span>
+          </div>
+          <div className={styles.priceRangeInputs}>
+            <input
+              type="range"
+              min={priceRange.min}
+              max={priceRange.max}
+              step={10000}
+              value={priceRange.activeMin}
+              onChange={(e) =>
+                setPriceRange((prev) => ({
+                  ...prev,
+                  activeMin: Math.min(Number(e.target.value), prev.activeMax),
+                }))
+              }
+              className={styles.priceRangeSlider}
+            />
+            <input
+              type="range"
+              min={priceRange.min}
+              max={priceRange.max}
+              step={10000}
+              value={priceRange.activeMax}
+              onChange={(e) =>
+                setPriceRange((prev) => ({
+                  ...prev,
+                  activeMax: Math.max(Number(e.target.value), prev.activeMin),
+                }))
+              }
+              className={styles.priceRangeSlider}
+            />
+          </div>
+        </div>
       </div>
 
       {loading ? (
-        <div className={styles.stateContainer}>
-          <p>{shopConfig.messages?.loading || "Memuat produk..."}</p>
-        </div>
+        <ShopSkeleton count={8} />
       ) : processedProducts.length === 0 ? (
         <div className={styles.stateContainer}>
           <p>{shopConfig.messages?.empty || "Produk tidak ditemukan."}</p>
@@ -318,7 +451,7 @@ export default function Shop() {
         <>
           <div className={styles.productGrid}>
             {processedProducts.slice(0, visibleCount).map((product) => {
-              const pId = String(product.id || "");
+              const pId = String(product.id || product._id || "");
               const totalSold =
                 orderItemsMap[pId] || Number(product.total_sold || 0);
               const displayPrice =
@@ -328,6 +461,7 @@ export default function Shop() {
                 : shopConfig.card?.fallbackPrice || "Rp 0";
               const outOfStock = isProductOutOfStock(product);
               const totalStockLeft = getProductTotalStock(product);
+              const isWishlisted = wishlist.includes(pId);
 
               return (
                 <div
@@ -355,6 +489,20 @@ export default function Shop() {
                         shopConfig.card?.defaultCategory ||
                         "Parfum"}
                     </span>
+                    <button
+                      className={`${styles.wishlistBtn} ${isWishlisted ? styles.wishlistActive : ""}`}
+                      onClick={(e) => toggleWishlist(pId, e)}
+                      aria-label="Wishlist"
+                    >
+                      <svg viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                        />
+                      </svg>
+                    </button>
                     {outOfStock && (
                       <span className={styles.outOfStockBadge}>
                         {shopConfig.card?.soldOutBadge || "Habis"}
@@ -380,9 +528,7 @@ export default function Shop() {
                           "Tambah ke keranjang"
                         }
                       >
-                        <svg>
-                          <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
-                        </svg>
+                        <AppIcon name="shopping-cart" />
                       </button>
                     </div>
                     <div className={styles.cardPriceRow}>
@@ -393,9 +539,18 @@ export default function Shop() {
                       </span>
                     </div>
                     <div className={styles.cardFooterInfo}>
-                      <span className={styles.soldCount}>
-                        Terjual {totalSold}{" "}
-                        {outOfStock ? "" : `• Sisa: ${totalStockLeft}`}
+                      <span
+                        className={
+                          outOfStock
+                            ? styles.soldCount
+                            : totalStockLeft <= 5
+                              ? styles.stockIndicatorLow
+                              : styles.stockIndicator
+                        }
+                      >
+                        {outOfStock
+                          ? `Terjual ${totalSold}`
+                          : `Sisa ${totalStockLeft} lagi!`}
                       </span>
                       <span className={styles.viewDetailText}>
                         {shopConfig.card?.viewDetail || "Detail"}
@@ -435,9 +590,7 @@ export default function Shop() {
               onClick={() => setSelectedProduct(null)}
               aria-label="Tutup"
             >
-              <svg>
-                <use href="/assets/icon/feather-sprite.svg#x" />
-              </svg>
+              <AppIcon name="x" />
             </button>
             <div className={styles.modalGrid}>
               <div className={styles.modalImageWrapper}>
@@ -493,10 +646,10 @@ export default function Shop() {
                   </div>
                 )}
 
-                {/* Bagian Ulasan Pelanggan Teroptimasi */}
+                {/* Bagian Ulasan & Foto Pelanggan */}
                 <div className={styles.reviewsSection}>
                   <h4 className={styles.reviewsTitle}>
-                    {shopConfig.reviews?.title || "Ulasan Pelanggan"} (
+                    {shopConfig.reviews?.title || "Ulasan & Foto Pelanggan"} (
                     {productReviews.length})
                   </h4>
                   <div className={styles.reviewsList}>
@@ -517,6 +670,13 @@ export default function Shop() {
                             </span>
                           </div>
                           <p className={styles.reviewComment}>{rev.comment}</p>
+                          {rev.photo && (
+                            <img
+                              src={rev.photo}
+                              alt="Ulasan customer"
+                              className={styles.reviewPhoto}
+                            />
+                          )}
                         </div>
                       ))
                     )}
@@ -542,9 +702,7 @@ export default function Shop() {
                         disabled={isSoldOut}
                         className={`${styles.buyBtn} ${isSoldOut ? styles.modalBuyBtnDisabled : ""}`}
                       >
-                        <svg>
-                          <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
-                        </svg>
+                        <AppIcon name="shopping-cart" />
                         <span>
                           {isSoldOut
                             ? shopConfig.buttons?.outOfStock || "Habis"

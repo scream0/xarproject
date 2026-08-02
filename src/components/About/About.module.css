@@ -25,11 +25,11 @@
 }
 
 .about {
-  padding: 9rem 7%;
-  background: radial-gradient(
-    circle at 85% 15%,
-    var(--surface-secondary) 0%,
-    var(--background) 75%
+  padding: 8rem 7%;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--surface-secondary-rgb), 0.38) 0%,
+    var(--background) 70%
   );
   color: var(--text-primary);
   position: relative;
@@ -45,14 +45,14 @@
 .aboutRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6rem;
+  gap: 5rem;
   align-items: center;
 }
 
 /* --- B. Image Wrapper (Luxury Gold/Platinum Frame) --- */
 .aboutImgWrapper {
   position: relative;
-  height: 620px;
+  height: 560px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -137,21 +137,21 @@
   flex: 1.2;
   position: relative;
   z-index: 10;
-  padding: 2.5rem;
+  padding: 2.2rem;
   overflow: hidden;
   transition: background 0.4s ease;
   animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
   opacity: 0;
   background: linear-gradient(
     135deg,
-    rgba(var(--surface-primary-rgb), 0.6) 0%,
-    rgba(var(--surface-secondary-rgb, 29, 29, 32), 0.2) 100%
+    rgba(var(--surface-primary-rgb), 0.96) 0%,
+    rgba(var(--surface-secondary-rgb), 0.7) 100%
   );
   border: 1px solid var(--border-color);
   border-radius: 12px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 30px rgba(22, 19, 17, 0.05);
 }
 
 /* Layer Spotlight interaktif */
@@ -192,35 +192,35 @@
   color: var(--primary-accent);
   text-transform: uppercase;
   letter-spacing: 0.35em;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .aboutContent h3 {
   font-family: var(--font-serif);
-  font-size: 2.8rem;
+  font-size: clamp(1.95rem, 2.8vw, 2.5rem);
   font-weight: 300;
   line-height: 1.2;
-  margin-bottom: 2rem;
-  letter-spacing: 1px;
+  margin-bottom: 1.25rem;
+  letter-spacing: 0.02em;
   color: var(--text-primary);
 }
 
 .aboutLead {
   font-family: var(--font-sans);
-  font-size: 1.15rem;
+  font-size: 0.96rem;
   font-weight: 400;
   color: var(--text-primary);
-  margin-bottom: 1.8rem;
+  margin-bottom: 1.1rem;
   line-height: 1.7;
 }
 
 .aboutContent p {
   color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.8;
-  margin-bottom: 2rem;
+  font-size: 0.9rem;
+  line-height: 1.75;
+  margin-bottom: 1.1rem;
   font-weight: 300;
 }
 
@@ -228,14 +228,14 @@
 .aboutFeatures {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.2rem;
   border-top: 1px solid var(--border-color);
-  padding-top: 2rem;
+  padding-top: 1.6rem;
 }
 
 .featureItem {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.2rem;
   align-items: flex-start;
 }
 
@@ -266,19 +266,26 @@
 /* Responsive */
 @media (max-width: 991px) {
   .about {
-    padding: 6rem 5%;
+    padding: 5.5rem 5%;
   }
   .aboutRow {
     grid-template-columns: 1fr;
-    gap: 4rem;
+    gap: 2.8rem;
   }
   .aboutImgWrapper {
-    height: 450px;
+    height: 360px;
   }
   .aboutContent h3 {
-    font-size: 2.2rem;
+    font-size: 1.9rem;
   }
   .aboutContent {
-    padding: 1.75rem;
+    padding: 1.35rem;
+  }
+  .aboutTagline {
+    margin-bottom: 0.9rem;
+  }
+  .aboutFeatures {
+    gap: 1rem;
+    padding-top: 1.2rem;
   }
 }

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
 import styles from "./CartSidebar.module.css";
 import cartConfig from "@/data/ui/cartSidebarConfig.json";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
 
 export function CartSidebar() {
   const router = useRouter();
@@ -81,11 +82,7 @@ export function CartSidebar() {
             {cartConfig?.labels?.title}
           </h3>
           <button className={styles.cartCloseBtn} onClick={closeSidebar}>
-            <svg className={styles.svgIcon}>
-              <use
-                href={`/assets/icon/feather-sprite.svg#${cartConfig?.icons?.close}`}
-              />
-            </svg>
+            <AppIcon name={cartConfig?.icons?.close} className={styles.svgIcon} />
           </button>
         </header>
 
@@ -127,9 +124,7 @@ export function CartSidebar() {
                           onClick={() => handleRemoveItem(item.cartId)}
                           title="Hapus Item"
                         >
-                          <svg className={styles.svgIcon}>
-                            <use href="/assets/icon/feather-sprite.svg#trash-2" />
-                          </svg>
+                          <AppIcon name="trash-2" className={styles.svgIcon} />
                         </button>
                       </div>
 
@@ -238,11 +233,7 @@ export function CartSidebar() {
         ) : (
           <div className={styles.emptyCartStatus}>
             <div className={styles.emptyCartIcon}>
-              <svg className={styles.svgIcon}>
-                <use
-                  href={`/assets/icon/feather-sprite.svg#${cartConfig?.icons?.emptyCart}`}
-                />
-              </svg>
+              <AppIcon name={cartConfig?.icons?.emptyCart} className={styles.svgIcon} />
             </div>
             <p>{cartConfig?.emptyState?.message}</p>
             <button

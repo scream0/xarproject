@@ -116,6 +116,70 @@
   cursor: pointer;
 }
 
+/* === PRICE RANGE FILTER === */
+.priceFilter {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.priceFilterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.priceFilterLabel {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+
+.priceResetBtn {
+  background: transparent;
+  border: none;
+  color: var(--primary-accent);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 4px;
+}
+
+.priceResetBtn:hover {
+  text-decoration: underline;
+}
+
+.priceRangeValues {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: var(--text-primary);
+}
+
+.priceRangeInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.priceRangeSlider {
+  width: 100%;
+  accent-color: var(--primary-accent);
+  cursor: pointer;
+}
+
 .stateContainer {
   text-align: center;
   padding: 5rem 0;
@@ -158,6 +222,7 @@
   flex-direction: column;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  position: relative;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -226,11 +291,52 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  z-index: 2;
+}
+
+.wishlistBtn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(var(--surface-primary-rgb, 255, 255, 255), 0.9);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 3;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wishlistBtn:hover {
+    transform: scale(1.1);
+    background: var(--surface-primary);
+  }
+}
+
+.wishlistBtn svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--text-primary);
+  fill: none;
+  transition:
+    fill 0.3s,
+    stroke 0.3s;
+}
+
+.wishlistActive svg {
+  fill: #e11d48;
+  stroke: #e11d48;
 }
 
 .outOfStockBadge {
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   left: 10px;
   background: var(--danger-color);
   color: #ffffff;
@@ -335,6 +441,16 @@
   color: var(--text-secondary);
   letter-spacing: 0.5px;
   text-transform: uppercase;
+}
+
+.stockIndicator {
+  font-weight: 600;
+  color: #059669;
+}
+
+.stockIndicatorLow {
+  font-weight: 600;
+  color: #d97706;
 }
 
 .viewDetailText {
@@ -498,6 +614,16 @@
   flex-direction: column;
 }
 
+.productCategory {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
 .modalTitle {
   font-family: var(--font-serif);
   font-size: 1.5rem;
@@ -567,7 +693,7 @@
 
 .variantChipDisabled {
   opacity: 0.4;
-  border-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  border-color: rgba(220, 38, 38, 0.3);
   cursor: not-allowed;
   text-decoration: line-through;
 }
@@ -640,6 +766,7 @@
   box-shadow: none !important;
   transform: none !important;
 }
+
 /* === REVIEWS SECTION IN PRODUCT MODAL === */
 .reviewsSection {
   margin-top: 16px;
@@ -706,6 +833,16 @@
   margin: 0;
   font-size: 0.8rem;
   line-height: 1.4;
+}
+
+.reviewPhoto {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  margin-top: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
 }
 
 .emptyReviews {

@@ -4,7 +4,7 @@
 .pageContainer {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -18,11 +18,12 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 60px 24px;
+  padding: 44px 24px 32px;
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  background-color: rgba(var(--surface-primary-rgb), 0.7);
 
   /* Ambient Lighting eksklusif menyesuaikan tema */
   background:
@@ -61,14 +62,14 @@
 
 .brandTitle {
   font-family: var(--font-serif);
-  font-size: 2.8rem;
+  font-size: 2.4rem;
   font-weight: 300;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.24em;
   color: var(--text-primary);
   text-transform: uppercase;
   text-align: center;
   position: relative;
-  padding-bottom: 1.25rem;
+  padding-bottom: 1rem;
   margin: 0;
 }
 
@@ -92,9 +93,9 @@
   font-family: var(--font-sans);
   color: var(--text-secondary);
   font-weight: 300;
-  letter-spacing: 0.4em;
-  margin-top: 1.5rem;
-  font-size: 0.75rem;
+  letter-spacing: 0.32em;
+  margin-top: 1.1rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   text-align: center;
 }
@@ -103,7 +104,7 @@
 .rightPanel {
   display: flex;
   width: 100%;
-  padding: 40px 24px;
+  padding: 24px 20px 32px;
   align-items: center;
   justify-content: flex-start;
   flex-direction: column;
@@ -124,9 +125,9 @@
 /* --- Tautan Kembali (Back Link) --- */
 .backLink {
   display: inline-block;
-  margin: 2.5rem auto 0 auto;
+  margin: 2rem auto 0 auto;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-family: var(--font-sans);
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -134,8 +135,8 @@
   text-decoration: none;
   padding: 0.6rem 1.25rem;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--surface-secondary);
+  border-radius: 999px;
+  background: rgba(var(--surface-primary-rgb), 0.85);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
 }

@@ -190,7 +190,14 @@ export default function ProductManager() {
 
       <div className={styles.inventorySection}>
         <div className={styles.headerRow}>
-          <h2 className={styles.title}>{pmConfig.title}</h2>
+          <div>
+            <h2 className={styles.title}>{pmConfig.title}</h2>
+            <p className={styles.subtitle}>Keep inventory healthy and spot issues before they affect sales.</p>
+          </div>
+          <div className={styles.summaryPillGroup}>
+            <span className={styles.summaryPill}>Live inventory</span>
+            <span className={styles.summaryPill}>Fast updates</span>
+          </div>
         </div>
 
         <div className={styles.controlsContainer}>

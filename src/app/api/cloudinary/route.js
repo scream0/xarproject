@@ -48,10 +48,12 @@ export async function POST(request) {
     const userId = formData.get("userId");
     const oldPublicId = formData.get("oldPublicId");
     const oldUrl = formData.get("oldUrl");
+    const folder = formData.get("folder") || "avatars";
+    const explicitPublicId = formData.get("publicId") || null;
 
-    if (!file || !userId) {
+    if (!file) {
       return NextResponse.json(
-        { error: "File and userId are required" },
+        { error: "File is required" },
         { status: 400 },
       );
     }
@@ -60,7 +62,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Invalid file" }, { status: 400 });
     }
 
-    const newPublicId = getAvatarPublicId(userId);
+    const newPublicId = explicitPublicId || (userId ? getAvatarPublicId(userId) : null);
     const resolvedOldPublicId =
       oldPublicId || (oldUrl ? extractPublicIdFromUrl(oldUrl) : null);
 
@@ -77,8 +79,8 @@ export async function POST(request) {
     const uploadResult = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: "avatars",
-          public_id: `user_${userId}`,
+          folder,
+          ...(newPublicId ? { public_id: newPublicId } : {}),
           resource_type: "image",
           overwrite: true,
           invalidate: true,

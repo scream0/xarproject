@@ -13,9 +13,15 @@ import userConfig from "@/data/ui/userDashboardConfig.json";
 // Import Komponen Section
 import OverviewSection from "@/components/Dashboard/User/Overview/OverviewUser";
 import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
+import ReturnsCenter from "@/components/Dashboard/User/Returns/ReturnsCenter";
+import SupportCenter from "@/components/Dashboard/User/Support/SupportCenter";
 import ProfileSection from "@/components/Dashboard/User/Profil/UserProfil";
 import ShopPage from "@/components/Dashboard/User/Shop/Shop";
+import NotificationsSection from "@/components/Dashboard/User/Notifications/NotificationsSection";
+import WishlistSection from "@/components/Dashboard/User/Wishlist/WishlistSection";
 import { CartSidebar } from "@/components/UI/Sidebar/CartSidebar";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
+import { UserDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 const db = getFirestore();
 
@@ -122,12 +128,7 @@ export default function UserDashboard() {
   )?.label;
 
   if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.pulseScanner}></div>
-        <p className={styles.loadingText}>{userConfig.loading}</p>
-      </div>
-    );
+    return <UserDashboardSkeleton />;
   }
 
   return (
@@ -144,9 +145,7 @@ export default function UserDashboard() {
             onClick={() => setIsCartOpen(true)}
             aria-label={userConfig.aria.cart}
           >
-            <svg className={styles.svgIcon}>
-              <use href="/assets/icon/feather-sprite.svg#shopping-cart" />
-            </svg>
+            <AppIcon name="shopping-cart" className={styles.svgIcon} />
             {isMounted && cartQuantity > 0 && (
               <span
                 className={`${styles.cartQuantityBadge} ${animate ? styles.pop : ""}`}
@@ -162,13 +161,10 @@ export default function UserDashboard() {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={userConfig.aria.menu}
           >
-            <svg className={styles.svgIcon}>
-              <use
-                href={`/assets/icon/feather-sprite.svg#${
-                  isMobileMenuOpen ? "x" : "menu"
-                }`}
-              />
-            </svg>
+            <AppIcon
+              name={isMobileMenuOpen ? "x" : "menu"}
+              className={styles.svgIcon}
+            />
           </button>
         </div>
       </div>
@@ -224,6 +220,21 @@ export default function UserDashboard() {
             <h1 className={styles.welcomeTitle}>
               WELCOME, {userName || userConfig.defaultUser}
             </h1>
+            {/* Tombol Keranjang untuk Desktop/Tab (Top bar mobile disembunyikan >= 1024px) */}
+            <button
+              className={styles.cartIconBtnDesktop}
+              onClick={() => setIsCartOpen(true)}
+              aria-label={userConfig.aria.cart}
+            >
+              <AppIcon name="shopping-cart" className={styles.svgIcon} />
+              {isMounted && cartQuantity > 0 && (
+                <span
+                  className={`${styles.cartQuantityBadge} ${animate ? styles.pop : ""}`}
+                >
+                  {cartQuantity}
+                </span>
+              )}
+            </button>
           </div>
         </header>
 
@@ -233,6 +244,10 @@ export default function UserDashboard() {
             <OverviewSection setActiveTab={setActiveTab} />
           )}
           {activeTab === "orders" && <OrdersSection />}
+          {activeTab === "returns" && <ReturnsCenter />}
+          {activeTab === "notifications" && <NotificationsSection />}
+          {activeTab === "wishlist" && <WishlistSection />}
+          {activeTab === "support" && <SupportCenter />}
           {activeTab === "profile" && <ProfileSection />}
         </div>
       </main>

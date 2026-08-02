@@ -1,7 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getPublicSettings } from "@/services/settingsService";
 import styles from "./Contact.module.css";
-import contactData from "@/data/ui/contactConfig.json"; // Sesuaikan path ini
+import contactData from "@/data/ui/contactConfig.json"; // Fallback default JSON
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -10,6 +12,51 @@ export function Contact() {
     phone: "",
     message: "",
   });
+
+  // State resolved dari DB (fallback ke JSON)
+  const [contactInfo, setContactInfo] = useState(contactData);
+
+  useEffect(() => {
+    const fetchContact = async () => {
+      try {
+        const data = await getPublicSettings({ force: true });
+        if (!data?.contact) return;
+        setContactInfo({
+          ...contactData,
+          ...data.contact,
+          header: {
+            ...(contactData?.header || {}),
+            ...(data.contact?.header || {}),
+            title: {
+              ...(contactData?.header?.title || {}),
+              ...(data.contact?.header?.title || {}),
+            },
+          },
+          infoItems:
+            Array.isArray(data.contact?.infoItems) &&
+            data.contact.infoItems.length > 0
+              ? data.contact.infoItems
+              : contactData?.infoItems || [],
+          headquarters: {
+            ...(contactData?.headquarters || {}),
+            ...(data.contact?.headquarters || {}),
+          },
+          form: {
+            ...(contactData?.form || {}),
+            ...(data.contact?.form || {}),
+            fields: {
+              ...(contactData?.form?.fields || {}),
+              ...(data.contact?.form?.fields || {}),
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Failed to load contact settings", error);
+      }
+    };
+
+    fetchContact();
+  }, []);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -20,8 +67,9 @@ export function Contact() {
     e.preventDefault();
     const teksPesan = `*📩 PESAN BARU - KONTAK KAMI*\n--------------------------------------------\n• *Nama* : ${formData.name}\n• *Email* : ${formData.email}\n• *No HP* : ${formData.phone}\n--------------------------------------------\n*💬 ISI PESAN:*\n"${formData.message}"`;
 
-    // Mengambil nomor WA dinamis dari JSON
-    const waNumber = contactData?.whatsappNumber || "6281234567890";
+    // Mengambil nomor WA dinamis dari settings DB / JSON
+    const waNumber =
+      contactInfo?.whatsappNumber || contactData?.whatsappNumber || "6281234567890";
 
     window.open(
       `https://wa.me/${waNumber}?text=${encodeURIComponent(teksPesan)}`,
@@ -37,15 +85,15 @@ export function Contact() {
         {/* Sisi Kiri: Informasi */}
         <div className={styles.contactInfoCard}>
           <div className={styles.infoHeader}>
-            <h5>{contactData?.header?.tagline}</h5>
+            <h5>{contactInfo?.header?.tagline}</h5>
             <h2>
-              {contactData?.header?.title?.main} <br />
-              <span>{contactData?.header?.title?.highlight}</span>
+              {contactInfo?.header?.title?.main} <br />
+              <span>{contactInfo?.header?.title?.highlight}</span>
             </h2>
           </div>
 
           <div className={styles.infoDetailsList}>
-            {contactData?.infoItems?.map((item, index) => (
+            {contactInfo?.infoItems?.map((item, index) => (
               <InfoItem
                 key={index}
                 icon={item.icon}
@@ -56,14 +104,14 @@ export function Contact() {
           </div>
 
           <div className={styles.addressBox}>
-            <h4>{contactData?.headquarters?.title}</h4>
+            <h4>{contactInfo?.headquarters?.title}</h4>
             <p>
-              {contactData?.headquarters?.address?.[0]}
+              {contactInfo?.headquarters?.address?.[0]}
               <br />
-              {contactData?.headquarters?.address?.[1]}
+              {contactInfo?.headquarters?.address?.[1]}
             </p>
             <span className={styles.coordinates}>
-              {contactData?.headquarters?.coordinates}
+              {contactInfo?.headquarters?.coordinates}
             </span>
           </div>
         </div>
@@ -71,24 +119,24 @@ export function Contact() {
         {/* Sisi Kanan: Form */}
         <div className={styles.contactFormWrapper}>
           <form onSubmit={kirimPesanKontak} className={styles.contactForm}>
-            <h3>{contactData?.form?.title}</h3>
+            <h3>{contactInfo?.form?.title}</h3>
 
             <InputBox
               id="input-name"
-              label={contactData?.form?.fields?.name}
+              label={contactInfo?.form?.fields?.name}
               value={formData.name}
               onChange={handleInputChange}
             />
             <InputBox
               id="input-email"
-              label={contactData?.form?.fields?.email}
+              label={contactInfo?.form?.fields?.email}
               type="email"
               value={formData.email}
               onChange={handleInputChange}
             />
             <InputBox
               id="input-phone"
-              label={contactData?.form?.fields?.phone}
+              label={contactInfo?.form?.fields?.phone}
               type="tel"
               value={formData.phone}
               onChange={handleInputChange}
@@ -103,12 +151,12 @@ export function Contact() {
                 id="input-message"
               ></textarea>
               <label htmlFor="input-message">
-                {contactData?.form?.fields?.message}
+                {contactInfo?.form?.fields?.message}
               </label>
             </div>
 
             <button type="submit" className={styles.btnSubmit}>
-              {contactData?.form?.submitText}
+              {contactInfo?.form?.submitText}
             </button>
           </form>
         </div>
@@ -122,10 +170,7 @@ function InfoItem({ icon, title, value }) {
   return (
     <div className={styles.infoItem}>
       <div className={styles.infoIcon}>
-        <svg className={styles.feather}>
-          {/* Pastikan menggunakan template literal yang benar di sini */}
-          <use href={`/assets/icon/feather-sprite.svg#${icon}`} />
-        </svg>
+        <AppIcon name={icon} className={styles.feather} />
       </div>
       <div className={styles.infoText}>
         <h4>{title}</h4>
@@ -150,3 +195,4 @@ function InputBox({ id, label, type = "text", value, onChange }) {
     </div>
   );
 }
+

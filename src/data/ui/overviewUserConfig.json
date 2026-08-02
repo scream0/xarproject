@@ -1,17 +1,22 @@
 {
   "metrics": {
-    "totalSpent": {
-      "title": "Total Belanja",
-      "desc": "Dari pesanan yang tuntas"
-    },
-    "totalOrders": {
-      "title": "Total Pesanan",
-      "desc": "Akumulasi seluruh transaksi"
-    },
-    "processingOrders": {
-      "title": "Dalam Proses",
-      "desc": "Peracikan / pengiriman"
-    }
+    "totalSpent": { "title": "Total Belanja", "desc": "Dari pesanan yang tuntas" },
+    "totalOrders": { "title": "Total Pesanan", "desc": "Akumulasi seluruh transaksi" },
+    "processingOrders": { "title": "Dalam Proses", "desc": "Peracikan / pengiriman" },
+    "points": { "title": "Poin Rewards", "desc": "Dapat dipakai untuk transaksi", "icon": "star" },
+    "balance": { "title": "Saldo Wallet", "desc": "Saldo tersedia untuk belanja", "icon": "wallet", "currency": true }
+  },
+  "pointsBanner": {
+    "title": "Program Poin XAR",
+    "desc": "Kumpulkan poin dari setiap transaksi sukses dan tukarkan dengan produk eksklusif.",
+    "howTo": "Cara dapat poin:",
+    "rules": [
+      "1 poin / Rp10.000 belanja",
+      "Bonus poin di hari spesial",
+      "Poin tidak berlaku untuk ongkir"
+    ],
+    "pointsLabel": "Poin Anda",
+    "balanceLabel": "Saldo Wallet"
   },
   "welcomeBanner": {
     "badge": "AREA ANGGOTA VIP",
@@ -41,3 +46,4 @@
     "fetchSummaryError": "Gagal memuat data ringkasan."
   }
 }
+

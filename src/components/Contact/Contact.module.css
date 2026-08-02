@@ -14,15 +14,14 @@
 }
 
 .contact {
-  padding: 10rem 7% 6rem;
-  background-color: var(--background);
+  padding: 8.5rem 7% 5.5rem;
+  background: linear-gradient(180deg, var(--background) 0%, rgba(var(--surface-secondary-rgb), 0.35) 100%);
   color: var(--text-primary);
 }
 
 .contactContainer {
   display: flex;
-  gap: 8s;
-  gap: 8rem;
+  gap: 5rem;
   align-items: flex-start;
 }
 
@@ -45,11 +44,11 @@
 
 .infoHeader h2 {
   font-family: var(--font-serif);
-  font-size: 2.8rem;
+  font-size: 2.45rem;
   font-weight: 300;
   color: var(--text-primary);
   line-height: 1.2;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
   letter-spacing: 1px;
 }
 
@@ -67,10 +66,10 @@
 .infoItem {
   display: flex;
   align-items: flex-start;
-  gap: 1.5rem;
-  padding: 1.2rem;
+  gap: 1.2rem;
+  padding: 1rem 1.1rem;
   border-radius: 12px;
-  background: rgba(var(--surface-primary-rgb), 0.4);
+  background: rgba(var(--surface-primary-rgb), 0.85);
   border: 1px solid var(--border-color);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -161,21 +160,21 @@
 /* --- Form Container --- */
 .contactFormWrapper {
   flex: 1.1;
-  background-color: var(--surface-primary);
+  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98) 0%, rgba(var(--surface-secondary-rgb), 0.72) 100%);
   border: 1px solid var(--border-color);
-  padding: 3.5rem;
+  padding: 2.5rem;
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
 .contactForm h3 {
   font-family: var(--font-serif);
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 400;
   color: var(--text-primary);
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   text-transform: uppercase;
   letter-spacing: 2px;
   text-align: center;
@@ -184,14 +183,14 @@
 /* Input Grouping */
 .inputBox {
   position: relative;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
 .inputBox input,
 .inputBox textarea {
   width: 100%;
   padding: 10px 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-family: var(--font-sans);
   color: var(--text-primary);
   border: none;
@@ -212,7 +211,7 @@
   top: 10px;
   left: 0;
   font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -249,30 +248,30 @@
 /* --- Submit Button --- */
 .btnSubmit {
   width: 100%;
-  padding: 16px 20px;
-  background-color: var(--primary-accent);
+  padding: 13px 18px;
+  background: linear-gradient(135deg, var(--primary-accent) 0%, color-mix(in srgb, var(--primary-accent) 78%, white 22%) 100%);
   color: var(--primary-accent-text);
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 999px;
   font-family: var(--font-sans);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
   cursor: pointer;
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.16);
 }
 
 .btnSubmit:hover {
-  background-color: transparent !important;
+  background: transparent !important;
   color: var(--primary-accent);
   border-color: var(--primary-accent);
   transform: translateY(-2px);
-  letter-spacing: 3px;
-  box-shadow: 0 8px 25px rgba(var(--primary-accent-rgb), 0.3);
+  letter-spacing: 0.22em;
+  box-shadow: 0 8px 20px rgba(var(--primary-accent-rgb), 0.2);
 }
 
 .btnSubmit:active {
@@ -312,16 +311,22 @@
 /* --- Responsive Media Queries --- */
 @media (max-width: 991px) {
   .contact {
-    padding: 6rem 5%;
+    padding: 5.5rem 5%;
   }
   .contactContainer {
     flex-direction: column;
-    gap: 4rem;
+    gap: 2.5rem;
   }
   .contactFormWrapper {
-    padding: 2.25rem 1.5rem;
+    padding: 1.6rem 1.2rem;
   }
   .infoHeader h2 {
-    font-size: 2.2rem;
+    font-size: 1.9rem;
+  }
+  .infoItem {
+    padding: 0.95rem 1rem;
+  }
+  .inputBox {
+    margin-bottom: 1.6rem;
   }
 }

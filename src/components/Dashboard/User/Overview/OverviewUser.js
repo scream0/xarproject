@@ -6,6 +6,7 @@ import { auth } from "@/lib/firebaseClient";
 import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewUserConfig.json";
+import { OverviewUserSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 // Mapping status agar kelas warna badge sinkron dengan OrdersSection
 const STATUS_INFO = {
@@ -37,6 +38,8 @@ export default function OverviewUser({ setActiveTab }) {
     totalOrders: 0,
     totalSpent: 0,
     processingOrders: 0,
+    points: 0,
+    balance: 0,
   });
   const [userProfile, setUserProfile] = useState({
     fullName: "",
@@ -116,10 +119,39 @@ export default function OverviewUser({ setActiveTab }) {
           ].includes((o.status || "").toLowerCase()),
         ).length;
 
+        // Ambil profil user untuk poin & saldo wallet
+        let userPoints = 0;
+        let userBalance = 0;
+        try {
+          const userRes = await fetch(`/api/users?userId=${currentUser.uid}`);
+          const userResult = await userRes.json();
+          if (userRes.ok && userResult.exists && userResult.data) {
+            userPoints = Number(userResult.data.points || 0);
+            userBalance = Number(userResult.data.balance || 0);
+
+            if (!fetchedFullName) {
+              fetchedFullName =
+                userResult.data.full_name ||
+                userResult.data.username ||
+                fetchedFullName;
+            }
+          }
+        } catch (e) {
+          console.error("Gagal mengambil poin/saldo user:", e);
+        }
+
+        setUserProfile({
+          fullName:
+            fetchedFullName || overviewConfig.welcomeBanner.defaultGuest,
+          username: currentUser.email || "",
+        });
+
         setStats({
           totalOrders: total,
           totalSpent: totalSpent,
           processingOrders: processing,
+          points: userPoints,
+          balance: userBalance,
         });
 
         // Urutkan pesanan dari yang terbaru berdasarkan tanggal
@@ -184,6 +216,14 @@ export default function OverviewUser({ setActiveTab }) {
       maximumFractionDigits: 0,
     }).format(number);
 
+  if (loading) {
+    return (
+      <div className={styles.overviewWorkspace}>
+        <OverviewUserSkeleton />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.overviewWorkspace}>
       {/* 1. Metric Cards Grid */}
@@ -219,6 +259,28 @@ export default function OverviewUser({ setActiveTab }) {
           </h3>
           <p className={styles.metricDesc}>
             {overviewConfig.metrics.processingOrders.desc}
+          </p>
+        </div>
+        <div className={`${styles.metricCard} ${styles.metricCardAccent}`}>
+          <p className={styles.metricTitle}>
+            {overviewConfig.metrics.points.title}
+          </p>
+          <h3 className={styles.metricValue}>
+            {loading ? "..." : `${Number(stats.points).toLocaleString("id-ID")} pts`}
+          </h3>
+          <p className={styles.metricDesc}>
+            {overviewConfig.metrics.points.desc}
+          </p>
+        </div>
+        <div className={`${styles.metricCard} ${styles.metricCardWallet}`}>
+          <p className={styles.metricTitle}>
+            {overviewConfig.metrics.balance.title}
+          </p>
+          <h3 className={styles.metricValue}>
+            {loading ? "..." : formatRupiah(stats.balance)}
+          </h3>
+          <p className={styles.metricDesc}>
+            {overviewConfig.metrics.balance.desc}
           </p>
         </div>
       </div>
@@ -326,6 +388,42 @@ export default function OverviewUser({ setActiveTab }) {
                 {overviewConfig.recentOrders.empty}
               </p>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* 2b. Points & Balance Banner */}
+      <div className={`${styles.sectionCard} ${styles.pointsBannerCard}`}>
+        <div className={styles.pointsBannerContent}>
+          <div>
+            <span className={styles.welcomeBadge}>
+              {overviewConfig.pointsBanner.title}
+            </span>
+            <h3 className={styles.cardTitle}>
+              {overviewConfig.pointsBanner.desc}
+            </h3>
+            <p className={styles.pointsRulesTitle}>
+              {overviewConfig.pointsBanner.howTo}
+            </p>
+            <ul className={styles.pointsRulesList}>
+              {overviewConfig.pointsBanner.rules.map((rule, idx) => (
+                <li key={idx}>{rule}</li>
+              ))}
+            </ul>
+          </div>
+          <div className={styles.pointsBalanceBox}>
+            <div className={styles.pointsBalanceItem}>
+              <span>{overviewConfig.pointsBanner.pointsLabel}</span>
+              <strong>
+                {loading
+                  ? "..."
+                  : `${Number(stats.points).toLocaleString("id-ID")} pts`}
+              </strong>
+            </div>
+            <div className={styles.pointsBalanceItem}>
+              <span>{overviewConfig.pointsBanner.balanceLabel}</span>
+              <strong>{loading ? "..." : formatRupiah(stats.balance)}</strong>
+            </div>
           </div>
         </div>
       </div>

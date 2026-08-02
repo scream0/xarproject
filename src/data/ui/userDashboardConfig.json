@@ -5,10 +5,38 @@
     "badge": "MEMBER AREA"
   },
   "nav": [
-    { "id": "shop", "label": "Katalog Parfum" },
-    { "id": "overview", "label": "Dashboard Overview" },
-    { "id": "orders", "label": "Riwayat Pesanan" },
-    { "id": "profile", "label": "Profil Pengguna" }
+    {
+      "id": "shop",
+      "label": "Katalog Parfum"
+    },
+    {
+      "id": "overview",
+      "label": "Dashboard Overview"
+    },
+    {
+      "id": "orders",
+      "label": "Riwayat Pesanan"
+    },
+    {
+      "id": "returns",
+      "label": "Retur & Refund"
+    },
+    {
+      "id": "notifications",
+      "label": "Notifikasi"
+    },
+    {
+      "id": "wishlist",
+      "label": "Wishlist"
+    },
+    {
+      "id": "support",
+      "label": "Bantuan"
+    },
+    {
+      "id": "profile",
+      "label": "Profil Pengguna"
+    }
   ],
   "logoutText": "Keluar Akun",
   "loading": "Memuat portal pengguna...",
@@ -24,3 +52,4 @@
     "logoutError": "Gagal logout:"
   }
 }
+

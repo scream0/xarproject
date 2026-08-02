@@ -9,6 +9,7 @@ import { Modal } from "../UI/Modal/ProductModal";
 import styles from "./Navbar.module.css";
 import config from "@/data/ui/navbarConfig.json";
 import { Logo } from "@/components/UI/Logo/logo";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
 
 export function Navbar() {
   const [activePanel, setActivePanel] = useState(null);
@@ -125,9 +126,7 @@ export function Navbar() {
                     />
                   ) : (
                     <div className={styles.avatarPlaceholderMobile}>
-                      <svg className={styles.svgIcon}>
-                        <use href="/assets/icon/feather-sprite.svg#user" />
-                      </svg>
+                      <AppIcon name="user" className={styles.svgIcon} />
                     </div>
                   )}
                   <span className={styles.mobileUserName}>{userName}</span>
@@ -191,11 +190,7 @@ export function Navbar() {
             onClick={() => togglePanel("search")}
             aria-label="Cari Produk"
           >
-            <svg className={styles.svgIcon}>
-              <use
-                href={`/assets/icon/feather-sprite.svg#${config?.features?.search?.icon}`}
-              />
-            </svg>
+            <AppIcon name={config?.features?.search?.icon} className={styles.svgIcon} />
           </button>
 
           <button
@@ -203,13 +198,10 @@ export function Navbar() {
             onClick={() => setIsCartOpen(!isCartOpen)}
             aria-label={config?.features?.cart?.ariaLabel}
           >
-            <svg
+            <AppIcon
+              name={config?.features?.cart?.icon}
               className={`${styles.svgIcon} ${animate ? styles.cartBounce : ""}`}
-            >
-              <use
-                href={`/assets/icon/feather-sprite.svg#${config?.features?.cart?.icon}`}
-              />
-            </svg>
+            />
             {isMounted && cartQuantity > 0 && (
               <span className={styles.quantityBadge}>{cartQuantity}</span>
             )}
@@ -220,11 +212,10 @@ export function Navbar() {
             className={styles.themeToggleBtn}
             aria-label="Toggle Theme"
           >
-            <svg className={styles.svgIcon}>
-              <use
-                href={`/assets/icon/feather-sprite.svg#${theme === "dark" ? "sun" : "moon"}`}
-              />
-            </svg>
+            <AppIcon
+              name={theme === "dark" ? "sun" : "moon"}
+              className={styles.svgIcon}
+            />
           </button>
 
           <div className={styles.authContainer}>
@@ -243,9 +234,7 @@ export function Navbar() {
                       onError={() => setImageError(true)}
                     />
                   ) : (
-                    <svg className={styles.svgIcon}>
-                      <use href="/assets/icon/feather-sprite.svg#user" />
-                    </svg>
+                    <AppIcon name="user" className={styles.svgIcon} />
                   )}
                 </button>
                 {isUserMenuOpen && (
@@ -308,11 +297,10 @@ export function Navbar() {
             className={styles.hamburger}
             aria-label="Menu Navigasi"
           >
-            <svg className={styles.svgIcon}>
-              <use
-                href={`/assets/icon/feather-sprite.svg#${activePanel === "navbar" ? config?.features?.hamburger?.iconClose : config?.features?.hamburger?.iconOpen}`}
-              />
-            </svg>
+            <AppIcon
+              name={activePanel === "navbar" ? config?.features?.hamburger?.iconClose : config?.features?.hamburger?.iconOpen}
+              className={styles.svgIcon}
+            />
           </button>
         </div>
       </nav>

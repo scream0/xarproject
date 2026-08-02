@@ -222,6 +222,28 @@ export async function PUT(request) {
       });
     }
 
+    // Update Poin / Saldo (points & balance wallet)
+    if (type === "points") {
+      const { points, balance, pointHistory } = updateData;
+
+      const pointsPayload = {};
+      if (typeof points === "number") pointsPayload.points = points;
+      if (typeof balance === "number") pointsPayload.balance = balance;
+      if (Array.isArray(pointHistory))
+        pointsPayload.pointHistory = pointHistory;
+      pointsPayload.updated_at = new Date();
+
+      await userRef.set(pointsPayload, { merge: true });
+
+      const updatedDoc = await userRef.get();
+
+      return NextResponse.json({
+        success: true,
+        message: "Poin & saldo berhasil diperbarui",
+        data: serializeData(updatedDoc.data()),
+      });
+    }
+
     return NextResponse.json({ error: "Invalid update type" }, { status: 400 });
   } catch (error) {
     console.error("Gagal memperbarui data user:", error);

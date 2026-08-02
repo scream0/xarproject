@@ -5,7 +5,7 @@
   position: absolute;
   top: 90px;
   right: 7%;
-  background: rgba(var(--surface-primary-rgb), 0.95);
+  background: rgba(var(--surface-primary-rgb), 0.98);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
   border: 1px solid var(--border-color);

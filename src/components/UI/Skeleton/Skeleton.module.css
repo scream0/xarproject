@@ -1,0 +1,265 @@
+/* ====================================================
+   SKELETON LOADING SYSTEM
+   Theme-aware shimmer placeholders using CSS vars
+   ==================================================== */
+
+/* Base block — every skeleton derives from this */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--skeleton-base, rgba(var(--text-secondary-rgb), 0.12));
+  border-radius: 8px;
+}
+
+/* Shimmer sweep overlay (achieved on the ::after pseudo of the padded wrapper)
+   The block itself is given a subtle pulse as an extra fallback. */
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--skeleton-shine, rgba(255, 255, 255, 0.08)),
+    transparent
+  );
+  animation: skeleton-shimmer 1.4s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Pulse variant (used when shimmer might be too aggressive) */
+.skeletonPulse {
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Text line placeholders */
+.skeletonText {
+  height: 14px;
+  border-radius: 6px;
+}
+
+.skeletonTitle {
+  height: 22px;
+  border-radius: 6px;
+}
+
+.skeletonSubtitle {
+  height: 13px;
+  border-radius: 6px;
+  width: 70%;
+}
+
+/* Circle (avatars, icons) */
+.skeletonCircle {
+  border-radius: 9999px;
+}
+
+/* Image/rect placeholder */
+.skeletonRect {
+  border-radius: 10px;
+}
+
+/* Button placeholder */
+.skeletonButton {
+  height: 40px;
+  border-radius: 10px;
+}
+
+/* Card wrapper */
+.skeletonCard {
+  background: var(--surface-primary, #fff);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 16px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ====================================================
+   LAYOUT SKELETONS
+   ==================================================== */
+
+/* --- Generic Dashboard (role detection) --- */
+.dashboardSkeleton {
+  display: flex;
+  height: 100vh;
+  background: var(--background-color, var(--background));
+  color: var(--text-primary);
+}
+
+.dashboardSkeletonSidebar {
+  width: 260px;
+  border-right: 1px solid var(--border-color);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--surface-primary);
+}
+
+.dashboardSkeletonMain {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow: hidden;
+}
+
+.dashboardSkeletonHeader {
+  height: 40px;
+  width: 40%;
+  max-width: 320px;
+}
+
+.dashboardSkeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.dashboardSkeletonChart {
+  height: 260px;
+}
+
+/* Row of skeleton lines */
+.skeletonLines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Vertical + horizontal flex helpers */
+.flexRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.flexCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* --- Shop skeleton --- */
+.shopSkeletonToolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.shopSkeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.productCardSkeleton {
+  height: 300px;
+}
+
+/* --- Orders skeleton --- */
+.ordersListSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.orderCardSkeleton {
+  height: 120px;
+}
+
+/* --- Notifications skeleton --- */
+.notificationListSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notificationItemSkeleton {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 1rem;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+/* --- Table skeleton --- */
+.tableSkeleton {
+  width: 100%;
+}
+
+.tableRowSkeleton {
+  display: grid;
+  gap: 1rem;
+  padding: 0.85rem 0.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* --- Stats skeleton --- */
+.statsGridSkeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.statCardSkeleton {
+  height: 110px;
+}
+
+/* --- Login skeleton --- */
+.loginSkeleton {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.loginSkeletonPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem;
+}
+
+/* ====================================================
+   RESPONSIVE
+   ==================================================== */
+@media (max-width: 1024px) {
+  .dashboardSkeletonSidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboardSkeletonMain {
+    padding: 1.25rem;
+  }
+
+  .loginSkeletonPanel {
+    padding: 1.5rem;
+  }
+}
+

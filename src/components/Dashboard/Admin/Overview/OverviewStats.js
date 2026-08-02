@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import styles from "./OverviewStats.module.css";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewConfig.json";
+import { StatsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 export default function OverviewStats() {
   const [stats, setStats] = useState({
@@ -87,59 +88,87 @@ export default function OverviewStats() {
       maximumFractionDigits: 0,
     }).format(number);
 
+  if (loading) {
+    return (
+      <div className={styles.statsContainer}>
+        <StatsSkeleton count={4} />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.statsContainer}>
       {/* Stat Cards Grid */}
       <div className={styles.cardsGrid}>
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>
-            {overviewConfig.cards.revenue}
-          </span>
-          <span className={styles.statValue}>
-            {loading ? "..." : formatRupiah(stats.totalRevenue)}
-          </span>
-          <span className={styles.statDesc}>
-            {overviewConfig.cardDescriptions.revenue}
-          </span>
+          <div className={styles.statIcon} aria-hidden="true">
+            ↗
+          </div>
+          <div className={styles.statContent}>
+            <span className={styles.statLabel}>
+              {overviewConfig.cards.revenue}
+            </span>
+            <span className={styles.statValue}>
+              {loading ? "..." : formatRupiah(stats.totalRevenue)}
+            </span>
+            <span className={styles.statDesc}>
+              {overviewConfig.cardDescriptions.revenue}
+            </span>
+          </div>
         </div>
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>
-            {overviewConfig.cards.orders}
-          </span>
-          <span className={styles.statValue}>
-            {loading ? "..." : stats.totalOrders}
-          </span>
-          <span className={styles.statDesc}>
-            {overviewConfig.cardDescriptions.orders}
-          </span>
+          <div className={styles.statIcon} aria-hidden="true">
+            ⌁
+          </div>
+          <div className={styles.statContent}>
+            <span className={styles.statLabel}>
+              {overviewConfig.cards.orders}
+            </span>
+            <span className={styles.statValue}>
+              {loading ? "..." : stats.totalOrders}
+            </span>
+            <span className={styles.statDesc}>
+              {overviewConfig.cardDescriptions.orders}
+            </span>
+          </div>
         </div>
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>
-            {overviewConfig.cards.products}
-          </span>
-          <span className={styles.statValue}>
-            {loading ? "..." : stats.activeProducts}
-          </span>
-          <span className={styles.statDesc}>
-            {overviewConfig.cardDescriptions.products}
-          </span>
+          <div className={styles.statIcon} aria-hidden="true">
+            ◌
+          </div>
+          <div className={styles.statContent}>
+            <span className={styles.statLabel}>
+              {overviewConfig.cards.products}
+            </span>
+            <span className={styles.statValue}>
+              {loading ? "..." : stats.activeProducts}
+            </span>
+            <span className={styles.statDesc}>
+              {overviewConfig.cardDescriptions.products}
+            </span>
+          </div>
         </div>
-        <div className={styles.statCard}>
-          <span className={styles.statLabel}>
-            {overviewConfig.cards.lowStock}
-          </span>
-          <span
-            className={`${styles.statValue} ${stats.lowStockCount > 0 ? styles.warningValue : ""}`}
-          >
-            {loading ? "..." : stats.lowStockCount}
-          </span>
-          <span
-            className={`${styles.statDesc} ${stats.lowStockCount > 0 ? styles.warningDesc : ""}`}
-          >
-            {stats.lowStockCount > 0
-              ? overviewConfig.cardDescriptions.lowStockWarning
-              : overviewConfig.cardDescriptions.lowStockOk}
-          </span>
+        <div className={`${styles.statCard} ${stats.lowStockCount > 0 ? styles.statCardWarning : ""}`}>
+          <div className={styles.statIcon} aria-hidden="true">
+            !
+          </div>
+          <div className={styles.statContent}>
+            <span className={styles.statLabel}>
+              {overviewConfig.cards.lowStock}
+            </span>
+            <span
+              className={`${styles.statValue} ${stats.lowStockCount > 0 ? styles.warningValue : ""}`}
+            >
+              {loading ? "..." : stats.lowStockCount}
+            </span>
+            <span
+              className={`${styles.statDesc} ${stats.lowStockCount > 0 ? styles.warningDesc : ""}`}
+            >
+              {stats.lowStockCount > 0
+                ? overviewConfig.cardDescriptions.lowStockWarning
+                : overviewConfig.cardDescriptions.lowStockOk}
+            </span>
+          </div>
         </div>
       </div>
 

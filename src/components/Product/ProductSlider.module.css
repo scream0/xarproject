@@ -17,7 +17,7 @@
   transform: scale(0.72);
 
   /* Glassmorphism menggunakan variabel tema */
-  background: rgba(var(--surface-primary-rgb), 0.4);
+  background: rgba(var(--surface-primary-rgb), 0.3);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 
@@ -39,9 +39,9 @@
   border-color: rgba(var(--primary-accent-rgb), 0.5);
   box-shadow:
     0 0 0 1px rgba(var(--primary-accent-rgb), 0.3),
-    0 20px 40px rgba(0, 0, 0, 0.2);
+    0 20px 40px rgba(0, 0, 0, 0.08);
 
-  background: rgba(var(--surface-primary-rgb), 0.85);
+  background: rgba(var(--surface-primary-rgb), 0.92);
 }
 
 /* Pastikan tidak ada border tambahan dari elemen di dalam */

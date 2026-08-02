@@ -1,9 +1,10 @@
 "use client";
-import LoginForm from "@/components/auth/LoginForm";
+import LoginForm from "@/features/components/LoginForm";
 import styles from "./login.module.css";
 import "./login.theme.css";
 import config from "@/data/ui/loginConfig.json";
 import { Suspense } from "react";
+import { LoginSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 export default function LoginPage() {
   return (
@@ -18,7 +19,7 @@ export default function LoginPage() {
       <div className={styles.rightPanel}>
         <div className={styles.formWrapper}>
           {" "}
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoginSkeleton />}>
             <LoginForm />
           </Suspense>
           <a href={config.content.backLinkHref} className={styles.backLink}>

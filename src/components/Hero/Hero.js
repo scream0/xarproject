@@ -1,12 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { HeroParticles } from "@/components/UI/HeroParticles/HeroParticles";
+import { getPublicSettings } from "@/services/settingsService";
 import styles from "./Hero.module.css";
-import heroData from "@/data/ui/heroConfig.json"; // Pastikan path ini sesuai
+import heroData from "@/data/ui/heroConfig.json"; // Fallback default JSON
 
 export function Hero() {
   // 1. Definisikan state
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [promoSettings, setPromoSettings] = useState(null);
+  const [resolvedHero, setResolvedHero] = useState(heroData);
 
   // 2. Efek untuk melacak mouse
   useEffect(() => {
@@ -16,6 +19,50 @@ export function Hero() {
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
+
+  // 3. Muat settings publik (hero + promo) via service layer
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const data = await getPublicSettings({ force: true });
+        if (!data) return;
+        setPromoSettings(data);
+
+        // Gabungkan hero dari DB dengan default JSON (fallback field parsial)
+        if (data?.hero) {
+          setResolvedHero({
+            ...heroData,
+            ...data.hero,
+            title: {
+              ...(heroData?.title || {}),
+              ...(data.hero?.title || {}),
+            },
+            description: {
+              ...(heroData?.description || {}),
+              ...(data.hero?.description || {}),
+            },
+            buttons: {
+              ...(heroData?.buttons || {}),
+              ...(data.hero?.buttons || {}),
+              primary: {
+                ...(heroData?.buttons?.primary || {}),
+                ...(data.hero?.buttons?.primary || {}),
+              },
+              secondary: {
+                ...(heroData?.buttons?.secondary || {}),
+                ...(data.hero?.buttons?.secondary || {}),
+              },
+            },
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load hero settings", error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
   // Contoh logika sederhana di komponen Hero.jsx
   const [isDimmed, setIsDimmed] = useState(false);
 
@@ -52,32 +99,48 @@ export function Hero() {
         <HeroParticles />
       </div>
 
+      {promoSettings?.promoBannerEnabled && (
+        <div className={styles.promoBanner}>
+          <span className={styles.promoGlow} aria-hidden="true" />
+          <span className={styles.promoBadge}>Exclusive</span>
+          <span className={styles.promoText}>
+            {promoSettings?.promoBannerText ||
+              "Diskon khusus untuk pelanggan setia"}
+          </span>
+          <span className={styles.promoArrow} aria-hidden="true">
+            ↗
+          </span>
+        </div>
+      )}
+
       <main className={styles.content}>
-        <h5 className={styles.heroTagline}>{heroData?.tagline}</h5>
+        <div className={styles.contentGlow} aria-hidden="true" />
+        <h5 className={styles.heroTagline}>{resolvedHero?.tagline}</h5>
         <h1 className={styles.heroTitle}>
-          {heroData?.title?.main} <br />
-          <span>{heroData?.title?.highlight}</span>
+          {resolvedHero?.title?.main} <br />
+          <span>{resolvedHero?.title?.highlight}</span>
         </h1>
         <p className={styles.heroDesc}>
-          {heroData?.description?.prefix}
-          <em>{heroData?.description?.italic}</em>
-          {heroData?.description?.suffix}
+          {resolvedHero?.description?.prefix}
+          <em>{resolvedHero?.description?.italic}</em>
+          {resolvedHero?.description?.suffix}
         </p>
         <div className={styles.heroButtons}>
           <a
-            href={heroData?.buttons?.primary?.href}
+            href={resolvedHero?.buttons?.primary?.href}
             className={styles.ctaPrimary}
           >
-            {heroData?.buttons?.primary?.label}
+            {resolvedHero?.buttons?.primary?.label}
           </a>
           <a
-            href={heroData?.buttons?.secondary?.href}
+            href={resolvedHero?.buttons?.secondary?.href}
             className={styles.ctaSecondary}
           >
-            {heroData?.buttons?.secondary?.label}
+            {resolvedHero?.buttons?.secondary?.label}
           </a>
         </div>
       </main>
     </section>
   );
 }
+

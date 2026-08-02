@@ -16,6 +16,8 @@ export default function TransactionTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [savedViews, setSavedViews] = useState([]);
 
   // State for shipping modal
   const [shippingModalOrder, setShippingModalOrder] = useState(null);
@@ -102,7 +104,7 @@ export default function TransactionTable() {
     e.preventDefault();
     if (shippingModalOrder && shippingReceipt) {
       const orderId = shippingModalOrder.orderId || shippingModalOrder.id;
-      handleUpdateOrder(orderId, "shipping", shippingReceipt);
+      handleUpdateOrder(orderId, "shipped", shippingReceipt);
     } else {
       toast.error("Nomor resi tidak boleh kosong.");
     }
@@ -119,7 +121,9 @@ export default function TransactionTable() {
     const statusMap = {
       success: styles.badgeSuccess,
       processing: styles.badgeProcessing,
+      shipped: styles.badgeShipping,
       shipping: styles.badgeShipping,
+      cancelled: styles.badgeCancelled,
       completed: styles.badgeCompleted,
       pending: styles.badgePending,
     };
@@ -131,7 +135,8 @@ export default function TransactionTable() {
     return allOrders
       .filter((order) => {
         if (statusFilter === "all") return true;
-        return order.status === statusFilter;
+        const normalized = order.status === "success" ? "processing" : order.status === "shipping" ? "shipped" : order.status;
+        return normalized === statusFilter;
       })
       .filter((order) => {
         const searchTermLower = searchTerm.toLowerCase();
@@ -152,6 +157,17 @@ export default function TransactionTable() {
     currentPage * ORDERS_PER_PAGE,
   );
 
+  const saveCurrentView = () => { const label = searchTerm ? `${statusFilter}: ${searchTerm}` : statusFilter; const next = [...savedViews.filter((view) => view.label !== label), { label, status: statusFilter, search: searchTerm }].slice(-5); setSavedViews(next); window.localStorage.setItem("xar-order-views", JSON.stringify(next)); toast.success("Filter view saved."); };
+  const toggleOrder = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
+  const toggleVisible = () => { const ids = paginatedOrders.map((order) => order.orderId || order.id); setSelectedIds((current) => ids.every((id) => current.includes(id)) ? current.filter((id) => !ids.includes(id)) : [...new Set([...current, ...ids])]); };
+  const runBulkAction = async (from, to) => { const targets = allOrders.filter((order) => selectedIds.includes(order.orderId || order.id) && (order.status === from || (from === "processing" && order.status === "success"))); if (!targets.length) return toast.error(`Pilih pesanan berstatus ${from}.`); await Promise.all(targets.map((order) => handleUpdateOrder(order.orderId || order.id, to))); setSelectedIds([]); };
+
+  const exportOrders = () => {
+    const rows = filteredOrders.map((order) => [order.orderId || order.id, order.customerName || order.shipping_address?.recipientName || "Customer", Number(order.amount || order.price || 0), order.status || "pending", order.createdAt || order.created_at || ""]);
+    const csv = [["Order ID", "Customer", "Total", "Status", "Date"], ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a"); link.href = url; link.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url);
+  };
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
@@ -161,9 +177,12 @@ export default function TransactionTable() {
   return (
     <>
       <div className={styles.ordersSection}>
-        <h3 className={styles.sectionTitle}>
-          {overviewConfig.ordersSection.title}
-        </h3>
+        <div className={styles.titleRow}>
+          <h3 className={styles.sectionTitle}>{overviewConfig.ordersSection.title}</h3>
+          <button className={styles.exportBtn} onClick={exportOrders}>Export CSV</button>
+        </div>
+
+        {selectedIds.length > 0 && <div className={styles.bulkBar}><span>{selectedIds.length} selected</span><div><button onClick={() => runBulkAction("pending", "processing")}>Confirm payment</button><button onClick={() => runBulkAction("shipped", "completed")}>Mark completed</button></div></div>}
 
         <div className={styles.controlsContainer}>
           <input
@@ -173,6 +192,7 @@ export default function TransactionTable() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <button className={styles.saveViewBtn} onClick={saveCurrentView}>Save view</button>
           <select
             className={styles.filterSelect}
             value={statusFilter}
@@ -188,6 +208,8 @@ export default function TransactionTable() {
           </select>
         </div>
 
+        {savedViews.length > 0 && <div className={styles.savedViews}>{savedViews.map((view) => <button key={view.label} onClick={() => { setStatusFilter(view.status); setSearchTerm(view.search); setCurrentPage(1); }}>{view.label}</button>)}</div>}
+
         {loading ? (
           <p className={styles.loadingText}>
             {overviewConfig.ordersSection.loading}
@@ -202,6 +224,7 @@ export default function TransactionTable() {
               <table className={styles.ordersTable}>
                 <thead>
                   <tr>
+                    <th><input type="checkbox" aria-label="Select visible orders" checked={paginatedOrders.length > 0 && paginatedOrders.every((order) => selectedIds.includes(order.orderId || order.id))} onChange={toggleVisible} /></th>
                     {overviewConfig.tableHeaders.map((header) => (
                       <th key={header}>{header}</th>
                     ))}
@@ -215,25 +238,27 @@ export default function TransactionTable() {
                       order.shipping_address?.recipientName ||
                       "Customer";
                     const orderTotal = Number(order.amount || order.price || 0);
+                    const displayStatus = order.status === "success" ? "processing" : order.status === "shipping" ? "shipped" : order.status || "pending";
 
                     return (
                       <tr key={currentId}>
+                        <td><input type="checkbox" aria-label={`Select ${currentId}`} checked={selectedIds.includes(currentId)} onChange={() => toggleOrder(currentId)} /></td>
                         <td className={styles.orderId}>{currentId}</td>
                         <td>{customerName}</td>
                         <td>{formatRupiah(orderTotal)}</td>
                         <td>
                           <span
-                            className={`${styles.badge} ${getBadgeClass(order.status)}`}
+                            className={`${styles.badge} ${getBadgeClass(displayStatus)}`}
                           >
-                            {order.status || "pending"}
+                            {displayStatus}
                           </span>
                         </td>
                         <td>
-                          {order.status === "pending" && (
+                          {displayStatus === "pending" && (
                             <button
                               className={styles.actionBtnConfirm}
                               onClick={() =>
-                                handleUpdateOrder(currentId, "success")
+                                handleUpdateOrder(currentId, "processing")
                               }
                               disabled={updatingId === currentId}
                             >
@@ -242,20 +267,7 @@ export default function TransactionTable() {
                                 : overviewConfig.actions.confirmPayment}
                             </button>
                           )}
-                          {order.status === "success" && (
-                            <button
-                              className={styles.actionBtn}
-                              onClick={() =>
-                                handleUpdateOrder(currentId, "processing")
-                              }
-                              disabled={updatingId === currentId}
-                            >
-                              {updatingId === currentId
-                                ? overviewConfig.actions.processing
-                                : overviewConfig.actions.processOrder}
-                            </button>
-                          )}
-                          {order.status === "processing" && (
+{displayStatus === "processing" && (
                             <button
                               className={styles.actionBtn}
                               onClick={() => handleShipOrderClick(order)}
@@ -266,7 +278,7 @@ export default function TransactionTable() {
                                 : overviewConfig.actions.shipItem}
                             </button>
                           )}
-                          {order.status === "shipping" && (
+                          {displayStatus === "shipped" && (
                             <button
                               className={styles.actionBtn}
                               onClick={() =>

@@ -23,6 +23,30 @@
   text-transform: uppercase;
 }
 
+.subtitle {
+  margin-top: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.summaryPillGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.summaryPill {
+  padding: 0.42rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* --- Controls Section --- */
 .controlsContainer {
   display: flex;
@@ -42,10 +66,10 @@
 
 .searchInput,
 .filterSelect {
-  background: var(--surface-secondary);
+  background: rgba(var(--surface-primary-rgb), 0.95);
   color: var(--text-primary);
   padding: 0.75rem 1rem;
-  border-radius: 6px;
+  border-radius: 999px;
   border: 1px solid var(--border-color);
   outline: none;
   font-family: var(--font-sans);
@@ -82,18 +106,18 @@
 
 /* --- Inventory Section --- */
 .inventorySection {
-  background: var(--surface-primary);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98), rgba(var(--surface-secondary-rgb), 0.82));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 24px;
   width: 100%;
   box-sizing: border-box;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 16px 36px rgba(17, 13, 10, 0.06);
 }
 
 .headerRow {
@@ -202,14 +226,14 @@
 .editBtn,
 .deleteBtn {
   cursor: pointer;
-  background: var(--surface-secondary);
+  background: rgba(var(--surface-secondary-rgb), 0.8);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.5rem 0.85rem;
-  border-radius: 6px;
+  border-radius: 999px;
   transition: all 0.3s ease;
   white-space: nowrap;
   text-transform: uppercase;

@@ -445,3 +445,142 @@
 .curatedQuickAddBtn:active {
   transform: scale(0.95);
 }
+
+/* === POINTS & BALANCE ACCENT CARDS === */
+.metricCardAccent {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-accent-rgb), 0.15),
+    var(--surface-primary)
+  );
+  border-color: rgba(var(--primary-accent-rgb), 0.4);
+}
+
+.metricCardAccent .metricValue {
+  color: var(--primary-accent);
+}
+
+.metricCardWallet {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--success-color-rgb, 16, 185, 129), 0.12),
+    var(--surface-primary)
+  );
+  border-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.35);
+}
+
+.metricCardWallet .metricValue {
+  color: var(--success-color);
+}
+
+/* === POINTS BANNER SECTION === */
+.pointsBannerCard {
+  position: relative;
+  overflow: hidden;
+}
+
+.pointsBannerCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 85% 20%,
+    rgba(var(--primary-accent-rgb), 0.08) 0%,
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.pointsBannerContent {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: stretch;
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .pointsBannerContent {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}
+
+.pointsRulesTitle {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+}
+
+.pointsRulesList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pointsRulesList li {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+  position: relative;
+  padding-left: 18px;
+}
+
+.pointsRulesList li::before {
+  content: "✦";
+  position: absolute;
+  left: 0;
+  color: var(--primary-accent);
+  font-size: 0.7rem;
+}
+
+.pointsBalanceBox {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.pointsBalanceItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+}
+
+.pointsBalanceItem span {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.pointsBalanceItem strong {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--primary-accent);
+  letter-spacing: 0.5px;
+}
+
+.pointsBalanceItem:nth-child(2) strong {
+  color: var(--success-color);
+}
