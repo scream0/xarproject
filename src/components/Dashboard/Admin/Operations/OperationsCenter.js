@@ -20,7 +20,7 @@ export default function OperationsCenter() {
   const [procurement, setProcurement] = useState({ suppliers: [], orders: [] });
   const [reconciliation, setReconciliation] = useState({ pending: [], summary: {} });
   const [team, setTeam] = useState([]);
-  const [promo, setPromo] = useState({ banner: "Free shipping for orders above Rp500.000", voucher: "XAR10", discount: "10", schedule: "Always on" });
+  const [promo, setPromo] = useState({ banner: "Free shipping for orders above Rp100.000", voucher: "XAR10", discount: "10", schedule: "Always on" });
 
   useEffect(() => {
     const reviewRequest = auth.currentUser

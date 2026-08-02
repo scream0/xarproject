@@ -73,6 +73,14 @@ export async function POST(request) {
       imagePublicId,
       variants,
       weight,
+      length,
+      width,
+      height,
+      status,
+      province,
+      city,
+      cityId,
+      stockLocation,
     } = body || {};
 
     if (!name || !imageUrl) {
@@ -91,6 +99,14 @@ export async function POST(request) {
         image_public_id: imagePublicId,
         variants: variants,
         weight: weight !== undefined ? Number(weight) || 0 : 250,
+        length: length !== undefined ? Number(length) || 0 : undefined,
+        width: width !== undefined ? Number(width) || 0 : undefined,
+        height: height !== undefined ? Number(height) || 0 : undefined,
+        status: status || "published",
+        province: province,
+        city: city,
+        cityId: cityId,
+        stockLocation: stockLocation,
         created_at: new Date().toISOString(),
       },
     ]);
@@ -133,6 +149,14 @@ export async function PUT(request) {
       imagePublicId,
       variants,
       weight,
+      length,
+      width,
+      height,
+      status,
+      province,
+      city,
+      cityId,
+      stockLocation,
     } = body || {};
 
     if (!productId) {
@@ -151,6 +175,14 @@ export async function PUT(request) {
         image_public_id: imagePublicId,
         variants: variants,
         weight: weight !== undefined ? Number(weight) || 0 : undefined,
+        length: length !== undefined ? Number(length) || 0 : undefined,
+        width: width !== undefined ? Number(width) || 0 : undefined,
+        height: height !== undefined ? Number(height) || 0 : undefined,
+        status: status,
+        province: province,
+        city: city,
+        cityId: cityId,
+        stockLocation: stockLocation,
       })
       .eq("id", productId);
 

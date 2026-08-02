@@ -28,6 +28,7 @@ export default function ProductManager() {
   const [filters, setFilters] = useState({
     stockStatus: "all",
     category: "all",
+    status: "all",
   });
   const [categories, setCategories] = useState([]);
 
@@ -53,6 +54,9 @@ export default function ProductManager() {
     // Filters
     if (filters.category !== "all") {
       query = query.eq("category", filters.category);
+    }
+    if (filters.status !== "all") {
+        query = query.eq("status", filters.status);
     }
 
     // Pagination
@@ -235,6 +239,15 @@ export default function ProductManager() {
                 </option>
               ))}
             </select>
+            <select
+                className={styles.filterSelect}
+                value={filters.status}
+                onChange={(e) => handleFilterChange("status", e.target.value)}
+            >
+                <option value="all">All Statuses</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+            </select>
           </div>
         </div>
 
@@ -256,10 +269,11 @@ export default function ProductManager() {
                   <tr>
                     <th>{pmConfig.tableHeaders.image}</th>
                     <th>{pmConfig.tableHeaders.name}</th>
+                    <th>SKU</th>
                     <th>{pmConfig.tableHeaders.category}</th>
                     <th>{pmConfig.tableHeaders.stock}</th>
                     <th>{pmConfig.tableHeaders.status}</th>
-                    <th>{pmConfig.tableHeaders.actions}</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -275,6 +289,7 @@ export default function ProductManager() {
                         )}
                       </td>
                       <td className={styles.productNameCell}>{item.name}</td>
+                      <td>{item.variants?.map(v => v.sku).join(', ')}</td>
                       <td>{item.category}</td>
                       <td>{item.totalStock}</td>
                       <td>

@@ -56,19 +56,34 @@ export async function GET(request) {
 
     // ================= MODE ADMIN (tanpa userId) =================
     if (!userId) {
-      const ordersSnapshot = await db.collection("orders").get();
+      const page = parseInt(searchParams.get("page")) || 1;
+      const limit = parseInt(searchParams.get("limit")) || 10;
+      const offset = (page - 1) * limit;
 
+      // Get total count for pagination
+      const countSnapshot = await db.collection("orders").count().get();
+      const totalOrders = countSnapshot.data().count;
+      const totalPages = Math.ceil(totalOrders / limit);
+      
+      const ordersQuery = db.collection("orders")
+                            .orderBy("createdAt", "desc")
+                            .limit(limit)
+                            .offset(offset);
+      const ordersSnapshot = await ordersQuery.get();
+      
       let ordersData = [];
       ordersSnapshot.forEach((doc) => {
         ordersData.push(mapOrderDoc(doc));
       });
 
-      // Urutkan pesanan dari yang terbaru
-      ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
       return NextResponse.json({
         success: true,
         orders: ordersData,
+        pagination: {
+          currentPage: page,
+          totalPages: totalPages,
+          totalOrders: totalOrders
+        }
       });
     }
 

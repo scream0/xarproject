@@ -2,6 +2,7 @@
 import { useProductForm } from "@/hooks/useProductForm";
 import styles from "./ProductForm.module.css";
 import config from "@/data/ui/productFormConfig.json";
+import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 
 // Reusable Input Component
 const Input = ({ label, ...props }) => (
@@ -81,6 +82,42 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
             {config.categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </Select>
 
+        <Select
+            label="Status"
+            value={formData.status}
+            onChange={e => handleFormChange('status', e.target.value)}
+        >
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+        </Select>
+
+        <div className={styles.dimensionGroup}>
+            <Input
+            label="Panjang (cm)"
+            type="number"
+            min="0"
+            placeholder="10"
+            value={formData.length}
+            onChange={(e) => handleFormChange("length", e.target.value)}
+            />
+            <Input
+            label="Lebar (cm)"
+            type="number"
+            min="0"
+            placeholder="10"
+            value={formData.width}
+            onChange={(e) => handleFormChange("width", e.target.value)}
+            />
+            <Input
+            label="Tinggi (cm)"
+            type="number"
+            min="0"
+            placeholder="10"
+            value={formData.height}
+            onChange={(e) => handleFormChange("height", e.target.value)}
+            />
+        </div>
+
         <Input
           label="Berat (gram)"
           type="number"
@@ -89,6 +126,30 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
           value={formData.weight}
           onChange={(e) => handleFormChange("weight", e.target.value)}
         />
+
+        <Input
+          label="Lokasi Stok"
+          placeholder="Contoh: Gudang Utama"
+          value={formData.stockLocation}
+          onChange={(e) => handleFormChange("stockLocation", e.target.value)}
+          required
+        />
+
+        <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
+            <label className={styles.fieldLabel}>Asal Pengiriman</label>
+            <ProvinceCitySelect
+                value={{
+                    province: formData.province,
+                    city: formData.city,
+                    cityId: formData.cityId,
+                }}
+                onChange={(value) => {
+                    handleFormChange("province", value.province);
+                    handleFormChange("city", value.city);
+                    handleFormChange("cityId", value.cityId);
+                }}
+            />
+        </div>
 
         <FileInput 
             label={config.labels.mainImage}
@@ -103,6 +164,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
             {variants.map((v, index) => (
                 <div key={index} className={styles.variantRow}>
                     <input placeholder={config.placeholders.size} value={v.size} onChange={e => handleVariantChange(index, "size", e.target.value)} className={styles.variantInput} required/>
+                    <input placeholder="SKU" value={v.sku} onChange={e => handleVariantChange(index, "sku", e.target.value)} className={styles.variantInput} />
                     <input type="number" placeholder={config.placeholders.price} value={v.price} onChange={e => handleVariantChange(index, "price", e.target.value)} className={styles.variantInput} required/>
                     <input type="number" placeholder={config.placeholders.stock} value={v.stock} onChange={e => handleVariantChange(index, "stock", e.target.value)} className={styles.variantInput} required/>
                     {/* Simplified variant image input for brevity */}
