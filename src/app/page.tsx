@@ -8,7 +8,6 @@ import { Product } from "@/components/Product/Product";
 import { Contact } from "@/components/Contact/Contact";
 import { Footer } from "@/components/Footer/Footer";
 import { Modal } from "@/components/UI/Modal/ProductModal";
-import { AddressModal } from "@/components/UI/Modal/AddressModal"; // <-- Diimpor di sini
 import { useStore } from "@/context/StoreContext";
 
 // Komponen Wrapper untuk animasi
@@ -71,8 +70,6 @@ export default function Home() {
         />
       )}
 
-      {/* Modal Form Alamat Otomatis saat Checkout & Alamat Kosong */}
-      <AddressModal />
     </>
   );
 }

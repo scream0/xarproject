@@ -11,6 +11,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import { isPromoActive, getDiscountedPrice, getCartPromoSummary } from "@/utils/promo";
+import { buildAddressId, normalizeAddress } from "@/utils/address";
 
 const StoreContext = createContext();
 
@@ -356,27 +357,36 @@ export function StoreProvider({ children }) {
 const [shippingCost, setShippingCost] = useState(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
 
-  const calculateShippingCost = useCallback(async (destinationCity, weight) => {
-    if (!destinationCity || !weight) return 0;
-    setIsCalculatingShipping(true);
-    try {
-      const res = await fetch("/api/ongkir", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destination: destinationCity, weight }),
-      });
-      const data = await res.json();
-      if (res.ok && data.cost) {
-        return data.cost;
+  // Hitung ongkir via GET /api/ongkir (RajaOngkir starter).
+  // destinationCityId = ID kota RajaOngkir, weight = gram.
+  const calculateShippingCost = useCallback(
+    async (destinationCityId, weight) => {
+      if (!destinationCityId || !weight) return 0;
+      setIsCalculatingShipping(true);
+      try {
+        const res = await fetch(
+          `/api/ongkir?origin=114&destination=${destinationCityId}&weight=${weight}&courier=jne`,
+          { cache: "no-store" },
+        );
+        const data = await res.json();
+        if (res.ok && data.success && data.costs?.length > 0) {
+          // Ambil tarif termurah dari layanan JNE.
+          const allServices = data.costs.flatMap((c) =>
+            (c.services || []).map((s) => Number(s.cost) || 0),
+          );
+          const cheapest = Math.min(...allServices);
+          return Number.isFinite(cheapest) ? cheapest : 0;
+        }
+        return 0;
+      } catch (err) {
+        console.error("Gagal menghitung ongkir:", err);
+        return 0;
+      } finally {
+        setIsCalculatingShipping(false);
       }
-      return 0;
-    } catch (err) {
-      console.error("Gagal menghitung ongkir:", err);
-      return 0;
-    } finally {
-      setIsCalculatingShipping(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const processPayment = async () => {
     if (!user) {
@@ -410,6 +420,21 @@ const [shippingCost, setShippingCost] = useState(0);
       const primaryAddress =
         userAddresses.find((a) => a.isPrimary) || userAddresses[0];
 
+      // Baca detail shipping dari localStorage (di-set oleh halaman /checkout),
+      // lalu segera bersihkan agar data lama tidak terpakai di checkout berikutnya.
+      let shippingDetail = null;
+      if (typeof window !== "undefined") {
+        const savedShipping = localStorage.getItem("checkout_shipping");
+        if (savedShipping) {
+          try {
+            shippingDetail = JSON.parse(savedShipping);
+          } catch (e) {
+            console.error("Gagal parse shipping detail:", e);
+          }
+        }
+        localStorage.removeItem("checkout_shipping");
+      }
+
       // Hitung total berat dari item keranjang berdasarkan data produk
       let totalWeight = 0;
       for (const item of cart.items) {
@@ -420,10 +445,16 @@ const [shippingCost, setShippingCost] = useState(0);
         totalWeight += itemWeight * (Number(item.quantity) || 1);
       }
 
-      // Hitung ongkir dari alamat utama user
-      let shippingCostAmount = 0;
-      if (primaryAddress.city) {
-        shippingCostAmount = await calculateShippingCost(primaryAddress.city, totalWeight);
+      // Gunakan ongkir dari pilihan user di halaman checkout
+      // Jika tidak ada, hitung dari alamat utama user (pakai cityId RajaOngkir)
+      let shippingCostAmount = shippingDetail?.shippingCost || 0;
+      let selectedShippingAddress = shippingDetail?.address || primaryAddress;
+
+      if (!shippingCostAmount && primaryAddress?.cityId) {
+        shippingCostAmount = await calculateShippingCost(
+          primaryAddress.cityId,
+          totalWeight,
+        );
       }
       setShippingCost(shippingCostAmount);
 
@@ -439,8 +470,15 @@ const [shippingCost, setShippingCost] = useState(0);
           amount: finalAmount,
           items: cart.items,
           customerDetails: customer,
-          shippingAddress: primaryAddress,
+          shippingAddress: selectedShippingAddress,
           shippingCost: shippingCostAmount,
+          shippingDetail: shippingDetail
+            ? {
+                courierName: shippingDetail.courierName,
+                courierService: shippingDetail.courierService,
+                courierEtd: shippingDetail.courierEtd,
+              }
+            : null,
         }),
       });
 
@@ -509,17 +547,19 @@ const [shippingCost, setShippingCost] = useState(0);
       const userResult = await userRes.json();
       const existingAddresses = userResult?.data?.addresses || [];
 
-      const newAddress = {
-        id: `ADDR-${Date.now()}`,
+      const newAddress = normalizeAddress({
+        id: buildAddressId(),
+        label: addressData.label || "Rumah",
         recipientName: addressData.recipientName,
         recipientPhone: addressData.recipientPhone,
         street: addressData.street,
         city: addressData.city,
+        cityId: addressData.cityId || "",
         postalCode: addressData.postalCode || "",
         isPrimary: true,
-      };
+      });
 
-      const updatedAddresses = existingAddresses.map((addr) => ({
+      const updatedAddresses = (existingAddresses || []).map((addr) => ({
         ...addr,
         isPrimary: false,
       }));
@@ -562,6 +602,7 @@ const [shippingCost, setShippingCost] = useState(0);
     <StoreContext.Provider
       value={{
         cart,
+        setCart,
         products,
         user,
         addToCart,
@@ -576,6 +617,7 @@ checkoutWa,
         rupiah,
         processPayment,
         isProcessing,
+        setIsProcessing,
         logout,
         isCartOpen,
         setIsCartOpen,

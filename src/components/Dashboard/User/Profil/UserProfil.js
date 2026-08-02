@@ -5,6 +5,8 @@ import profileConfig from "@/data/ui/userProfilConfig.json";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { CitySearchInput } from "@/components/UI/CitySearchInput/CitySearchInput";
+import { buildAddressId, normalizeAddress } from "@/utils/address";
 
 export default function ProfileSection() {
   const [loading, setLoading] = useState(false);
@@ -325,10 +327,12 @@ export default function ProfileSection() {
     setLoading(true);
     try {
       let updatedAddresses = [...addresses];
-      const newAddressItem = {
+      // Normalisasi agar semua field alamat selalu lengkap (termasuk cityId).
+      const newAddressItem = normalizeAddress({
         ...currentAddress,
-        id: currentAddress.id || Date.now().toString(),
-      };
+        id: currentAddress.id || buildAddressId(),
+        label: currentAddress.label || "Rumah",
+      });
 
       if (newAddressItem.isPrimary || updatedAddresses.length === 0) {
         updatedAddresses = updatedAddresses.map((addr) => ({
@@ -515,6 +519,7 @@ export default function ProfileSection() {
                 recipientPhone: profile.phone,
                 street: "",
                 city: "",
+                cityId: "",
                 postalCode: "",
                 isPrimary: addresses.length === 0,
               });
@@ -854,17 +859,17 @@ export default function ProfileSection() {
                 <label className={styles.inputLabel}>
                   {profileConfig.modals.address.city}
                 </label>
-                <input
-                  type="text"
-                  value={currentAddress.city}
-                  onChange={(e) =>
-                    setCurrentAddress({
-                      ...currentAddress,
-                      city: e.target.value,
-                    })
+                <CitySearchInput
+                  value={currentAddress.city || ""}
+                  cityId={currentAddress.cityId || ""}
+                  onSelect={(city) =>
+                    setCurrentAddress((prev) => ({
+                      ...prev,
+                      city: `${city.type} ${city.city_name}`,
+                      cityId: String(city.city_id),
+                    }))
                   }
-                  required
-                  className={styles.formInput}
+                  placeholder="Ketik minimal 2 huruf kota..."
                 />
               </div>
               <div className={styles.formGroup}>

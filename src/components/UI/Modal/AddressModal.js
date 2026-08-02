@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useStore } from "@/context/StoreContext";
+import { CitySearchInput } from "@/components/UI/CitySearchInput/CitySearchInput";
 import styles from "./AddressModal.module.css";
 import config from "@/data/ui/addressModalConfig.json";
 
@@ -13,10 +14,12 @@ export function AddressModal() {
   } = useStore();
 
   const [formData, setFormData] = useState({
+    label: "Rumah",
     recipientName: "",
     recipientPhone: "",
     street: "",
     city: "",
+    cityId: "",
     postalCode: "",
   });
 
@@ -28,19 +31,41 @@ export function AddressModal() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.recipientName || !formData.street || !formData.city) {
+    if (
+      !formData.recipientName ||
+      !formData.street ||
+      !formData.cityId ||
+      !formData.city
+    ) {
       return alert(config.validationAlert);
     }
     saveAddressAndPay(formData);
   };
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
+    <div
+      className={styles.modalOverlay}
+      onClick={() => !isProcessing && setIsAddressModalOpen(false)}
+    >
+      <div
+        className={styles.modalContent}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className={styles.modalTitle}>{config.title}</h3>
         <p className={styles.modalDescription}>{config.description}</p>
 
         <form onSubmit={handleSubmit} className={styles.formGroup}>
+          <select
+            name="label"
+            value={formData.label}
+            onChange={handleChange}
+            className={styles.inputField}
+          >
+            <option value="Rumah">Rumah</option>
+            <option value="Kantor">Kantor</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+
           <input
             type="text"
             name="recipientName"
@@ -67,14 +92,17 @@ export function AddressModal() {
             required
             className={`${styles.inputField} ${styles.textareaField}`}
           />
-          <input
-            type="text"
-            name="city"
-            placeholder={config.placeholders.city}
+          <CitySearchInput
             value={formData.city}
-            onChange={handleChange}
-            required
-            className={styles.inputField}
+            cityId={formData.cityId}
+            onSelect={(city) =>
+              setFormData((prev) => ({
+                ...prev,
+                city: `${city.type} ${city.city_name}`,
+                cityId: String(city.city_id),
+              }))
+            }
+            placeholder={config.placeholders.city}
           />
           <input
             type="text"

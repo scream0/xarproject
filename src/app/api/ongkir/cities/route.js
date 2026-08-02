@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const RAJAONGKIR_BASE_URL = "https://api.rajaongkir.com/starter";
-const API_KEY = process.env.RAJAONGKIR_API_KEY;
+const RAJAONGKIR_BASE_URL =
+  process.env.RAJAONGKIR_BASE_URL || "https://api.rajaongkir.com/starter";
+const API_KEY =
+  process.env.RAJAONGKIR_API_KEY || process.env.NEXT_PUBLIC_RAJAONGKIR_API_KEY;
 
 // Cache in-memory sederhana: daftar kota jarang berubah (1 hari TTL)
 let citiesCache = { data: null, ts: 0 };

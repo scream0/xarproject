@@ -3,6 +3,7 @@ import "./globals.css";
 import { StoreProvider } from "@/context/StoreContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "react-hot-toast";
+import { AddressModal } from "@/components/UI/Modal/AddressModal";
 import { Tenor_Sans, Lato } from "next/font/google";
 import styles from "./not-found.module.css";
 import Script from "next/script";
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <StoreProvider>
             {children}
+            <AddressModal />
             <Toaster
               position="bottom-right"
               toastOptions={{

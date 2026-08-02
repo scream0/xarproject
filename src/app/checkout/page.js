@@ -6,6 +6,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
+import { CitySearchInput } from "@/components/UI/CitySearchInput/CitySearchInput";
+import { buildAddressId, normalizeAddress } from "@/utils/address";
 import styles from "./checkout.module.css";
 
 // ─── HELPERS ────────────────────────────────────────────────
@@ -16,22 +18,21 @@ const rupiah = (n) =>
     maximumFractionDigits: 0,
   }).format(n || 0);
 
+const emptyAddressForm = (displayName = "") => ({
+  label: "Rumah",
+  recipientName: displayName || "",
+  recipientPhone: "",
+  street: "",
+  city: "",
+  cityId: "",
+  postalCode: "",
+});
+
 // ─── CHECKOUT PAGE ──────────────────────────────────────────
 export default function CheckoutPage() {
   const router = useRouter();
-  const {
-    cart,
-    products,
-    user,
-    processPayment,
-    isProcessing,
-    promoSettings,
-    activePromo,
-    promoSavings,
-    discountedCartTotal,
-    cartTotal,
-    rupiah: ctxRupiah,
-  } = useStore();
+  const { cart, products, processPayment, isProcessing, activePromo, promoSavings, discountedCartTotal, cartTotal } =
+    useStore();
 
   // ── Auth ──
   const [currentUser, setCurrentUser] = useState(null);
@@ -55,23 +56,12 @@ export default function CheckoutPage() {
 
   // ── Address Modal ──
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [addressForm, setAddressForm] = useState({
-    label: "Rumah",
-    recipientName: "",
-    recipientPhone: "",
-    street: "",
-    city: "",
-    cityId: "",
-    postalCode: "",
-  });
-  const [cityQuery, setCityQuery] = useState("");
-  const [cityResults, setCityResults] = useState([]);
-  const [cityLoading, setCityLoading] = useState(false);
+  const [addressForm, setAddressForm] = useState(emptyAddressForm);
   const [savingAddress, setSavingAddress] = useState(false);
 
   // ── Courier ──
   const [courierOptions, setCourierOptions] = useState([]);
-  const [selectedCourier, setSelectedCourier] = useState(null);
+  const [selectedCourierKey, setSelectedCourierKey] = useState(null);
   const [courierLoading, setCourierLoading] = useState(false);
   const [shippingCost, setShippingCost] = useState(0);
 
@@ -117,18 +107,17 @@ export default function CheckoutPage() {
   const fetchCourierCosts = useCallback(async () => {
     if (!selectedAddress?.cityId || !totalWeight) {
       setCourierOptions([]);
-      setSelectedCourier(null);
+      setSelectedCourierKey(null);
       setShippingCost(0);
       return;
     }
 
     setCourierLoading(true);
     setCourierOptions([]);
-    setSelectedCourier(null);
+    setSelectedCourierKey(null);
     setShippingCost(0);
 
     try {
-      // Fetch costs for multiple couriers
       const couriers = ["jne", "tiki", "pos", "jnt"];
       const results = await Promise.allSettled(
         couriers.map((c) =>
@@ -157,13 +146,11 @@ export default function CheckoutPage() {
         }
       }
 
-      // Sort by price ascending
       allCosts.sort((a, b) => a.cost - b.cost);
       setCourierOptions(allCosts);
 
-      // Auto-select cheapest
       if (allCosts.length > 0) {
-        setSelectedCourier(allCosts[0].key);
+        setSelectedCourierKey(allCosts[0].key);
         setShippingCost(allCosts[0].cost);
       }
     } catch (err) {
@@ -179,67 +166,26 @@ export default function CheckoutPage() {
 
   // ── Handle courier selection ──
   const handleSelectCourier = (key, cost) => {
-    setSelectedCourier(key);
+    setSelectedCourierKey(key);
     setShippingCost(cost);
-  };
-
-  // ── City search ──
-  const searchCities = useCallback(async (q) => {
-    if (!q || q.length < 2) {
-      setCityResults([]);
-      return;
-    }
-    setCityLoading(true);
-    try {
-      const res = await fetch(`/api/ongkir/cities?query=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      if (data.success) setCityResults(data.cities || []);
-    } catch {
-      // ignore
-    } finally {
-      setCityLoading(false);
-    }
-  }, []);
-
-  let debounceTimer;
-  const handleCityInput = (val) => {
-    setCityQuery(val);
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => searchCities(val), 300);
-  };
-
-  const selectCity = (city) => {
-    setAddressForm((prev) => ({
-      ...prev,
-      city: `${city.type} ${city.city_name}`,
-      cityId: city.city_id,
-    }));
-    setCityQuery(`${city.type} ${city.city_name}`);
-    setCityResults([]);
   };
 
   // ── Save new address ──
   const handleSaveAddress = async (e) => {
     e.preventDefault();
     if (!currentUser) return;
-    if (!addressForm.cityId || !addressForm.street || !addressForm.recipientName) {
-      toast.error("Harap isi semua bidang wajib");
+    if (!addressForm.cityId || !addressForm.city || !addressForm.street || !addressForm.recipientName) {
+      toast.error("Harap isi nama penerima, kota, dan alamat lengkap");
       return;
     }
 
     setSavingAddress(true);
     try {
-      const newAddr = {
-        id: `ADDR-${Date.now()}`,
-        label: addressForm.label,
-        recipientName: addressForm.recipientName,
-        recipientPhone: addressForm.recipientPhone,
-        street: addressForm.street,
-        city: addressForm.city,
-        cityId: addressForm.cityId,
-        postalCode: addressForm.postalCode,
+      const newAddr = normalizeAddress({
+        ...addressForm,
+        id: buildAddressId(),
         isPrimary: addresses.length === 0,
-      };
+      });
 
       const updated = [...addresses, newAddr];
       const res = await fetch("/api/users", {
@@ -252,14 +198,15 @@ export default function CheckoutPage() {
         }),
       });
 
-      if (!res.ok) throw new Error("Gagal simpan alamat");
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal simpan alamat");
 
       setAddresses(updated);
       setSelectedAddressId(newAddr.id);
       setShowAddressModal(false);
       toast.success("Alamat berhasil disimpan!");
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || "Gagal menyimpan alamat");
     } finally {
       setSavingAddress(false);
     }
@@ -271,7 +218,6 @@ export default function CheckoutPage() {
       toast.error("Masukkan kode promo");
       return;
     }
-    // Simulasi validasi — di real app, call API /api/settings?code=xxx
     if (promoCode.toUpperCase() === "XAR10" || promoCode.toUpperCase() === "WELCOME") {
       setPromoApplied(true);
       toast.success("Kode promo berhasil diterapkan!");
@@ -291,17 +237,23 @@ export default function CheckoutPage() {
       toast.error("Pilih alamat pengiriman");
       return;
     }
-    if (!selectedCourier) {
+    if (!selectedCourierKey) {
       toast.error("Pilih kurir pengiriman");
       return;
     }
 
-    // Store shipping info in localStorage for processPayment to read
+    const selectedCourierInfo = courierOptions.find((c) => c.key === selectedCourierKey);
+
+    // Simpan detail shipping ke localStorage agar bisa dibaca processPayment di StoreContext
     localStorage.setItem(
       "checkout_shipping",
       JSON.stringify({
         addressId: selectedAddress.id,
-        courier: selectedCourier,
+        address: selectedAddress,
+        courierKey: selectedCourierKey,
+        courierName: selectedCourierInfo?.courierName || "",
+        courierService: selectedCourierInfo?.service || "",
+        courierEtd: selectedCourierInfo?.etd || "",
         shippingCost,
       }),
     );
@@ -315,8 +267,8 @@ export default function CheckoutPage() {
 
   // ── Derive selected courier info ──
   const selectedCourierInfo = useMemo(
-    () => courierOptions.find((c) => c.key === selectedCourier),
-    [courierOptions, selectedCourier],
+    () => courierOptions.find((c) => c.key === selectedCourierKey),
+    [courierOptions, selectedCourierKey],
   );
 
   // ── Redirect if cart empty ──
@@ -376,17 +328,7 @@ export default function CheckoutPage() {
               <button
                 className={styles.sectionAction}
                 onClick={() => {
-                  setAddressForm({
-                    label: "Rumah",
-                    recipientName: currentUser?.displayName || "",
-                    recipientPhone: "",
-                    street: "",
-                    city: "",
-                    cityId: "",
-                    postalCode: "",
-                  });
-                  setCityQuery("");
-                  setCityResults([]);
+                  setAddressForm(emptyAddressForm(currentUser?.displayName || ""));
                   setShowAddressModal(true);
                 }}
               >
@@ -406,17 +348,7 @@ export default function CheckoutPage() {
                 <button
                   className={styles.addAddressBtn}
                   onClick={() => {
-                    setAddressForm({
-                      label: "Rumah",
-                      recipientName: currentUser?.displayName || "",
-                      recipientPhone: "",
-                      street: "",
-                      city: "",
-                      cityId: "",
-                      postalCode: "",
-                    });
-                    setCityQuery("");
-                    setCityResults([]);
+                    setAddressForm(emptyAddressForm(currentUser?.displayName || ""));
                     setShowAddressModal(true);
                   }}
                 >
@@ -490,14 +422,14 @@ export default function CheckoutPage() {
                   <div
                     key={option.key}
                     className={`${styles.courierCard} ${
-                      selectedCourier === option.key ? styles.courierCardSelected : ""
+                      selectedCourierKey === option.key ? styles.courierCardSelected : ""
                     }`}
                     onClick={() => handleSelectCourier(option.key, option.cost)}
                   >
                     <input
                       type="radio"
                       className={styles.courierRadio}
-                      checked={selectedCourier === option.key}
+                      checked={selectedCourierKey === option.key}
                       onChange={() => handleSelectCourier(option.key, option.cost)}
                     />
                     <div className={styles.courierInfo}>
@@ -597,9 +529,7 @@ export default function CheckoutPage() {
           <div className={styles.summaryLine}>
             <span>Ongkos Kirim</span>
             <span className={styles.summaryLineShipping}>
-              {selectedCourierInfo
-                ? rupiah(shippingCost)
-                : "—"}
+              {selectedCourierInfo ? rupiah(shippingCost) : "—"}
             </span>
           </div>
 
@@ -618,7 +548,7 @@ export default function CheckoutPage() {
           <button
             className={styles.payButton}
             onClick={handlePay}
-            disabled={isProcessing || !selectedAddress || !selectedCourier}
+            disabled={isProcessing || !selectedAddress || !selectedCourierKey}
           >
             {isProcessing
               ? "Memproses Pembayaran..."
@@ -626,7 +556,7 @@ export default function CheckoutPage() {
             <span className={styles.payButtonSub}>
               {!selectedAddress
                 ? "Pilih alamat terlebih dahulu"
-                : !selectedCourier
+                : !selectedCourierKey
                   ? "Pilih kurir terlebih dahulu"
                   : "Pembayaran via Midtrans (QRIS / VA / Convenience Store)"}
             </span>
@@ -701,37 +631,18 @@ export default function CheckoutPage() {
 
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Kota/Kabupaten *</label>
-                <div className={styles.citySearchWrapper}>
-                  <input
-                    type="text"
-                    className={styles.citySearchInput}
-                    value={cityQuery}
-                    onChange={(e) => handleCityInput(e.target.value)}
-                    placeholder="Cari kota... (min. 2 karakter)"
-                  />
-                  {cityResults.length > 0 && (
-                    <div className={styles.cityDropdown}>
-                      {cityResults.map((city) => (
-                        <div
-                          key={city.city_id}
-                          className={`${styles.cityOption} ${
-                            addressForm.cityId === city.city_id
-                              ? styles.cityOptionSelected
-                              : ""
-                          }`}
-                          onClick={() => selectCity(city)}
-                        >
-                          {city.type} {city.city_name}, {city.province}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {cityLoading && (
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
-                      Mencari kota...
-                    </p>
-                  )}
-                </div>
+                <CitySearchInput
+                  value={addressForm.city}
+                  cityId={addressForm.cityId}
+                  onSelect={(city) =>
+                    setAddressForm((prev) => ({
+                      ...prev,
+                      city: `${city.type} ${city.city_name}`,
+                      cityId: String(city.city_id),
+                    }))
+                  }
+                  placeholder="Cari kota... (min. 2 karakter)"
+                />
               </div>
 
               <div className={styles.formGroup}>

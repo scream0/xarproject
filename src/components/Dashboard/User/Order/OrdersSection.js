@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { useStore } from "@/context/StoreContext";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import { OrdersSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+import { formatAddressDisplay } from "@/utils/address";
 
 // Mapping status mentah dari Firestore/Admin -> label & tahap yang ditampilkan
 // ke customer. Ini HARUS selalu sinkron dengan alur status di TransactionTable.js
@@ -77,15 +78,11 @@ function formatOrderDoc(item, primaryAddress) {
     }
   }
 
-  const orderAddressObj = item.shipping_address || item.address;
-  let formattedAddress = "Belum diatur";
-  if (typeof orderAddressObj === "string") {
-    formattedAddress = orderAddressObj;
-  } else if (orderAddressObj) {
-    formattedAddress = `${orderAddressObj.recipientName || ""} (${orderAddressObj.recipientPhone || ""}) - ${orderAddressObj.street || ""}, ${orderAddressObj.city || ""} (${orderAddressObj.postalCode || ""})`;
-  } else {
-    formattedAddress = primaryAddress || "Belum diatur";
-  }
+  const orderAddressObj =
+    item.shippingAddress || item.shipping_address || item.address;
+  const formattedAddress = orderAddressObj
+    ? formatAddressDisplay(orderAddressObj)
+    : primaryAddress || "Belum diatur";
 
   const rawAmount = Number(item.amount || item.gross_amount || item.price || 0);
 

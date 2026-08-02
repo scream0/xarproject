@@ -1,30 +1,36 @@
-import { useContext } from "react";
-import { StoreContext } from "@/context/StoreContext";
+import { useStore } from "@/context/StoreContext";
 
-// Custom hook to easily access store context
+// Custom hook to easily access cart-specific parts of the store context.
+// Wraps useStore and exposes the same API as before plus cart helpers.
 export const useCart = () => {
-  const context = useContext(StoreContext);
-  if (context === undefined) {
-    throw new Error("useCart must be used within a StoreProvider");
-  }
-  
-  const { 
-    cart, 
-    setCart, 
-    products, 
+  const context = useStore();
+
+  const {
+    cart,
+    setCart,
+    products,
     user,
     isCartOpen,
     setIsCartOpen,
     isProcessing,
     setIsProcessing,
     customer,
-    setCustomer
+    setCustomer,
+    addToCart: addToCartCtx,
+    removeFromCart: removeFromCartCtx,
+    updateCartItemVariant: updateCartItemVariantCtx,
+    getAvailableVariants: getAvailableVariantsCtx,
   } = context;
 
   // Recalculate totals whenever cart items change
   const cartTotal = cart.items.reduce((sum, item) => sum + item.total, 0);
   const cartQuantity = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-  const rupiah = (number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(number);
+  const rupiah = (number) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(number);
 
   const saveCartToLocalStorage = (cartData) => {
     if (typeof window !== "undefined") {
@@ -32,102 +38,33 @@ export const useCart = () => {
     }
   };
 
-  // --- CART ACTIONS ---
+  // --- CART ACTIONS (thin wrappers over StoreContext + localStorage) ---
 
   const addToCart = (product, variant, quantity = 1) => {
-    setCart((prevCart) => {
-      const existingIndex = prevCart.items.findIndex(
-        (i) => i.id === product.id && i.size === variant.size,
-      );
-
-      let newItems;
-      if (existingIndex > -1) {
-        newItems = prevCart.items.map((item, index) =>
-          index === existingIndex
-            ? { ...item, quantity: item.quantity + quantity, total: (item.quantity + quantity) * item.price }
-            : item
-        );
-      } else {
-        newItems = [
-          ...prevCart.items,
-          { 
-            ...product, 
-            ...variant, 
-            quantity: quantity, 
-            total: variant.price * quantity, 
-            cartId: `${product.id}-${variant.size}` // More stable ID
-          },
-        ];
-      }
-      const updatedCart = { ...prevCart, items: newItems };
-      saveCartToLocalStorage(updatedCart);
-      return updatedCart;
-    });
+    addToCartCtx(product, variant, quantity);
   };
 
-  const removeFromCart = (cartId, mode = 'single') => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.items.find((i) => i.cartId === cartId);
-      if (!existingItem) return prevCart;
-
-      let newItems;
-      if (mode === 'all' || existingItem.quantity <= 1) {
-        newItems = prevCart.items.filter((i) => i.cartId !== cartId);
-      } else {
-        newItems = prevCart.items.map((item) =>
-          item.cartId === cartId
-            ? { ...item, quantity: item.quantity - 1, total: (item.quantity - 1) * item.price }
-            : item
-        );
-      }
-      const updatedCart = { ...prevCart, items: newItems };
-      saveCartToLocalStorage(updatedCart);
-      return updatedCart;
-    });
+  const removeFromCart = (cartId, mode = "single") => {
+    if (mode === "all") {
+      // Hapus item sepenuhnya dari keranjang.
+      setCart((prevCart) => {
+        const updatedCart = {
+          items: prevCart.items.filter((i) => i.cartId !== cartId),
+        };
+        saveCartToLocalStorage(updatedCart);
+        return updatedCart;
+      });
+      return;
+    }
+    removeFromCartCtx(cartId);
   };
 
   const updateCartItemVariant = (cartId, newSize) => {
-      setCart(prevCart => {
-          const itemToUpdate = prevCart.items.find(i => i.cartId === cartId);
-          if (!itemToUpdate) return prevCart;
-
-          const originalProduct = products.find(p => p.id === itemToUpdate.id);
-          if (!originalProduct) return prevCart;
-
-          const newVariant = originalProduct.variants.find(v => v.size === newSize);
-          if (!newVariant) return prevCart;
-          
-          // Check if the same product with the new variant already exists in the cart
-          const existingItemIndex = prevCart.items.findIndex(i => i.id === itemToUpdate.id && i.size === newSize);
-
-          let newItems = [...prevCart.items];
-
-          if (existingItemIndex > -1) {
-              // Merge quantities and remove the old item
-              newItems[existingItemIndex].quantity += itemToUpdate.quantity;
-              newItems[existingItemIndex].total = newItems[existingItemIndex].quantity * newItems[existingItemIndex].price;
-              newItems = newItems.filter(i => i.cartId !== cartId);
-          } else {
-              // Just update the variant
-              const itemIndex = newItems.findIndex(i => i.cartId === cartId);
-              newItems[itemIndex] = {
-                  ...newItems[itemIndex],
-                  size: newVariant.size,
-                  price: newVariant.price,
-                  total: newItems[itemIndex].quantity * newVariant.price,
-                  cartId: `${itemToUpdate.id}-${newVariant.size}`
-              };
-          }
-          
-          const updatedCart = { ...prevCart, items: newItems };
-          saveCartToLocalStorage(updatedCart);
-          return updatedCart;
-      });
+    updateCartItemVariantCtx(cartId, newSize);
   };
 
   const getAvailableVariants = (productId) => {
-    const product = products.find(p => p.id === productId);
-    return product?.variants || [];
+    return getAvailableVariantsCtx(productId);
   };
 
   const clearCart = () => {
@@ -135,7 +72,7 @@ export const useCart = () => {
     setCart(clearedCart);
     saveCartToLocalStorage(clearedCart);
   };
-  
+
   return {
     cart,
     setCart,
@@ -154,6 +91,6 @@ export const useCart = () => {
     setIsProcessing,
     user,
     customer,
-    setCustomer
+    setCustomer,
   };
 };

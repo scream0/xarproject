@@ -12,7 +12,15 @@ let snap = new midtransClient.Snap({
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { userId, orderId, amount, items, shippingAddress } = body;
+    const {
+      userId,
+      orderId,
+      amount,
+      items,
+      shippingAddress,
+      shippingCost,
+      shippingDetail,
+    } = body;
 
     if (!orderId || !amount) {
       return NextResponse.json(
@@ -46,9 +54,14 @@ export async function POST(request) {
 
     // Format item details dari cart items
     let formattedItems = [];
+    const itemTotal = (items || []).reduce(
+      (sum, item) => sum + Number(item.price) * Number(item.quantity),
+      0,
+    );
+
     if (items && Array.isArray(items) && items.length > 0) {
       formattedItems = items.map((item) => ({
-        id: String(item.id || item.cartId || "XAR-ITEM"),
+        id: String(item.id || item.cartId || "XAR-ITEM").substring(0, 50),
         price: Number(item.price),
         quantity: Number(item.quantity),
         name: `${item.name} (${item.size || "Standard"})`.substring(0, 50),
@@ -57,17 +70,30 @@ export async function POST(request) {
       formattedItems = [
         {
           id: orderId,
-          price: Number(amount),
+          price: Number(itemTotal) || Number(amount),
           quantity: 1,
           name: "XAR Store Order",
         },
       ];
     }
 
-    // Format alamat pengiriman jika tersedia
-    let shippingDetail = {};
+    // Jika ada ongkir, tambahkan sebagai item detail "Ongkos Kirim".
+    // Ini memastikan jumlah gross_amount sama dengan penjumlahan item_details
+    // sehingga transaksi Midtrans tidak ditolak karena mismatch harga.
+    const shippingCostNumber = Number(shippingCost) || 0;
+    if (shippingCostNumber > 0) {
+      formattedItems.push({
+        id: "SHIPPING-COST",
+        price: shippingCostNumber,
+        quantity: 1,
+        name: "Ongkos Kirim",
+      });
+    }
+
+    // Format alamat pengiriman untuk Midtrans customer_details
+    let midtransShippingDetail = {};
     if (shippingAddress) {
-      shippingDetail = {
+      midtransShippingDetail = {
         first_name: shippingAddress.recipientName || customerName,
         phone: shippingAddress.recipientPhone || customerPhone,
         address: shippingAddress.street || "",
@@ -87,7 +113,7 @@ export async function POST(request) {
         first_name: customerName,
         email: customerEmail,
         phone: customerPhone,
-        shipping_address: shippingAddress ? shippingDetail : undefined,
+        shipping_address: shippingAddress ? midtransShippingDetail : undefined,
       },
     };
 
@@ -122,6 +148,8 @@ export async function POST(request) {
         items: items || [],
         amount: Number(amount),
         shippingAddress: shippingAddress || null,
+        shippingCost: shippingCostNumber,
+        shippingDetail: shippingDetail || null,
         status: "pending",
         createdAt: new Date(),
       });

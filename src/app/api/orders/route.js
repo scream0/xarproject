@@ -90,6 +90,9 @@ export async function GET(request) {
           userPrimaryAddress = `${primary.label || "Alamat"} - ${primary.recipientName} (${primary.recipientPhone}): ${primary.street}, ${primary.city} (${primary.postalCode})`;
         } else if (data.shipping_address) {
           userPrimaryAddress = data.shipping_address;
+        } else if (data.shippingAddress) {
+          const sa = data.shippingAddress;
+          userPrimaryAddress = `${sa.label || "Alamat"} - ${sa.recipientName} (${sa.recipientPhone}): ${sa.street}, ${sa.city} (${sa.postalCode})`;
         }
       }
     } catch (err) {
