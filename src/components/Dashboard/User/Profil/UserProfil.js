@@ -5,8 +5,7 @@ import profileConfig from "@/data/ui/userProfilConfig.json";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
-import { CitySearchInput } from "@/components/UI/CitySearchInput/CitySearchInput";
-import { buildAddressId, normalizeAddress } from "@/utils/address";
+import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 
 export default function ProfileSection() {
   const [loading, setLoading] = useState(false);
@@ -518,8 +517,10 @@ export default function ProfileSection() {
                 recipientName: profile.fullName,
                 recipientPhone: profile.phone,
                 street: "",
+                province: "",
                 city: "",
                 cityId: "",
+                cityType: "",
                 postalCode: "",
                 isPrimary: addresses.length === 0,
               });
@@ -552,7 +553,8 @@ export default function ProfileSection() {
                   </h4>
                   <p>📞 {addr.recipientPhone}</p>
                   <p>
-                    📍 {addr.street}, {addr.city} ({addr.postalCode})
+                    📍 {addr.street}, {addr.city}
+                    {addr.province ? `, ${addr.province}` : ""} ({addr.postalCode})
                   </p>
                 </div>
                 <div className={styles.addressActions}>
@@ -859,17 +861,16 @@ export default function ProfileSection() {
                 <label className={styles.inputLabel}>
                   {profileConfig.modals.address.city}
                 </label>
-                <CitySearchInput
-                  value={currentAddress.city || ""}
-                  cityId={currentAddress.cityId || ""}
-                  onSelect={(city) =>
-                    setCurrentAddress((prev) => ({
-                      ...prev,
-                      city: `${city.type} ${city.city_name}`,
-                      cityId: String(city.city_id),
-                    }))
+                <ProvinceCitySelect
+                  value={{
+                    province: currentAddress.province,
+                    city: currentAddress.city,
+                    cityId: currentAddress.cityId,
+                    cityType: currentAddress.cityType,
+                  }}
+                  onChange={(next) =>
+                    setCurrentAddress((prev) => ({ ...prev, ...next }))
                   }
-                  placeholder="Ketik minimal 2 huruf kota..."
                 />
               </div>
               <div className={styles.formGroup}>

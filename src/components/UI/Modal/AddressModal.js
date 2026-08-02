@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useStore } from "@/context/StoreContext";
-import { CitySearchInput } from "@/components/UI/CitySearchInput/CitySearchInput";
+import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 import styles from "./AddressModal.module.css";
 import config from "@/data/ui/addressModalConfig.json";
 
@@ -18,8 +18,10 @@ export function AddressModal() {
     recipientName: "",
     recipientPhone: "",
     street: "",
+    province: "",
     city: "",
     cityId: "",
+    cityType: "",
     postalCode: "",
   });
 
@@ -34,7 +36,7 @@ export function AddressModal() {
     if (
       !formData.recipientName ||
       !formData.street ||
-      !formData.cityId ||
+      !formData.province ||
       !formData.city
     ) {
       return alert(config.validationAlert);
@@ -92,18 +94,25 @@ export function AddressModal() {
             required
             className={`${styles.inputField} ${styles.textareaField}`}
           />
-          <CitySearchInput
-            value={formData.city}
-            cityId={formData.cityId}
-            onSelect={(city) =>
+
+          <ProvinceCitySelect
+            value={{
+              province: formData.province,
+              city: formData.city,
+              cityId: formData.cityId,
+              cityType: formData.cityType,
+            }}
+            onChange={(next) =>
               setFormData((prev) => ({
                 ...prev,
-                city: `${city.type} ${city.city_name}`,
-                cityId: String(city.city_id),
+                province: next.province,
+                city: next.city,
+                cityId: next.cityId,
+                cityType: next.cityType,
               }))
             }
-            placeholder={config.placeholders.city}
           />
+
           <input
             type="text"
             name="postalCode"
