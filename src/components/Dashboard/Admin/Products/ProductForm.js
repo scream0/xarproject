@@ -81,6 +81,15 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
             {config.categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </Select>
 
+        <Input
+          label="Berat (gram)"
+          type="number"
+          min="0"
+          placeholder="Contoh: 250"
+          value={formData.weight}
+          onChange={(e) => handleFormChange("weight", e.target.value)}
+        />
+
         <FileInput 
             label={config.labels.mainImage}
             file={mainImage.file}

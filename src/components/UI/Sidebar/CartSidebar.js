@@ -39,16 +39,18 @@ export function CartSidebar() {
 
   const productList = Array.isArray(products) ? products : products?.data || [];
 
-  const handleCheckoutClick = async () => {
+const handleCheckoutClick = async () => {
     if (!user) {
       if (typeof window !== "undefined") {
         localStorage.setItem("pending_cart", JSON.stringify(cart));
       }
       closeSidebar();
-      router.push("/login");
+      router.push("/login?callbackUrl=/checkout");
       return;
     }
-    if (processPayment) processPayment();
+    // Redirect ke halaman checkout dedicated
+    closeSidebar();
+    router.push("/checkout");
   };
 
   const handleExploreClick = (e) => {

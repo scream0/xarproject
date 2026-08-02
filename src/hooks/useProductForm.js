@@ -12,6 +12,7 @@ export function useProductForm(initialProduct = null, onSuccess) {
     name: "",
     category: "Parfum",
     description: "",
+    weight: 250,
   });
   const [variants, setVariants] = useState([
     {
@@ -36,6 +37,7 @@ export function useProductForm(initialProduct = null, onSuccess) {
         name: initialProduct.name || "",
         category: initialProduct.category || "Parfum",
         description: initialProduct.description || "",
+        weight: Number(initialProduct.weight) || 250,
       });
       setVariants(
         initialProduct.variants?.map((v) => ({
@@ -189,6 +191,7 @@ export function useProductForm(initialProduct = null, onSuccess) {
         name: formData.name,
         category: formData.category,
         description: formData.description,
+        weight: Number(formData.weight) || 250,
         imageUrl: finalImageUrl,
         imagePublicId: finalImagePublicId,
         variants: processedVariants,
@@ -219,6 +222,7 @@ export function useProductForm(initialProduct = null, onSuccess) {
           name: "",
           category: "Parfum",
           description: "",
+          weight: 250,
         });
         setVariants([
           {

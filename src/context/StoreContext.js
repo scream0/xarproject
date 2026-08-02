@@ -353,6 +353,31 @@ export function StoreProvider({ children }) {
     }
   };
 
+const [shippingCost, setShippingCost] = useState(0);
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+
+  const calculateShippingCost = useCallback(async (destinationCity, weight) => {
+    if (!destinationCity || !weight) return 0;
+    setIsCalculatingShipping(true);
+    try {
+      const res = await fetch("/api/ongkir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ destination: destinationCity, weight }),
+      });
+      const data = await res.json();
+      if (res.ok && data.cost) {
+        return data.cost;
+      }
+      return 0;
+    } catch (err) {
+      console.error("Gagal menghitung ongkir:", err);
+      return 0;
+    } finally {
+      setIsCalculatingShipping(false);
+    }
+  }, []);
+
   const processPayment = async () => {
     if (!user) {
       toast.error("Silakan login untuk checkout!");
@@ -379,11 +404,31 @@ export function StoreProvider({ children }) {
         return;
       }
 
-orderId = `XAR-${Date.now()}`;
+      orderId = `XAR-${Date.now()}`;
       // Gunakan harga setelah diskon promo jika aktif
       const amount = activePromo ? discountedCartTotal : cartTotal;
       const primaryAddress =
         userAddresses.find((a) => a.isPrimary) || userAddresses[0];
+
+      // Hitung total berat dari item keranjang berdasarkan data produk
+      let totalWeight = 0;
+      for (const item of cart.items) {
+        const product = products.find(
+          (p) => String(p.id) === String(item.id),
+        );
+        const itemWeight = Number(product?.weight) || 250; // default 250gr
+        totalWeight += itemWeight * (Number(item.quantity) || 1);
+      }
+
+      // Hitung ongkir dari alamat utama user
+      let shippingCostAmount = 0;
+      if (primaryAddress.city) {
+        shippingCostAmount = await calculateShippingCost(primaryAddress.city, totalWeight);
+      }
+      setShippingCost(shippingCostAmount);
+
+      // Total akhir = harga produk (setelah diskon) + ongkir
+      const finalAmount = amount + shippingCostAmount;
 
       const response = await fetch("/api/midtrans", {
         method: "POST",
@@ -391,10 +436,11 @@ orderId = `XAR-${Date.now()}`;
         body: JSON.stringify({
           userId: user.uid,
           orderId,
-          amount,
+          amount: finalAmount,
           items: cart.items,
           customerDetails: customer,
           shippingAddress: primaryAddress,
+          shippingCost: shippingCostAmount,
         }),
       });
 
@@ -536,11 +582,13 @@ checkoutWa,
         isAddressModalOpen,
         setIsAddressModalOpen,
         saveAddressAndPay,
-        promoSettings,
+promoSettings,
         activePromo,
         promoSavings,
         discountedCartTotal,
         promoSummary,
+        shippingCost,
+        isCalculatingShipping,
       }}
     >
       {children}

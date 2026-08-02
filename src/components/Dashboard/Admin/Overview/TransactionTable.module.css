@@ -454,20 +454,99 @@
     max-width: none;
   }
 
-  .ordersTable td,
-  .ordersTable th {
-    padding: 0.8rem 0.7rem;
+  .tableResponsive {
+    overflow: visible;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .ordersTable,
+  .ordersTable thead,
+  .ordersTable tbody,
+  .ordersTable tr,
+  .ordersTable th,
+  .ordersTable td {
+    display: block;
+  }
+
+  .ordersTable thead {
+    display: none;
+  }
+
+  .ordersTable tr {
+    background: rgba(var(--surface-primary-rgb), 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .ordersTable td {
+    padding: 0.5rem 0;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    text-align: right;
+  }
+
+  .ordersTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    text-align: left;
+    flex: 1;
+  }
+
+  .ordersTable td:first-child {
+    padding-top: 0;
+  }
+
+  .ordersTable td:last-child {
+    padding-bottom: 0;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .ordersTable td:last-child::before {
+    width: 100%;
+    margin-bottom: 0.25rem;
   }
 
   .actionBtn,
   .actionBtnConfirm {
-    width: 100%;
+    width: auto;
+    flex: 1;
+    min-width: 0;
     justify-content: center;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.65rem;
+  }
+
+  .orderId {
+    font-size: 0.8rem;
+  }
+
+  .badge {
+    font-size: 0.6rem;
+    padding: 0.3rem 0.55rem;
   }
 
   .pagination {
     flex-direction: column;
     gap: 0.6rem;
+  }
+
+  .controlsContainer {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
 

@@ -240,20 +240,20 @@ export default function TransactionTable() {
                     const orderTotal = Number(order.amount || order.price || 0);
                     const displayStatus = order.status === "success" ? "processing" : order.status === "shipping" ? "shipped" : order.status || "pending";
 
-                    return (
+return (
                       <tr key={currentId}>
-                        <td><input type="checkbox" aria-label={`Select ${currentId}`} checked={selectedIds.includes(currentId)} onChange={() => toggleOrder(currentId)} /></td>
-                        <td className={styles.orderId}>{currentId}</td>
-                        <td>{customerName}</td>
-                        <td>{formatRupiah(orderTotal)}</td>
-                        <td>
+                        <td data-label="Pilih"><input type="checkbox" aria-label={`Select ${currentId}`} checked={selectedIds.includes(currentId)} onChange={() => toggleOrder(currentId)} /></td>
+                        <td className={styles.orderId} data-label="ID Pesanan">{currentId}</td>
+                        <td data-label="Pelanggan">{customerName}</td>
+                        <td data-label="Total">{formatRupiah(orderTotal)}</td>
+                        <td data-label="Status">
                           <span
                             className={`${styles.badge} ${getBadgeClass(displayStatus)}`}
                           >
                             {displayStatus}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Aksi">
                           {displayStatus === "pending" && (
                             <button
                               className={styles.actionBtnConfirm}
@@ -267,7 +267,7 @@ export default function TransactionTable() {
                                 : overviewConfig.actions.confirmPayment}
                             </button>
                           )}
-{displayStatus === "processing" && (
+                          {displayStatus === "processing" && (
                             <button
                               className={styles.actionBtn}
                               onClick={() => handleShipOrderClick(order)}

@@ -56,6 +56,8 @@ const DEFAULT_SETTINGS = {
   storeEmail: "contact@xar.com",
   currency: "IDR",
   lowStockThreshold: 10,
+  storeCityId: "",
+  storeCityName: "",
   midtransServerKey: "",
   midtransClientKey: "",
 
@@ -310,6 +312,10 @@ export async function PUT(request) {
       updateData.currency = newSettings.currency;
     if (newSettings.lowStockThreshold !== undefined)
       updateData.lowStockThreshold = Number(newSettings.lowStockThreshold);
+    if (newSettings.storeCityId !== undefined)
+      updateData.storeCityId = String(newSettings.storeCityId || "");
+    if (newSettings.storeCityName !== undefined)
+      updateData.storeCityName = String(newSettings.storeCityName || "");
     if (newSettings.promoBannerEnabled !== undefined)
       updateData.promoBannerEnabled = Boolean(newSettings.promoBannerEnabled);
     if (newSettings.promoBannerText !== undefined)

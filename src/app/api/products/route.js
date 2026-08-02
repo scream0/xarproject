@@ -65,8 +65,15 @@ export async function POST(request) {
       );
     }
 
-    const { name, category, description, imageUrl, imagePublicId, variants } =
-      body || {};
+    const {
+      name,
+      category,
+      description,
+      imageUrl,
+      imagePublicId,
+      variants,
+      weight,
+    } = body || {};
 
     if (!name || !imageUrl) {
       return NextResponse.json(
@@ -83,6 +90,7 @@ export async function POST(request) {
         image_url: imageUrl,
         image_public_id: imagePublicId,
         variants: variants,
+        weight: weight !== undefined ? Number(weight) || 0 : 250,
         created_at: new Date().toISOString(),
       },
     ]);
@@ -117,8 +125,15 @@ export async function PUT(request) {
       );
     }
 
-    const { productId, name, description, imageUrl, imagePublicId, variants } =
-      body || {};
+    const {
+      productId,
+      name,
+      description,
+      imageUrl,
+      imagePublicId,
+      variants,
+      weight,
+    } = body || {};
 
     if (!productId) {
       return NextResponse.json(
@@ -135,6 +150,7 @@ export async function PUT(request) {
         image_url: imageUrl,
         image_public_id: imagePublicId,
         variants: variants,
+        weight: weight !== undefined ? Number(weight) || 0 : undefined,
       })
       .eq("id", productId);
 

@@ -1,32 +1,19 @@
-# TODO — E-Commerce Professional Enhancement (Complete)
+# TODO — Alur Pembelian Profesional (Checkout Flow)
 
-## Status: ✅ SEMUA SUDAH IMPLEMENTASI
+## ✅ Completed — Professional E-Commerce Checkout Flow
+- [x] **Dedicated Checkout Page** (`/checkout`) — Halaman terpisah dengan 3 step: Alamat → Kurir → Promo
+- [x] **Step 1: Alamat Pengiriman** — Pilih alamat tersimpan, search kota via RajaOngkir, tambah alamat baru
+- [x] **Step 2: Pilih Kurir** — Bandingkan tarif JNE/TIKI/POS/JNT, auto-select termurah, tampilkan estimasi
+- [x] **Step 3: Kode Promo** — Input promo, validasi, tampilkan diskon
+- [x] **Ringkasan Belanja** — Sidebar sticky dengan item, subtotal, diskon, ongkir, total akhir
+- [x] **CartSidebar → Redirect** — Mini-cart sekarang redirect ke `/checkout` (bukan payment langsung)
+- [x] **City Search** — Dropdown kota dengan search (RajaOngkir API) di modal alamat
+- [x] **Midtrans Payment** — Total akhir (produk + ongkir) dikirim ke Midtrans
+- [x] **Build Success** — Compiled successfully
 
-### User Dashboard Features
-- ✅ Ringkasan akun: total pesanan, status terakhir, saldo/point
-- ✅ Riwayat pesanan & tracking: detail, status kirim, cancel/retur
-- ✅ Notifikasi personal: filter, search, mark read, delete
-- ✅ Search & filter produk: search, kategori, harga range, sort
-- ✅ Favorit / wishlist: localStorage persistence, add/remove
-- ✅ Profil & alamat: edit data diri, alamat, password, avatar
+## Remaining
+- [ ] Simpan detail ongkir (kurir, biaya, estimasi) di dokumen order Firestore
+- [ ] Tampilkan rincian ongkir di modal order user (`OrdersSection`)
+- [ ] Tampilkan ongkir di tabel admin (`TransactionTable`)
+- [ ] Tambah dropdown kota di `SettingsView.js` untuk `storeCityId`/`storeCityName`
 
-### Admin Dashboard Features
-- ✅ Statistik operasional: total penjualan, omzet, produk terlaris
-- ✅ Manajemen pesanan: list, filter by status, update status, handling retur
-- ✅ Manajemen produk: tambah/edit/hapus produk, stock, promo, kategori
-- ✅ Manajemen user: lihat pelanggan, status akun, blokir/aktifkan, peran
-- ✅ Laporan & analytics: grafik tren penjualan, omzet, performa produk
-- ✅ Pusat notifikasi: create, filter, manage, audience targeting
-
-### Additional Features
-- ✅ Role-based view: user dan admin UI berbeda
-- ✅ Dark mode / tema: ThemeContext + CSS variables
-- ✅ Mobile-friendly: responsive dashboard
-- ✅ Promo system: discount type, validity period, auto-apply
-- ✅ Cart sidebar: variant selector, promo savings, shipping progress
-- ✅ Skeleton loading: all sections have loading states
-- ✅ Midtrans payment integration
-- ✅ Address management
-- ✅ Review & rating system
-- ✅ Returns & refund management
-- ✅ Support ticket system
