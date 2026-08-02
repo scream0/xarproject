@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -7,8 +6,23 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
-import { AddressManager } from "@/components/Checkout/AddressManager";
+import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
+import { buildAddressId, normalizeAddress } from "@/utils/address";
 import styles from "./checkout.module.css";
+
+const ORIGIN_CITY_ID = "114"; // Jakarta
+
+const emptyAddressForm = (displayName = "") => ({
+  label: "Rumah",
+  recipientName: displayName || "",
+  recipientPhone: "",
+  street: "",
+  province: "",
+  city: "",
+  cityId: "",
+  cityType: "",
+  postalCode: "",
+});
 
 // ─── HELPERS ────────────────────────────────────────────────
 const rupiah = (n) =>
@@ -40,8 +54,14 @@ export default function CheckoutPage() {
   }, [router]);
 
   // ── Address ──
+  const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-  const [allAddresses, setAllAddresses] = useState([]);
+  const [addressLoading, setAddressLoading] = useState(true);
+
+  // ── Address Modal ──
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [addressForm, setAddressForm] = useState(emptyAddressForm());
+  const [savingAddress, setSavingAddress] = useState(false);
 
   // ── Courier ──
   const [courierOptions, setCourierOptions] = useState([]);
@@ -52,6 +72,66 @@ export default function CheckoutPage() {
   // ── Promo ──
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
+
+  // ── Fetch user addresses ──
+  useEffect(() => {
+    if (!currentUser) return;
+    setAddressLoading(true);
+    fetch(`/api/users?userId=${currentUser.uid}`)
+      .then((r) => r.json())
+      .then((result) => {
+        if (result.exists && result.data?.addresses) {
+          const addrs = result.data.addresses;
+          setAddresses(addrs);
+          const primary = addrs.find((a) => a.isPrimary) || addrs[0];
+          if (primary) setSelectedAddressId(primary.id);
+        }
+      })
+      .catch(() => toast.error("Gagal memuat alamat"))
+      .finally(() => setAddressLoading(false));
+  }, [currentUser]);
+
+  // ── Save new address ──
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    if (!addressForm.province || !addressForm.city || !addressForm.street || !addressForm.recipientName) {
+      toast.error("Harap isi nama penerima, provinsi, kota/kabupaten, dan alamat lengkap");
+      return;
+    }
+
+    setSavingAddress(true);
+    try {
+      const newAddr = normalizeAddress({
+        ...addressForm,
+        id: buildAddressId(),
+        isPrimary: addresses.length === 0,
+      });
+
+      const updated = [...addresses, newAddr];
+      const res = await fetch("/api/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.uid,
+          type: "addresses",
+          addresses: updated,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal simpan alamat");
+
+      setAddresses(updated);
+      setSelectedAddressId(newAddr.id);
+      setShowAddressModal(false);
+      toast.success("Alamat berhasil disimpan!");
+    } catch (err) {
+      toast.error(err.message || "Gagal menyimpan alamat");
+    } finally {
+      setSavingAddress(false);
+    }
+  };
 
   // ── Compute total weight from cart items ──
   const totalWeight = useMemo(() => {
@@ -64,9 +144,10 @@ export default function CheckoutPage() {
     return w;
   }, [cart.items, products]);
 
+  // ── Fetch courier costs when address changes ──
   const selectedAddress = useMemo(
-    () => allAddresses.find((a) => a.id === selectedAddressId),
-    [allAddresses, selectedAddressId],
+    () => addresses.find((a) => a.id === selectedAddressId),
+    [addresses, selectedAddressId],
   );
 
   const fetchCourierCosts = useCallback(async () => {
@@ -87,7 +168,7 @@ export default function CheckoutPage() {
       const results = await Promise.allSettled(
         couriers.map((c) =>
           fetch(
-            `/api/ongkir?origin=114&destination=${selectedAddress.cityId}&weight=${totalWeight}&courier=${c}`,
+            `/api/ongkir?origin=${ORIGIN_CITY_ID}&destination=${selectedAddress.cityId}&weight=${totalWeight}&courier=${c}`,
           ).then((r) => r.json()),
         ),
       );
@@ -242,14 +323,50 @@ export default function CheckoutPage() {
         <div className={styles.leftColumn}>
           {/* ====== 1. ALAMAT PENGIRIMAN ====== */}
           <section className={styles.sectionCard}>
-            {currentUser && 
-                <AddressManager 
-                    user={currentUser} 
-                    onSelectAddress={setSelectedAddressId} 
-                    selectedAddressId={selectedAddressId}
-                    setAllAddresses={setAllAddresses}
-                />
-            }
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>
+                Alamat Pengiriman
+              </h2>
+              <button
+                className={styles.sectionAction}
+                onClick={() => {
+                  setAddressForm(emptyAddressForm(currentUser?.displayName));
+                  setShowAddressModal(true);
+                }}
+              >
+                + Tambah Baru
+              </button>
+            </div>
+
+            {addressLoading ? (
+                <p>Memuat alamat...</p>
+            ) : addresses.length === 0 ? (
+                <p>Belum ada alamat tersimpan.</p>
+            ) : (
+                <div className={styles.addressList}>
+                {addresses.map((addr) => (
+                    <div
+                    key={addr.id}
+                    className={`${styles.addressCard} ${
+                        selectedAddressId === addr.id ? styles.addressCardSelected : ""
+                    }`}
+                    onClick={() => setSelectedAddressId(addr.id)}
+                    >
+                        <div className={styles.addressContent}>
+                            <span className={styles.addressLabel}>
+                                {addr.label}
+                                {addr.isPrimary && <span className={styles.primaryBadge}>Utama</span>}
+                            </span>
+                            <p className={styles.addressName}>{addr.recipientName}</p>
+                            <p className={styles.addressPhone}>{addr.recipientPhone}</p>
+                            <p className={styles.addressFull}>
+                                {addr.street}, {addr.city}, {addr.province} {addr.postalCode}
+                            </p>
+                        </div>
+                    </div>
+                ))}
+                </div>
+            )}
           </section>
 
           {/* ====== 2. KURIR PENGIRIMAN ====== */}
@@ -421,9 +538,89 @@ export default function CheckoutPage() {
                   ? "Pilih kurir terlebih dahulu"
                   : "Pembayaran via Midtrans (QRIS / VA / Convenience Store)"}
             </span>
-                    </button>
+          </button>
         </div>
       </div>
+
+        {showAddressModal && (
+            <div className={styles.modalOverlay} onClick={() => setShowAddressModal(false)}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>Tambah Alamat Baru</h2>
+                <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>&times;</button>
+                </div>
+                <form onSubmit={handleSaveAddress}>
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Label Alamat</label>
+                    <input
+                    type="text"
+                    className={styles.formInput}
+                    value={addressForm.label}
+                    onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                    />
+                </div>
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Nama Penerima</label>
+                    <input
+                    type="text"
+                    className={styles.formInput}
+                    value={addressForm.recipientName}
+                    onChange={(e) => setAddressForm({ ...addressForm, recipientName: e.target.value })}
+                    required
+                    />
+                </div>
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Nomor Telepon</label>
+                    <input
+                    type="tel"
+                    className={styles.formInput}
+                    value={addressForm.recipientPhone}
+                    onChange={(e) => setAddressForm({ ...addressForm, recipientPhone: e.target.value })}
+                    required
+                    />
+                </div>
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Provinsi & Kota</label>
+                    <ProvinceCitySelect
+                    value={{
+                        province: addressForm.province,
+                        city: addressForm.city,
+                        cityId: addressForm.cityId,
+                        cityType: addressForm.cityType,
+                    }}
+                    onChange={(value) => setAddressForm({ ...addressForm, ...value })}
+                    />
+                </div>
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Alamat Lengkap</label>
+                    <textarea
+                    className={styles.formTextarea}
+                    value={addressForm.street}
+                    onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                    required
+                    ></textarea>
+                </div>
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Kode Pos</label>
+                    <input
+                    type="text"
+                    className={styles.formInput}
+                    value={addressForm.postalCode}
+                    onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                    />
+                </div>
+                <div className={styles.modalFooter}>
+                    <button type="button" className={styles.modalBtnCancel} onClick={() => setShowAddressModal(false)} disabled={savingAddress}>
+                    Batal
+                    </button>
+                    <button type="submit" className={styles.modalBtnSave} disabled={savingAddress}>
+                    {savingAddress ? "Menyimpan..." : "Simpan Alamat"}
+                    </button>
+                </div>
+                </form>
+            </div>
+            </div>
+        )}
     </div>
   );
 }
