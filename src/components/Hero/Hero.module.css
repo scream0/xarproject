@@ -84,7 +84,7 @@
   min-height: 42px;
   border: 1px solid rgba(var(--primary-accent-rgb), 0.14);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--hero-pill-bg, rgba(255, 255, 255, 0.72));
   color: var(--text-primary);
   box-shadow: 0 10px 24px rgba(17, 13, 10, 0.06);
   backdrop-filter: blur(12px);
@@ -94,6 +94,30 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   overflow: hidden;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.promoBanner:hover {
+  transform: translateX(-50%) translateY(-1px);
+  box-shadow: 0 12px 28px rgba(17, 13, 10, 0.1);
+  border-color: rgba(var(--primary-accent-rgb), 0.3);
+}
+
+.promoExpiry {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.24rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(var(--primary-accent-rgb), 0.08);
+  color: var(--primary-accent);
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 

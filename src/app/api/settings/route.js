@@ -192,6 +192,12 @@ const DEFAULT_SETTINGS = {
   // Promo Section
   promoBannerEnabled: false,
   promoBannerText: "Diskon khusus untuk pelanggan setia",
+  promoDiscountType: "percentage", // "percentage" | "fixed"
+  promoDiscountValue: 0,
+  promoStartDate: "",
+  promoEndDate: "",
+  promoCode: "",
+  promoDestination: "#product",
 };
 
 // Helper: sanitasi data undefined agar aman untuk Firestore
@@ -308,6 +314,23 @@ export async function PUT(request) {
       updateData.promoBannerEnabled = Boolean(newSettings.promoBannerEnabled);
     if (newSettings.promoBannerText !== undefined)
       updateData.promoBannerText = newSettings.promoBannerText;
+    if (newSettings.promoDiscountType !== undefined)
+      updateData.promoDiscountType =
+        newSettings.promoDiscountType === "fixed"
+          ? "fixed"
+          : "percentage";
+    if (newSettings.promoDiscountValue !== undefined)
+      updateData.promoDiscountValue = Number(
+        newSettings.promoDiscountValue || 0,
+      );
+    if (newSettings.promoStartDate !== undefined)
+      updateData.promoStartDate = newSettings.promoStartDate;
+    if (newSettings.promoEndDate !== undefined)
+      updateData.promoEndDate = newSettings.promoEndDate;
+    if (newSettings.promoCode !== undefined)
+      updateData.promoCode = String(newSettings.promoCode || "").toUpperCase();
+    if (newSettings.promoDestination !== undefined)
+      updateData.promoDestination = newSettings.promoDestination;
 
     // Landing object bersarang
     if (newSettings.hero) {

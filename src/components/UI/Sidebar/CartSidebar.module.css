@@ -199,11 +199,25 @@
   margin-top: auto;
 }
 
+.cartPriceGroup {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .cartCurrentPrice {
   color: var(--primary-accent);
   font-family: var(--font-sans);
   font-size: 0.95rem;
   font-weight: 600;
+}
+
+.cartOriginalPrice {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-decoration: line-through;
+  font-weight: 400;
 }
 
 .cartQtyControl {
@@ -330,6 +344,25 @@
   background-color: var(--primary-accent);
   border-radius: 3px;
   transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.promoSavingsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  border: 1px dashed rgba(var(--primary-accent-rgb), 0.4);
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.promoSavingsRow strong {
+  color: var(--success-color);
+  font-weight: 700;
 }
 
 .cartTotalRow {

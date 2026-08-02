@@ -59,6 +59,12 @@ const EMPTY = {
   promo: {
     promoBannerEnabled: false,
     promoBannerText: "",
+    promoDiscountType: "percentage",
+    promoDiscountValue: 0,
+    promoStartDate: "",
+    promoEndDate: "",
+    promoCode: "",
+    promoDestination: "#product",
   },
 };
 
@@ -178,9 +184,15 @@ export default function SettingsView() {
       },
       copyright: { text: data?.footer?.copyright?.text || "" },
     },
-    promo: {
+promo: {
       promoBannerEnabled: Boolean(data?.promoBannerEnabled),
       promoBannerText: data?.promoBannerText || "",
+      promoDiscountType: data?.promoDiscountType || "percentage",
+      promoDiscountValue: Number(data?.promoDiscountValue || 0),
+      promoStartDate: data?.promoStartDate || "",
+      promoEndDate: data?.promoEndDate || "",
+      promoCode: data?.promoCode || "",
+      promoDestination: data?.promoDestination || "#product",
     },
   });
 
@@ -369,8 +381,14 @@ export default function SettingsView() {
         },
         copyright: { text: strictValue(s.footer.copyright?.text) },
       },
-      promoBannerEnabled: Boolean(s.promo.promoBannerEnabled),
+promoBannerEnabled: Boolean(s.promo.promoBannerEnabled),
       promoBannerText: strictValue(s.promo.promoBannerText),
+      promoDiscountType: s.promo.promoDiscountType || "percentage",
+      promoDiscountValue: Number(s.promo.promoDiscountValue || 0),
+      promoStartDate: strictValue(s.promo.promoStartDate),
+      promoEndDate: strictValue(s.promo.promoEndDate),
+      promoCode: strictValue(s.promo.promoCode),
+      promoDestination: strictValue(s.promo.promoDestination),
     };
   };
 
@@ -1470,7 +1488,7 @@ function PromoTab({ settings, updateTab, cfg }) {
   return (
     <div className={styles.formSection}>
       <h4 className={styles.sectionTitle}>
-        {cfg.sections?.promo || "Banner Promo"}
+        {cfg.sections?.promo || "Banner Promo & Diskon"}
       </h4>
       <div className={styles.inputGroup}>
         <label className={styles.fieldLabel}>Aktifkan Banner Promo</label>
@@ -1492,6 +1510,108 @@ function PromoTab({ settings, updateTab, cfg }) {
           onChange={(e) => set({ promoBannerText: e.target.value })}
           placeholder={cfg.placeholders?.promoBannerText || ""}
         />
+      </div>
+      <div className={styles.inputGroup}>
+        <label className={styles.fieldLabel}>
+          {cfg.labels?.promoDestination || "Tujuan Klik Banner"}
+        </label>
+        <input
+          className={styles.inputField}
+          value={s.promoDestination}
+          onChange={(e) => set({ promoDestination: e.target.value })}
+          placeholder={cfg.placeholders?.promoDestination || "#product"}
+        />
+        <small className={styles.fieldDesc}>
+          {cfg.descriptions?.promoDestination || "Tujuan saat banner promo diklik."}
+        </small>
+      </div>
+
+      <h4 className={styles.sectionTitle}>
+        {cfg.sections?.discountRules || "Aturan Diskon"}
+      </h4>
+      <div className={styles.inputGroup}>
+        <label className={styles.fieldLabel}>
+          {cfg.labels?.promoDiscountType || "Tipe Diskon"}
+        </label>
+        <select
+          className={styles.selectField}
+          value={s.promoDiscountType}
+          onChange={(e) => set({ promoDiscountType: e.target.value })}
+        >
+          <option value="percentage">{cfg.options?.percentage || "Persentase (%)"}</option>
+          <option value="fixed">{cfg.options?.fixed || "Nominal (Rp)"}</option>
+        </select>
+        <small className={styles.fieldDesc}>
+          {cfg.descriptions?.promoDiscountType || "Pilih apakah diskon dihitung sebagai persentase (%) atau potongan nominal (Rp)."}
+        </small>
+      </div>
+      <div className={styles.inputGroup}>
+        <label className={styles.fieldLabel}>
+          {s.promoDiscountType === "percentage"
+            ? cfg.labels?.promoDiscountValuePercent || "Persentase Diskon (%)"
+            : cfg.labels?.promoDiscountValueFixed || "Nominal Diskon (Rp)"}
+        </label>
+        <input
+          type="number"
+          min="0"
+          className={styles.inputField}
+          value={s.promoDiscountValue}
+          onChange={(e) => set({ promoDiscountValue: Number(e.target.value) || 0 })}
+          placeholder={cfg.placeholders?.promoDiscountValue || "Contoh: 20 atau 50000"}
+        />
+        <small className={styles.fieldDesc}>
+          {cfg.descriptions?.promoDiscountValue || "Besar diskon yang akan otomatis diterapkan ke harga produk saat promo aktif."}
+        </small>
+      </div>
+      <div className={styles.inputGroup}>
+        <label className={styles.fieldLabel}>
+          {cfg.labels?.promoCode || "Kode Promo (opsional)"}
+        </label>
+        <input
+          className={styles.inputField}
+          value={s.promoCode}
+          onChange={(e) => set({ promoCode: e.target.value.toUpperCase() })}
+          placeholder={cfg.placeholders?.promoCode || "Contoh: XAR10"}
+        />
+        <small className={styles.fieldDesc}>
+          {cfg.descriptions?.promoCode || "Kode unik untuk kampanye (ditampilkan di banner, opsional)."}
+        </small>
+      </div>
+
+      <h4 className={styles.sectionTitle}>
+        {cfg.sections?.promoPeriod || "Masa Berlaku"}
+      </h4>
+      <div className={styles.row2}>
+        <div className={styles.inputGroup}>
+          <label className={styles.fieldLabel}>
+            {cfg.labels?.promoStartDate || "Tanggal Mulai"}
+          </label>
+          <input
+            type="date"
+            className={styles.inputField}
+            value={s.promoStartDate}
+            onChange={(e) => set({ promoStartDate: e.target.value })}
+            placeholder={cfg.placeholders?.promoStartDate || "YYYY-MM-DD"}
+          />
+          <small className={styles.fieldDesc}>
+            {cfg.descriptions?.promoStartDate || "Promo hanya aktif mulai tanggal ini (kosongkan jika langsung aktif)."}
+          </small>
+        </div>
+        <div className={styles.inputGroup}>
+          <label className={styles.fieldLabel}>
+            {cfg.labels?.promoEndDate || "Tanggal Berakhir"}
+          </label>
+          <input
+            type="date"
+            className={styles.inputField}
+            value={s.promoEndDate}
+            onChange={(e) => set({ promoEndDate: e.target.value })}
+            placeholder={cfg.placeholders?.promoEndDate || "YYYY-MM-DD"}
+          />
+          <small className={styles.fieldDesc}>
+            {cfg.descriptions?.promoEndDate || "Promo otomatis nonaktif setelah tanggal ini."}
+          </small>
+        </div>
       </div>
     </div>
   );

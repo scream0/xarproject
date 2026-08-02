@@ -446,6 +446,20 @@
   transform: scale(0.95);
 }
 
+/* Promo price display in recommendations */
+.curatedOriginalPrice {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  margin-right: 4px;
+  opacity: 0.7;
+}
+
+.curatedDiscountedPrice {
+  color: var(--primary-accent, #fbbf24);
+  font-weight: 600;
+}
+
 /* === POINTS & BALANCE ACCENT CARDS === */
 .metricCardAccent {
   background: linear-gradient(

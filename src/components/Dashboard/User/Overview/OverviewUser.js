@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import styles from "./OverviewUser.module.css";
 import { auth } from "@/lib/firebaseClient";
 import { useStore } from "@/context/StoreContext";
+import { getDiscountedPrice } from "@/utils/promo";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewUserConfig.json";
 import { OverviewUserSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
@@ -32,7 +33,7 @@ function getStatusInfo(rawStatus) {
 export default function OverviewUser({ setActiveTab }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { products, setIsCartOpen, addToCart } = useStore();
+  const { products, setIsCartOpen, addToCart, activePromo } = useStore();
 
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -449,11 +450,13 @@ export default function OverviewUser({ setActiveTab }) {
           ) : recommendedProducts.length > 0 ? (
             recommendedProducts.map((prod) => {
               const firstVariant = prod.variants?.[0] || {};
-              const price = firstVariant.price
-                ? Number(firstVariant.price).toLocaleString("id-ID")
-                : prod.price
-                  ? Number(prod.price).toLocaleString("id-ID")
-                  : "0";
+              const rawPrice = Number(
+                firstVariant.price || prod.price || 0,
+              );
+              const discounted = getDiscountedPrice(rawPrice, activePromo);
+              const priceDisplay = discounted.hasDiscount
+                ? Number(discounted.price).toLocaleString("id-ID")
+                : rawPrice.toLocaleString("id-ID");
               return (
                 <div key={prod.id || prod._id} className={styles.curatedItem}>
                   <img
@@ -468,8 +471,21 @@ export default function OverviewUser({ setActiveTab }) {
                   <div className={styles.curatedInfo}>
                     <p className={styles.curatedName}>{prod.name}</p>
                     <p className={styles.curatedSub}>
-                      {firstVariant.size ? `${firstVariant.size} • ` : ""}Rp{" "}
-                      {price}
+                      {firstVariant.size ? `${firstVariant.size} • ` : ""}
+                      {discounted.hasDiscount && (
+                        <span className={styles.curatedOriginalPrice}>
+                          Rp {rawPrice.toLocaleString("id-ID")}
+                        </span>
+                      )}{" "}
+                      <span
+                        className={
+                          discounted.hasDiscount
+                            ? styles.curatedDiscountedPrice
+                            : ""
+                        }
+                      >
+                        Rp {priceDisplay}
+                      </span>
                     </p>
                   </div>
                   <button

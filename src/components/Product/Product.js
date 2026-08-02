@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useProductFilter } from "@/hooks/useProductFilter";
 import { useStore } from "@/context/StoreContext";
 import { getPublicSettings } from "@/services/settingsService";
+import { getDiscountedPrice } from "@/utils/promo";
 import { Swiper, SwiperSlide, useSwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 
@@ -32,7 +33,7 @@ function SlideWrapper({ children }) {
 }
 
 export function Product({ onBukaDetail }) {
-  const { products, addToCart, rupiah } = useStore();
+  const { products, addToCart, rupiah, activePromo } = useStore();
   const [productSectionSettings, setProductSectionSettings] = useState(null);
   const [resolvedHeader, setResolvedHeader] = useState(productData?.header);
 
@@ -150,6 +151,7 @@ export function Product({ onBukaDetail }) {
                 onDetail={handleDetail}
                 onAdd={handleAddToCart}
                 rupiah={rupiah}
+                activePromo={activePromo}
               />
             </SlideWrapper>
           </SwiperSlide>
@@ -165,7 +167,7 @@ export function Product({ onBukaDetail }) {
   );
 }
 
-function ProductCard({ item, onDetail, onAdd, rupiah }) {
+function ProductCard({ item, onDetail, onAdd, rupiah, activePromo }) {
   const availableVariants =
     item.variants?.filter((v) => (v.stock ?? 0) > 0) || [];
   const isSoldOut =
@@ -173,6 +175,9 @@ function ProductCard({ item, onDetail, onAdd, rupiah }) {
 
   const price =
     availableVariants[0]?.price || item.variants?.[0]?.price || item.price || 0;
+
+  // Hitung harga diskon jika promo aktif
+  const discounted = getDiscountedPrice(price, activePromo);
 
   // LOGIKA GAMBAR KARTU PRODUK TERPUSAT:
   const imageSrc =
@@ -226,7 +231,20 @@ function ProductCard({ item, onDetail, onAdd, rupiah }) {
               >
                 {productData.card.pricePrefix}
               </span>
-              <span className={styles.currentPrice}>{formatRupiah(price)}</span>
+              {discounted.hasDiscount ? (
+                <>
+                  <span className={styles.originalPrice}>
+                    {formatRupiah(discounted.originalPrice)}
+                  </span>
+                  <span className={styles.currentPrice}>
+                    {formatRupiah(discounted.price)}
+                  </span>
+                </>
+              ) : (
+                <span className={styles.currentPrice}>
+                  {formatRupiah(discounted.price)}
+                </span>
+              )}
             </>
           )}
         </div>

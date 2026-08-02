@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
+import { isPromoActive, getDiscountedPrice, getCartPromoSummary } from "@/utils/promo";
 
 const StoreContext = createContext();
 
@@ -23,10 +24,29 @@ export function StoreProvider({ children }) {
   // STATE BARU UNTUK MODAL ALAMAT
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
+  // STATE PROMO — settings promo dari /api/settings?public=true
+  const [promoSettings, setPromoSettings] = useState(null);
+
   const [cart, setCart] = useState({ items: [] });
   const [isInitialized, setIsInitialized] = useState(false);
 
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
+
+  // Fetch promo settings (public) untuk diterapkan di seluruh app
+  useEffect(() => {
+    const loadPromo = async () => {
+      try {
+        const res = await fetch("/api/settings?public=true", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setPromoSettings(data);
+        }
+      } catch (error) {
+        console.error("Gagal memuat settings promo:", error);
+      }
+    };
+    loadPromo();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -311,6 +331,16 @@ export function StoreProvider({ children }) {
       0,
     ) || 0;
 
+  // PROMO: apakah promo sedang aktif?
+  const activePromo = isPromoActive(promoSettings)
+    ? promoSettings
+    : null;
+
+  // PROMO: total diskon keranjang & total setelah diskon
+  const promoSummary = getCartPromoSummary(cart.items, promoSettings);
+  const promoSavings = promoSummary.savings;
+  const discountedCartTotal = cartTotal - promoSavings;
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -349,8 +379,9 @@ export function StoreProvider({ children }) {
         return;
       }
 
-      orderId = `XAR-${Date.now()}`;
-      const amount = cartTotal;
+orderId = `XAR-${Date.now()}`;
+      // Gunakan harga setelah diskon promo jika aktif
+      const amount = activePromo ? discountedCartTotal : cartTotal;
       const primaryAddress =
         userAddresses.find((a) => a.isPrimary) || userAddresses[0];
 
@@ -495,7 +526,7 @@ export function StoreProvider({ children }) {
         updateCartItemVariant,
         getAvailableVariants,
         setCustomer,
-        checkoutWa,
+checkoutWa,
         rupiah,
         processPayment,
         isProcessing,
@@ -505,6 +536,11 @@ export function StoreProvider({ children }) {
         isAddressModalOpen,
         setIsAddressModalOpen,
         saveAddressAndPay,
+        promoSettings,
+        activePromo,
+        promoSavings,
+        discountedCartTotal,
+        promoSummary,
       }}
     >
       {children}

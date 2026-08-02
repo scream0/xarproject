@@ -3,8 +3,11 @@ import { useState, useEffect } from "react";
 import styles from "./ProductModal.module.css";
 import modalData from "@/data/ui/productModalConfig.json";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
+import { useStore } from "@/context/StoreContext";
+import { getDiscountedPrice } from "@/utils/promo";
 
 export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
+  const { activePromo } = useStore();
   const [currentSize, setCurrentSize] = useState("");
   const [modalQty, setModalQty] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -107,13 +110,32 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
             <h2 className={styles.modalProductTitle}>{item.name}</h2>
 
             <div className={styles.modalPriceTag}>
-              <span className={styles.modalPriceValue}>
-                {selectedVariant
-                  ? formatRupiah(selectedVariant.price)
+              {(() => {
+                const rawPrice = selectedVariant
+                  ? Number(selectedVariant.price)
                   : item.price
-                    ? formatRupiah(item.price)
-                    : "Stok Habis"}
-              </span>
+                    ? Number(item.price)
+                    : 0;
+                const discounted = getDiscountedPrice(rawPrice, activePromo);
+                if (rawPrice <= 0) return <span className={styles.modalPriceValue}>Stok Habis</span>;
+                return (
+                  <>
+                    {discounted.hasDiscount && (
+                      <span className={styles.modalOriginalPrice}>
+                        {formatRupiah(discounted.originalPrice)}
+                      </span>
+                    )}
+                    <span className={styles.modalPriceValue}>
+                      {formatRupiah(discounted.price)}
+                    </span>
+                    {discounted.hasDiscount && (
+                      <span className={styles.modalDiscountBadge}>
+                        Hemat {formatRupiah(discounted.savings)}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <p className={styles.modalProductDesc}>

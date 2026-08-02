@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
+import { getDiscountedPrice } from "@/utils/promo";
 import styles from "./CartSidebar.module.css";
 import cartConfig from "@/data/ui/cartSidebarConfig.json";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
@@ -22,6 +23,9 @@ export function CartSidebar() {
     processPayment,
     isProcessing,
     user,
+    activePromo,
+    promoSavings,
+    discountedCartTotal,
   } = useStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -154,8 +158,19 @@ export function CartSidebar() {
                       </div>
 
                       <div className={styles.cartItemPriceRow}>
-                        <span className={styles.cartCurrentPrice}>
-                          {rupiah(item.price)}
+                        <span className={styles.cartPriceGroup}>
+                          {activePromo && (
+                            <span className={styles.cartOriginalPrice}>
+                              {rupiah(item.price)}
+                            </span>
+                          )}
+                          <span className={styles.cartCurrentPrice}>
+                            {rupiah(
+                              activePromo
+                                ? getDiscountedPrice(item.price, activePromo).price
+                                : item.price,
+                            )}
+                          </span>
                         </span>
                         <div className={styles.cartQtyControl}>
                           <button
@@ -215,10 +230,16 @@ export function CartSidebar() {
                   ></div>
                 </div>
               </div>
+              {activePromo && promoSavings > 0 && (
+                <div className={styles.promoSavingsRow}>
+                  <span>Promo {activePromo?.promoBannerText || "diskon"}</span>
+                  <strong>-{rupiah(promoSavings)}</strong>
+                </div>
+              )}
               <div className={styles.cartTotalRow}>
                 <h4>{cartConfig?.labels?.total}</h4>
                 <span className={styles.cartGrandTotal}>
-                  {rupiah(cartTotal)}
+                  {rupiah(activePromo ? discountedCartTotal : cartTotal)}
                 </span>
               </div>
               <button

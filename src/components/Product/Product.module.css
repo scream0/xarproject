@@ -148,6 +148,20 @@
   letter-spacing: 0.5px;
 }
 
+.currentPrice {
+  font-size: 1.05rem;
+  color: var(--primary-accent);
+  font-weight: 700;
+}
+
+.originalPrice {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-weight: 400;
+  margin-right: 0.5rem;
+}
+
 /* btn quick add */
 .btnQuickAdd {
   background: rgba(var(--surface-primary-rgb), 0.96);

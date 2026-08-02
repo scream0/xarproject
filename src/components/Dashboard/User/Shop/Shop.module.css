@@ -429,6 +429,26 @@
   letter-spacing: 0.5px;
 }
 
+.cardOriginalPrice {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  margin-right: 0.4rem;
+}
+
+.cardDiscountBadge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  background: rgba(var(--success-color-rgb), 0.12);
+  color: var(--success-color);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
 .cardFooterInfo {
   display: flex;
   justify-content: space-between;
@@ -714,6 +734,27 @@
   font-weight: 400;
   color: var(--success-color);
   letter-spacing: 0.5px;
+}
+
+.modalPriceOriginal {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  margin-right: 0.4rem;
+  display: block;
+}
+
+.modalPriceBadge {
+  display: inline-block;
+  margin-left: 0.3rem;
+  background: rgba(var(--success-color-rgb), 0.12);
+  color: var(--success-color);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  vertical-align: middle;
 }
 
 .buyBtn {

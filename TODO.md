@@ -1,12 +1,32 @@
-# TODO — Fix reversed About/Product image upload
+# TODO — E-Commerce Professional Enhancement (Complete)
 
-## Goal
-The admin "image upload" currently controls a big image shown above the Product cards in the landing page, and lives in the Store ("Toko") tab. It should instead live in the **About** tab and control the image shown in the **About** section of the landing page.
+## Status: ✅ SEMUA SUDAH IMPLEMENTASI
 
-## Steps
-- [x] 1. `src/app/api/settings/route.js` — add `imagePublicId` to `about` in `DEFAULT_SETTINGS` + PUT handling.
-- [x] 2. `src/data/ui/settingsConfig.json` — relabel `productSectionImage` → `aboutImage`, `productSectionImageAlt` → `aboutImageAlt`; update sections/placeholders.
-- [x] 3. `src/components/Dashboard/Admin/Settings/SettingsView.js` — move file-upload UI from Store tab → About tab; update state mapping + save payload to use `about.image` / `about.imagePublicId`.
-- [x] 4. `src/components/Product/Product.js` — remove the featured-image block above product cards.
-- [x] 5. Verify landing & admin settings (About.js already renders `about.image` correctly).
+### User Dashboard Features
+- ✅ Ringkasan akun: total pesanan, status terakhir, saldo/point
+- ✅ Riwayat pesanan & tracking: detail, status kirim, cancel/retur
+- ✅ Notifikasi personal: filter, search, mark read, delete
+- ✅ Search & filter produk: search, kategori, harga range, sort
+- ✅ Favorit / wishlist: localStorage persistence, add/remove
+- ✅ Profil & alamat: edit data diri, alamat, password, avatar
 
+### Admin Dashboard Features
+- ✅ Statistik operasional: total penjualan, omzet, produk terlaris
+- ✅ Manajemen pesanan: list, filter by status, update status, handling retur
+- ✅ Manajemen produk: tambah/edit/hapus produk, stock, promo, kategori
+- ✅ Manajemen user: lihat pelanggan, status akun, blokir/aktifkan, peran
+- ✅ Laporan & analytics: grafik tren penjualan, omzet, performa produk
+- ✅ Pusat notifikasi: create, filter, manage, audience targeting
+
+### Additional Features
+- ✅ Role-based view: user dan admin UI berbeda
+- ✅ Dark mode / tema: ThemeContext + CSS variables
+- ✅ Mobile-friendly: responsive dashboard
+- ✅ Promo system: discount type, validity period, auto-apply
+- ✅ Cart sidebar: variant selector, promo savings, shipping progress
+- ✅ Skeleton loading: all sections have loading states
+- ✅ Midtrans payment integration
+- ✅ Address management
+- ✅ Review & rating system
+- ✅ Returns & refund management
+- ✅ Support ticket system

@@ -184,6 +184,26 @@
   font-family: var(--font-sans);
 }
 
+.modalOriginalPrice {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 400;
+  text-decoration: line-through;
+  margin-right: 0.5rem;
+}
+
+.modalDiscountBadge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  background: rgba(var(--success-color-rgb), 0.12);
+  color: var(--success-color);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
 .modalPriceTag {
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 1.5rem;

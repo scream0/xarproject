@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useStore } from "@/context/StoreContext";
+import { getDiscountedPrice } from "@/utils/promo";
 import styles from "./Shop.module.css";
 import toast from "react-hot-toast";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
@@ -15,7 +16,7 @@ import shopConfig from "@/data/ui/shopConfig.json";
 const PRODUCTS_PER_PAGE = 12;
 
 export default function Shop() {
-  const { addToCart, products: contextProducts } = useStore();
+  const { addToCart, products: contextProducts, activePromo } = useStore();
   const [products, setProducts] = useState([]);
   const [orderItemsMap, setOrderItemsMap] = useState({});
   const [allOrders, setAllOrders] = useState([]);
@@ -531,12 +532,28 @@ export default function Shop() {
                         <AppIcon name="shopping-cart" />
                       </button>
                     </div>
-                    <div className={styles.cardPriceRow}>
-                      <span className={styles.cardPrice}>
-                        {outOfStock
-                          ? shopConfig.card?.outOfStockTitle || "Stok Habis"
-                          : priceFormatted}
-                      </span>
+<div className={styles.cardPriceRow}>
+                      {(() => {
+                        if (outOfStock) return <span className={styles.cardPrice}>{shopConfig.card?.outOfStockTitle || "Stok Habis"}</span>;
+                        const discounted = getDiscountedPrice(displayPrice, activePromo);
+                        return (
+                          <>
+                            {discounted.hasDiscount && (
+                              <span className={styles.cardOriginalPrice}>
+                                {priceFormatted}
+                              </span>
+                            )}
+                            <span className={styles.cardPrice}>
+                              {`Rp ${Number(discounted.price).toLocaleString("id-ID")}`}
+                            </span>
+                            {discounted.hasDiscount && (
+                              <span className={styles.cardDiscountBadge}>
+                                Hemat {`Rp ${Number(discounted.savings).toLocaleString("id-ID")}`}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     <div className={styles.cardFooterInfo}>
                       <span
@@ -683,10 +700,30 @@ export default function Shop() {
                   </div>
                 </div>
 
-                <div className={styles.modalPriceAction}>
-                  <span className={styles.modalPrice}>
-                    {`Rp ${Number(selectedProduct.variants?.[activeVariantIdx]?.price || selectedProduct.price || 0).toLocaleString("id-ID")}`}
-                  </span>
+<div className={styles.modalPriceAction}>
+                  {(() => {
+                    const rawPrice = Number(selectedProduct.variants?.[activeVariantIdx]?.price || selectedProduct.price || 0);
+                    const discounted = getDiscountedPrice(rawPrice, activePromo);
+                    return (
+                      <>
+                        <span>
+                          {discounted.hasDiscount && (
+                            <span className={styles.modalPriceOriginal}>
+                              {`Rp ${rawPrice.toLocaleString("id-ID")}`}
+                            </span>
+                          )}
+                          <span className={styles.modalPrice}>
+                            {`Rp ${Number(discounted.price).toLocaleString("id-ID")}`}
+                          </span>
+                          {discounted.hasDiscount && (
+                            <span className={styles.modalPriceBadge}>
+                              Hemat {`Rp ${Number(discounted.savings).toLocaleString("id-ID")}`}
+                            </span>
+                          )}
+                        </span>
+                      </>
+                    );
+                  })()}
                   {(() => {
                     const activeVariant =
                       selectedProduct.variants?.[activeVariantIdx];
