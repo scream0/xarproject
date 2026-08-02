@@ -82,6 +82,7 @@ const DEFAULT_SETTINGS = {
   about: {
     image: "/assets/images/about-bg.jpg",
     imageAlt: "Artisanal Craftsmanship",
+    imagePublicId: "",
     content: {
       tagline: "The Story Behind",
       heading: "The Essence of Artisanal Perfection.",
@@ -191,10 +192,6 @@ const DEFAULT_SETTINGS = {
   // Promo Section
   promoBannerEnabled: false,
   promoBannerText: "Diskon khusus untuk pelanggan setia",
-
-  // Visual Produk
-  productSectionImage: "/assets/produk/crush.jpg",
-  productSectionImageAlt: "Produk unggulan XAR",
 };
 
 // Helper: sanitasi data undefined agar aman untuk Firestore
@@ -307,13 +304,6 @@ export async function PUT(request) {
       updateData.currency = newSettings.currency;
     if (newSettings.lowStockThreshold !== undefined)
       updateData.lowStockThreshold = Number(newSettings.lowStockThreshold);
-    if (newSettings.productSectionImage !== undefined)
-      updateData.productSectionImage = newSettings.productSectionImage;
-    if (newSettings.productSectionImageAlt !== undefined)
-      updateData.productSectionImageAlt = newSettings.productSectionImageAlt;
-    if (newSettings.productSectionImagePublicId !== undefined)
-      updateData.productSectionImagePublicId =
-        newSettings.productSectionImagePublicId;
     if (newSettings.promoBannerEnabled !== undefined)
       updateData.promoBannerEnabled = Boolean(newSettings.promoBannerEnabled);
     if (newSettings.promoBannerText !== undefined)
@@ -335,11 +325,13 @@ export async function PUT(request) {
           ...(newSettings.about.content || {}),
         },
       });
-      // Pasang image/alt jika dikirim sebagai bagian about
+      // Pasang image/alt/publicId jika dikirim sebagai bagian about
       if (newSettings.about.image !== undefined)
         updateData.about.image = newSettings.about.image;
       if (newSettings.about.imageAlt !== undefined)
         updateData.about.imageAlt = newSettings.about.imageAlt;
+      if (newSettings.about.imagePublicId !== undefined)
+        updateData.about.imagePublicId = newSettings.about.imagePublicId;
     }
     if (newSettings.product) {
       updateData.product = sanitizeData({

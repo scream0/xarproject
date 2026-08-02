@@ -16,9 +16,6 @@ const EMPTY = {
     storeEmail: "",
     currency: "IDR",
     lowStockThreshold: 10,
-    productSectionImage: "/assets/produk/crush.jpg",
-    productSectionImageAlt: "Produk unggulan XAR",
-    productSectionImagePublicId: "",
     midtransServerKey: "",
     midtransClientKey: "",
   },
@@ -34,6 +31,7 @@ const EMPTY = {
   about: {
     image: "",
     imageAlt: "",
+    imagePublicId: "",
     content: { tagline: "", heading: "", leadText: "", bodyText: "" },
     features: [{ number: "01", title: "", desc: "" }],
   },
@@ -92,9 +90,6 @@ export default function SettingsView() {
       storeEmail: data?.storeEmail || "",
       currency: data?.currency || "IDR",
       lowStockThreshold: Number(data?.lowStockThreshold ?? 10),
-      productSectionImage: data?.productSectionImage || "",
-      productSectionImageAlt: data?.productSectionImageAlt || "",
-      productSectionImagePublicId: data?.productSectionImagePublicId || "",
       midtransServerKey: data?.midtransServerKey || "",
       midtransClientKey: data?.midtransClientKey || "",
     },
@@ -123,6 +118,7 @@ export default function SettingsView() {
     about: {
       image: data?.about?.image || "",
       imageAlt: data?.about?.imageAlt || "",
+      imagePublicId: data?.about?.imagePublicId || "",
       content: {
         tagline: data?.about?.content?.tagline || "",
         heading: data?.about?.content?.heading || "",
@@ -199,7 +195,7 @@ export default function SettingsView() {
       try {
         const data = await getAdminSettings(currentUser);
         setSettings(mapSettingsToState(data));
-        setImagePreviewUrl(data?.productSectionImage || "");
+        setImagePreviewUrl(data?.about?.image || "");
       } catch (error) {
         console.error("Fetch Settings Error:", error.message);
         toast.error(error.message);
@@ -229,7 +225,7 @@ export default function SettingsView() {
     try {
       const payload = buildPayload();
 
-      // Unggah gambar section produk jika ada file baru
+      // Unggah gambar section about jika ada file baru
       if (selectedImageFile) {
         setUploadingImage(true);
         const formData = new FormData();
@@ -238,16 +234,13 @@ export default function SettingsView() {
         formData.append("folder", "storefront");
         formData.append(
           "publicId",
-          `storefront/product-section-${currentUser.uid}`,
+          `storefront/about-${currentUser.uid}`,
         );
         formData.append(
           "oldPublicId",
-          settings.store.productSectionImagePublicId || "",
+          settings.about.imagePublicId || "",
         );
-        formData.append(
-          "oldUrl",
-          settings.store.productSectionImage || "",
-        );
+        formData.append("oldUrl", settings.about.image || "");
 
         const uploadRes = await fetch("/api/cloudinary", {
           method: "POST",
@@ -259,8 +252,8 @@ export default function SettingsView() {
           throw new Error(uploadResult.error || "Gagal mengunggah gambar.");
         }
 
-        payload.productSectionImage = uploadResult.secure_url;
-        payload.productSectionImagePublicId = uploadResult.public_id;
+        payload.about.image = uploadResult.secure_url;
+        payload.about.imagePublicId = uploadResult.public_id;
         setImagePreviewUrl(uploadResult.secure_url);
         setSelectedImageFile(null);
         setUploadingImage(false);
@@ -270,7 +263,7 @@ export default function SettingsView() {
 
       const fresh = await getAdminSettings(currentUser);
       setSettings(mapSettingsToState(fresh));
-      setImagePreviewUrl(fresh?.productSectionImage || "");
+      setImagePreviewUrl(fresh?.about?.image || "");
 
       toast.success(cfg.toast?.success || "Pengaturan disimpan!", {
         id: toastId,
@@ -293,11 +286,6 @@ export default function SettingsView() {
       storeEmail: strictValue(s.store.storeEmail),
       currency: s.store.currency,
       lowStockThreshold: Number(s.store.lowStockThreshold) || 10,
-      productSectionImage: strictValue(s.store.productSectionImage),
-      productSectionImageAlt: strictValue(s.store.productSectionImageAlt),
-      productSectionImagePublicId: strictValue(
-        s.store.productSectionImagePublicId,
-      ),
       midtransServerKey: strictValue(s.store.midtransServerKey),
       midtransClientKey: strictValue(s.store.midtransClientKey),
       hero: {
@@ -325,6 +313,7 @@ export default function SettingsView() {
       about: {
         image: strictValue(s.about.image),
         imageAlt: strictValue(s.about.imageAlt),
+        imagePublicId: strictValue(s.about.imagePublicId),
         content: {
           tagline: strictValue(s.about.content?.tagline),
           heading: strictValue(s.about.content?.heading),
@@ -435,8 +424,6 @@ export default function SettingsView() {
           <StoreTab
             settings={settings.store}
             handleInputChange={handleInputChange}
-            handleImageSelect={handleImageSelect}
-            imagePreviewUrl={imagePreviewUrl}
             cfg={cfg}
           />
         )}
@@ -446,7 +433,13 @@ export default function SettingsView() {
         )}
 
         {activeTab === "about" && (
-          <AboutTab settings={settings.about} updateTab={updateTab} cfg={cfg} />
+          <AboutTab
+            settings={settings.about}
+            updateTab={updateTab}
+            handleImageSelect={handleImageSelect}
+            imagePreviewUrl={imagePreviewUrl}
+            cfg={cfg}
+          />
         )}
 
         {activeTab === "contact" && (
@@ -494,7 +487,7 @@ export default function SettingsView() {
 /* ============================================================
    TAB: STORE
    ============================================================ */
-function StoreTab({ settings, handleInputChange, handleImageSelect, imagePreviewUrl, cfg }) {
+function StoreTab({ settings, handleInputChange, cfg }) {
   return (
     <>
       <div className={styles.formSection}>
@@ -554,46 +547,6 @@ function StoreTab({ settings, handleInputChange, handleImageSelect, imagePreview
             required
           />
         </div>
-      </div>
-
-      <div className={styles.formSection}>
-        <h4 className={styles.sectionTitle}>
-          {cfg.sections?.visuals || "Visual Section Produk"}
-        </h4>
-        <div className={styles.inputGroup}>
-          <label className={styles.fieldLabel}>
-            {cfg.labels?.productSectionImage || "Gambar Section Produk"}
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageSelect}
-            className={styles.fileInput}
-          />
-          <small className={styles.fieldDesc}>Unggah gambar section produk.</small>
-        </div>
-        <div className={styles.inputGroup}>
-          <label className={styles.fieldLabel}>
-            {cfg.labels?.productSectionImageAlt || "Deskripsi Gambar"}
-          </label>
-          <input
-            type="text"
-            name="productSectionImageAlt"
-            value={settings.productSectionImageAlt || ""}
-            onChange={handleInputChange}
-            className={styles.inputField}
-          />
-        </div>
-        {(imagePreviewUrl || settings.productSectionImage) && (
-          <div className={styles.previewCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic blob & Cloudinary preview URLs require a plain <img>. */}
-            <img
-              src={imagePreviewUrl || settings.productSectionImage}
-              alt={settings.productSectionImageAlt || "Preview"}
-              className={styles.previewImage}
-            />
-          </div>
-        )}
       </div>
     </>
   );
@@ -742,7 +695,7 @@ function HeroTab({ settings, updateTab, cfg }) {
 /* ============================================================
    TAB: ABOUT
    ============================================================ */
-function AboutTab({ settings, updateTab, cfg }) {
+function AboutTab({ settings, updateTab, handleImageSelect, imagePreviewUrl, cfg }) {
   const s = settings;
   const set = (patch) => updateTab("about", { ...s, ...patch });
 
@@ -770,6 +723,31 @@ function AboutTab({ settings, updateTab, cfg }) {
             />
           </div>
         </div>
+        <div className={styles.inputGroup}>
+          <label className={styles.fieldLabel}>
+            {cfg.labels?.aboutImage || "Gambar Section About"}
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageSelect}
+            className={styles.fileInput}
+          />
+          <small className={styles.fieldDesc}>
+            {cfg.descriptions?.aboutImage ||
+              "Unggah gambar untuk bagian About di landing page."}
+          </small>
+        </div>
+        {(imagePreviewUrl || s.image) && (
+          <div className={styles.previewCard}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic blob & Cloudinary preview URLs require a plain <img>. */}
+            <img
+              src={imagePreviewUrl || s.image}
+              alt={s.imageAlt || "Preview"}
+              className={styles.previewImage}
+            />
+          </div>
+        )}
         <div className={styles.inputGroup}>
           <label className={styles.fieldLabel}>Tagline</label>
           <input

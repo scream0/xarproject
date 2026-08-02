@@ -233,23 +233,6 @@
 }
 
 /* Filter Tabs */
-.featuredImageCard {
-  margin: 0 auto 1.6rem;
-  max-width: 980px;
-  border: 1px solid var(--border-color);
-  border-radius: 18px;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.96), rgba(var(--surface-secondary-rgb), 0.84));
-  box-shadow: 0 14px 34px rgba(17, 13, 10, 0.05);
-}
-
-.featuredImage {
-  width: 100%;
-  max-height: 320px;
-  object-fit: cover;
-  display: block;
-}
-
 .produkFilterTabs {
   display: flex;
   justify-content: center;

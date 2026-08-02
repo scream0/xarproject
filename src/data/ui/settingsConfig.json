@@ -13,9 +13,9 @@
   "sections": {
     "storeInfo": "Informasi Toko",
     "productCurrency": "Konfigurasi Produk & Mata Uang",
-    "visuals": "Visual Section Produk",
     "hero": "Hero Section (Landing Page)",
     "about": "About Section (Landing Page)",
+    "aboutVisual": "Visual Section About",
     "contact": "Contact Section (Landing Page)",
     "footer": "Footer (Landing Page)",
     "promo": "Banner Promo",
@@ -26,19 +26,20 @@
     "storeEmail": "Email Kontak Toko",
     "currency": "Mata Uang Utama",
     "lowStockThreshold": "Batas Peringatan Stok Menipis",
-    "productSectionImage": "Gambar Section Produk",
-    "productSectionImageAlt": "Deskripsi Gambar",
+    "aboutImage": "Gambar Section About",
+    "aboutImageAlt": "Deskripsi Gambar About",
     "promoBannerEnabled": "Tampilkan Banner Promo",
     "promoBannerText": "Teks Banner Promo",
     "midtransServerKey": "Midtrans Server Key",
     "midtransClientKey": "Midtrans Client Key"
   },
   "descriptions": {
-    "midtransServerKey": "Kunci ini bersifat rahasia dan tidak akan pernah ditampilkan lagi setelah disimpan."
+    "midtransServerKey": "Kunci ini bersifat rahasia dan tidak akan pernah ditampilkan lagi setelah disimpan.",
+    "aboutImage": "Unggah gambar untuk bagian About di landing page."
   },
   "placeholders": {
     "updateKey": "Isi untuk memperbarui...",
-    "productSectionImage": "https://example.com/image.jpg",
+    "aboutImage": "https://example.com/image.jpg",
     "promoBannerText": "Contoh: Diskon 20% untuk pembelian hari ini"
   },
   "buttons": {

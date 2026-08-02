@@ -108,18 +108,6 @@ export function Product({ onBukaDetail }) {
         </h2>
       </div>
 
-      {productSectionSettings?.productSectionImage && (
-        <div className={styles.featuredImageCard}>
-          <img
-            src={productSectionSettings.productSectionImage}
-            alt={
-              productSectionSettings.productSectionImageAlt || "Produk unggulan"
-            }
-            className={styles.featuredImage}
-          />
-        </div>
-      )}
-
       <div className={styles.produkFilterTabs}>
         {kategoriItems.map((kat) => (
           <button
