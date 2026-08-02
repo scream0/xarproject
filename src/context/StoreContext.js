@@ -11,7 +11,6 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import { isPromoActive, getDiscountedPrice, getCartPromoSummary } from "@/utils/promo";
-import { buildAddressId, normalizeAddress } from "@/utils/address";
 
 const StoreContext = createContext();
 
@@ -72,14 +71,14 @@ export function StoreProvider({ children }) {
   // Bungkus fetchProducts dengan useCallback agar dapat dipanggil ulang secara dinamis
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/firestore/products");
       const result = await res.json();
-      const data = result.data || result || [];
+      const data = result || [];
 
       const mapped = data.map((p) => ({
         ...p,
-        imageUrl: p.image_url || p.imageUrl,
-        isAvailable: p.is_available ?? p.isAvailable,
+        imageUrl: p.imageUrl,
+        isAvailable: p.isAvailable ?? true, // Assume available if not specified
       }));
       setProducts(mapped);
     } catch (error) {
@@ -399,29 +398,23 @@ const [shippingCost, setShippingCost] = useState(0);
     if (cart.items.length === 0) return toast.error("Keranjang kosong!");
 
     setIsProcessing(true);
-    let orderId = "";
+    let orderId = `XAR-${Date.now()}`;
 
     try {
-      const userRes = await fetch(`/api/users?userId=${user.uid}`);
-      const userResult = await userRes.json();
-      const userData = userResult?.data || {};
-      const userAddresses = userData.addresses || [];
+        const addressesRes = await fetch(`/api/users/${user.uid}/addresses`);
+        const addresses = await addressesRes.json();
 
-      if (userAddresses.length === 0) {
+      if (addresses.length === 0) {
         setIsCartOpen(false);
         setIsAddressModalOpen(true);
         setIsProcessing(false);
         return;
       }
-
-      orderId = `XAR-${Date.now()}`;
-      // Gunakan harga setelah diskon promo jika aktif
+      
       const amount = activePromo ? discountedCartTotal : cartTotal;
       const primaryAddress =
-        userAddresses.find((a) => a.isPrimary) || userAddresses[0];
+        addresses.find((a) => a.isPrimary) || addresses[0];
 
-      // Baca detail shipping dari localStorage (di-set oleh halaman /checkout),
-      // lalu segera bersihkan agar data lama tidak terpakai di checkout berikutnya.
       let shippingDetail = null;
       if (typeof window !== "undefined") {
         const savedShipping = localStorage.getItem("checkout_shipping");
@@ -435,7 +428,6 @@ const [shippingCost, setShippingCost] = useState(0);
         localStorage.removeItem("checkout_shipping");
       }
 
-      // Hitung total berat dari item keranjang berdasarkan data produk
       let totalWeight = 0;
       for (const item of cart.items) {
         const product = products.find(
@@ -445,8 +437,6 @@ const [shippingCost, setShippingCost] = useState(0);
         totalWeight += itemWeight * (Number(item.quantity) || 1);
       }
 
-      // Gunakan ongkir dari pilihan user di halaman checkout
-      // Jika tidak ada, hitung dari alamat utama user (pakai cityId RajaOngkir)
       let shippingCostAmount = shippingDetail?.shippingCost || 0;
       let selectedShippingAddress = shippingDetail?.address || primaryAddress;
 
@@ -458,8 +448,20 @@ const [shippingCost, setShippingCost] = useState(0);
       }
       setShippingCost(shippingCostAmount);
 
-      // Total akhir = harga produk (setelah diskon) + ongkir
       const finalAmount = amount + shippingCostAmount;
+      
+      // Create order in Firestore
+      await fetch('/api/firestore/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              userId: user.uid,
+              orderId,
+              items: cart.items,
+              address: selectedShippingAddress,
+              total: finalAmount,
+          })
+      });
 
       const response = await fetch("/api/midtrans", {
         method: "POST",
@@ -502,10 +504,10 @@ const [shippingCost, setShippingCost] = useState(0);
             setCart({ items: [] });
 
             try {
-              await fetch("/api/orders/update-status", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId, status: "success" }),
+              await fetch("/api/firestore/orders", {
+                method: "PUT",
+                headers: { 'Content-Type': 'application/json', 'x-admin-secret': process.env.NEXT_PUBLIC_ADMIN_SECRET },
+                body: JSON.stringify({ orderId, status: "paid" }),
               });
 
               await fetchProducts();
@@ -543,35 +545,12 @@ const [shippingCost, setShippingCost] = useState(0);
     try {
       setIsProcessing(true);
 
-      const userRes = await fetch(`/api/users?userId=${user.uid}`);
-      const userResult = await userRes.json();
-      const existingAddresses = userResult?.data?.addresses || [];
-
-      const newAddress = normalizeAddress({
-        id: buildAddressId(),
-        label: addressData.label || "Rumah",
-        recipientName: addressData.recipientName,
-        recipientPhone: addressData.recipientPhone,
-        street: addressData.street,
-        city: addressData.city,
-        cityId: addressData.cityId || "",
-        postalCode: addressData.postalCode || "",
-        isPrimary: true,
-      });
-
-      const updatedAddresses = (existingAddresses || []).map((addr) => ({
-        ...addr,
-        isPrimary: false,
-      }));
-      updatedAddresses.push(newAddress);
-
-      const res = await fetch("/api/users", {
-        method: "PUT",
+      const res = await fetch(`/api/users/${user.uid}/addresses`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: user.uid,
-          type: "addresses",
-          addresses: updatedAddresses,
+            ...addressData,
+            isPrimary: true,
         }),
       });
 

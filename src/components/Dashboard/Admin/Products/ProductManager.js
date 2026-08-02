@@ -1,12 +1,18 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import AddProductForm from "./AddProductForm";
 import EditProductModal from "./EditProductModal";
 import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
 import styles from "./ProductManager.module.css";
 import pmConfig from "@/data/ui/productManagerConfig.json";
+
+// In a real app, this would be more sophisticated, likely involving user roles and tokens.
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'x-admin-secret': process.env.NEXT_PUBLIC_ADMIN_SECRET,
+});
+
 
 const PRODUCTS_PER_PAGE = 10;
 const DEBOUNCE_DELAY = 500;
@@ -31,40 +37,52 @@ export default function ProductManager() {
   });
   const [categories, setCategories] = useState([]);
 
-  const fetchCategories = useCallback(async () => {
-    const { data, error } = await supabase.from("products").select("category");
-    if (error) {
-      console.error("Gagal mengambil kategori:", error);
-      return;
+  const [allProducts, setAllProducts] = useState([]);
+
+  const fetchCategories = useCallback(() => {
+    if (allProducts.length > 0) {
+        const uniqueCategories = [...new Set(allProducts.map((p) => p.category))];
+        setCategories(uniqueCategories);
     }
-    const uniqueCategories = [...new Set(data.map((p) => p.category))];
-    setCategories(uniqueCategories);
-  }, []);
+  }, [allProducts]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from("products").select("*", { count: "exact" });
+    try {
+        const res = await fetch("/api/firestore/products");
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        
+        setAllProducts(data);
+        setProductsCount(data.length);
+
+    } catch (error) {
+        console.error("Gagal memuat produk:", error);
+        toast.error(pmConfig.toasts.fetchError);
+    } finally {
+        setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  useEffect(() => {
+    // Client-side filtering
+    let processedData = [...allProducts];
 
     // Search
     if (searchTerm) {
-      query = query.ilike("name", `%${searchTerm}%`);
+        processedData = processedData.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }
 
     // Filters
     if (filters.category !== "all") {
-      query = query.eq("category", filters.category);
+        processedData = processedData.filter(p => p.category === filters.category);
     }
 
-    // Pagination
-    const from = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    const to = from + PRODUCTS_PER_PAGE - 1;
-    query = query.range(from, to).order("created_at", { ascending: false });
-
-    try {
-      const { data, error, count } = await query;
-      if (error) throw error;
-
-      let processedData = data.map((product) => {
+    processedData = processedData.map((product) => {
         const totalStock =
           product.variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) || 0;
         let status = pmConfig.status.soldOut;
@@ -76,48 +94,21 @@ export default function ProductManager() {
         return { ...product, totalStock, status };
       });
 
-      // Client-side filtering for stock status
-      if (filters.stockStatus !== "all") {
+    // Client-side filtering for stock status
+    if (filters.stockStatus !== "all") {
         processedData = processedData.filter(
           (p) => p.status === pmConfig.status[filters.stockStatus],
         );
-      }
-
-      setProducts(processedData);
-      setProductsCount(count || 0);
-    } catch (error) {
-      console.error("Gagal memuat produk:", error);
-      toast.error(pmConfig.toasts.fetchError);
-    } finally {
-      setLoading(false);
     }
-  }, [currentPage, searchTerm, filters]);
+    
+    setProductsCount(processedData.length);
+    
+    const from = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    const to = from + PRODUCTS_PER_PAGE;
+    setProducts(processedData.slice(from, to));
 
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+  }, [allProducts, currentPage, searchTerm, filters]);
 
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      fetchProducts();
-    }, DEBOUNCE_DELAY);
-    return () => clearTimeout(debounceTimer);
-  }, [fetchProducts, searchTerm]);
-
-  const handleFilterChange = (filterType, value) => {
-    setFilters((prev) => ({ ...prev, [filterType]: value }));
-    setCurrentPage(1);
-  };
-
-  const openDeleteModal = (product) => {
-    setProductToDelete(product);
-    setDeleteModalOpen(true);
-  };
-
-  const closeDeleteModal = () => {
-    setProductToDelete(null);
-    setDeleteModalOpen(false);
-  };
 
   const handleDelete = async () => {
     if (!productToDelete) return;
@@ -126,7 +117,7 @@ export default function ProductManager() {
       if (productToDelete.image_public_id) {
         await fetch("/api/cloudinary", {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ publicId: productToDelete.image_public_id }),
         });
       }
@@ -135,18 +126,19 @@ export default function ProductManager() {
           if (v.imagePublicId) {
             await fetch("/api/cloudinary", {
               method: "DELETE",
-              headers: { "Content-Type": "application/json" },
+              headers: getAuthHeaders(),
               body: JSON.stringify({ publicId: v.imagePublicId }),
             });
           }
         }
       }
 
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", productToDelete.id);
-      if (error) throw error;
+      const res = await fetch(`/api/firestore/products?id=${productToDelete.id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      if (!res.ok) throw new Error('Failed to delete');
 
       toast.success(pmConfig.toasts.deleteSuccess);
       fetchProducts();

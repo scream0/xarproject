@@ -5,6 +5,12 @@ import toast from "react-hot-toast";
 import addConfig from "@/data/ui/addProductConfig.json";
 import editConfig from "@/data/ui/editProductConfig.json";
 
+// In a real app, this would be more sophisticated, likely involving user roles and tokens.
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'x-admin-secret': process.env.NEXT_PUBLIC_ADMIN_SECRET,
+});
+
 export function useProductForm(initialProduct = null, onSuccess) {
   const isEditMode = Boolean(initialProduct);
 
@@ -197,13 +203,13 @@ export function useProductForm(initialProduct = null, onSuccess) {
         variants: processedVariants,
       };
       if (isEditMode) {
-        payload.productId = initialProduct.id;
+        payload.id = initialProduct.id;
       }
 
       // 4. Submit to products API
-      const res = await fetch("/api/products", {
+      const res = await fetch("/api/firestore/products", {
         method: isEditMode ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
       const result = await res.json();
@@ -245,19 +251,3 @@ export function useProductForm(initialProduct = null, onSuccess) {
       setUploading(false);
     }
   };
-
-  return {
-    isEditMode,
-    formData,
-    variants,
-    mainImage,
-    isUploading,
-    handleFormChange,
-    handleVariantChange,
-    handleVariantFileChange,
-    addVariant,
-    removeVariant,
-    handleMainFileChange,
-    handleSubmit,
-  };
-}
