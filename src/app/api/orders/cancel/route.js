@@ -1,5 +1,6 @@
 import { db } from "@/lib/firebaseAdmin";
 import { getAuth } from "firebase-admin/auth";
+import { updateOrderStatus } from "@/app/api/orders/orderService";
 
 export const dynamic = "force-dynamic";
 
@@ -38,41 +39,43 @@ export async function POST(request) {
     }
 
     const orderRef = db.collection("orders").doc(orderId);
+    const orderDoc = await orderRef.get();
+    if (!orderDoc.exists) {
+      return Response.json({ error: "Pesanan tidak ditemukan." }, { status: 404 });
+    }
 
-    const result = await db.runTransaction(async (transaction) => {
-      const orderDoc = await transaction.get(orderRef);
-      if (!orderDoc.exists) {
-        throw new Error("Pesanan tidak ditemukan.");
-      }
+    const orderData = orderDoc.data() || {};
+    if (orderData.userId !== decodedToken.uid) {
+      return Response.json(
+        { error: "Anda tidak berhak membatalkan pesanan ini." },
+        { status: 403 },
+      );
+    }
 
-      const orderData = orderDoc.data();
+    const currentStatus = (orderData.status || "").toLowerCase();
+    if (currentStatus !== "pending") {
+      return Response.json(
+        {
+          error:
+            "Pesanan hanya bisa dibatalkan selama masih menunggu pembayaran.",
+        },
+        { status: 409 },
+      );
+    }
 
-      if (orderData.userId !== decodedToken.uid) {
-        throw new Error("Anda tidak berhak membatalkan pesanan ini.");
-      }
-
-      const currentStatus = (orderData.status || "").toLowerCase();
-      if (currentStatus !== "pending") {
-        throw new Error(
-          "Pesanan hanya bisa dibatalkan selama masih menunggu pembayaran.",
-        );
-      }
-
-      transaction.update(orderRef, {
-        status: "cancelled",
-        cancelledAt: new Date(),
-        updated_at: new Date(),
-        statusHistory: [
-          ...(Array.isArray(orderData.statusHistory) ? orderData.statusHistory : []),
-          { status: "cancelled", changedAt: new Date().toISOString(), source: "customer" },
-        ].slice(-50),
-      });
-
-      return { orderId };
-    });
+    const updatedOrder = await updateOrderStatus(
+      db,
+      orderId,
+      "cancelled",
+      "customer",
+      "Pembatalan oleh pelanggan",
+    );
 
     return Response.json(
-      { message: `Pesanan ${result.orderId} berhasil dibatalkan.` },
+      {
+        message: `Pesanan ${orderId} berhasil dibatalkan.`,
+        order: updatedOrder,
+      },
       { status: 200 },
     );
   } catch (error) {

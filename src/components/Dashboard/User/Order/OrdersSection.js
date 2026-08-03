@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useMemo } from "react";
 import styles from "./OrdersSection.module.css";
 import ordersConfig from "@/data/ui/ordersConfig.json";
-import { auth, db } from "@/lib/firebaseClient";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import { useStore } from "@/context/StoreContext";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import { OrdersSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import { formatAddressDisplay } from "@/utils/address";
+import { sortOrdersByNewestFirst } from "./orderSorting";
+import { useRouter } from "next/navigation";
 
 // Mapping status mentah dari Firestore/Admin -> label & tahap yang ditampilkan
 // ke customer. Ini HARUS selalu sinkron dengan alur status di TransactionTable.js
@@ -135,9 +136,11 @@ export default function OrdersSection() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [userPrimaryAddress, setUserPrimaryAddress] = useState("Belum diatur");
   const { addToCart } = useStore();
+  const router = useRouter();
   // State untuk currentUser yang mendengarkan status Auth Firebase secara real-time
   const [currentUser, setCurrentUser] = useState(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   // State untuk modal ulasan produk
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
@@ -173,52 +176,57 @@ export default function OrdersSection() {
     }
   }, []);
 
-  // 3. LISTENER REAL-TIME: dengarkan perubahan koleksi "orders" milik user ini.
-  // Begitu admin ubah status pesanan di dashboard, UI customer otomatis
-  // ter-update tanpa perlu refresh manual.
+  // 3. Ambil daftar pesanan lewat endpoint backend.
+  // Ini lebih andal daripada listener Firestore client karena menghindari
+  // masalah rules/ACL yang bisa mencegah data order tampil di dashboard user.
   useEffect(() => {
     if (!currentUser) return;
 
+    let isActive = true;
     setLoading(true);
 
-    // Ambil alamat utama sekali lewat endpoint yang sudah ada (bukan real-time,
-    // karena alamat jarang berubah dan tidak butuh listener terpisah)
-    fetch(`/api/orders?userId=${currentUser.uid}`)
-      .then((res) => res.json())
-      .then((result) => {
-        setUserPrimaryAddress(result.primaryAddress || "Belum diatur");
-      })
-      .catch(() => {});
-
-    const ordersQuery = query(
-      collection(db, "orders"),
-      where("userId", "==", currentUser.uid),
-    );
-
-    const unsubscribe = onSnapshot(
-      ordersQuery,
-      (snapshot) => {
-        const formatted = snapshot.docs.map((doc) =>
-          formatOrderDoc({ id: doc.id, ...doc.data() }, userPrimaryAddress),
-        );
-        // Urutkan terbaru dulu
-        formatted.sort((a, b) => {
-          const da = new Date(a.date).getTime() || 0;
-          const db_ = new Date(b.date).getTime() || 0;
-          return db_ - da;
+    const loadOrders = async () => {
+      try {
+        const response = await fetch(`/api/user/orders?userId=${currentUser.uid}`, {
+          cache: "no-store",
         });
-        setOrders(formatted);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Gagal mendengarkan perubahan pesanan:", err);
-        toast.error("Gagal memuat data pesanan secara real-time.");
-        setLoading(false);
-      },
-    );
 
-    return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        if (!response.ok) {
+          throw new Error("Gagal mengambil data pesanan");
+        }
+
+        const result = await response.json();
+        if (!isActive) return;
+
+        const primaryAddress = result.primaryAddress || "Belum diatur";
+        setUserPrimaryAddress(primaryAddress);
+
+        const formatted = (result.orders || []).map((order) =>
+          formatOrderDoc(order, primaryAddress),
+        );
+
+        const sorted = sortOrdersByNewestFirst(formatted);
+
+        setOrders(sorted);
+      } catch (error) {
+        console.error("Gagal memuat pesanan dari API:", error);
+        if (isActive) {
+          toast.error("Gagal memuat data pesanan.");
+          setOrders([]);
+          setUserPrimaryAddress("Belum diatur");
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadOrders();
+
+    return () => {
+      isActive = false;
+    };
   }, [currentUser]);
 
   // 4. Filter & Search Logic
@@ -253,6 +261,27 @@ export default function OrdersSection() {
 
     return result;
   }, [orders, filter, searchQuery]);
+
+  const orderStats = useMemo(() => {
+    const total = orders.length;
+    const active = orders.filter((o) =>
+      ["pending", "success", "processing", "shipping", "shipped"].includes(o.status),
+    ).length;
+    const completed = orders.filter((o) => o.status === "completed").length;
+    const cancelled = orders.filter((o) => o.status === "cancelled").length;
+
+    return { total, active, completed, cancelled };
+  }, [orders]);
+
+  const filterTabs = useMemo(
+    () => [
+      { key: "all", label: "Semua", count: orderStats.total },
+      { key: "processing", label: "Berjalan", count: orderStats.active },
+      { key: "completed", label: "Selesai", count: orderStats.completed },
+      { key: "cancelled", label: "Dibatalkan", count: orderStats.cancelled },
+    ],
+    [orderStats],
+  );
 
   // Fungsi Pesanan Lagi: Validasi stok & masukkan ke keranjang belanja
   const handleReOrder = async (order) => {
@@ -360,6 +389,11 @@ export default function OrdersSection() {
     }
   };
 
+  const handleOpenOrderDetail = async (order) => {
+    if (!currentUser) return;
+    router.push(`/account/orders/${order.id}`);
+  };
+
   // Batalkan pesanan yang masih berstatus "pending" (belum dibayar)
   const handleCancelOrder = async (order) => {
     if (isCancelling) return;
@@ -374,13 +408,13 @@ export default function OrdersSection() {
       if (!currentUser) throw new Error("Pengguna tidak terautentikasi.");
       const token = await currentUser.getIdToken();
 
-      const res = await fetch("/api/orders/cancel", {
+      const res = await fetch(`/api/user/orders/${order.id}/cancel?userId=${currentUser.uid}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ orderId: order.id }),
+        body: JSON.stringify({ orderId: order.id, userId: currentUser.uid }),
       });
 
       const result = await res.json();
@@ -394,6 +428,43 @@ export default function OrdersSection() {
       toast.error(err.message || "Gagal membatalkan pesanan.", { id: toastId });
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleConfirmReceived = async (order) => {
+    if (isConfirming) return;
+
+    const confirmAction = window.confirm(
+      `Konfirmasi bahwa pesanan ${order.id} sudah diterima?`,
+    );
+    if (!confirmAction) return;
+
+    setIsConfirming(true);
+    const toastId = toast.loading("Mengonfirmasi penerimaan pesanan...");
+
+    try {
+      if (!currentUser) throw new Error("Pengguna tidak terautentikasi.");
+      const token = await currentUser.getIdToken();
+
+      const res = await fetch(`/api/user/orders/${order.id}/confirm?userId=${currentUser.uid}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Gagal mengonfirmasi pesanan.");
+      }
+
+      toast.success("Pesanan berhasil dikonfirmasi diterima.", { id: toastId });
+    } catch (err) {
+      console.error("Confirm Order Error:", err);
+      toast.error(err.message || "Gagal mengonfirmasi pesanan.", { id: toastId });
+    } finally {
+      setIsConfirming(false);
     }
   };
 
@@ -540,14 +611,30 @@ Terima kasih telah berbelanja di XAR!`;
           </div>
         </div>
 
+        <div className={styles.summaryGrid}>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>Total Pesanan</span>
+            <strong className={styles.summaryValue}>{orderStats.total}</strong>
+          </div>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>Sedang Berjalan</span>
+            <strong className={styles.summaryValue}>{orderStats.active}</strong>
+          </div>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>Selesai</span>
+            <strong className={styles.summaryValue}>{orderStats.completed}</strong>
+          </div>
+        </div>
+
         <div className={styles.filterGroup}>
-          {ordersConfig.tabs.map((tab) => (
+          {filterTabs.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setFilter(tab)}
-              className={`${styles.filterBtn} ${filter === tab ? styles.filterBtnActive : ""}`}
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`${styles.filterBtn} ${filter === tab.key ? styles.filterBtnActive : ""}`}
             >
-              {tab.toUpperCase()}
+              {tab.label}
+              <span className={styles.filterCount}>{tab.count}</span>
             </button>
           ))}
         </div>
@@ -571,6 +658,7 @@ Terima kasih telah berbelanja di XAR!`;
           filteredOrders.map((order) => {
             const isFinished = order.status === "completed";
             const isPending = order.status === "pending";
+            const isDelivered = ["shipping", "shipped", "delivered", "completed"].includes(order.status);
             const statusInfo = getStatusInfo(order.status);
             const reviewableItems =
               order.items && order.items.length > 0
@@ -627,7 +715,7 @@ Terima kasih telah berbelanja di XAR!`;
                   <span className={styles.orderPrice}>{order.price}</span>
                   <div className={styles.buttonGroup}>
                     <button
-                      onClick={() => setSelectedOrder(order)}
+                      onClick={() => handleOpenOrderDetail(order)}
                       className={styles.detailBtn}
                     >
                       {ordersConfig.buttons.details}
@@ -639,6 +727,15 @@ Terima kasih telah berbelanja di XAR!`;
                         className={styles.cancelBtn}
                       >
                         Batalkan
+                      </button>
+                    )}
+                    {isDelivered && !isFinished && (
+                      <button
+                        onClick={() => handleConfirmReceived(order)}
+                        disabled={isConfirming}
+                        className={styles.confirmBtn}
+                      >
+                        {isConfirming ? "Memproses..." : "Konfirmasi Diterima"}
                       </button>
                     )}
                     <button
@@ -654,175 +751,6 @@ Terima kasih telah berbelanja di XAR!`;
           })
         )}
       </div>
-
-      {/* --- MODAL DETAIL PESANAN TERHUBUNG DATABASE --- */}
-      {selectedOrder && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => setSelectedOrder(null)}
-        >
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>{ordersConfig.modal.title}</h3>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className={styles.modalCloseBtn}
-              >
-                <AppIcon name="x" size={18} strokeWidth={2} />
-              </button>
-            </div>
-
-            {selectedOrder.status === "cancelled" ? (
-              <div className={styles.cancelledNotice}>
-                Pesanan ini telah dibatalkan.
-              </div>
-            ) : (
-              <div className={styles.trackingStepper}>
-                <div className={styles.stepItemActive}>
-                  <div className={styles.stepDot}></div>
-                  <span>Pesanan Dibuat</span>
-                </div>
-                <div
-                  className={
-                    ["success", "processing", "shipping", "shipped", "completed"].includes(
-                      selectedOrder.status,
-                    )
-                      ? styles.stepItemActive
-                      : styles.stepItem
-                  }
-                >
-                  <div className={styles.stepDot}></div>
-                  <span>Pembayaran Dikonfirmasi</span>
-                </div>
-                <div
-                  className={
-                    ["processing", "shipping", "shipped", "completed"].includes(
-                      selectedOrder.status,
-                    )
-                      ? styles.stepItemActive
-                      : styles.stepItem
-                  }
-                >
-                  <div className={styles.stepDot}></div>
-                  <span>Peracikan / Diproses</span>
-                </div>
-                <div
-                  className={
-                    ["shipping", "shipped", "completed"].includes(selectedOrder.status)
-                      ? styles.stepItemActive
-                      : styles.stepItem
-                  }
-                >
-                  <div className={styles.stepDot}></div>
-                  <span>Dikirim / Selesai</span>
-                </div>
-              </div>
-            )}
-
-            {selectedOrder.statusHistory?.length > 0 && (
-              <div className={styles.statusHistory}>
-                <strong>Riwayat status</strong>
-                {selectedOrder.statusHistory.slice().reverse().map((event, index) => (
-                  <p key={`${event.changedAt || event.status}-${index}`}>
-                    <span>{getStatusInfo(event.status).label}</span>
-                    <small>{event.changedAt ? new Date(event.changedAt).toLocaleString("id-ID") : "Baru saja"}</small>
-                  </p>
-                ))}
-              </div>
-            )}
-            <div className={styles.modalBody}>
-              <div>
-                <span className={styles.modalFieldLabel}>
-                  {ordersConfig.labels.orderId}
-                </span>
-                <strong className={styles.modalFieldValueAccent}>
-                  {selectedOrder.id}
-                </strong>
-              </div>
-              <div>
-                <span className={styles.modalFieldLabel}>
-                  {ordersConfig.labels.product}
-                </span>
-                <span>{selectedOrder.name}</span>
-              </div>
-              <div>
-                <span className={styles.modalFieldLabel}>
-                  {ordersConfig.labels.specsAndNotes}
-                </span>
-                <span>
-                  {selectedOrder.concentration} | Catatan: {selectedOrder.notes}
-                </span>
-              </div>
-              <div>
-                <span className={styles.modalFieldLabel}>
-                  {ordersConfig.labels.paymentMethod}
-                </span>
-                <span>{selectedOrder.paymentMethod}</span>
-              </div>
-              <div>
-                <span className={styles.modalFieldLabel}>
-                  {ordersConfig.labels.shippingAddress}
-                </span>
-                <span>{selectedOrder.shippingAddress}</span>
-              </div>
-              {selectedOrder.shippingReceiptNumber && (
-                <div className={styles.receiptContainer}>
-                  <span className={styles.modalFieldLabel}>
-                    {ordersConfig.labels.shippingReceipt}
-                  </span>
-                  <div className={styles.receiptInfo}>
-                    <span>{selectedOrder.shippingReceiptNumber}</span>
-                    <button
-                      onClick={() =>
-                        window.open(
-                          `https://jet.co.id/track?hal=1&track_id=${selectedOrder.shippingReceiptNumber}`,
-                          "_blank",
-                        )
-                      }
-                      className={styles.trackButton}
-                    >
-                      {ordersConfig.labels.trackShipping}
-                    </button>
-                  </div>
-                </div>
-              )}
-              <div className={styles.modalPriceRow}>
-                <span className={styles.modalPriceLabel}>
-                  {ordersConfig.labels.totalPaid}
-                </span>
-                <span className={styles.modalPriceValue}>
-                  {selectedOrder.price}
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.modalActionRow}>
-              <button
-                onClick={() => handleCopyId(selectedOrder.id)}
-                className={styles.modalActionBtn}
-              >
-                {ordersConfig.buttons.copyId || "Salin ID"}
-              </button>
-              <button
-                onClick={() => handleDownloadInvoice(selectedOrder)}
-                className={styles.modalActionBtn}
-              >
-                {ordersConfig.buttons.downloadInvoice || "Unduh Invoice"}
-              </button>
-            </div>
-
-            <button
-              onClick={() => setSelectedOrder(null)}
-              className={styles.modalCloseActionBtn}
-            >
-              {ordersConfig.modal.closeBtn}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* --- MODAL ULASAN PRODUK (per-item) --- */}
       {reviewModalOrder && reviewTargetItem && (

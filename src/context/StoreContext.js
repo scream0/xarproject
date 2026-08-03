@@ -479,6 +479,7 @@ const [shippingCost, setShippingCost] = useState(0);
                 courierEtd: shippingDetail.courierEtd,
               }
             : null,
+          discountAmount: promoSavings,
         }),
       });
 

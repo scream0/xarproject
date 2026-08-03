@@ -36,6 +36,10 @@
     {
       "id": "operations",
       "label": "Operations"
+    },
+    {
+      "id": "orders",
+      "label": "Orders"
     }
   ],
   "stats": [

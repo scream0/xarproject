@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin"; // Firebase Admin SDK untuk backend (Orders & User)
 import { createClient } from "@supabase/supabase-js"; // Supabase Client untuk Produk
+import { createOrderRecord, mapOrderDoc, updateOrderStatus } from "./orderService";
+import {
+  buildRequestedItems,
+  createCheckoutReservationService,
+} from "./checkoutReservationService";
 
 export const dynamic = "force-dynamic";
 
@@ -34,17 +39,10 @@ function sanitizeData(obj) {
   return cleanObj;
 }
 
-// Helper untuk mapping 1 dokumen Firestore -> object order yang rapi
-function mapOrderDoc(doc) {
-  const order = doc.data();
-  return {
-    id: doc.id,
-    ...order,
-    createdAt: order.createdAt?.toDate
-      ? order.createdAt.toDate().toISOString()
-      : order.createdAt || new Date().toISOString(),
-  };
-}
+const checkoutReservationService = createCheckoutReservationService({
+  db,
+  supabase,
+});
 
 // GET -> Mengambil Alamat Utama User & Daftar Pesanan dari Firestore
 // - Jika userId DIKIRIM  -> mode USER: alamat + pesanan milik user tsb (untuk halaman akun user)
@@ -144,10 +142,30 @@ export async function GET(request) {
 
 // POST -> Menyimpan pesanan baru (Termasuk array items keranjang) ke Firestore
 export async function POST(request) {
+  const stockLockOwner = `checkout-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const acquiredLocks = [];
+  let reservations = [];
+
   try {
     const body = await request.json().catch(() => ({}));
-    const { userId, orderId, order, items, address, status, paymentType } =
-      body;
+    const {
+      userId,
+      orderId,
+      order,
+      items,
+      address,
+      status,
+      paymentType,
+      shippingDetail,
+      shippingCost,
+      discountAmount,
+      taxAmount,
+      amount,
+      customerName,
+      customerEmail,
+      customerPhone,
+      notes,
+    } = body;
 
     if (!userId || !orderId) {
       return NextResponse.json(
@@ -156,36 +174,74 @@ export async function POST(request) {
       );
     }
 
-    const orderRef = db.collection("orders").doc(orderId);
+    const orderItems = Array.isArray(items) ? items : [];
+    if (orderItems.length === 0) {
+      return NextResponse.json(
+        { error: "items wajib ada untuk membuat pesanan" },
+        { status: 400 },
+      );
+    }
 
-    const rawPayload = {
-      userId: userId,
-      orderId: orderId,
-      items: items || [],
-      product_name: order?.name || "Katalog Belanja",
-      concentration: order?.concentration || "",
-      notes: order?.notes || "",
-      price: Number(order?.rawPrice || order?.price || 0),
+    const requestedItems = buildRequestedItems(orderItems);
+    const lockKeys = requestedItems
+      .map((item) => `product:${item.productId}:variant:${item.variantNormalized}`)
+      .sort((a, b) => a.localeCompare(b));
+
+    for (const lockKey of lockKeys) {
+      const lockRef = await checkoutReservationService.acquireInventoryLock(
+        lockKey,
+        stockLockOwner,
+      );
+      acquiredLocks.push(lockRef);
+    }
+
+    reservations = await checkoutReservationService.reserveStockInSupabase(
+      requestedItems,
+    );
+    const stockReservedAt = new Date().toISOString();
+
+    const payload = await createOrderRecord(db, {
+      userId,
+      orderId,
+      items: orderItems,
+      address,
+      shippingDetail,
+      shippingCost,
+      discountAmount,
+      taxAmount,
+      paymentType,
+      notes: notes || order?.notes || "",
       status: status || "pending",
-      payment_type: paymentType || "Midtrans",
-      shipping_address: address || null,
-      createdAt: new Date(),
-    };
-
-    // Bersihkan dari nilai undefined agar aman untuk Firestore
-    const cleanPayload = sanitizeData(rawPayload);
-
-    await orderRef.set(cleanPayload, { merge: true });
+      amount: amount || Number(order?.rawPrice || order?.price || 0),
+      customerName: customerName || order?.customerName || "",
+      customerEmail: customerEmail || order?.customerEmail || "",
+      customerPhone: customerPhone || order?.customerPhone || "",
+      productName: order?.name || "Katalog Belanja",
+      concentration: order?.concentration || "",
+      stockReservedAt,
+    });
 
     return NextResponse.json({
       success: true,
-      message: "Pesanan berhasil disimpan ke Firestore",
+      message: "Pesanan berhasil dibuat dan stok sudah direservasi",
+      order: payload,
     });
   } catch (error) {
+    if (reservations.length > 0) {
+      await checkoutReservationService.rollbackReservations(reservations);
+    }
+
     console.error("Gagal menyimpan pesanan ke Firestore:", error);
+
+    const statusCode = Number(error?.status) || 500;
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
-      { status: 500 },
+      { status: statusCode },
+    );
+  } finally {
+    await checkoutReservationService.releaseInventoryLocks(
+      acquiredLocks,
+      stockLockOwner,
     );
   }
 }
@@ -215,6 +271,23 @@ export async function PUT(request) {
     }
 
     const orderData = orderDoc.data();
+    const normalizedTargetStatus = String(targetStatus).toLowerCase();
+
+    if (normalizedTargetStatus === "cancelled") {
+      const updatedOrder = await updateOrderStatus(
+        db,
+        orderId,
+        "cancelled",
+        "admin",
+        "Pesanan dibatalkan melalui endpoint /api/orders",
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "Pesanan dibatalkan dan stok yang direservasi telah dipulihkan",
+        order: updatedOrder,
+      });
+    }
 
     // JIKA STATUS BERUBAH MENJADI "success" atau "settlement" (Pembayaran Berhasil):
     // Kurangi stok produk yang ada di Supabase berdasarkan item yang dibeli
@@ -228,7 +301,11 @@ export async function PUT(request) {
       orderData.status?.toLowerCase() === "settlement" ||
       orderData.status?.toLowerCase() === "processing";
 
-    if (isSuccessStatus && !wasAlreadySuccess && supabase) {
+    const stockWasReserved = Boolean(
+      orderData.stockReservedAt || orderData.stock_reserved_at,
+    );
+
+    if (isSuccessStatus && !wasAlreadySuccess && !stockWasReserved && supabase) {
       const items = orderData.items || [];
 
       for (const item of items) {

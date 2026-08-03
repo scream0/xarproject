@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import midtransClient from "midtrans-client";
 import { db } from "@/lib/firebaseAdmin";
+import { createOrderRecord } from "../orders/orderService";
 
 // Inisialisasi Midtrans Snap Client
 let snap = new midtransClient.Snap({
@@ -20,6 +21,7 @@ export async function POST(request) {
       shippingAddress,
       shippingCost,
       shippingDetail,
+      discountAmount,
     } = body;
 
     if (!orderId || !amount) {
@@ -54,33 +56,43 @@ export async function POST(request) {
 
     // Format item details dari cart items
     let formattedItems = [];
-    const itemTotal = (items || []).reduce(
-      (sum, item) => sum + Number(item.price) * Number(item.quantity),
+    const itemSubtotal = (items || []).reduce(
+      (sum, item) => sum + Math.round(Number(item.price) || 0) * Math.max(1, Number(item.quantity) || 1),
       0,
     );
 
     if (items && Array.isArray(items) && items.length > 0) {
       formattedItems = items.map((item) => ({
         id: String(item.id || item.cartId || "XAR-ITEM").substring(0, 50),
-        price: Number(item.price),
-        quantity: Number(item.quantity),
+        price: Math.round(Number(item.price) || 0),
+        quantity: Math.max(1, Number(item.quantity) || 1),
         name: `${item.name} (${item.size || "Standard"})`.substring(0, 50),
       }));
     } else {
       formattedItems = [
         {
           id: orderId,
-          price: Number(itemTotal) || Number(amount),
+          price: Math.round(Number(itemSubtotal) || Math.round(Number(amount) || 0)),
           quantity: 1,
           name: "XAR Store Order",
         },
       ];
     }
 
+    const promoDiscount = Math.max(0, Math.round(Number(discountAmount) || 0));
+    if (promoDiscount > 0) {
+      formattedItems.push({
+        id: "PROMO-DISCOUNT",
+        price: -promoDiscount,
+        quantity: 1,
+        name: "Diskon Promo",
+      });
+    }
+
     // Jika ada ongkir, tambahkan sebagai item detail "Ongkos Kirim".
     // Ini memastikan jumlah gross_amount sama dengan penjumlahan item_details
     // sehingga transaksi Midtrans tidak ditolak karena mismatch harga.
-    const shippingCostNumber = Number(shippingCost) || 0;
+    const shippingCostNumber = Math.max(0, Math.round(Number(shippingCost) || 0));
     if (shippingCostNumber > 0) {
       formattedItems.push({
         id: "SHIPPING-COST",
@@ -89,6 +101,12 @@ export async function POST(request) {
         name: "Ongkos Kirim",
       });
     }
+
+    const computedGrossAmount = formattedItems.reduce(
+      (sum, item) => sum + Number(item.price) * Number(item.quantity),
+      0,
+    );
+    const normalizedGrossAmount = Math.max(0, Math.round(computedGrossAmount || Number(amount) || 0));
 
     // Format alamat pengiriman untuk Midtrans customer_details
     let midtransShippingDetail = {};
@@ -106,7 +124,7 @@ export async function POST(request) {
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: Number(amount),
+        gross_amount: normalizedGrossAmount,
       },
       item_details: formattedItems,
       customer_details: {
@@ -137,22 +155,20 @@ export async function POST(request) {
     ]);
 
     // 2. Simpan data pesanan ke Firestore (Collection: orders)
-    await db
-      .collection("orders")
-      .doc(orderId)
-      .set({
-        orderId: orderId,
-        userId: userId || "guest",
-        customerName: customerName,
-        customerEmail: customerEmail,
-        items: items || [],
-        amount: Number(amount),
-        shippingAddress: shippingAddress || null,
-        shippingCost: shippingCostNumber,
-        shippingDetail: shippingDetail || null,
-        status: "pending",
-        createdAt: new Date(),
-      });
+    await createOrderRecord(db, {
+      userId: userId || "guest",
+      orderId,
+      items: items || [],
+      address: shippingAddress || null,
+      shippingDetail: shippingDetail || null,
+      shippingCost: shippingCostNumber,
+      amount: normalizedGrossAmount,
+      customerName,
+      customerEmail,
+      customerPhone,
+      status: "pending",
+      paymentType: "Midtrans",
+    });
 
     return NextResponse.json({
       success: true,

@@ -7,7 +7,7 @@ import { auth } from "@/lib/firebaseClient";
 import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
-import { buildAddressId, normalizeAddress } from "@/utils/address";
+import { buildAddressId, normalizeAddress, resolveAddressRegion, resolveCityId } from "@/utils/address";
 import styles from "./checkout.module.css";
 
 const ORIGIN_CITY_ID = "114"; // Jakarta
@@ -31,6 +31,44 @@ const rupiah = (n) =>
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(n || 0);
+
+const buildLocalCourierOptions = (weight = 0) => {
+  const kg = Math.max(1, Math.ceil((Number(weight) || 0) / 1000));
+  const base = Math.max(12000, 8000 + kg * 3500);
+
+  return [
+    {
+      courier: "jne",
+      courierName: "JNE",
+      service: "REG",
+      description: "Layanan reguler",
+      cost: base,
+      etd: "1-2",
+      key: "jne-REG",
+      estimated: true,
+    },
+    {
+      courier: "jnt",
+      courierName: "J&T",
+      service: "EZ",
+      description: "Layanan cepat",
+      cost: base + 3000,
+      etd: "1-2",
+      key: "jnt-EZ",
+      estimated: true,
+    },
+    {
+      courier: "pos",
+      courierName: "POS Indonesia",
+      service: "POS",
+      description: "Layanan pos",
+      cost: Math.max(9000, base - 1000),
+      etd: "3-5",
+      key: "pos-POS",
+      estimated: true,
+    },
+  ];
+};
 
 // ─── CHECKOUT PAGE ──────────────────────────────────────────
 export default function CheckoutPage() {
@@ -68,6 +106,7 @@ export default function CheckoutPage() {
   const [selectedCourierKey, setSelectedCourierKey] = useState(null);
   const [courierLoading, setCourierLoading] = useState(false);
   const [shippingCost, setShippingCost] = useState(0);
+  const [shippingMeta, setShippingMeta] = useState({ kind: "", message: "" });
 
   // ── Promo ──
   const [promoCode, setPromoCode] = useState("");
@@ -76,20 +115,41 @@ export default function CheckoutPage() {
   // ── Fetch user addresses ──
   useEffect(() => {
     if (!currentUser) return;
-    setAddressLoading(true);
-    fetch(`/api/users?userId=${currentUser.uid}`)
-      .then((r) => r.json())
-      .then((result) => {
+
+    const loadAddresses = async () => {
+      setAddressLoading(true);
+      try {
+        const r = await fetch(`/api/users?userId=${currentUser.uid}`);
+        const result = await r.json();
+
         if (result.exists && result.data?.addresses) {
-          const addrs = result.data.addresses;
+          const addrs = (result.data.addresses || []).map((addr) => normalizeAddress(addr));
           setAddresses(addrs);
-          const primary = addrs.find((a) => a.isPrimary) || addrs[0];
-          if (primary) setSelectedAddressId(primary.id);
         }
-      })
-      .catch(() => toast.error("Gagal memuat alamat"))
-      .finally(() => setAddressLoading(false));
+      } catch {
+        toast.error("Gagal memuat alamat");
+      } finally {
+        setAddressLoading(false);
+      }
+    };
+
+    void loadAddresses();
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!addresses.length) return;
+
+    const existingSelection = addresses.find((addr) => addr.id === selectedAddressId);
+    if (existingSelection) return;
+
+    const bestAddress = addresses.find((addr) => addr.isPrimary)
+      || addresses.find((addr) => addr.cityId || addr.postalCode)
+      || addresses[0];
+
+    if (bestAddress) {
+      setSelectedAddressId(bestAddress.id);
+    }
+  }, [addresses, selectedAddressId]);
 
   // ── Save new address ──
   const handleSaveAddress = async (e) => {
@@ -104,6 +164,11 @@ export default function CheckoutPage() {
     try {
       const newAddr = normalizeAddress({
         ...addressForm,
+        cityId: resolveCityId(
+          addressForm.city,
+          addressForm.province,
+          addressForm.postalCode,
+        ) || addressForm.cityId,
         id: buildAddressId(),
         isPrimary: addresses.length === 0,
       });
@@ -150,8 +215,53 @@ export default function CheckoutPage() {
     [addresses, selectedAddressId],
   );
 
+  const selectedAddressRegion = useMemo(() => {
+    if (!selectedAddress) return null;
+    return resolveAddressRegion(
+      selectedAddress.city,
+      selectedAddress.province,
+      selectedAddress.postalCode,
+    );
+  }, [selectedAddress]);
+
+  const shippingReadiness = useMemo(() => {
+    if (!selectedAddress) {
+      return {
+        tone: "warning",
+        title: "Pilih alamat pengiriman",
+        detail: "Alamat yang lengkap akan membantu sistem menentukan wilayah pengiriman dengan lebih akurat.",
+      };
+    }
+
+    if (selectedAddressRegion?.cityId) {
+      return {
+        tone: "success",
+        title: "Area terlayani",
+        detail: `${selectedAddressRegion.city}, ${selectedAddressRegion.province} siap menerima pengiriman.`,
+      };
+    }
+
+    if (selectedAddress.postalCode) {
+      return {
+        tone: "info",
+        title: "Mendeteksi wilayah",
+        detail: "Kode pos sedang dipakai untuk memperkirakan area pengiriman sebelum ongkir ditampilkan.",
+      };
+    }
+
+    return {
+      tone: "warning",
+      title: "Alamat belum lengkap",
+      detail: "Lengkapi kode pos dan kota agar sistem bisa memprediksi ongkos kirim dengan lebih tepat.",
+    };
+  }, [selectedAddress, selectedAddressRegion]);
+
   const fetchCourierCosts = useCallback(async () => {
-    if (!selectedAddress?.cityId || !totalWeight) {
+    const inferredCityId = selectedAddress?.cityId || resolveCityId(selectedAddress?.city, selectedAddress?.province, selectedAddress?.postalCode) || resolveAddressRegion(selectedAddress?.city, selectedAddress?.province, selectedAddress?.postalCode)?.cityId || "";
+    const destinationCityId = inferredCityId || "114";
+    const usingFallbackDestination = !inferredCityId;
+
+    if (!totalWeight) {
       setCourierOptions([]);
       setSelectedCourierKey(null);
       setShippingCost(0);
@@ -162,22 +272,32 @@ export default function CheckoutPage() {
     setCourierOptions([]);
     setSelectedCourierKey(null);
     setShippingCost(0);
+    setShippingMeta({ kind: "", message: "" });
+
+    const localFallbackOptions = buildLocalCourierOptions(totalWeight);
 
     try {
-      const couriers = ["jne", "tiki", "pos", "jnt"];
+      const couriers = ["jne", "tiki", "pos", "jnt", "sicepat", "anteraja"];
       const results = await Promise.allSettled(
         couriers.map((c) =>
           fetch(
-            `/api/ongkir?origin=${ORIGIN_CITY_ID}&destination=${selectedAddress.cityId}&weight=${totalWeight}&courier=${c}`,
+            `/api/ongkir?origin=${ORIGIN_CITY_ID}&destination=${destinationCityId}&weight=${totalWeight}&courier=${c}`,
           ).then((r) => r.json()),
         ),
       );
 
       const allCosts = [];
+      let fallbackMessage = "";
+
       for (const result of results) {
         if (result.status === "fulfilled" && result.value.success) {
-          for (const courier of result.value.costs) {
-            for (const svc of courier.services) {
+          if (result.value.fallback && result.value.warning) {
+            fallbackMessage = result.value.warning;
+          }
+
+          const costs = result.value.costs || [];
+          for (const courier of costs) {
+            for (const svc of courier.services || []) {
               allCosts.push({
                 courier: courier.courier,
                 courierName: courier.courierName,
@@ -186,29 +306,90 @@ export default function CheckoutPage() {
                 cost: svc.cost,
                 etd: svc.etd,
                 key: `${courier.courier}-${svc.service}`,
+                estimated: Boolean(result.value.fallback),
               });
             }
           }
         }
       }
 
-      allCosts.sort((a, b) => a.cost - b.cost);
+      if (allCosts.length === 0) {
+        setCourierOptions(localFallbackOptions);
+        setSelectedCourierKey(localFallbackOptions[0].key);
+        setShippingCost(localFallbackOptions[0].cost);
+        setShippingMeta({
+          kind: "estimated",
+          message: usingFallbackDestination
+            ? "Wilayah tujuan belum terdeteksi penuh, jadi kami menampilkan opsi pengiriman estimasi lokal agar checkout tetap bisa dilanjutkan."
+            : fallbackMessage || "Tarif real-time belum tersedia, jadi kami menampilkan opsi estimasi lokal.",
+        });
+        return;
+      }
+
+      allCosts.sort((a, b) => {
+        if (a.estimated !== b.estimated) {
+          return a.estimated ? 1 : -1;
+        }
+
+        if (a.cost !== b.cost) {
+          return a.cost - b.cost;
+        }
+
+        const etdA = Number(String(a.etd || "0").split("-")[0]) || 999;
+        const etdB = Number(String(b.etd || "0").split("-")[0]) || 999;
+
+        if (etdA !== etdB) {
+          return etdA - etdB;
+        }
+
+        return a.courierName.localeCompare(b.courierName);
+      });
+
       setCourierOptions(allCosts);
 
-      if (allCosts.length > 0) {
-        setSelectedCourierKey(allCosts[0].key);
-        setShippingCost(allCosts[0].cost);
+      if (fallbackMessage || usingFallbackDestination) {
+        setShippingMeta({
+          kind: "estimated",
+          message: fallbackMessage.includes("RajaOngkir")
+            ? fallbackMessage
+            : usingFallbackDestination
+              ? "Wilayah tujuan belum terdeteksi penuh, jadi kami menampilkan opsi pengiriman estimasi lokal agar checkout tetap bisa dilanjutkan."
+              : "RajaOngkir memang menyediakan pilihan kurir, tetapi tarif untuk wilayah ini belum dikembalikan. Kami menampilkan estimasi sementara untuk membantu checkout.",
+        });
       }
+
+      const preferredOption = allCosts.find((option) => option.key === selectedCourierKey) || allCosts[0];
+      setSelectedCourierKey(preferredOption.key);
+      setShippingCost(preferredOption.cost);
     } catch (err) {
       console.error("Gagal ambil ongkir:", err);
+      setCourierOptions(localFallbackOptions);
+      setSelectedCourierKey(localFallbackOptions[0].key);
+      setShippingCost(localFallbackOptions[0].cost);
+      setShippingMeta({
+        kind: "estimated",
+        message: "Kami menampilkan opsi pengiriman estimasi lokal karena layanan tarif sedang tidak tersedia.",
+      });
     } finally {
       setCourierLoading(false);
     }
   }, [selectedAddress, totalWeight]);
 
   useEffect(() => {
-    fetchCourierCosts();
+    const timer = window.setTimeout(() => {
+      void fetchCourierCosts();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [fetchCourierCosts]);
+
+  useEffect(() => {
+    if (!courierOptions.length || selectedCourierKey) return;
+
+    const recommendedCourier = courierOptions[0];
+    setSelectedCourierKey(recommendedCourier.key);
+    setShippingCost(recommendedCourier.cost);
+  }, [courierOptions, selectedCourierKey]);
 
   // ── Handle courier selection ──
   const handleSelectCourier = (key, cost) => {
@@ -274,6 +455,52 @@ export default function CheckoutPage() {
     [courierOptions, selectedCourierKey],
   );
 
+  const courierRecommendation = useMemo(() => {
+    if (!courierOptions.length) return null;
+
+    const cheapestOption = [...courierOptions].reduce((best, current) => {
+      if (current.cost < best.cost) return current;
+      if (current.cost === best.cost) {
+        const currentEta = Number(String(current.etd || "999").split("-")[0]) || 999;
+        const bestEta = Number(String(best.etd || "999").split("-")[0]) || 999;
+        if (currentEta < bestEta) return current;
+      }
+      return best;
+    });
+
+    const fastestOption = [...courierOptions].reduce((best, current) => {
+      const currentEta = Number(String(current.etd || "999").split("-")[0]) || 999;
+      const bestEta = Number(String(best.etd || "999").split("-")[0]) || 999;
+      if (currentEta < bestEta) return current;
+      if (currentEta === bestEta && current.cost < best.cost) return current;
+      return best;
+    });
+
+    const isSameChoice = cheapestOption.key === fastestOption.key;
+
+    return {
+      cheapest: cheapestOption,
+      fastest: fastestOption,
+      title: isSameChoice ? "Rekomendasi kami" : "Paling hemat",
+      detail: isSameChoice
+        ? `Kami sarankan ${cheapestOption.courierName.toUpperCase()} ${cheapestOption.service} karena nilai terbaik.`
+        : `Kami sarankan ${cheapestOption.courierName.toUpperCase()} ${cheapestOption.service} sebagai opsi paling hemat.`,
+    };
+  }, [courierOptions]);
+
+  const deliveryPromise = useMemo(() => {
+    if (!selectedCourierInfo) return null;
+
+    const etdValue = selectedCourierInfo.etd && selectedCourierInfo.etd !== "-"
+      ? `${selectedCourierInfo.etd} hari kerja`
+      : "1-3 hari kerja";
+
+    return {
+      title: selectedAddressRegion?.city ? `Estimasi tiba di ${selectedAddressRegion.city}` : "Estimasi tiba",
+      detail: `${etdValue} via ${selectedCourierInfo.courierName.toUpperCase()}`,
+    };
+  }, [selectedAddressRegion, selectedCourierInfo]);
+
   // ── Redirect if cart empty ──
   if (!pageLoading && (!cart.items || cart.items.length === 0)) {
     return (
@@ -310,12 +537,65 @@ export default function CheckoutPage() {
         </a>
         <h1 className={styles.checkoutTitle}>Checkout</h1>
         <div className={styles.checkoutSteps}>
-          <span className={styles.stepDotActive}></span>
-          <span>Alamat</span>
-          <span className={styles.stepDot}></span>
-          <span>Pembayaran</span>
+          <div className={styles.stepItemActive}>
+            <span className={styles.stepDotActive}></span>
+            <span>Alamat</span>
+          </div>
+          <div className={styles.stepDivider}></div>
+          <div className={styles.stepItem}> 
+            <span className={styles.stepDot}></span>
+            <span>Pembayaran</span>
+          </div>
         </div>
       </header>
+
+      <div className={styles.checkoutHighlights}>
+        <span className={styles.highlightChip}>🔒 Pembayaran aman</span>
+        <span className={styles.highlightChip}>📦 Pengiriman terpantau</span>
+        <span className={styles.highlightChip}>⚡ Proses cepat</span>
+      </div>
+
+      <div className={styles.checkoutTrustBar}>
+        <div className={styles.trustItem}>
+          <span className={styles.trustIcon}>🛡️</span>
+          <div>
+            <strong>Transaksi aman</strong>
+            <p>Data pelanggan dan pembayaran dilindungi dengan standar toko online modern.</p>
+          </div>
+        </div>
+        <div className={styles.trustItem}>
+          <span className={styles.trustIcon}>🚚</span>
+          <div>
+            <strong>Pelacakan pengiriman</strong>
+            <p>Update status pengiriman tersedia selama paket dalam perjalanan.</p>
+          </div>
+        </div>
+        <div className={styles.trustItem}>
+          <span className={styles.trustIcon}>💬</span>
+          <div>
+            <strong>Dukungan cepat</strong>
+            <p>Tim support siap membantu bila ada kendala sebelum dan sesudah pembelian.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.checkoutHero}>
+        <div>
+          <span className={styles.heroEyebrow}>Checkout Premium</span>
+          <h2>Belanja terasa lebih rapi, cepat, dan terpercaya</h2>
+          <p>Setiap langkah dirancang agar pengiriman, pembayaran, dan ringkasan pesanan terlihat lebih profesional seperti marketplace besar.</p>
+        </div>
+        <div className={styles.heroMetrics}>
+          <div>
+            <strong>3 langkah</strong>
+            <span>Alamat → Kurir → Bayar</span>
+          </div>
+          <div>
+            <strong>24/7</strong>
+            <span>Support siap bantu</span>
+          </div>
+        </div>
+      </div>
 
       {/* ─── MAIN LAYOUT ─── */}
       <div className={styles.checkoutLayout}>
@@ -343,28 +623,51 @@ export default function CheckoutPage() {
             ) : addresses.length === 0 ? (
                 <p>Belum ada alamat tersimpan.</p>
             ) : (
-                <div className={styles.addressList}>
-                {addresses.map((addr) => (
-                    <div
-                    key={addr.id}
-                    className={`${styles.addressCard} ${
-                        selectedAddressId === addr.id ? styles.addressCardSelected : ""
-                    }`}
-                    onClick={() => setSelectedAddressId(addr.id)}
-                    >
-                        <div className={styles.addressContent}>
+                <div>
+                  {selectedAddressRegion?.cityId && (
+                    <div className={styles.addressStatusBanner}>
+                      <span className={styles.addressStatusDot}></span>
+                      <span>
+                        Wilayah terdeteksi: <strong>{selectedAddressRegion.city}</strong> · {selectedAddressRegion.province}
+                      </span>
+                    </div>
+                  )}
+                  <div className={styles.addressList}>
+                    {addresses.map((addr) => {
+                      const detectedRegion = resolveAddressRegion(addr.city, addr.province, addr.postalCode);
+                      const statusTone = detectedRegion?.cityId ? styles.addressPillSuccess : addr.postalCode ? styles.addressPillInfo : styles.addressPillNeutral;
+
+                      return (
+                        <div
+                          key={addr.id}
+                          className={`${styles.addressCard} ${
+                            selectedAddressId === addr.id ? styles.addressCardSelected : ""
+                          }`}
+                          onClick={() => setSelectedAddressId(addr.id)}
+                        >
+                          <div className={styles.addressContent}>
                             <span className={styles.addressLabel}>
-                                {addr.label}
-                                {addr.isPrimary && <span className={styles.primaryBadge}>Utama</span>}
+                              {addr.label}
+                              {addr.isPrimary && <span className={styles.primaryBadge}>Utama</span>}
                             </span>
                             <p className={styles.addressName}>{addr.recipientName}</p>
                             <p className={styles.addressPhone}>{addr.recipientPhone}</p>
                             <p className={styles.addressFull}>
-                                {addr.street}, {addr.city}, {addr.province} {addr.postalCode}
+                              {addr.street}, {addr.city}, {addr.province} {addr.postalCode}
                             </p>
+                            <span className={`${styles.addressPill} ${statusTone}`}>
+                              {detectedRegion?.cityId ? "Wilayah terdeteksi" : addr.postalCode ? "Kode pos terdaftar" : "Lengkapi detail alamat"}
+                            </span>
+                            {detectedRegion?.cityId && (
+                              <p className={styles.addressRegion}>
+                                {detectedRegion.city}, {detectedRegion.province}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                    </div>
-                ))}
+                      );
+                    })}
+                  </div>
                 </div>
             )}
           </section>
@@ -382,47 +685,103 @@ export default function CheckoutPage() {
               <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
                 Pilih alamat pengiriman terlebih dahulu
               </p>
-            ) : courierLoading ? (
-              <div className={styles.courierLoading}>
-                <div className={styles.loadingSpinner} style={{ width: 24, height: 24, margin: "0 auto 0.5rem" }}></div>
-                Menghitung tarif pengiriman...
-              </div>
-            ) : courierOptions.length === 0 ? (
-              <div className={styles.courierEmpty}>
-                <p>Tidak ada layanan kurir tersedia untuk tujuan ini</p>
-                <p style={{ fontSize: "0.75rem", marginTop: "0.3rem" }}>
-                  Berat: {(totalWeight / 1000).toFixed(1)} kg
-                </p>
-              </div>
             ) : (
-              <div className={styles.courierGrid}>
-                {courierOptions.map((option) => (
-                  <div
-                    key={option.key}
-                    className={`${styles.courierCard} ${
-                      selectedCourierKey === option.key ? styles.courierCardSelected : ""
-                    }`}
-                    onClick={() => handleSelectCourier(option.key, option.cost)}
-                  >
-                    <input
-                      type="radio"
-                      className={styles.courierRadio}
-                      checked={selectedCourierKey === option.key}
-                      onChange={() => handleSelectCourier(option.key, option.cost)}
-                    />
-                    <div className={styles.courierInfo}>
-                      <p className={styles.courierName}>
-                        {option.courierName.toUpperCase()} — {option.service}
-                      </p>
-                      <p className={styles.courierService}>{option.description}</p>
-                      {option.etd && option.etd !== "-" && (
-                        <p className={styles.courierEtd}>Estimasi: {option.etd} hari</p>
-                      )}
-                    </div>
-                    <span className={styles.courierCost}>{rupiah(option.cost)}</span>
+              <>
+                <div className={`${styles.shippingStatus} ${styles[`shippingStatus${shippingReadiness.tone === "success" ? "Success" : shippingReadiness.tone === "info" ? "Info" : "Warning"}`]}`}>
+                  <div>
+                    <p className={styles.shippingStatusTitle}>{shippingReadiness.title}</p>
+                    <p className={styles.shippingStatusDetail}>
+                      {shippingMeta.message
+                        ? `${shippingReadiness.detail} ${shippingMeta.message}`
+                        : shippingReadiness.detail}
+                    </p>
                   </div>
-                ))}
-              </div>
+                  <div className={styles.shippingStatusActions}>
+                    {shippingMeta.kind === "estimated" && (
+                      <span className={styles.shippingStatusBadge}>Estimasi</span>
+                    )}
+                    {shippingReadiness.tone === "success" && <span className={styles.shippingStatusBadge}>Tersedia</span>}
+                  </div>
+                </div>
+                {courierLoading ? (
+                  <div className={styles.courierLoading}>
+                    <div className={styles.loadingSpinner} style={{ width: 24, height: 24, margin: "0 auto 0.5rem" }}></div>
+                    Menghitung tarif pengiriman...
+                  </div>
+                ) : courierOptions.length === 0 ? (
+                  <div className={styles.courierEmpty}>
+                    <p>Belum ada opsi pengiriman yang bisa kami sarankan untuk alamat ini.</p>
+                    <p style={{ fontSize: "0.75rem", marginTop: "0.3rem", lineHeight: 1.6 }}>
+                      Coba cek kembali kota atau kode pos, atau lanjutkan setelah wilayah pengiriman terdeteksi.
+                    </p>
+                    <p style={{ fontSize: "0.75rem", marginTop: "0.3rem" }}>
+                      Berat paket: {(totalWeight / 1000).toFixed(1)} kg
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {courierRecommendation && (
+                      <div className={styles.courierRecommendationBanner}>
+                        <div className={styles.courierRecommendationLabel}>Rekomendasi</div>
+                        <div className={styles.courierRecommendationText}>
+                          <strong>{courierRecommendation.cheapest.courierName.toUpperCase()} {courierRecommendation.cheapest.service}</strong>
+                          <div>{courierRecommendation.detail}</div>
+                        </div>
+                      </div>
+                    )}
+                    <div className={styles.courierGrid}>
+                      {courierOptions.map((option) => {
+                        const isCheapest = option.key === courierRecommendation?.cheapest?.key;
+                        const isFastest = option.key === courierRecommendation?.fastest?.key && !isCheapest;
+                        const isRecommended = isCheapest || isFastest;
+
+                        return (
+                        <div
+                          key={option.key}
+                          className={`${styles.courierCard} ${
+                            selectedCourierKey === option.key ? styles.courierCardSelected : ""
+                          } ${isCheapest ? styles.courierCardHighlight : ""} ${isFastest ? styles.courierCardFastest : ""}`}
+                          onClick={() => handleSelectCourier(option.key, option.cost)}
+                        >
+                        <input
+                          type="radio"
+                          className={styles.courierRadio}
+                          checked={selectedCourierKey === option.key}
+                          onChange={() => handleSelectCourier(option.key, option.cost)}
+                        />
+                        <div className={styles.courierInfo}>
+                          <div className={styles.courierHeaderRow}>
+                            <p className={styles.courierName}>
+                              {option.courierName.toUpperCase()} — {option.service}
+                            </p>
+                            <div className={styles.courierBadgeRow}>
+                              {isCheapest && (
+                                <span className={styles.courierBadgePrimary}>Paling Hemat</span>
+                              )}
+                              {isFastest && (
+                                <span className={styles.courierBadgeSecondary}>Paling Cepat</span>
+                              )}
+                              {option.estimated && (
+                                <span className={styles.courierBadge}>Estimasi</span>
+                              )}
+                            </div>
+                          </div>
+                          <p className={styles.courierService}>{option.description}</p>
+                          {option.etd && option.etd !== "-" && (
+                            <p className={styles.courierEtd}>Estimasi tiba: {option.etd} hari</p>
+                          )}
+                        </div>
+                        <div className={styles.courierPriceBox}>
+                          <span className={styles.courierCost}>{rupiah(option.cost)}</span>
+                          <span className={styles.courierPriceHint}>termasuk biaya paket</span>
+                        </div>
+                        </div>
+                      );
+                    })}
+                    </div>
+                  </>
+                )}
+              </>
             )}
           </section>
 
@@ -465,7 +824,13 @@ export default function CheckoutPage() {
 
         {/* ─── RIGHT COLUMN — RINGKASAN ─── */}
         <div className={styles.summaryCard}>
-          <h3 className={styles.summaryTitle}>Ringkasan Belanja</h3>
+          <div className={styles.summaryHeader}>
+            <div>
+              <h3 className={styles.summaryTitle}>Ringkasan Belanja</h3>
+              <p className={styles.summarySubtitle}>Pesanan Anda siap diproses setelah pembayaran dikonfirmasi.</p>
+            </div>
+            <div className={styles.summaryShield}>🔒</div>
+          </div>
 
           <div className={styles.summaryItems}>
             {(cart.items || []).map((item) => {
@@ -512,9 +877,16 @@ export default function CheckoutPage() {
           </div>
 
           {selectedCourierInfo && (
-            <div style={{ fontSize: "0.7rem", color: "var(--text-secondary)", marginTop: "-0.25rem", marginBottom: "0.5rem" }}>
+            <div className={styles.summaryCourierNote}>
               {selectedCourierInfo.courierName.toUpperCase()} — {selectedCourierInfo.service}
               {selectedCourierInfo.etd !== "-" && ` · ${selectedCourierInfo.etd} hari`}
+            </div>
+          )}
+
+          {deliveryPromise && (
+            <div className={styles.summaryPromise}>
+              <p className={styles.summaryPromiseTitle}>{deliveryPromise.title}</p>
+              <p className={styles.summaryPromiseDetail}>{deliveryPromise.detail}</p>
             </div>
           )}
 
@@ -523,20 +895,42 @@ export default function CheckoutPage() {
             <span>{rupiah(grandTotal)}</span>
           </div>
 
+          <div className={styles.summaryTrustBox}>
+            <div className={styles.summaryTrustIcon}>✓</div>
+            <div>
+              <p className={styles.summaryTrustTitle}>Aman & terjamin</p>
+              <p className={styles.summaryTrustDetail}>
+                Pembayaran terenkripsi, pengiriman terpantau, dan dukungan pelanggan siap membantu.
+              </p>
+            </div>
+          </div>
+
+          <div className={styles.summarySupportBox}>
+            <div className={styles.summarySupportIcon}>✦</div>
+            <div>
+              <p className={styles.summarySupportTitle}>Standar belanja profesional</p>
+              <p className={styles.summarySupportDetail}>
+                Semua langkah checkout dirancang agar ringkas, jelas, dan memberi rasa percaya diri saat bertransaksi.
+              </p>
+            </div>
+          </div>
+
           <button
             className={styles.payButton}
             onClick={handlePay}
             disabled={isProcessing || !selectedAddress || !selectedCourierKey}
           >
-            {isProcessing
-              ? "Memproses Pembayaran..."
-              : `Bayar ${rupiah(grandTotal)}`}
+            <span className={styles.payButtonMain}>
+              {isProcessing ? "Memproses Pembayaran..." : `Bayar Sekarang • ${rupiah(grandTotal)}`}
+            </span>
             <span className={styles.payButtonSub}>
               {!selectedAddress
                 ? "Pilih alamat terlebih dahulu"
                 : !selectedCourierKey
                   ? "Pilih kurir terlebih dahulu"
-                  : "Pembayaran via Midtrans (QRIS / VA / Convenience Store)"}
+                  : selectedCourierInfo
+                    ? `Pembayaran via Midtrans • ${selectedCourierInfo.courierName.toUpperCase()} ${selectedCourierInfo.service}`
+                    : "Pembayaran via Midtrans (QRIS / VA / Convenience Store)"}
             </span>
           </button>
         </div>
@@ -546,8 +940,17 @@ export default function CheckoutPage() {
             <div className={styles.modalOverlay} onClick={() => setShowAddressModal(false)}>
             <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
                 <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>Tambah Alamat Baru</h2>
-                <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>&times;</button>
+                  <div>
+                    <h2 className={styles.modalTitle}>Tambah Alamat Baru</h2>
+                    <p className={styles.modalSubtitle}>Data yang lengkap membuat pengiriman lebih cepat dan akurat.</p>
+                  </div>
+                  <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>&times;</button>
+                </div>
+                <div className={styles.modalHint}>
+                  <div className={styles.modalHintIcon}>i</div>
+                  <div>
+                    <strong>Tips:</strong> Kode pos membantu sistem mengenali wilayah pengiriman lebih cepat.
+                  </div>
                 </div>
                 <form onSubmit={handleSaveAddress}>
                 <div className={styles.formGroup}>
@@ -588,6 +991,7 @@ export default function CheckoutPage() {
                         cityId: addressForm.cityId,
                         cityType: addressForm.cityType,
                     }}
+                    postalCode={addressForm.postalCode}
                     onChange={(value) => setAddressForm({ ...addressForm, ...value })}
                     />
                 </div>

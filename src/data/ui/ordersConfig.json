@@ -1,6 +1,6 @@
 {
   "header": {
-    "title": "Riwayat Pesanan",
+    "title": "Pesanan",
     "subtitle": "Pantau status peracikan, pengiriman, dan kelola pesanan Anda di sini."
   },
   "searchPlaceholder": "Cari berdasarkan ID pesanan atau nama produk...",
@@ -37,6 +37,10 @@
   "modal": {
     "title": "Rincian Pesanan",
     "closeBtn": "Tutup"
+  },
+  "detailTabs": {
+    "order": "Data Pesanan",
+    "history": "Riwayat Pesanan"
   },
   "stepper": {
     "created": "Pesanan Dibuat",

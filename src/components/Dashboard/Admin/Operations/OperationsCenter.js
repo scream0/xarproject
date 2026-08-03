@@ -21,6 +21,9 @@ export default function OperationsCenter() {
   const [reconciliation, setReconciliation] = useState({ pending: [], summary: {} });
   const [team, setTeam] = useState([]);
   const [promo, setPromo] = useState({ banner: "Free shipping for orders above Rp100.000", voucher: "XAR10", discount: "10", schedule: "Always on" });
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
+  const [shippingEditingId, setShippingEditingId] = useState(null);
+  const [shippingDraft, setShippingDraft] = useState({ courierName: "", serviceType: "", trackingNumber: "" });
 
   useEffect(() => {
     const reviewRequest = auth.currentUser
@@ -39,7 +42,7 @@ export default function OperationsCenter() {
       ? auth.currentUser.getIdToken().then((token) => fetch("/api/reconciliation", { headers: { Authorization: `Bearer ${token}` } }))
       : Promise.resolve(null);
     Promise.all([
-      fetch("/api/orders"), fetch("/api/products"), reviewRequest,
+      fetch("/api/admin/orders"), fetch("/api/products"), reviewRequest,
       teamRequest, automationRequest, procurementRequest, reconciliationRequest,
     ])
       .then(async ([ordersRes, productsRes, reviewsRes, teamRes, automationRes, procurementRes, reconciliationRes]) => {
@@ -84,6 +87,61 @@ export default function OperationsCenter() {
   useEffect(() => {
     auth.currentUser?.getIdToken().then((token) => fetch("/api/support", { headers: { Authorization: `Bearer ${token}` } })).then((res) => res?.json()).then((data) => setTickets(data?.tickets || [])).catch(() => {});
   }, []);
+
+  const updateOrderStatus = async (orderId, nextStatus) => {
+    try {
+      setStatusUpdatingId(orderId);
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: nextStatus, changedBy: "admin" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengubah status pesanan.");
+      setOrders((items) => items.map((item) => item.id === orderId || item.orderId === orderId ? { ...item, status: nextStatus } : item));
+      toast.success("Status pesanan berhasil diperbarui.");
+    } catch (error) {
+      console.error("Gagal update status order:", error);
+      toast.error(error.message || "Unable to update order status.");
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
+  const saveShipping = async (order) => {
+    const orderId = order.id || order.orderId;
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`/api/admin/orders/${orderId}/shipping`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          courierName: shippingDraft.courierName,
+          serviceType: shippingDraft.serviceType,
+          trackingNumber: shippingDraft.trackingNumber,
+          shippingAddress: order.shipping_address || order.shippingAddress || null,
+          recipientName: order.customerName || null,
+          phoneNumber: order.phone || null,
+          status: "shipped",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan informasi pengiriman.");
+      setOrders((items) => items.map((item) => (item.id === orderId || item.orderId === orderId ? { ...item, status: "shipped", shippingDetail: { ...(item.shippingDetail || {}), courier_name: shippingDraft.courierName || null, service_type: shippingDraft.serviceType || null, tracking_number: shippingDraft.trackingNumber || null } } : item)));
+      setShippingEditingId(null);
+      toast.success("Informasi pengiriman berhasil disimpan.");
+    } catch (error) {
+      console.error("Gagal update shipping:", error);
+      toast.error(error.message || "Unable to save shipping info.");
+    }
+  };
 
   const updateReturn = async (requestId, status) => {
     try { const token = await auth.currentUser.getIdToken(); const res = await fetch("/api/returns", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ requestId, status }) }); const data = await res.json(); if (!res.ok) throw new Error(data.error); setReturnRequests((items) => items.map((item) => item.id === requestId ? { ...item, status } : item)); toast.success("Return request updated."); } catch (error) { toast.error(error.message || "Unable to update request."); }
@@ -181,6 +239,7 @@ export default function OperationsCenter() {
       <Panel title="Customer insights" action={`${repeatBuyers.length} repeat buyers`}><div className={styles.list}>{customers.slice(0, 5).map((customer, index) => <div className={styles.row} key={customer.name}><span><b>#{index + 1} {customer.name}</b><small>{customer.orders} order{customer.orders > 1 ? "s" : ""}</small></span><strong>{money(customer.spend)}</strong></div>)}{!customers.length && <p className={styles.empty}>Customer insights appear after the first orders arrive.</p>}</div></Panel>
       <Panel title="Reviews & feedback" action={`${pendingReviews.length} need response`}><div className={styles.list}>{reviews.slice(0, 4).map((review) => <div className={styles.row} key={review.id}><span><b>{review.userName || "Customer"} · {"★".repeat(review.rating || 0)}</b><small>{review.comment || "No written feedback"}</small></span><strong className={review.approved ? styles.ok : styles.warning}>{review.approved ? "Published" : "Respond"}</strong></div>)}{!reviews.length && <p className={styles.empty}>No reviews have been received yet.</p>}</div></Panel>
       <Panel title="Activity log" action="Recent changes"><div className={styles.list}>{activity.map((entry, index) => <div className={styles.row} key={`${entry.kind}-${index}`}><span><b>{entry.title}</b><small>{entry.detail}</small></span><strong className={styles.ok}>{entry.kind}</strong></div>)}</div></Panel>
+      <Panel title="Order operations" action={`${orders.filter((item) => item.status === "pending").length} awaiting confirmation`}><div className={styles.list}>{orders.slice(0, 5).map((order) => { const orderId = order.id || order.orderId; const isEditing = shippingEditingId === orderId; return <div className={styles.row} key={orderId}><span><b>{order.orderId || order.id}</b><small>{order.customerName || "Customer"} · {money(orderValue(order))}</small></span><div className={styles.orderActions}>{isEditing ? <div className={styles.shippingEditor}><div className={styles.shippingInputs}><input className={styles.shippingInput} value={shippingDraft.courierName} onChange={(e) => setShippingDraft((draft) => ({ ...draft, courierName: e.target.value }))} placeholder="Kurir" /><input className={styles.shippingInput} value={shippingDraft.serviceType} onChange={(e) => setShippingDraft((draft) => ({ ...draft, serviceType: e.target.value }))} placeholder="Layanan" /><input className={`${styles.shippingInput} ${styles.shippingInputFull}`} value={shippingDraft.trackingNumber} onChange={(e) => setShippingDraft((draft) => ({ ...draft, trackingNumber: e.target.value }))} placeholder="Nomor resi" /></div><div className={styles.inlineActions}><button onClick={() => saveShipping(order)}>Save</button><button onClick={() => setShippingEditingId(null)}>Cancel</button></div></div> : <><button onClick={() => { setShippingEditingId(orderId); setShippingDraft({ courierName: order.shippingDetail?.courier_name || "", serviceType: order.shippingDetail?.service_type || "", trackingNumber: order.shippingDetail?.tracking_number || "" }); }}>Set resi</button><select value={order.status || "pending"} onChange={(e) => updateOrderStatus(orderId, e.target.value)} disabled={statusUpdatingId === orderId}><option value="pending">Pending</option><option value="paid">Paid</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>{statusUpdatingId === orderId && <span className={styles.warning}>Updating…</span>}</>}</div></div>; })}{!orders.length && <p className={styles.empty}>No orders available yet.</p>}</div></Panel>
       <Panel title="Customer support inbox" action={`${tickets.filter((item) => item.status === "open").length} open tickets`}><div className={styles.list}>{tickets.slice(0, 4).map((ticket) => <div className={styles.row} key={ticket.id}><span><b>{ticket.subject}</b><small>{ticket.orderId || "No order"} · {ticket.messages?.at(-1)?.body || "No messages"}</small></span><strong className={ticket.status === "open" ? styles.warning : styles.ok}>{ticket.status}</strong></div>)}{!tickets.length && <p className={styles.empty}>No support tickets.</p>}</div></Panel>
       <Panel title="Return & refund requests" action={`${returnRequests.filter((item) => item.status === "requested").length} awaiting decision`}><div className={styles.list}>{returnRequests.slice(0, 5).map((item) => <div className={styles.row} key={item.id}><span><b>{item.orderId} · {item.reason}</b><small>{item.notes || "No additional note"}</small></span>{item.status === "requested" ? <span className={styles.inlineActions}><button onClick={() => updateReturn(item.id, "approved")}>Approve</button><button onClick={() => updateReturn(item.id, "rejected")}>Reject</button></span> : <strong className={styles.ok}>{item.status}</strong>}</div>)}{!returnRequests.length && <p className={styles.empty}>No return or refund requests.</p>}</div></Panel>
     </section>
@@ -196,5 +255,5 @@ export default function OperationsCenter() {
   </div>;
 }
 function Panel({ title, action, children }) { return <article className={styles.panel}><header><div><h3>{title}</h3><p>{action}</p></div></header>{children}</article>; }
-function Notice({ count, label, danger }) { return <div className={`${styles.notice} ${danger ? styles.noticeDanger : ""}`}><b>{count}</b><span>{label}</span></div>; }
+function Notice({ count, label, danger }) { return <div className={`${styles.notice} ${danger ? styles.noticeDanger : ""}`}>{count > 0 && <span className={styles.notificationDot} />}<b>{count}</b><span>{label}</span></div>; }
 function Metric({ label, value }) { return <div><small>{label}</small><b>{value}</b></div>; }

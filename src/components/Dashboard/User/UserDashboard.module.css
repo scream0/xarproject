@@ -4,7 +4,9 @@
 .dashboardContainer {
   display: flex;
   height: 100vh;
-  background-color: var(--background-color);
+  background:
+    radial-gradient(circle at top left, rgba(var(--primary-accent-rgb), 0.08), transparent 24%),
+    var(--background-color);
   color: var(--text-primary);
   font-family: inherit;
   position: relative;
@@ -53,11 +55,18 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background: var(--surface-primary);
+  height: 64px;
+  background: linear-gradient(135deg, rgba(255, 253, 249, 0.95), rgba(248, 239, 226, 0.84));
+  backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-color);
   padding: 0 1.25rem;
   z-index: 100;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+:global([data-theme="dark"]) .mobileTopBar {
+  background: linear-gradient(135deg, rgba(20, 20, 22, 0.96), rgba(29, 29, 32, 0.88));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .mobileTopBar .brandLogo {
@@ -162,17 +171,22 @@
 
 /* Sidebar Styling (Desktop & Mobile Drawer) */
 .sidebar {
-  width: 260px;
-  background: var(--surface-primary);
+  width: 280px;
+  background: linear-gradient(180deg, var(--surface-primary) 0%, color-mix(in srgb, var(--surface-primary) 92%, var(--background-color)) 100%);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   position: fixed;
   top: 0;
   bottom: 0;
-  left: -260px;
+  left: -280px;
   z-index: 105;
   transition: left 0.3s ease-in-out;
+  box-shadow: 12px 0 40px rgba(15, 23, 42, 0.06);
+}
+
+:global([data-theme="dark"]) .sidebar {
+  box-shadow: 16px 0 42px rgba(0, 0, 0, 0.3);
 }
 
 .sidebarOpen {
@@ -187,11 +201,11 @@
 
 /* Brand Section di Sidebar */
 .brandSection {
-  padding: 1.5rem;
+  padding: 1.5rem 1.25rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
 }
 
 .sidebar .brandLogo {
@@ -206,21 +220,21 @@
 }
 
 .brandBadge {
-  font-size: 0.65rem;
-  background: rgba(var(--primary-accent-rgb), 0.15);
+  font-size: 0.68rem;
+  background: rgba(var(--primary-accent-rgb), 0.14);
   color: var(--primary-accent);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
   width: fit-content;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  border: 1px solid rgba(var(--primary-accent-rgb), 0.3);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.24);
 }
 
 /* Navigasi List */
 .navContainer {
   flex: 1;
-  padding: 1.25rem 0.75rem;
+  padding: 1rem 0.8rem;
   overflow-y: auto;
 }
 
@@ -238,27 +252,34 @@
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  padding: 0.78rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   transition: all 0.2s ease;
+  text-decoration: none;
 }
 
 .navItem:hover {
-  background: var(--surface-secondary);
+  background: rgba(var(--primary-accent-rgb), 0.08);
   color: var(--text-primary);
+  transform: translateX(2px);
 }
 
 .navItemActive {
-  background: var(--primary-accent) !important;
+  background: linear-gradient(90deg, var(--primary-accent), color-mix(in srgb, var(--primary-accent) 82%, white));
   color: var(--primary-accent-text) !important;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(var(--primary-accent-rgb), 0.18);
+}
+
+:global([data-theme="dark"]) .navItemActive {
+  box-shadow: 0 10px 24px rgba(var(--primary-accent-rgb), 0.24);
 }
 
 .navIcon {
@@ -302,13 +323,13 @@
 /* Konten Utama */
 .mainContent {
   flex: 1;
-  margin-top: 60px;
+  margin-top: 64px;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   background-color: var(--background-color);
-  height: calc(100vh - 60px);
+  height: calc(100vh - 64px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -323,9 +344,10 @@
 
 /* Header Atas Konten */
 .header {
-  background: var(--surface-primary);
+  background: linear-gradient(135deg, rgba(255, 253, 249, 0.9), rgba(248, 239, 226, 0.78));
+  backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-color);
-  padding: 0.85rem 1.5rem;
+  padding: 0.95rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -333,6 +355,12 @@
   top: 0;
   z-index: 50;
   flex-shrink: 0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+:global([data-theme="dark"]) .header {
+  background: linear-gradient(135deg, rgba(20, 20, 22, 0.92), rgba(29, 29, 32, 0.82));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .extraNavLeft {
@@ -341,14 +369,14 @@
 }
 
 .navIndicator {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--primary-accent);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   background: rgba(var(--primary-accent-rgb), 0.1);
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 0.38rem 0.72rem;
+  border-radius: 999px;
   border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
 }
 
@@ -387,9 +415,9 @@
 }
 
 .welcomeTitle {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: var(--text-secondary);
   margin: 0;
 }
@@ -424,11 +452,11 @@
 .viewWrapper {
   flex: 1;
   min-height: 0;
-  padding: 1.5rem 1rem;
+  padding: 1.2rem 1rem 1.5rem;
 }
 
 @media (min-width: 640px) {
   .viewWrapper {
-    padding: 2rem;
+    padding: 1.4rem 1.5rem 2rem;
   }
 }

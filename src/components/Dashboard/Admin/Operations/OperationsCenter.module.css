@@ -67,6 +67,23 @@
   display: flex;
   gap: .75rem;
   align-items: center;
+  position: relative; /* Added for dot positioning */
+}
+
+.notificationDot {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: var(--danger-color); /* Using danger color for visibility */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: white;
+  z-index: 10;
 }
 
 .notice b {
@@ -227,6 +244,7 @@
 .inlineActions {
   display: flex;
   gap: .35rem;
+  align-items: center;
 }
 
 .inlineActions button {
@@ -240,6 +258,40 @@
 
 .inlineActions button:first-child {
   color: var(--success-color);
+}
+
+.orderActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .35rem;
+  min-width: 12rem;
+}
+
+.shippingEditor {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  width: 100%;
+}
+
+.shippingInputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .35rem;
+}
+
+.shippingInput {
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  padding: .4rem .5rem;
+  font-size: .72rem;
+}
+
+.shippingInputFull {
+  grid-column: 1 / -1;
 }
 
 .inlineActions button:last-child {

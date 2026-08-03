@@ -1,0 +1,349 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: var(--text-primary);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font: 400 1.4rem var(--font-serif);
+}
+
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.searchForm {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.searchForm input,
+.filterSelect,
+.statusSelect,
+.refreshButton,
+.pagination button {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.searchForm button,
+.refreshButton,
+.pagination button {
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: 1px solid var(--primary-accent);
+  cursor: pointer;
+}
+
+.summaryBar {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: rgba(var(--surface-primary-rgb), 0.7);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.bulkBar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: rgba(var(--surface-primary-rgb), 0.7);
+}
+
+.bulkLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.linkButton {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: rgba(var(--surface-primary-rgb), 0.82);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.table th,
+.table td {
+  padding: 0.9rem 0.8rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.table input[type="checkbox"] {
+  accent-color: var(--primary-accent);
+  cursor: pointer;
+}
+
+.table th {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.orderCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.orderCell small {
+  color: var(--text-secondary);
+}
+
+.statusSelect {
+  min-width: 8rem;
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.pagination button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 16px;
+  background: rgba(var(--surface-primary-rgb), 0.65);
+}
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 50;
+}
+
+.drawer {
+  width: min(480px, 100%);
+  background: var(--surface-primary);
+  border-left: 1px solid var(--border-color);
+  padding: 1.25rem;
+  overflow-y: auto;
+  box-shadow: -12px 0 30px rgba(0, 0, 0, 0.18);
+}
+
+.drawerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.closeButton,
+.secondaryButton {
+  border: 1px solid var(--border-color);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+.drawerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.drawerCard {
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: rgba(var(--surface-primary-rgb), 0.8);
+}
+
+.drawerCard h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.drawerCard p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.shippingFields {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.shippingFields input {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  padding: 0.55rem 0.7rem;
+}
+
+.drawerActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.itemRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.itemRow:last-child {
+  border-bottom: 0;
+}
+
+.printPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.printCard {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.9rem;
+  background: var(--surface-secondary);
+}
+
+.printHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.printMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-end;
+  text-transform: capitalize;
+  color: var(--text-secondary);
+}
+
+.printBody p {
+  margin: 0.2rem 0;
+  font-size: 0.85rem;
+}
+
+.printItems {
+  margin-top: 0.6rem;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 0.6rem;
+}
+
+@media print {
+  .drawerBackdrop {
+    position: static;
+    background: white;
+  }
+
+  .drawer {
+    width: 100%;
+    box-shadow: none;
+    border: 0;
+    padding: 0;
+  }
+
+  .closeButton,
+  .drawerActions,
+  .bulkBar,
+  .summaryBar,
+  .pagination,
+  .header,
+  .controls {
+    display: none !important;
+  }
+
+  .printCard {
+    break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .controls {
+    width: 100%;
+  }
+
+  .searchForm {
+    width: 100%;
+  }
+
+  .searchForm input {
+    flex: 1;
+  }
+}

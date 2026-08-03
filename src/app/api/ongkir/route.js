@@ -7,6 +7,60 @@ const RAJAONGKIR_BASE_URL =
 const API_KEY =
   process.env.RAJAONGKIR_API_KEY || process.env.NEXT_PUBLIC_RAJAONGKIR_API_KEY;
 
+function buildFallbackCosts(weight) {
+  const kg = Math.max(1, Math.ceil(weight / 1000));
+  const base = Math.max(12000, 8000 + kg * 3500);
+
+  return [
+    {
+      courier: "jne",
+      courierName: "JNE",
+      services: [
+        {
+          service: "REG",
+          description: "Layanan reguler",
+          cost: base,
+          etd: "1-2",
+          note: "Estimasi lokal",
+        },
+        {
+          service: "OKE",
+          description: "Layanan ekonomis",
+          cost: Math.max(10000, base - 2000),
+          etd: "2-3",
+          note: "Estimasi lokal",
+        },
+      ],
+    },
+    {
+      courier: "jnt",
+      courierName: "J&T",
+      services: [
+        {
+          service: "EZ",
+          description: "Layanan cepat",
+          cost: base + 3000,
+          etd: "1-2",
+          note: "Estimasi lokal",
+        },
+      ],
+    },
+    {
+      courier: "pos",
+      courierName: "POS Indonesia",
+      services: [
+        {
+          service: "POS",
+          description: "Layanan pos",
+          cost: Math.max(9000, base - 1000),
+          etd: "3-5",
+          note: "Estimasi lokal",
+        },
+      ],
+    },
+  ];
+}
+
 /**
  * GET /api/ongkir
  * Proxy ke RajaOngkir untuk menghitung biaya ongkir (cek tarif).
@@ -49,14 +103,12 @@ export async function GET(request) {
     }
 
     if (!API_KEY) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "RAJAONGKIR_API_KEY belum diset di .env.local. Silakan daftar di rajaongkir.com dan tambahkan API key Anda.",
-        },
-        { status: 500 },
-      );
+      return NextResponse.json({
+        success: true,
+        fallback: true,
+        warning: "API key RajaOngkir belum aktif, menggunakan tarif estimasi lokal.",
+        costs: buildFallbackCosts(weightNumber),
+      });
     }
 
     // Panggil RajaOngkir /cost endpoint
@@ -80,19 +132,23 @@ export async function GET(request) {
 
     if (!rajaResponse.ok) {
       console.error("RajaOngkir cost error:", rajaData);
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            rajaData?.rajaongkir?.status?.description ||
-            rajaData?.status?.description ||
-            "Gagal menghitung ongkir.",
-        },
-        { status: rajaResponse.status },
-      );
+      return NextResponse.json({
+        success: true,
+        fallback: true,
+        warning: "RajaOngkir sedang tidak tersedia, menggunakan tarif estimasi lokal.",
+        costs: buildFallbackCosts(weightNumber),
+      });
     }
 
     const result = rajaData?.rajaongkir?.results || [];
+    if (!result.length) {
+      return NextResponse.json({
+        success: true,
+        fallback: true,
+        warning: "Tidak ada tarif yang dikembalikan, menggunakan estimasi lokal.",
+        costs: buildFallbackCosts(weightNumber),
+      });
+    }
 
     // Normalisasi data tarif ke bentuk yang mudah dipakai frontend
     const costs = result.map((courierResult) => ({

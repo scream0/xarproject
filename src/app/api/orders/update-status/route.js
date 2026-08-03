@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin"; // Firebase Admin SDK untuk Orders di Firestore
 import { createClient } from "@supabase/supabase-js"; // Supabase Client untuk memotong stok produk
+import { updateOrderStatus } from "@/app/api/orders/orderService";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,23 @@ async function handleUpdateStatus(request) {
     }
 
     const orderData = orderDoc.data();
+    const normalizedTargetStatus = String(targetStatus).toLowerCase();
+
+    if (normalizedTargetStatus === "cancelled") {
+      const updatedOrder = await updateOrderStatus(
+        db,
+        orderId,
+        "cancelled",
+        "admin",
+        "Pesanan dibatalkan melalui endpoint /api/orders/update-status",
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "Pesanan dibatalkan dan stok yang direservasi telah dipulihkan",
+        order: updatedOrder,
+      });
+    }
 
     // JIKA STATUS BERUBAH MENJADI SUCCESS / SETTLEMENT (Pembayaran Berhasil):
     // Potong stok di Supabase jika status sebelumnya belum success
@@ -57,7 +75,11 @@ async function handleUpdateStatus(request) {
       orderData.status?.toLowerCase() === "success" ||
       orderData.status?.toLowerCase() === "settlement";
 
-    if (isSuccessStatus && !wasAlreadySuccess && supabase) {
+    const stockWasReserved = Boolean(
+      orderData.stockReservedAt || orderData.stock_reserved_at,
+    );
+
+    if (isSuccessStatus && !wasAlreadySuccess && !stockWasReserved && supabase) {
       const items = orderData.items || [];
 
       for (const item of items) {

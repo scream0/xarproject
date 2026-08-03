@@ -43,7 +43,7 @@
       "next": "Berikutnya"
     }
   },
-  "tableHeaders": ["Order ID", "Pemesan", "Total", "Status", "Aksi Seller"],
+  "tableHeaders": ["Order ID", "Pemesan", "Total", "Kurir", "Status", "Aksi Seller"],
   "actions": {
     "confirmPayment": "Konfirmasi Bayar",
     "confirming": "Mengonfirmasi...",

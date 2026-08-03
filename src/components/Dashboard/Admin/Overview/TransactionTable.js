@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import styles from "./TransactionTable.module.css";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewConfig.json";
 
-const ORDERS_PER_PAGE = 10;
+const ORDERS_PER_PAGE = 15;
 
 export default function TransactionTable() {
   // State for data and loading
@@ -15,7 +15,7 @@ export default function TransactionTable() {
   // State for controls
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(ORDERS_PER_PAGE);
   const [selectedIds, setSelectedIds] = useState([]);
   const [savedViews, setSavedViews] = useState([]);
 
@@ -23,8 +23,14 @@ export default function TransactionTable() {
   const [shippingModalOrder, setShippingModalOrder] = useState(null);
   const [shippingReceipt, setShippingReceipt] = useState("");
 
+  const observer = useRef();
+
   useEffect(() => {
     fetchOrders();
+    const storedViews = window.localStorage.getItem("xar-order-views");
+    if (storedViews) {
+      setSavedViews(JSON.parse(storedViews));
+    }
   }, []);
 
   const fetchOrders = async () => {
@@ -130,8 +136,9 @@ export default function TransactionTable() {
     return statusMap[status] || styles.badgePending;
   };
 
-  // Memoized filtered and paginated orders
+  // Memoized filtered orders
   const filteredOrders = useMemo(() => {
+    setVisibleCount(ORDERS_PER_PAGE); // Reset visible count on filter change
     return allOrders
       .filter((order) => {
         if (statusFilter === "all") return true;
@@ -151,15 +158,27 @@ export default function TransactionTable() {
       });
   }, [allOrders, statusFilter, searchTerm]);
 
-  const totalPages = Math.ceil(filteredOrders.length / ORDERS_PER_PAGE);
-  const paginatedOrders = filteredOrders.slice(
-    (currentPage - 1) * ORDERS_PER_PAGE,
-    currentPage * ORDERS_PER_PAGE,
+  const visibleOrders = filteredOrders.slice(0, visibleCount);
+
+  const hasMore = visibleCount < filteredOrders.length;
+
+  const lastOrderElementRef = useCallback(
+    (node) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setVisibleCount((prev) => prev + ORDERS_PER_PAGE);
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore],
   );
 
   const saveCurrentView = () => { const label = searchTerm ? `${statusFilter}: ${searchTerm}` : statusFilter; const next = [...savedViews.filter((view) => view.label !== label), { label, status: statusFilter, search: searchTerm }].slice(-5); setSavedViews(next); window.localStorage.setItem("xar-order-views", JSON.stringify(next)); toast.success("Filter view saved."); };
   const toggleOrder = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
-  const toggleVisible = () => { const ids = paginatedOrders.map((order) => order.orderId || order.id); setSelectedIds((current) => ids.every((id) => current.includes(id)) ? current.filter((id) => !ids.includes(id)) : [...new Set([...current, ...ids])]); };
+  const toggleVisible = () => { const ids = visibleOrders.map((order) => order.orderId || order.id); setSelectedIds((current) => ids.every((id) => current.includes(id)) ? current.filter((id) => !ids.includes(id)) : [...new Set([...current, ...ids])]); };
   const runBulkAction = async (from, to) => { const targets = allOrders.filter((order) => selectedIds.includes(order.orderId || order.id) && (order.status === from || (from === "processing" && order.status === "success"))); if (!targets.length) return toast.error(`Pilih pesanan berstatus ${from}.`); await Promise.all(targets.map((order) => handleUpdateOrder(order.orderId || order.id, to))); setSelectedIds([]); };
 
   const exportOrders = () => {
@@ -167,11 +186,6 @@ export default function TransactionTable() {
     const csv = [["Order ID", "Customer", "Total", "Status", "Date"], ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     const link = document.createElement("a"); link.href = url; link.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url);
-  };
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
   };
 
   return (
@@ -208,13 +222,13 @@ export default function TransactionTable() {
           </select>
         </div>
 
-        {savedViews.length > 0 && <div className={styles.savedViews}>{savedViews.map((view) => <button key={view.label} onClick={() => { setStatusFilter(view.status); setSearchTerm(view.search); setCurrentPage(1); }}>{view.label}</button>)}</div>}
+        {savedViews.length > 0 && <div className={styles.savedViews}>{savedViews.map((view) => <button key={view.label} onClick={() => { setStatusFilter(view.status); setSearchTerm(view.search); }}>{view.label}</button>)}</div>}
 
         {loading ? (
           <p className={styles.loadingText}>
             {overviewConfig.ordersSection.loading}
           </p>
-        ) : paginatedOrders.length === 0 ? (
+        ) : visibleOrders.length === 0 ? (
           <p className={styles.emptyText}>
             {overviewConfig.ordersSection.empty}
           </p>
@@ -224,14 +238,15 @@ export default function TransactionTable() {
               <table className={styles.ordersTable}>
                 <thead>
                   <tr>
-                    <th><input type="checkbox" aria-label="Select visible orders" checked={paginatedOrders.length > 0 && paginatedOrders.every((order) => selectedIds.includes(order.orderId || order.id))} onChange={toggleVisible} /></th>
+                    <th><input type="checkbox" aria-label="Select visible orders" checked={visibleOrders.length > 0 && visibleOrders.every((order) => selectedIds.includes(order.orderId || order.id))} onChange={toggleVisible} /></th>
                     {overviewConfig.tableHeaders.map((header) => (
                       <th key={header}>{header}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedOrders.map((order) => {
+                  {visibleOrders.map((order, index) => {
+                    const isLastElement = index === visibleOrders.length - 1;
                     const currentId = order.orderId || order.id;
                     const customerName =
                       order.customerName ||
@@ -240,12 +255,19 @@ export default function TransactionTable() {
                     const orderTotal = Number(order.amount || order.price || 0);
                     const displayStatus = order.status === "success" ? "processing" : order.status === "shipping" ? "shipped" : order.status || "pending";
 
-return (
-                      <tr key={currentId}>
+                    const rowProps = isLastElement ? { ref: lastOrderElementRef } : {};
+
+                    return (
+                      <tr key={currentId} {...rowProps}>
                         <td data-label="Pilih"><input type="checkbox" aria-label={`Select ${currentId}`} checked={selectedIds.includes(currentId)} onChange={() => toggleOrder(currentId)} /></td>
                         <td className={styles.orderId} data-label="ID Pesanan">{currentId}</td>
                         <td data-label="Pelanggan">{customerName}</td>
                         <td data-label="Total">{formatRupiah(orderTotal)}</td>
+                        <td data-label="Kurir">
+                          {order.shippingDetail
+                            ? `${order.shippingDetail.courierName} - ${order.shippingDetail.courierService}`
+                            : "N/A"}
+                        </td>
                         <td data-label="Status">
                           <span
                             className={`${styles.badge} ${getBadgeClass(displayStatus)}`}
@@ -303,25 +325,8 @@ return (
                 </tbody>
               </table>
             </div>
-            {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  {overviewConfig.pagination.prev}
-                </button>
-                <span>
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  {overviewConfig.pagination.next}
-                </button>
-              </div>
-            )}
+            {loading && hasMore && <p className={styles.loadingText}>Loading more orders...</p>}
+            {!hasMore && visibleOrders.length > 0 && <p className={styles.emptyText}>You've reached the end of the list.</p>}
           </>
         )}
       </div>

@@ -20,6 +20,7 @@ import SettingsView from "@/components/Dashboard/Admin/Settings/SettingsView";
 import OperationsCenter from "@/components/Dashboard/Admin/Operations/OperationsCenter";
 import NotificationCenter from "@/components/Dashboard/Admin/Notifications/NotificationCenter";
 import UserManagement from "@/components/Dashboard/Admin/Operations/UserManagement";
+import OrdersManagement from "@/components/Dashboard/Admin/Orders/OrdersManagement";
 import { AdminDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 export default function AdminDashboard() {
@@ -37,6 +38,7 @@ export default function AdminDashboard() {
     customers: "Manage customers & roles",
     settings: "Storefront controls",
     operations: "Customers, promos & reports",
+    orders: "Order pipeline & fulfillment",
   };
 
   useEffect(() => {
@@ -226,6 +228,13 @@ export default function AdminDashboard() {
           {activeTab === "operations" && (
             <section className={styles.workspaceArea}>
               <div className={styles.workspaceInner}><OperationsCenter /></div>
+            </section>
+          )}
+
+          {/* TAB 7: ORDERS */}
+          {activeTab === "orders" && (
+            <section className={styles.workspaceArea}>
+              <div className={styles.workspaceInner}><OrdersManagement /></div>
             </section>
           )}
 

@@ -22,6 +22,8 @@ import WishlistSection from "@/components/Dashboard/User/Wishlist/WishlistSectio
 import { CartSidebar } from "@/components/UI/Sidebar/CartSidebar";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import { UserDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const db = getFirestore();
 
@@ -38,6 +40,7 @@ export default function UserDashboard() {
   const { cartQuantity, isCartOpen, setIsCartOpen } = useStore();
   const [isMounted, setIsMounted] = useState(false);
   const [animate, setAnimate] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setIsMounted(true);
@@ -127,6 +130,12 @@ export default function UserDashboard() {
     (item) => item.id === activeTab,
   )?.label;
 
+  useEffect(() => {
+    if (pathname?.startsWith("/account/orders")) {
+      setActiveTab("orders");
+    }
+  }, [pathname]);
+
   if (loading) {
     return <UserDashboardSkeleton />;
   }
@@ -186,17 +195,32 @@ export default function UserDashboard() {
           <ul className={styles.navigationList}>
             {userConfig.nav.map((item) => (
               <li key={item.id}>
-                <button
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`${styles.navItem} ${
-                    activeTab === item.id ? styles.navItemActive : ""
-                  }`}
-                >
-                  <span>{item.label}</span>
-                </button>
+                {item.id === "orders" ? (
+                  <Link
+                    href="/account/orders"
+                    className={`${styles.navItem} ${
+                      activeTab === item.id ? styles.navItemActive : ""
+                    }`}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`${styles.navItem} ${
+                      activeTab === item.id ? styles.navItemActive : ""
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                  </button>
+                )}
               </li>
             ))}
           </ul>

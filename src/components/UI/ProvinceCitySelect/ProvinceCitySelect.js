@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { resolveAddressRegion } from "@/utils/address";
 import styles from "./ProvinceCitySelect.module.css";
 
 /**
@@ -14,7 +15,7 @@ import styles from "./ProvinceCitySelect.module.css";
  *  - value        { province, city, cityId, cityType } objek nilai saat ini
  *  - onChange     (next) => void
  */
-export function ProvinceCitySelect({ value = {}, onChange }) {
+export function ProvinceCitySelect({ value = {}, onChange, postalCode = "" }) {
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -56,16 +57,34 @@ export function ProvinceCitySelect({ value = {}, onChange }) {
   }, []);
 
   useEffect(() => {
-    loadCities();
+    const timer = window.setTimeout(() => {
+      void loadCities();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [loadCities]);
 
-  // Jika data kota tidak punya provinsi yang dipilih (mis. alamat lama),
-  // alihkan ke mode manual agar form tetap terisi.
   useEffect(() => {
-    if (province && cities.length > 0 && !provinces.includes(province)) {
-      setManualMode(true);
+    if (!postalCode || city || cityId) return;
+
+    const region = resolveAddressRegion("", "", postalCode);
+    if (region.cityId) {
+      const next = {
+        province: region.province || province,
+        city: region.city || "",
+        cityId: region.cityId,
+        cityType: region.cityType || "",
+      };
+
+      window.setTimeout(() => {
+        onChange(next);
+      }, 0);
     }
-  }, [province, cities, provinces]);
+  }, [postalCode, city, cityId, onChange, province]);
+
+  const shouldManualMode = Boolean(
+    manualMode || loadError || (!loading && cities.length === 0) || (province && cities.length > 0 && !provinces.includes(province)),
+  );
 
   const handleProvinceChange = (e) => {
     const prov = e.target.value;
@@ -94,7 +113,7 @@ export function ProvinceCitySelect({ value = {}, onChange }) {
   };
 
   // ── Mode manual (API tidak tersedia) ──
-  if (manualMode) {
+  if (shouldManualMode) {
     return (
       <div className={styles.wrapper}>
         <div className={styles.row}>
