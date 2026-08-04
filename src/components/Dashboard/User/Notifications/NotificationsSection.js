@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
@@ -35,8 +35,10 @@ export default function NotificationsSection({ onUnreadCountChange }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [submittingMarkAllRead, setSubmittingMarkAllRead] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
-  const loadNotifications = async (currentUser) => {
+  const loadNotifications = useCallback(async (currentUser) => {
     try {
       setLoading(true);
       const token = currentUser
@@ -54,7 +56,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -62,30 +64,38 @@ export default function NotificationsSection({ onUnreadCountChange }) {
       await loadNotifications(currentUser);
     });
     return () => unsubscribe();
-  }, []);
+  }, [loadNotifications]);
 
   const markAllRead = async () => {
     try {
-      const token = await auth.currentUser?.getIdToken();
-      await Promise.all(
-        notifications
-          .filter((n) => !n.isRead)
-          .map((n) =>
-            fetch("/api/notifications", {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ notificationId: n.id, isRead: true }),
-            }),
-          ),
-      );
+      if (!auth.currentUser) {
+        toast.error("Sesi Anda telah berakhir. Silakan muat ulang.");
+        return;
+      }
+      setSubmittingMarkAllRead(true);
+      const token = await auth.currentUser.getIdToken();
+
+      // Menggunakan endpoint bulk update yang baru
+      const res = await fetch("/api/notifications", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ markAllAsRead: true }),
+      });
+
+      if (!res.ok) {
+        const result = await res.json();
+        throw new Error(result.error || "Gagal menandai semua notifikasi.");
+      }
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       toast.success(notificationsConfig.toasts.markAllReadSuccess);
     } catch (err) {
       console.error("Gagal tandai semua dibaca:", err);
       toast.error(err.message || "Gagal memperbarui notifikasi.");
+    } finally {
+      setSubmittingMarkAllRead(false);
     }
   };
 
@@ -110,7 +120,11 @@ export default function NotificationsSection({ onUnreadCountChange }) {
   };
 
   const deleteNotification = async (notification) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus notifikasi ini?")) {
+      return;
+    }
     try {
+      setDeletingId(notification.id);
       const token = await auth.currentUser?.getIdToken();
       const res = await fetch(
         `/api/notifications?id=${notification.id}`,
@@ -125,6 +139,8 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     } catch (err) {
       console.error("Gagal menghapus notifikasi:", err);
       toast.error(err.message || "Gagal menghapus notifikasi.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -176,8 +192,12 @@ export default function NotificationsSection({ onUnreadCountChange }) {
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
             />
-            <button onClick={markAllRead} className={styles.markReadBtn}>
-              {notificationsConfig.buttons.markAllRead}
+            <button
+              onClick={markAllRead}
+              className={styles.markReadBtn}
+              disabled={submittingMarkAllRead}
+            >
+              {submittingMarkAllRead ? "Menandai..." : notificationsConfig.buttons.markAllRead}
             </button>
           </div>
         </div>
@@ -261,8 +281,9 @@ export default function NotificationsSection({ onUnreadCountChange }) {
                     deleteNotification(notification);
                   }}
                   aria-label="Hapus notifikasi"
+                  disabled={deletingId === notification.id}
                 >
-                  ✕
+                  {deletingId === notification.id ? "..." : "✕"}
                 </button>
               </div>
             );

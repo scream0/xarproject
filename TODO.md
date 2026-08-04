@@ -1,45 +1,35 @@
-🚨 1. Perbaikan Bug Utama (Critical Error Fixes)
+Berikut adalah TODO List komprehensif untuk memperbaiki potensi error, bug logika, dan meningkatkan stabilitas pada kode NotificationsSection Anda:
+🛠️ TODO & Bug Fixing Roadmap: NotificationsSection
+🚨 1. Penanganan Sesi & Autentikasi Token (Critical Bug Fixes)
 
-    [x] 1.1 Perbaiki Argumen Pemanggilan loadNotifications() di handleCreate
+    [x] 1.1 Validasi Keamanan Token pada Fungsi Aksi Massal (markAllRead)
 
-        Masalah: Pada fungsi handleCreate, baris pemanggilan await loadNotifications(); dipanggil tanpa argumen currentUser. Hal ini menyebabkan variabel currentUser di dalam loadNotifications bernilai undefined, yang berpotensi membuat token gagal dimuat (auth.currentUser bisa saja null jika state belum sepenuhnya sinkron).
+        Goal: Pastikan variabel auth.currentUser tidak bernilai null sebelum memanggil .getIdToken() di dalam fungsi markAllRead untuk menghindari TypeError saat sesi kedaluwarsa.
 
-        Solusi: Ubah menjadi await loadNotifications(auth.currentUser); agar token selalu diambil dari user yang aktif saat ini.
+        Solusi: Tambahkan pengecekan if (!auth.currentUser) return; di awal fungsi aksi.
 
-    [x] 1.2 Tangani Kondisi Unauthenticated / Token Null
+    [x] 1.2 Optimasi Request API Mark All Read
 
-        Masalah: Jika auth.currentUser bernilai null saat tombol aksi (seperti Mark All Read atau Delete) ditekan, pemanggilan getIdToken() akan melempar TypeError.
+        Goal: Ubah proses looping pemanggilan fetch secara paralel menggunakan Promise.all dengan membuat satu endpoint API backend terpusat (misal: PUT /api/notifications/mark-all).
 
-        Solusi: Tambahkan validasi penjagaan di awal fungsi (misal: if (!auth.currentUser) return;) atau gunakan optional chaining yang aman disertai pesan toast error jika sesi habis.
+        Benefit: Mengurangi beban jaringan (network overhead) dan mempercepat respons UI secara signifikan.
 
-⚙️ 2. Optimalisasi State & Performa (Clean Code)
+⚙️ 2. Optimalisasi Performa & State Management (Clean Code)
 
-    [x] 2.1 Hindari Multi-Fetch Beruntun saat Mark All Read
+    [x] 2.1 Bungkus loadNotifications dengan useCallback
 
-        Masalah: Penggunaan Promise.all dengan melakukan banyak request fetch satuan (PUT) untuk setiap notifikasi yang belum dibaca sangat boros performa (N network requests).
+        Goal: Hindari peringatan lint warnings dari Next.js dengan membungkus fungsi loadNotifications menggunakan useCallback agar stabil saat dipanggil di dalam useEffect.
 
-        Solusi: Buat endpoint API tunggal (misal: PUT /api/notifications/mark-all) di backend untuk mengubah status seluruh notifikasi yang belum dibaca dalam satu kali request database.
+    [x] 2.2 Pembersihan Event Listener / Auth State Unsubscribe
 
-    [x] 2.2 Perbaiki Ketergantungan useEffect (Effect Dependencies)
+        Goal: Pastikan pemanggilan onAuthStateChanged dikelola dengan baik dan dibersihkan melalui fungsi pengembali (cleanup function) dari useEffect.
 
-        Masalah: loadNotifications didefinisikan di luar useEffect namun tidak dibungkus dengan useCallback, serta useEffect menggunakan array dependensi kosong [], yang berpotensi memicu stale closure pada lint warnings Next.js.
+🎨 3. Peningkatan UI/UX & Pengalaman Pengguna (User Experience)
 
-        Solusi: Bungkus loadNotifications dengan useCallback atau masukkan langsung ke dalam useEffect.
+    [x] 3.1 Tambahkan Indikator Visual Loading Saat Aksi
 
-🎨 3. Peningkatan UI/UX & Interaksi Profesional
+        Goal: Nonaktifkan tombol atau berikan indikator kecil saat proses markAllRead atau deleteNotification sedang berjalan agar pengguna tidak mengeklik tombol berkali-kali.
 
-    [x] 3.1 Tambahkan Loading State pada Tombol Aksi Modal (Submit & Create)
+    [x] 3.2 Dialog Konfirmasi Hapus Notifikasi
 
-        Masalah: Saat admin membuat notifikasi baru, tombol "Simpan / Kirim" tidak memiliki status loading, sehingga pengguna bisa mengeklik tombol tersebut berkali-kali dan mengirim data duplikat.
-
-        Solusi: Tambahkan state lokal submitting untuk menonaktifkan tombol dan mengubah teks menjadi "Menyimpan..." saat proses handleCreate berjalan.
-
-    [x] 3.2 Fitur Konfirmasi Hapus Notifikasi
-
-        Masalah: Notifikasi langsung terhapus begitu tombol ✕ ditekan tanpa adanya dialog konfirmasi, berisiko terjadi salah klik (accidental delete).
-
-        Solusi: Tambahkan konfirmasi ringan (atau animasi geser/undo toast) sebelum perintah DELETE dikirim ke server.
-
-    [x] 3.3 Perbaikan Aksesibilitas Modal (ESC Key & Outside Click)
-
-        Masalah: Pastikan modal pembuatan notifikasi tertutup secara bersih ketika pengguna menekan tombol Escape pada keyboard sebagai pelengkap outside click.
+        Goal: Tambahkan pencegahan penghapusan tidak sengaja (accidental delete) dengan menyematkan konfirmasi ringan sebelum perintah DELETE dikirim ke server.
