@@ -330,7 +330,11 @@ export default function CheckoutPage() {
         }
       }
 
-      if (allCosts.length === 0) {
+      const uniqueCosts = Array.from(
+        new Map(allCosts.map((option) => [option.key, option])).values(),
+      );
+
+      if (uniqueCosts.length === 0) {
         setCourierOptions(localFallbackOptions);
         setSelectedCourierKey(localFallbackOptions[0].key);
         setShippingCost(localFallbackOptions[0].cost);
@@ -343,7 +347,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      allCosts.sort((a, b) => {
+      uniqueCosts.sort((a, b) => {
         if (a.estimated !== b.estimated) {
           return a.estimated ? 1 : -1;
         }
@@ -362,7 +366,7 @@ export default function CheckoutPage() {
         return a.courierName.localeCompare(b.courierName);
       });
 
-      setCourierOptions(allCosts);
+      setCourierOptions(uniqueCosts);
 
       if (fallbackMessage || usingFallbackDestination) {
         setShippingMeta({
@@ -376,9 +380,9 @@ export default function CheckoutPage() {
       }
 
       const preferredKey =
-        allCosts.find((option) => option.key === selectedCourierKeyRef.current)?.key
-        || allCosts[0].key;
-      const preferredOption = allCosts.find((option) => option.key === preferredKey) || allCosts[0];
+        uniqueCosts.find((option) => option.key === selectedCourierKeyRef.current)?.key
+        || uniqueCosts[0].key;
+      const preferredOption = uniqueCosts.find((option) => option.key === preferredKey) || uniqueCosts[0];
 
       setSelectedCourierKey(preferredOption.key);
       setShippingCost(preferredOption.cost);

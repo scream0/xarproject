@@ -6,6 +6,8 @@
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   background:
     radial-gradient(circle at top left, rgba(var(--primary-accent-rgb), 0.1), transparent 28%),
     linear-gradient(180deg, rgba(var(--surface-primary-rgb), 0.35) 0%, transparent 100%);
@@ -1453,6 +1455,7 @@
 @media (max-width: 768px) {
   .checkoutPage {
     padding: 1rem;
+    padding-bottom: 6rem;
   }
 
   .checkoutTrustBar {
@@ -1472,6 +1475,11 @@
   .checkoutSteps {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .summaryCard {
+    position: static;
+    top: auto;
   }
 
   .formRow {
