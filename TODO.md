@@ -1,35 +1,28 @@
-Berikut adalah TODO List komprehensif untuk memperbaiki potensi error, bug logika, dan meningkatkan stabilitas pada kode NotificationsSection Anda:
-🛠️ TODO & Bug Fixing Roadmap: NotificationsSection
-🚨 1. Penanganan Sesi & Autentikasi Token (Critical Bug Fixes)
+🚀 TODO: Implement Auto-Generated & Editable Username
+⚙️ 1. Backend & Logika Pembuatan Otomatis (Auto-Generate)
 
-    [x] 1.1 Validasi Keamanan Token pada Fungsi Aksi Massal (markAllRead)
+    [ ] 1.1 Buat Fungsi Helper Pembuat Username Otomatis
 
-        Goal: Pastikan variabel auth.currentUser tidak bernilai null sebelum memanggil .getIdToken() di dalam fungsi markAllRead untuk menghindari TypeError saat sesi kedaluwarsa.
+        Goal: Buat fungsi utilitas di backend (atau saat inisialisasi akun di Firestore/Supabase) untuk menghasilkan username unik secara otomatis.
 
-        Solusi: Tambahkan pengecekan if (!auth.currentUser) return; di awal fungsi aksi.
+        Cara Kerja: Ambil awalan email atau nama lengkap pengguna (misal: bos xar -> bosxar atau user_9f8c), lalu kombinasikan dengan string acak pendek atau angka agar unik (misal: bosxar_7821).
 
-    [x] 1.2 Optimasi Request API Mark All Read
+    [ ] 1.2 Validasi Keunikan Username di Database
 
-        Goal: Ubah proses looping pemanggilan fetch secara paralel menggunakan Promise.all dengan membuat satu endpoint API backend terpusat (misal: PUT /api/notifications/mark-all).
+        Goal: Pastikan saat auto-generate atau saat user mengedit username, sistem mengecek ke database apakah username tersebut sudah digunakan oleh orang lain.
 
-        Benefit: Mengurangi beban jaringan (network overhead) dan mempercepat respons UI secara signifikan.
+🎨 2. Frontend — Halaman Profil Pengguna (UserProfil.jsx)
 
-⚙️ 2. Optimalisasi Performa & State Management (Clean Code)
+    [ ] 2.1 Tambahkan Field Username di Form Edit Profil
 
-    [x] 2.1 Bungkus loadNotifications dengan useCallback
+        Goal: Tampilkan input username di halaman pengaturan profil pengguna.
 
-        Goal: Hindari peringatan lint warnings dari Next.js dengan membungkus fungsi loadNotifications menggunakan useCallback agar stabil saat dipanggil di dalam useEffect.
+        Aturan Input: Berikan catatan kecil di bawah input, contoh: "Username unik Anda untuk identitas akun. Dapat diubah kapan saja."
 
-    [x] 2.2 Pembersihan Event Listener / Auth State Unsubscribe
+    [ ] 2.2 Validasi Format Username (Karakter & Spasi)
 
-        Goal: Pastikan pemanggilan onAuthStateChanged dikelola dengan baik dan dibersihkan melalui fungsi pengembali (cleanup function) dari useEffect.
+        Goal: Batasi input agar hanya menerima huruf kecil, angka, underscore (_), atau titik (.), serta tidak boleh menggunakan spasi (standar username profesional).
 
-🎨 3. Peningkatan UI/UX & Pengalaman Pengguna (User Experience)
+    [ ] 2.3 Tombol Simpan & Indikator Ketersediaan
 
-    [x] 3.1 Tambahkan Indikator Visual Loading Saat Aksi
-
-        Goal: Nonaktifkan tombol atau berikan indikator kecil saat proses markAllRead atau deleteNotification sedang berjalan agar pengguna tidak mengeklik tombol berkali-kali.
-
-    [x] 3.2 Dialog Konfirmasi Hapus Notifikasi
-
-        Goal: Tambahkan pencegahan penghapusan tidak sengaja (accidental delete) dengan menyematkan konfirmasi ringan sebelum perintah DELETE dikirim ke server.
+        Goal: Saat user mengetik username baru dan menekan tombol Simpan, jalankan validasi real-time ke API untuk memeriksa apakah username tersebut sudah diambil pengguna lain. Berikan pesan toast sukses atau error yang jelas.

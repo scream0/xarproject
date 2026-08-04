@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import toast from "react-hot-toast";
 import { auth } from "@/lib/firebaseClient";
@@ -41,17 +41,16 @@ function resolveHistoryEvent(event, index) {
   };
 }
 
-export default function OrderDetailPage() {
+export default function OrderDetailPage({ orderId }) {
   const router = useRouter();
-  const params = useParams();
   const pathname = usePathname();
-  const orderId = params?.id;
   const [order, setOrder] = useState(null);
   const [items, setItems] = useState([]);
   const [shipping, setShipping] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -66,10 +65,16 @@ export default function OrderDetailPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!user || !orderId) return;
+    if (!orderId) {
+      setError("ID Pesanan tidak ditemukan di URL.");
+      setLoading(false);
+      return;
+    }
+    if (!user) return;
 
     let isActive = true;
     setLoading(true);
+    setError(null);
 
     const loadOrder = async () => {
       try {
@@ -89,12 +94,17 @@ export default function OrderDetailPage() {
         const detailItems = Array.isArray(result.items) && result.items.length > 0 ? result.items : [];
         const detailHistory = Array.isArray(result.statusHistory) ? result.statusHistory : [];
 
+        if (Object.keys(detailOrder).length === 0) {
+          throw new Error("Detail pesanan yang Anda cari tidak tersedia atau sudah dihapus.");
+        }
+
         setOrder(detailOrder);
         setItems(detailItems);
         setShipping(detailShipping);
         setHistory(detailHistory);
       } catch (error) {
         console.error("Failed to load order detail page", error);
+        setError(error.message || "Gagal memuat detail pesanan.");
         toast.error(error.message || "Gagal memuat detail pesanan.");
       } finally {
         if (isActive) {
@@ -176,13 +186,15 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
     );
   }
 
-  if (!order) {
+  if (error || !order) {
     return (
       <div className={styles.pageShell}>
         <div className={`card ${styles.emptyCard}`}>
-          <h3>Pesanan tidak ditemukan</h3>
-          <p>Detail pesanan yang Anda cari tidak tersedia atau sudah dihapus.</p>
-          <button onClick={() => router.push("/dashboard")} className={styles.primaryBtn}>Kembali ke Dashboard</button>
+          <h3>{error ? "Terjadi Kesalahan" : "Pesanan tidak ditemukan"}</h3>
+          <p>{error || "Detail pesanan yang Anda cari tidak tersedia atau sudah dihapus."}</p>
+          <button onClick={() => router.push(pathname?.startsWith("/account/orders") ? "/account/orders" : "/dashboard")} className={styles.primaryBtn}>
+            Kembali ke Daftar Pesanan
+          </button>
         </div>
       </div>
     );
