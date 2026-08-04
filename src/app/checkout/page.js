@@ -94,19 +94,31 @@ export default function CheckoutPage() {
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyOverflowY = document.body.style.overflowY;
+    const previousBodyTouchAction = document.body.style.touchAction;
     const previousHtmlOverflow = document.documentElement.style.overflow;
     const previousHtmlOverflowY = document.documentElement.style.overflowY;
+    const previousHtmlTouchAction = document.documentElement.style.touchAction;
+    const previousBodyOverscrollBehaviorY = document.body.style.overscrollBehaviorY;
+    const previousHtmlOverscrollBehaviorY = document.documentElement.style.overscrollBehaviorY;
 
     document.body.style.overflow = "auto";
     document.body.style.overflowY = "auto";
+    document.body.style.touchAction = "pan-y";
+    document.body.style.overscrollBehaviorY = "auto";
     document.documentElement.style.overflow = "auto";
     document.documentElement.style.overflowY = "auto";
+    document.documentElement.style.touchAction = "pan-y";
+    document.documentElement.style.overscrollBehaviorY = "auto";
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
       document.body.style.overflowY = previousBodyOverflowY;
+      document.body.style.touchAction = previousBodyTouchAction;
+      document.body.style.overscrollBehaviorY = previousBodyOverscrollBehaviorY;
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.documentElement.style.overflowY = previousHtmlOverflowY;
+      document.documentElement.style.touchAction = previousHtmlTouchAction;
+      document.documentElement.style.overscrollBehaviorY = previousHtmlOverscrollBehaviorY;
     };
   }, []);
 

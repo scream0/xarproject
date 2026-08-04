@@ -145,6 +145,11 @@ h4,
   }
 }
 @media (max-width: 768px) {
+  html,
+  body {
+    overscroll-behavior-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 @media (max-width: 478px) {
   html {
