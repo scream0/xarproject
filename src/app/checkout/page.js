@@ -504,52 +504,6 @@ export default function CheckoutPage() {
     [courierOptions, selectedCourierKey],
   );
 
-  const courierRecommendation = useMemo(() => {
-    if (!courierOptions.length) return null;
-
-    const cheapestOption = [...courierOptions].reduce((best, current) => {
-      if (current.cost < best.cost) return current;
-      if (current.cost === best.cost) {
-        const currentEta = Number(String(current.etd || "999").split("-")[0]) || 999;
-        const bestEta = Number(String(best.etd || "999").split("-")[0]) || 999;
-        if (currentEta < bestEta) return current;
-      }
-      return best;
-    });
-
-    const fastestOption = [...courierOptions].reduce((best, current) => {
-      const currentEta = Number(String(current.etd || "999").split("-")[0]) || 999;
-      const bestEta = Number(String(best.etd || "999").split("-")[0]) || 999;
-      if (currentEta < bestEta) return current;
-      if (currentEta === bestEta && current.cost < best.cost) return current;
-      return best;
-    });
-
-    const isSameChoice = cheapestOption.key === fastestOption.key;
-
-    return {
-      cheapest: cheapestOption,
-      fastest: fastestOption,
-      title: isSameChoice ? "Rekomendasi kami" : "Paling hemat",
-      detail: isSameChoice
-        ? `Kami sarankan ${cheapestOption.courierName.toUpperCase()} ${cheapestOption.service} karena nilai terbaik.`
-        : `Kami sarankan ${cheapestOption.courierName.toUpperCase()} ${cheapestOption.service} sebagai opsi paling hemat.`,
-    };
-  }, [courierOptions]);
-
-  const deliveryPromise = useMemo(() => {
-    if (!selectedCourierInfo) return null;
-
-    const etdValue = selectedCourierInfo.etd && selectedCourierInfo.etd !== "-"
-      ? `${selectedCourierInfo.etd} hari kerja`
-      : "1-3 hari kerja";
-
-    return {
-      title: selectedAddressRegion?.city ? `Estimasi tiba di ${selectedAddressRegion.city}` : "Estimasi tiba",
-      detail: `${etdValue} via ${selectedCourierInfo.courierName.toUpperCase()}`,
-    };
-  }, [selectedAddressRegion, selectedCourierInfo]);
-
   // ── Redirect if cart empty ──
   if (!pageLoading && (!cart.items || cart.items.length === 0)) {
     return (
@@ -597,54 +551,6 @@ export default function CheckoutPage() {
           </div>
         </div>
       </header>
-
-      <div className={styles.checkoutHighlights}>
-        <span className={styles.highlightChip}>🔒 Pembayaran aman</span>
-        <span className={styles.highlightChip}>📦 Pengiriman terpantau</span>
-        <span className={styles.highlightChip}>⚡ Proses cepat</span>
-      </div>
-
-      <div className={styles.checkoutTrustBar}>
-        <div className={styles.trustItem}>
-          <span className={styles.trustIcon}>🛡️</span>
-          <div>
-            <strong>Transaksi aman</strong>
-            <p>Data pelanggan dan pembayaran dilindungi dengan standar toko online modern.</p>
-          </div>
-        </div>
-        <div className={styles.trustItem}>
-          <span className={styles.trustIcon}>🚚</span>
-          <div>
-            <strong>Pelacakan pengiriman</strong>
-            <p>Update status pengiriman tersedia selama paket dalam perjalanan.</p>
-          </div>
-        </div>
-        <div className={styles.trustItem}>
-          <span className={styles.trustIcon}>💬</span>
-          <div>
-            <strong>Dukungan cepat</strong>
-            <p>Tim support siap membantu bila ada kendala sebelum dan sesudah pembelian.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.checkoutHero}>
-        <div>
-          <span className={styles.heroEyebrow}>Checkout Premium</span>
-          <h2>Belanja terasa lebih rapi, cepat, dan terpercaya</h2>
-          <p>Setiap langkah dirancang agar pengiriman, pembayaran, dan ringkasan pesanan terlihat lebih profesional seperti marketplace besar.</p>
-        </div>
-        <div className={styles.heroMetrics}>
-          <div>
-            <strong>3 langkah</strong>
-            <span>Alamat → Kurir → Bayar</span>
-          </div>
-          <div>
-            <strong>24/7</strong>
-            <span>Support siap bantu</span>
-          </div>
-        </div>
-      </div>
 
       {/* ─── MAIN LAYOUT ─── */}
       <div className={styles.checkoutLayout}>
@@ -760,36 +666,20 @@ export default function CheckoutPage() {
                 ) : courierOptions.length === 0 ? (
                   <div className={styles.courierEmpty}>
                     <p>Belum ada opsi pengiriman yang bisa kami sarankan untuk alamat ini.</p>
-                    <p style={{ fontSize: "0.75rem", marginTop: "0.3rem", lineHeight: 1.6 }}>
-                      Coba cek kembali kota atau kode pos, atau lanjutkan setelah wilayah pengiriman terdeteksi.
-                    </p>
                     <p style={{ fontSize: "0.75rem", marginTop: "0.3rem" }}>
                       Berat paket: {(totalWeight / 1000).toFixed(1)} kg
                     </p>
                   </div>
                 ) : (
                   <>
-                    {courierRecommendation && (
-                      <div className={styles.courierRecommendationBanner}>
-                        <div className={styles.courierRecommendationLabel}>Rekomendasi</div>
-                        <div className={styles.courierRecommendationText}>
-                          <strong>{courierRecommendation.cheapest.courierName.toUpperCase()} {courierRecommendation.cheapest.service}</strong>
-                          <div>{courierRecommendation.detail}</div>
-                        </div>
-                      </div>
-                    )}
                     <div className={styles.courierGrid}>
                       {courierOptions.map((option) => {
-                        const isCheapest = option.key === courierRecommendation?.cheapest?.key;
-                        const isFastest = option.key === courierRecommendation?.fastest?.key && !isCheapest;
-                        const isRecommended = isCheapest || isFastest;
-
                         return (
                         <div
                           key={option.key}
                           className={`${styles.courierCard} ${
                             selectedCourierKey === option.key ? styles.courierCardSelected : ""
-                          } ${isCheapest ? styles.courierCardHighlight : ""} ${isFastest ? styles.courierCardFastest : ""}`}
+                          }`}
                           onClick={() => handleSelectCourier(option.key, option.cost)}
                         >
                         <input
@@ -804,12 +694,6 @@ export default function CheckoutPage() {
                               {option.courierName.toUpperCase()} — {option.service}
                             </p>
                             <div className={styles.courierBadgeRow}>
-                              {isCheapest && (
-                                <span className={styles.courierBadgePrimary}>Paling Hemat</span>
-                              )}
-                              {isFastest && (
-                                <span className={styles.courierBadgeSecondary}>Paling Cepat</span>
-                              )}
                               {option.estimated && (
                                 <span className={styles.courierBadge}>Estimasi</span>
                               )}
@@ -876,9 +760,7 @@ export default function CheckoutPage() {
           <div className={styles.summaryHeader}>
             <div>
               <h3 className={styles.summaryTitle}>Ringkasan Belanja</h3>
-              <p className={styles.summarySubtitle}>Pesanan Anda siap diproses setelah pembayaran dikonfirmasi.</p>
             </div>
-            <div className={styles.summaryShield}>🔒</div>
           </div>
 
           <div className={styles.summaryItems}>
@@ -932,36 +814,9 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          {deliveryPromise && (
-            <div className={styles.summaryPromise}>
-              <p className={styles.summaryPromiseTitle}>{deliveryPromise.title}</p>
-              <p className={styles.summaryPromiseDetail}>{deliveryPromise.detail}</p>
-            </div>
-          )}
-
           <div className={`${styles.summaryLine} ${styles.summaryLineTotal}`}>
             <span>Total Pembayaran</span>
             <span>{rupiah(grandTotal)}</span>
-          </div>
-
-          <div className={styles.summaryTrustBox}>
-            <div className={styles.summaryTrustIcon}>✓</div>
-            <div>
-              <p className={styles.summaryTrustTitle}>Aman & terjamin</p>
-              <p className={styles.summaryTrustDetail}>
-                Pembayaran terenkripsi, pengiriman terpantau, dan dukungan pelanggan siap membantu.
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.summarySupportBox}>
-            <div className={styles.summarySupportIcon}>✦</div>
-            <div>
-              <p className={styles.summarySupportTitle}>Standar belanja profesional</p>
-              <p className={styles.summarySupportDetail}>
-                Semua langkah checkout dirancang agar ringkas, jelas, dan memberi rasa percaya diri saat bertransaksi.
-              </p>
-            </div>
           </div>
 
           <button
@@ -977,9 +832,7 @@ export default function CheckoutPage() {
                 ? "Pilih alamat terlebih dahulu"
                 : !selectedCourierKey
                   ? "Pilih kurir terlebih dahulu"
-                  : selectedCourierInfo
-                    ? `Pembayaran via Midtrans • ${selectedCourierInfo.courierName.toUpperCase()} ${selectedCourierInfo.service}`
-                    : "Pembayaran via Midtrans (QRIS / VA / Convenience Store)"}
+                  : "Pembayaran via Midtrans"}
             </span>
           </button>
         </div>
