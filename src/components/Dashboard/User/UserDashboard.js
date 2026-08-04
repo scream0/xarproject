@@ -1,16 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../../lib/firebaseClient";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import styles from "./UserDashboard.module.css";
-import { logoutUser } from "@/utils/authHelpers"; // <-- 1. Import helper logout server-side
+import { logoutUser } from "@/utils/authHelpers";
+import { useUserDashboardData } from "@/hooks/useUserDashboardData";
+import toast from "react-hot-toast";
 
-// Import Konfigurasi JSON
 import userConfig from "@/data/ui/userDashboardConfig.json";
 
-// Import Komponen Section
 import OverviewSection from "@/components/Dashboard/User/Overview/OverviewUser";
 import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
 import ReturnsCenter from "@/components/Dashboard/User/Returns/ReturnsCenter";
@@ -22,119 +19,201 @@ import WishlistSection from "@/components/Dashboard/User/Wishlist/WishlistSectio
 import { CartSidebar } from "@/components/UI/Sidebar/CartSidebar";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import { UserDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-const db = getFirestore();
+const DEFAULT_TAB = "shop";
+const VALID_TABS = userConfig.nav.map((item) => item.id);
+
+function getGreetingName(userName) {
+  return userName || userConfig.defaultCustomer;
+}
 
 export default function UserDashboard() {
-  const [user, setUser] = useState(null);
-  const [userName, setUserName] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  // Default activeTab "shop" agar langsung terbuka ke katalog e-commerce
-  const [activeTab, setActiveTab] = useState("shop");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Ambil state cart dan fungsi global dari StoreContext
-  const { cartQuantity, isCartOpen, setIsCartOpen } = useStore();
-  const [isMounted, setIsMounted] = useState(false);
-  const [animate, setAnimate] = useState(false);
+  const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { user, userName, loading, error, retry } = useUserDashboardData();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [isTopBarElevated, setIsTopBarElevated] = useState(false);
+
+  const { cartQuantity, isCartOpen, setIsCartOpen } = useStore();
+  const mainContentRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const mobileMenuButtonRef = useRef(null);
+
+  const currentTabParam = searchParams.get("tab");
+  const activeTab = VALID_TABS.includes(currentTabParam)
+    ? currentTabParam
+    : DEFAULT_TAB;
 
   useEffect(() => {
-    setIsMounted(true);
+    if (VALID_TABS.includes(currentTabParam)) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("tab", DEFAULT_TAB);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+  }, [currentTabParam, pathname, router, searchParams]);
+
+  useEffect(() => {
+    const syncWishlistCount = (nextItems) => {
+      if (Array.isArray(nextItems)) {
+        setWishlistCount(nextItems.length);
+        return;
+      }
+
+      try {
+        const savedWishlist = localStorage.getItem("shop_wishlist");
+        const parsedWishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
+        setWishlistCount(Array.isArray(parsedWishlist) ? parsedWishlist.length : 0);
+      } catch {
+        setWishlistCount(0);
+      }
+    };
+
+    syncWishlistCount();
+
+    const handleWishlistUpdated = (event) => {
+      syncWishlistCount(event.detail?.items);
+    };
+
+    window.addEventListener("storage", syncWishlistCount);
+    window.addEventListener("wishlist-updated", handleWishlistUpdated);
+
+    return () => {
+      window.removeEventListener("storage", syncWishlistCount);
+      window.removeEventListener("wishlist-updated", handleWishlistUpdated);
+    };
   }, []);
 
   useEffect(() => {
-    if (cartQuantity > 0) {
-      setAnimate(true);
-      const timer = setTimeout(() => setAnimate(false), 400);
-      return () => clearTimeout(timer);
+    if (!user) {
+      return;
     }
-  }, [cartQuantity]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        window.location.replace("/login");
-      } else {
-        setUser(currentUser);
+    let isDisposed = false;
 
-        try {
-          const docRef = doc(db, "users", currentUser.uid);
-          const docSnap = await getDoc(docRef);
+    const loadNotificationCount = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/notifications", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await res.json();
 
-          if (docSnap.exists()) {
-            const data = docSnap.data();
+        if (!res.ok) {
+          throw new Error(result.error || "Gagal memuat notifikasi.");
+        }
 
-            // Ambil Nama Asli secara dinamis dari database Firestore (full_name atau username)
-            const resolvedName =
-              data.full_name?.trim() ||
-              data.username?.trim() ||
-              currentUser.displayName?.trim() ||
-              currentUser.phoneNumber ||
-              currentUser.email?.split("@")[0] ||
-              userConfig.defaultCustomer;
-
-            setUserName(resolvedName);
-          } else {
-            const defaultName =
-              currentUser.displayName?.trim() ||
-              currentUser.phoneNumber ||
-              currentUser.email?.split("@")[0] ||
-              userConfig.defaultCustomer;
-
-            try {
-              await setDoc(
-                docRef,
-                {
-                  uid: currentUser.uid,
-                  email: currentUser.email || "",
-                  phone_number: currentUser.phoneNumber || "",
-                  full_name: defaultName,
-                  created_at: new Date().toISOString(),
-                },
-                { merge: true },
-              );
-            } catch (createErr) {
-              console.error(userConfig.toasts.initError, createErr);
-            }
-
-            setUserName(defaultName);
-          }
-        } catch (err) {
-          console.error(userConfig.toasts.fetchError, err);
-
-          const fallbackName =
-            currentUser.displayName?.trim() ||
-            currentUser.phoneNumber ||
-            currentUser.email?.split("@")[0] ||
-            userConfig.defaultUser;
-
-          setUserName(fallbackName);
-        } finally {
-          setLoading(false);
+        if (!isDisposed) {
+          const unreadCount = (result.notifications || []).filter(
+            (notification) => !notification.isRead,
+          ).length;
+          setNotificationCount(unreadCount);
+        }
+      } catch {
+        if (!isDisposed) {
+          setNotificationCount(0);
         }
       }
-    });
-    return () => unsubscribe();
+    };
+
+    loadNotificationCount();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const handlePointerDown = (event) => {
+      if (mobileMenuRef.current?.contains(event.target)) {
+        return;
+      }
+
+      if (mobileMenuButtonRef.current?.contains(event.target)) {
+        return;
+      }
+
+      setIsMobileMenuOpen(false);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    const mainContentNode = mainContentRef.current;
+
+    if (!mainContentNode) {
+      return undefined;
+    }
+
+    const handleScroll = () => {
+      setIsTopBarElevated(mainContentNode.scrollTop > 10);
+    };
+
+    handleScroll();
+    mainContentNode.addEventListener("scroll", handleScroll);
+
+    return () => {
+      mainContentNode.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
-  const handleLogout = async () => {
-    // 2. Gunakan logoutUser helper agar cookie server & firebase client terhapus bersih
-    await logoutUser();
+  const handleTabChange = (tabId) => {
+    if (!VALID_TABS.includes(tabId)) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("tab", tabId);
+    router.push(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleLogoutRequest = () => {
+    setIsMobileMenuOpen(false);
+    setIsLogoutDialogOpen(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logoutUser();
+    } catch (logoutError) {
+      console.error(userConfig.toasts.logoutError, logoutError);
+      toast.error(userConfig.toasts.logoutError);
+      setIsLoggingOut(false);
+      setIsLogoutDialogOpen(false);
+    }
   };
 
   const activeTabLabel = userConfig.nav.find(
     (item) => item.id === activeTab,
   )?.label;
-
-  useEffect(() => {
-    if (pathname?.startsWith("/account/orders")) {
-      setActiveTab("orders");
-    }
-  }, [pathname]);
 
   if (loading) {
     return <UserDashboardSkeleton />;
@@ -142,33 +221,46 @@ export default function UserDashboard() {
 
   return (
     <div className={styles.dashboardContainer}>
-      {/* Mobile Top Navigation Bar */}
-      <div className={styles.mobileTopBar}>
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          className={styles.mobileBackdrop}
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-label={userConfig.aria.menuExpanded}
+        />
+      )}
+
+      <div
+        className={`${styles.mobileTopBar} ${isTopBarElevated ? styles.mobileTopBarElevated : ""}`}
+      >
         <div className={styles.brandLogo}>
           {userConfig.brand.name} <span>{userConfig.brand.suffix}</span>
         </div>
         <div className={styles.mobileTopActions}>
-          {/* Tombol Keranjang SVG di Mobile Topbar */}
           <button
             className={styles.cartIconBtnMobile}
             onClick={() => setIsCartOpen(true)}
             aria-label={userConfig.aria.cart}
           >
             <AppIcon name="shopping-cart" className={styles.svgIcon} />
-            {isMounted && cartQuantity > 0 && (
+            {cartQuantity > 0 && (
               <span
-                className={`${styles.cartQuantityBadge} ${animate ? styles.pop : ""}`}
+                key={`cart-mobile-${cartQuantity}`}
+                className={`${styles.cartQuantityBadge} ${styles.pop}`}
               >
                 {cartQuantity}
               </span>
             )}
           </button>
 
-          {/* Tombol Hamburger SVG */}
           <button
+            ref={mobileMenuButtonRef}
             className={styles.hamburgerBtn}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label={userConfig.aria.menu}
+            aria-label={isMobileMenuOpen ? userConfig.aria.menuExpanded : userConfig.aria.menu}
+            aria-expanded={isMobileMenuOpen}
+            aria-haspopup="dialog"
+            aria-controls="user-dashboard-navigation"
           >
             <AppIcon
               name={isMobileMenuOpen ? "x" : "menu"}
@@ -178,11 +270,13 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      {/* Sidebar Navigasi (Desktop & Mobile Drawer) */}
       <aside
+        id="user-dashboard-navigation"
+        ref={mobileMenuRef}
         className={`${styles.sidebar} ${
           isMobileMenuOpen ? styles.sidebarOpen : ""
         }`}
+        aria-label={userConfig.aria.menuPanel}
       >
         <div className={styles.brandSection}>
           <div className={styles.brandLogo}>
@@ -195,65 +289,57 @@ export default function UserDashboard() {
           <ul className={styles.navigationList}>
             {userConfig.nav.map((item) => (
               <li key={item.id}>
-                {item.id === "orders" ? (
-                  <Link
-                    href="/account/orders"
-                    className={`${styles.navItem} ${
-                      activeTab === item.id ? styles.navItemActive : ""
-                    }`}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    <span>{item.label}</span>
-                  </Link>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`${styles.navItem} ${
-                      activeTab === item.id ? styles.navItemActive : ""
-                    }`}
-                  >
-                    <span>{item.label}</span>
-                  </button>
-                )}
+                <button
+                  onClick={() => handleTabChange(item.id)}
+                  className={`${styles.navItem} ${
+                    activeTab === item.id ? styles.navItemActive : ""
+                  }`}
+                  aria-current={activeTab === item.id ? "page" : undefined}
+                >
+                  <span className={styles.navLabel}>{item.label}</span>
+                  {(item.id === "wishlist" && wishlistCount > 0) ||
+                  (item.id === "notifications" && notificationCount > 0) ? (
+                    <span className={styles.navBadge}>
+                      {item.id === "wishlist" ? wishlistCount : notificationCount}
+                    </span>
+                  ) : null}
+                </button>
               </li>
             ))}
           </ul>
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <button onClick={handleLogout} className={styles.logoutBtn}>
+          <button onClick={handleLogoutRequest} className={styles.logoutBtn}>
             <span>{userConfig.logoutText}</span>
           </button>
         </div>
       </aside>
 
-      {/* Konten Utama */}
-      <main className={styles.mainContent}>
+      <main ref={mainContentRef} className={styles.mainContent}>
         <header className={styles.header}>
           <div className={styles.extraNavLeft}>
             <span className={styles.navIndicator}>{activeTabLabel}</span>
           </div>
 
           <div className={styles.extraNavRight}>
-            <h1 className={styles.welcomeTitle}>
-              WELCOME, {userName || userConfig.defaultUser}
-            </h1>
-            {/* Tombol Keranjang untuk Desktop/Tab (Top bar mobile disembunyikan >= 1024px) */}
+            <div className={styles.greetingBlock}>
+              <p className={styles.greetingEyebrow}>{userConfig.greeting.eyebrow}</p>
+              <h1 className={styles.welcomeTitle}>
+                {userConfig.greeting.prefix}, {getGreetingName(userName)} <span className={styles.greetingWave}>👋</span>
+              </h1>
+              <p className={styles.greetingSubtitle}>{userConfig.greeting.suffix}</p>
+            </div>
             <button
               className={styles.cartIconBtnDesktop}
               onClick={() => setIsCartOpen(true)}
               aria-label={userConfig.aria.cart}
             >
               <AppIcon name="shopping-cart" className={styles.svgIcon} />
-              {isMounted && cartQuantity > 0 && (
+              {cartQuantity > 0 && (
                 <span
-                  className={`${styles.cartQuantityBadge} ${animate ? styles.pop : ""}`}
+                  key={`cart-desktop-${cartQuantity}`}
+                  className={`${styles.cartQuantityBadge} ${styles.pop}`}
                 >
                   {cartQuantity}
                 </span>
@@ -262,22 +348,68 @@ export default function UserDashboard() {
           </div>
         </header>
 
-        <div className={styles.viewWrapper}>
+        {error && (
+          <div className={styles.errorBanner} role="alert">
+            <div>
+              <strong>{userConfig.messages.loadUserError}</strong>
+            </div>
+            <button className={styles.errorRetryBtn} onClick={retry}>
+              {userConfig.messages.retry}
+            </button>
+          </div>
+        )}
+
+        <div key={activeTab} className={`${styles.viewWrapper} ${styles.viewWrapperAnimated}`}>
           {activeTab === "shop" && <ShopPage />}
           {activeTab === "overview" && (
-            <OverviewSection setActiveTab={setActiveTab} />
+            <OverviewSection setActiveTab={handleTabChange} />
           )}
           {activeTab === "orders" && <OrdersSection />}
           {activeTab === "returns" && <ReturnsCenter />}
-          {activeTab === "notifications" && <NotificationsSection />}
+          {activeTab === "notifications" && (
+            <NotificationsSection onUnreadCountChange={setNotificationCount} />
+          )}
           {activeTab === "wishlist" && <WishlistSection />}
           {activeTab === "support" && <SupportCenter />}
           {activeTab === "profile" && <ProfileSection />}
         </div>
       </main>
 
-      {/* Cart Sidebar Global */}
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+      {isLogoutDialogOpen && (
+        <div className={styles.dialogOverlay} role="presentation">
+          <div
+            className={styles.logoutDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-label={userConfig.aria.logoutDialog}
+          >
+            <h2 className={styles.dialogTitle}>{userConfig.logoutDialog.title}</h2>
+            <p className={styles.dialogDescription}>
+              {userConfig.logoutDialog.description}
+            </p>
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className={styles.dialogSecondaryBtn}
+                onClick={() => setIsLogoutDialogOpen(false)}
+                disabled={isLoggingOut}
+              >
+                {userConfig.logoutDialog.cancel}
+              </button>
+              <button
+                type="button"
+                className={styles.dialogPrimaryBtn}
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? "Memproses..." : userConfig.logoutDialog.confirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

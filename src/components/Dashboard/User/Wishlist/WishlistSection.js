@@ -1,26 +1,51 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import styles from "./WishlistSection.module.css";
 import wishlistConfig from "@/data/ui/wishlistConfig.json";
-import { WishlistSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+
+function readWishlist() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const saved = localStorage.getItem("shop_wishlist");
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function WishlistSection() {
+  const router = useRouter();
   const { products, addToCart } = useStore();
-  const [wishlist, setWishlist] = useState([]);
+  const [wishlist, setWishlist] = useState(readWishlist);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  // Load wishlist from localStorage
+  const syncWishlist = () => {
+    setWishlist(readWishlist());
+  };
+
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("shop_wishlist");
-      setWishlist(saved ? JSON.parse(saved) : []);
-    } catch {
-      setWishlist([]);
-    }
-    setLoading(false);
+    const handleWishlistUpdated = (event) => {
+      const nextItems = event.detail?.items;
+      if (Array.isArray(nextItems)) {
+        setWishlist(nextItems);
+        return;
+      }
+      syncWishlist();
+    };
+
+    window.addEventListener("storage", syncWishlist);
+    window.addEventListener("wishlist-updated", handleWishlistUpdated);
+
+    return () => {
+      window.removeEventListener("storage", syncWishlist);
+      window.removeEventListener("wishlist-updated", handleWishlistUpdated);
+    };
   }, []);
 
   // Persist wishlist on change
@@ -85,7 +110,16 @@ export default function WishlistSection() {
 
   const handleRemove = (productId, e) => {
     e.stopPropagation();
-    setWishlist((prev) => prev.filter((id) => String(id) !== String(productId)));
+    const nextWishlist = wishlist.filter(
+      (id) => String(id) !== String(productId),
+    );
+
+    setWishlist(nextWishlist);
+    window.dispatchEvent(
+      new CustomEvent("wishlist-updated", {
+        detail: { count: nextWishlist.length, items: nextWishlist },
+      }),
+    );
     toast.success(wishlistConfig.toasts.removeSuccess);
   };
 
@@ -102,7 +136,7 @@ export default function WishlistSection() {
   };
 
   const handleExplore = () => {
-    window.location.href = "/dashboard?tab=shop";
+    router.push("/dashboard?tab=shop");
   };
 
   const formatRupiah = (number) =>
@@ -139,9 +173,7 @@ export default function WishlistSection() {
       </div>
 
       {/* Product Grid */}
-      {loading ? (
-        <WishlistSkeleton count={4} />
-      ) : filteredProducts.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <div className={`card ${styles.centerStateCard}`}>
           <div className={styles.emptyIcon}>❤️</div>
           <p className={styles.emptyTitle}>{wishlistConfig.emptyTitle}</p>

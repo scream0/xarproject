@@ -19,7 +19,6 @@ export default function Shop() {
   const { addToCart, products: contextProducts, activePromo } = useStore();
   const [products, setProducts] = useState([]);
   const [orderItemsMap, setOrderItemsMap] = useState({});
-  const [allOrders, setAllOrders] = useState([]);
   const [allReviews, setAllReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -61,6 +60,12 @@ export default function Shop() {
     try {
       localStorage.setItem("shop_wishlist", JSON.stringify(updated));
     } catch {}
+
+    window.dispatchEvent(
+      new CustomEvent("wishlist-updated", {
+        detail: { count: updated.length, items: updated },
+      }),
+    );
 
     toast.success(
       isExist
@@ -127,8 +132,6 @@ export default function Shop() {
           ? ordersResult
           : ordersResult.data || ordersResult.orders || [];
 
-        setAllOrders(transactions);
-
         const soldCounts = {};
         transactions.forEach((order) => {
           const status = (order.status || "").toLowerCase();
@@ -182,10 +185,13 @@ export default function Shop() {
   };
 
   useEffect(() => {
-    fetchShopData();
+    const syncTimer = window.setTimeout(() => {
+      fetchShopData();
+    }, 0);
     const handleStorageChange = () => fetchShopData();
     window.addEventListener("product-stock-updated", handleStorageChange);
     return () => {
+      window.clearTimeout(syncTimer);
       window.removeEventListener("product-stock-updated", handleStorageChange);
     };
   }, [contextProducts]);

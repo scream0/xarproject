@@ -30,7 +30,7 @@ const TYPE_ICON = {
   system: "bell",
 };
 
-export default function NotificationsSection() {
+export default function NotificationsSection({ onUnreadCountChange }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -145,6 +145,12 @@ export default function NotificationsSection() {
   }, [notifications, filter, searchQuery]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  useEffect(() => {
+    if (typeof onUnreadCountChange === "function") {
+      onUnreadCountChange(unreadCount);
+    }
+  }, [onUnreadCountChange, unreadCount]);
 
   return (
     <div className={styles.workspaceInner}>

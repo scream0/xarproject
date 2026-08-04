@@ -42,9 +42,27 @@
   "loading": "Memuat portal pengguna...",
   "defaultCustomer": "Valued Customer",
   "defaultUser": "USER",
+  "greeting": {
+    "eyebrow": "Member area aktif",
+    "prefix": "Halo",
+    "suffix": "Siap lanjut belanja atau cek update akun Anda?"
+  },
+  "messages": {
+    "loadUserError": "Profil Anda belum berhasil dimuat. Anda masih bisa lanjut menggunakan dashboard, lalu coba ulang saat koneksi stabil.",
+    "retry": "Coba Lagi"
+  },
+  "logoutDialog": {
+    "title": "Keluar dari akun?",
+    "description": "Sesi Anda di perangkat ini akan diakhiri. Pastikan semua perubahan penting sudah selesai.",
+    "confirm": "Ya, keluar",
+    "cancel": "Batal"
+  },
   "aria": {
     "cart": "Buka Keranjang",
-    "menu": "Menu Navigasi"
+    "menu": "Menu Navigasi",
+    "menuExpanded": "Tutup menu navigasi",
+    "menuPanel": "Drawer navigasi akun pengguna",
+    "logoutDialog": "Dialog konfirmasi logout"
   },
   "toasts": {
     "initError": "Gagal inisialisasi dokumen user baru:",

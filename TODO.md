@@ -1,90 +1,39 @@
-# TODO — Pengembangan Sistem Pesanan Profesional
+1. 🔗 Routing & Navigasi (URL Synchronization & Deep Linking)
 
-Status:
-- [x] Selesai
-- [ ] Belum / Parsial (lihat catatan)
+Saat ini, hanya tab orders yang tersinkronisasi dengan URL (pathname). Tab lainnya masih murni menggunakan state lokal, membuat pengguna tidak bisa melakukan bookmark atau membagikan tautan langsung ke halaman profil, wishlist, atau shop.
 
-## 1. Database & Schema Design
+    [ ] Sinkronkan Semua Tab ke URL / Query Parameters: Gunakan useSearchParams dan useRouter dari next/navigation agar setiap tab (?tab=shop, ?tab=profile, ?tab=wishlist, dll.) memiliki URL-nya sendiri. Ini mendukung tombol Back/Forward browser dan deep linking.
 
-- [x] **Tabel `orders` (Pesanan Utama)**
-- [ ] Kolom utama: `id`, `order_number` (unique), `user_id`, `status`, `total_amount`, `shipping_cost`, `tax_amount`, `discount_amount`, `notes`. *(Parsial: kolom sudah ada di payload, uniqueness `order_number` belum diverifikasi secara global di Firestore)*
-- [ ] Timestamps: `created_at`, `updated_at`, `cancelled_at`, `completed_at`. *(Parsial: tersedia, namun penggunaan field format tanggal belum sepenuhnya konsisten di semua endpoint)*
-- [x] **Tabel `order_items` (Detail Item Pesanan)**
-- [x] Kolom: `id`, `order_id`, `product_id`, `variant_id`, `quantity`, `price` (snapshot saat beli), `subtotal`.
-- [x] **Tabel `order_status_history` (Log Status Pesanan)**
-- [x] Kolom: `id`, `order_id`, `status_from`, `status_to`, `changed_by`, `notes`, `created_at`.
-- [x] **Tabel `shipping_details` (Informasi Pengiriman)**
-- [x] Kolom: `id`, `order_id`, `courier_name`, `service_type`, `tracking_number`, `shipping_address`, `recipient_name`, `phone_number`.
-- [ ] **Setup Indexing & Foreign Keys**
-- [ ] Index pada `user_id`, `order_number`, dan `status` untuk performa pencarian. *(Belum terdokumentasi/terverifikasi untuk kombinasi query saat ini)*
+    [ ] Otomatis Tutup Drawer Mobile: Pastikan menu drawer di mobile otomatis tertutup setiap kali pengguna mengeklik salah satu menu navigasi atau tombol logout.
 
-## 2. Backend API Development
+2. 🎨 UI/UX & Sentuhan Visual Profesional (Micro-interactions)
 
-- [ ] **Manajemen Checkout & Pembuatan Pesanan**
-- [x] Endpoint `POST /api/orders` (Membuat pesanan baru dari keranjang).
-- [x] Validasi stok produk secara real-time sebelum pesanan dibuat. *(Selesai: POST `/api/orders` kini memakai lock inventory + reserve stok sebelum order disimpan)*
-- [ ] Kalkulasi otomatis ongkir, diskon voucher, dan pajak. *(Parsial: field didukung, namun kalkulasi otomatis terpusat belum terlihat di endpoint ini)*
-- [x] **Manajemen Pesanan Pelanggan (User)**
-- [x] Endpoint `GET /api/user/orders` (Daftar pesanan dengan filter status & pagination).
-- [x] Endpoint `GET /api/user/orders/{id}` (Detail pesanan lengkap).
-- [x] Endpoint `POST /api/user/orders/{id}/cancel` (Pembatalan pesanan oleh user dengan syarat tertentu).
-- [x] Endpoint `POST /api/user/orders/{id}/confirm` (Konfirmasi pesanan diterima).
-- [x] **Manajemen Pesanan Admin / Seller**
-- [x] Endpoint `GET /api/admin/orders` (Semua pesanan dengan advanced filtering & searching).
-- [x] Endpoint `PUT /api/admin/orders/{id}/status` (Update status pesanan: Pending -> Paid -> Processing -> Shipped -> Delivered).
-- [x] Endpoint `POST /api/admin/orders/{id}/shipping` (Input nomor resi dan kurir).
-- [x] **Payment Gateway Webhook**
-- [x] Endpoint `POST /api/webhook/payment` (Sinkronisasi otomatis status pembayaran lunas/gagal).
+    [ ] Perhalus Greeting Header: Ubah teks uppercase WELCOME, [NAME] menjadi sapaan yang lebih hangat dan ramah khas e-commerce modern, contoh: "Halo, John Doe 👋" lengkap dengan emoji atau ikon status akun.
 
-## 3. Frontend Customer Portal (User Experience)
+    [ ] Tambahkan Indikator Angka (Badge) di Sidebar: Tampilkan jumlah item di Wishlist atau Notifikasi secara real-time di samping label menu sidebar (mirip badge keranjang belanja) agar terkesan interaktif dan hidup.
 
-- [ ] **Halaman Checkout**
-- [ ] Form alamat pengiriman & pilihan kurir. *(Perlu verifikasi implementasi spesifik di halaman checkout terbaru)*
-- [ ] Ringkasan pesanan (*order summary*) dan rincian biaya. *(Perlu verifikasi implementasi spesifik di halaman checkout terbaru)*
-- [ ] Pilihan metode pembayaran yang terintegrasi. *(Parsial: script Midtrans dipakai di area order user, alur checkout end-to-end perlu validasi lagi)*
-- [x] **Halaman Daftar Pesanan (`/account/orders`)**
-- [x] Tab status pesanan (*Semua, Belum Bayar, Diproses, Dikirim, Selesai, Dibatalkan*).
-- [x] Card ringkasan pesanan dengan tombol aksi cepat (Bayar, Lacak, Konfirmasi).
-- [x] **Halaman Detail Pesanan (`/account/orders/{id}`)**
-- [x] Timeline visual status pengiriman pesanan.
-- [x] Rincian item produk yang dibeli beserta harga satuan.
-- [x] Informasi alamat pengiriman dan resi kurir (dengan tombol *copy* & link lacak).
-- [ ] Tombol cetak / unduh Invoice (PDF). *(Parsial: unduh invoice sudah ada, format saat ini teks `.txt`, belum PDF)*
+    [ ] Transisi Antar Tab yang Halus (Smooth Transition): Berikan efek animasi transisi fade-in atau slide-subtle pada viewWrapper saat pengguna berpindah tab agar perpindahan terasa mulus (seamless).
 
-## 4. Admin & Seller Dashboard
+    [ ] Perjelas State Aktif & Hover Effect: Pastikan navItemActive memiliki kontras warna yang sangat jelas dan indikator visual (seperti garis aksen di sisi kiri) agar pengguna tahu persis di halaman mana mereka berada.
 
-- [x] **Halaman Manajemen Pesanan (`/admin/orders`)** *(diimplementasikan sebagai tab Orders pada Admin Dashboard)*
-- [x] Tabel data pesanan interaktif (Sorting, Searching by Order ID/Customer Name).
-- [ ] Filter berdasarkan rentang tanggal dan status pesanan. *(Parsial: status filter ada, rentang tanggal belum ada)*
-- [ ] Badge warna indikator status pesanan yang jelas. *(Parsial: status ada dalam select, badge tabel konsisten belum terlihat)*
-- [x] **Modal / Halaman Aksi Admin**
-- [x] Fitur update status pesanan massal (*Bulk Action*).
-- [x] Form input nomor resi pengiriman instan.
-- [ ] Tombol cetak Label Pengiriman (*Shipping Label*) / Resi secara massal. *(Parsial: print preview slip ada, belum alur label/resi massal final)*
-- [ ] Opsi pembatalan pesanan dan pengembalian dana (*Refund*). *(Parsial: cancel status ada, workflow refund terpisah belum terlihat)*
+3. 📱 Aksesibilitas (A11y) & Pengalaman Mobile
 
-## 5. Integrasi Pihak Ketiga (Third-Party)
+    [ ] Dukungan Tombol ESC & Klik Luar (Outside Click): Tambahkan event listener untuk menutup mobile menu drawer saat tombol Escape ditekan atau saat pengguna mengeklik area di luar sidebar.
 
-- [ ] **Payment Gateway Integration**
-- [ ] Integrasi Midtrans / Stripe / Xendit untuk pembayaran otomatis. *(Parsial: Midtrans/webhook sudah ada; Stripe/Xendit belum)*
-- [ ] Handle redirect URL setelah pembayaran berhasil/gagal. *(Perlu verifikasi route return khusus gateway)*
-- [ ] **Logistik / Courier API**
-- [ ] Integrasi API RajaOngkir / Biteship untuk cek ongkir & tracking resi otomatis.
-- [ ] **Sistem Notifikasi**
-- [ ] Integrasi email otomatis untuk notifikasi (Invoice, Pesanan Dibayar, Pesanan Dikirim). *(Parsial: notifikasi internal Firestore sudah ada untuk event tertentu)*
-- [ ] Integrasi WhatsApp Notification Gateway.
+    [ ] Penyempurnaan Atribut ARIA: Pastikan elemen interaktif seperti tombol hamburger dan menu drawer memiliki atribut aksesibilitas yang benar (aria-expanded, aria-haspopup).
 
-## 6. Testing & Quality Assurance
+    [ ] Sticky/Fixed Mobile Top Bar: Pastikan mobileTopBar tetap menempel di atas layar saat discroll ke bawah, namun dengan efek bayangan tipis (box-shadow) saat halaman digeser agar tidak menabrak konten.
 
-- [ ] **Unit & Feature Testing (Backend)**
-- [x] Test skenario pembuatan pesanan & pengurangan stok produk. *(Cakupan saat ini: reserve stok saat checkout + restore saat cancel, dengan test otomatis `orderService.stockLifecycle.test.js`)*
-- [x] Test webhook payment gateway (sukses dan gagal). *(Cakupan saat ini: mapping status payment -> status order termasuk `settlement/capture/success`, gagal `failure/expire/deny`, normalisasi whitespace status (contoh: `" settlement "`), audit note memakai status ternormalisasi dengan batas panjang aman, metadata audit menyimpan raw+normalized status beserta sumber field (`transaction_status`/`payment_status`) dengan sanitasi+batas panjang saat disimpan ke payload order/history serta timestamp metadata terakhir, helper query admin untuk filter/sort berdasarkan waktu webhook terbaru (`webhookOnly` + `sortBy=webhook_latest`), fallback status kosong ke `pending`, fallback `payment_status` saat `transaction_status` tidak ada, prioritas `transaction_status` saat kedua field ada, validasi payload wajib, skenario gagal yang memicu cancel + restock stok ter-reserve, serta verifikasi response HTTP route webhook, melalui `paymentWebhookService.test.js` dan `route.test.js`)*
-- [x] Test validasi pembatalan pesanan. *(Cakupan saat ini: cancel idempoten dan stok tidak kembali dua kali)*
-- [x] **Integration & End-to-End (E2E) Testing** *(Parsial: backend integration + browser smoke; full UI checkout dengan akun nyata/payment sandbox end-to-end masih perlu skenario lanjutan)*
-- [x] Simulasikan *User Journey* dari tambah ke keranjang -> checkout -> bayar -> ubah status oleh admin -> selesai. *(Selesai di level backend integration test: create order -> webhook payment -> admin processing -> delivered, lihat `orderJourney.integration.test.js`)*
-- [x] Browser smoke test dasar (home render + proteksi auth checkout -> redirect login) dengan Playwright. *(Lihat `tests/e2e/smoke.spec.ts`, jalankan via `npm run e2e`)*
-- [x] Browser smoke test login + akses halaman orders user dengan akun test env. *(Playwright: `E2E_LOGIN_EMAIL` + `E2E_LOGIN_PASSWORD`, otomatis skip jika env belum diset, di `tests/e2e/smoke.spec.ts`; runner cepat: `npm run e2e:auth`)*
-- [ ] **Performance & Security Check**
-- [x] Pastikan pencegahan *Race Condition* pada stok produk saat flash sale/checkout bersamaan. *(Selesai: logic lock+reserve stok checkout diekstrak ke `checkoutReservationService.js` dan diuji dengan skenario kontensi owner paralel + guard stok tidak minus di `checkoutReservationService.test.js`)*
-- [x] Validasi keamanan otorisasi API agar user tidak bisa melihat pesanan user lain. *(Selesai: endpoint detail order user kini wajib `userId` dan mengembalikan `403 Forbidden` untuk order milik user lain; tercakup di `orderDetailRouteHandler.test.js`)*
+4. ⚙️ Clean Code & Manajemen State
 
+    [ ] Pindahkan Logika Firestore ke Custom Hook / Service: Pisahkan logika fetch/create user dari komponen UI utama. Buat custom hook (misal: useUserData) agar kode UserDashboard lebih bersih dan fokus pada layout.
+
+    [ ] Validasi Fallback Nama yang Lebih Bersih: Perbaiki logika pembersihan nama pengguna (userName) agar tidak menampilkan string mentah dari email (misal: john.doe@gmail.com cukup diambil depannya saja atau diformat menjadi "John Doe" dengan huruf kapital di awal).
+
+    [ ] Pembersihan Event Listener: Pastikan semua side-effect seperti timer animasi keranjang dan event listener dibersihkan dengan benar di fungsi return dari useEffect.
+
+5. 🛡️ Penanganan Error & Ketahanan Aplikasi (Resilience)
+
+    [ ] Tambahkan State Error / Fallback UI: Jika koneksi Firestore gagal saat mengambil data pengguna, jangan hanya menampilkannya di console.error. Tampilkan Banner Error kecil di layar dengan tombol "Coba Lagi" (Retry) agar pengguna tidak terjebak di layar loading atau halaman kosong.
+
+    [ ] Konfirmasi Logout: Tambahkan modal konfirmasi sederhana sebelum fungsi handleLogout dieksekusi untuk mencegah pengguna tidak sengaja keluar akun saat salah klik tombol.
