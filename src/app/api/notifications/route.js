@@ -141,7 +141,42 @@ export async function PUT(request) {
   try {
     const user = await identity(request);
     const body = await request.json().catch(() => ({}));
-    const { notificationId, isRead } = body;
+    const { notificationId, isRead, markAllAsRead } = body;
+
+    // >> LOGIC BARU: Tandai semua sebagai sudah dibaca (Mark All as Read)
+    if (markAllAsRead) {
+      const notificationsRef = db.collection("notifications");
+      let query;
+
+      // Admin menandai semua notifikasi sistem/admin yang belum dibaca
+      if (user.admin) {
+        query = notificationsRef
+          .where("audience", "in", ["all", "admin"])
+          .where("isRead", "==", false);
+      } else {
+        // User biasa menandai semua notifikasinya yang belum dibaca
+        query = notificationsRef
+          .where("userId", "==", user.uid)
+          .where("isRead", "==", false);
+      }
+
+      const snapshot = await query.get();
+      if (snapshot.empty) {
+        return NextResponse.json({ message: "No unread notifications to mark." });
+      }
+
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => {
+        batch.update(doc.ref, { isRead: true, readAt: new Date(), updatedAt: new Date() });
+      });
+
+      await batch.commit();
+
+      return NextResponse.json({
+        message: `${snapshot.size} notifications marked as read.`,
+      });
+    }
+    // << AKHIR LOGIC BARU
 
     if (!notificationId) {
       return NextResponse.json(

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
@@ -34,6 +34,7 @@ export default function NotificationCenter() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [createForm, setCreateForm] = useState({
     title: "",
     message: "",
@@ -41,7 +42,7 @@ export default function NotificationCenter() {
     audience: "admin",
   });
 
-  const loadNotifications = async (currentUser) => {
+  const loadNotifications = useCallback(async (currentUser) => {
     try {
       setLoading(true);
       const token = currentUser
@@ -59,7 +60,7 @@ export default function NotificationCenter() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -67,25 +68,47 @@ export default function NotificationCenter() {
       await loadNotifications(currentUser);
     });
     return () => unsubscribe();
-  }, []);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!isCreateOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setIsCreateOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCreateOpen]);
 
   const markAllRead = async () => {
     try {
-      const token = await auth.currentUser?.getIdToken();
-      await Promise.all(
-        notifications
-          .filter((n) => !n.isRead)
-          .map((n) =>
-            fetch("/api/notifications", {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ notificationId: n.id, isRead: true }),
-            }),
-          ),
-      );
+      if (!auth.currentUser) {
+        toast.error("Sesi Anda telah berakhir. Silakan muat ulang.");
+        return;
+      }
+      const token = await auth.currentUser.getIdToken();
+
+      // Menggunakan endpoint bulk update yang baru
+      const res = await fetch("/api/notifications", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ markAllAsRead: true }),
+      });
+
+      if (!res.ok) {
+        const result = await res.json();
+        throw new Error(result.error || "Gagal menandai semua notifikasi.");
+      }
+
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       toast.success(config.toasts.markAllReadSuccess);
     } catch (err) {
@@ -95,8 +118,15 @@ export default function NotificationCenter() {
   };
 
   const deleteNotification = async (notification) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus notifikasi ini?")) {
+      return;
+    }
     try {
-      const token = await auth.currentUser?.getIdToken();
+      if (!auth.currentUser) {
+        toast.error("Sesi Anda telah berakhir. Silakan muat ulang.");
+        return;
+      }
+      const token = await auth.currentUser.getIdToken();
       const res = await fetch(
         `/api/notifications?id=${notification.id}`,
         {
@@ -121,6 +151,7 @@ export default function NotificationCenter() {
       return;
     }
     try {
+      setSubmitting(true);
       const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/notifications", {
         method: "POST",
@@ -140,10 +171,12 @@ export default function NotificationCenter() {
         type: "system",
         audience: "admin",
       });
-      await loadNotifications();
+      await loadNotifications(auth.currentUser);
     } catch (err) {
       console.error("Gagal membuat notifikasi:", err);
       toast.error(err.message || "Gagal membuat notifikasi.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -357,8 +390,8 @@ export default function NotificationCenter() {
                 >
                   {config.modal.cancel}
                 </button>
-                <button type="submit" className={styles.submitBtn}>
-                  {config.modal.submit}
+                <button type="submit" className={styles.submitBtn} disabled={submitting}>
+                  {submitting ? 'Menyimpan...' : config.modal.submit}
                 </button>
               </div>
             </form>

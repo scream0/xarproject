@@ -1,70 +1,45 @@
-🚀 Professional E-Commerce Checkout UI/UX Roadmap
+🚨 1. Perbaikan Bug Utama (Critical Error Fixes)
 
-Panduan tugas terstruktur untuk mengoptimalkan kode halaman CheckoutPage agar setara dengan standar e-commerce profesional di Indonesia (seperti Tokopedia, Shopee, atau Blibli).
-🔗 1. State Persistence & LocalStorage Resilience
+    [x] 1.1 Perbaiki Argumen Pemanggilan loadNotifications() di handleCreate
 
-Mencegah hilangnya data input pilihan kurir atau alamat saat pengguna melakukan refresh halaman secara tidak sengaja.
+        Masalah: Pada fungsi handleCreate, baris pemanggilan await loadNotifications(); dipanggil tanpa argumen currentUser. Hal ini menyebabkan variabel currentUser di dalam loadNotifications bernilai undefined, yang berpotensi membuat token gagal dimuat (auth.currentUser bisa saja null jika state belum sepenuhnya sinkron).
 
-    [ ] 1.1 Restore Pilihan Alamat dan Kurir dari LocalStorage
+        Solusi: Ubah menjadi await loadNotifications(auth.currentUser); agar token selalu diambil dari user yang aktif saat ini.
 
-        Goal: Saat halaman dimuat ulang, periksa apakah ada data checkout_shipping tersimpan di localStorage untuk langsung mengembalikan state pilihan selectedAddressId dan selectedCourierKey.
+    [x] 1.2 Tangani Kondisi Unauthenticated / Token Null
 
-        Benefit: Mencegah pengguna harus memilih ulang dari awal jika tidak sengaja merefresh halaman.
+        Masalah: Jika auth.currentUser bernilai null saat tombol aksi (seperti Mark All Read atau Delete) ditekan, pemanggilan getIdToken() akan melempar TypeError.
 
-    [ ] 1.2 Sinkronisasi Otomatis Data Keranjang & Stok
+        Solusi: Tambahkan validasi penjagaan di awal fungsi (misal: if (!auth.currentUser) return;) atau gunakan optional chaining yang aman disertai pesan toast error jika sesi habis.
 
-        Goal: Tambahkan validasi real-time ketersediaan stok produk di dalam keranjang sebelum tombol "Bayar Sekarang" diaktifkan sepenuhnya.
+⚙️ 2. Optimalisasi State & Performa (Clean Code)
 
-🎨 2. UI/UX, Visual Polish & Micro-Interactions
+    [x] 2.1 Hindari Multi-Fetch Beruntun saat Mark All Read
 
-Meningkatkan kenyamanan visual dan transisi interaksi mikro khas marketplace papan atas.
+        Masalah: Penggunaan Promise.all dengan melakukan banyak request fetch satuan (PUT) untuk setiap notifikasi yang belum dibaca sangat boros performa (N network requests).
 
-    [ ] 2.1 Animasi Skeleton untuk Pemuatan Kurir & Alamat
+        Solusi: Buat endpoint API tunggal (misal: PUT /api/notifications/mark-all) di backend untuk mengubah status seluruh notifikasi yang belum dibaca dalam satu kali request database.
 
-        Goal: Ganti teks statis "Memuat alamat..." atau spinner biasa dengan komponen Skeleton Loader yang menyerupai kartu alamat dan pilihan kurir agar transisi terlihat lebih mulus.
+    [x] 2.2 Perbaiki Ketergantungan useEffect (Effect Dependencies)
 
-    [ ] 2.2 Desain Visual Metode Pembayaran yang Lebih Transparan
+        Masalah: loadNotifications didefinisikan di luar useEffect namun tidak dibungkus dengan useCallback, serta useEffect menggunakan array dependensi kosong [], yang berpotensi memicu stale closure pada lint warnings Next.js.
 
-        Goal: Berikan ikon visual kecil untuk pilihan metode pembayaran di tombol utama (misal: logo QRIS, Virtual Account BCA/Mandiri, atau Indomaret/Alfamart) agar pembeli langsung tahu opsi pembayaran yang didukung.
+        Solusi: Bungkus loadNotifications dengan useCallback atau masukkan langsung ke dalam useEffect.
 
-    [ ] 2.3 Indikator Status Langkah (Checkout Step Indicator) yang Interaktif
+🎨 3. Peningkatan UI/UX & Interaksi Profesional
 
-        Goal: Buat indikator langkah di bagian atas (Alamat → Kurir → Pembayaran) dapat diklik untuk melompat ke bagian terkait jika data sebelumnya sudah valid.
+    [x] 3.1 Tambahkan Loading State pada Tombol Aksi Modal (Submit & Create)
 
-📱 3. Mobile Experience & Accessibility (A11y)
+        Masalah: Saat admin membuat notifikasi baru, tombol "Simpan / Kirim" tidak memiliki status loading, sehingga pengguna bisa mengeklik tombol tersebut berkali-kali dan mengirim data duplikat.
 
-Memastikan proses checkout dari ponsel pintar berjalan tanpa hambatan ergonomis.
+        Solusi: Tambahkan state lokal submitting untuk menonaktifkan tombol dan mengubah teks menjadi "Menyimpan..." saat proses handleCreate berjalan.
 
-    [ ] 3.1 Floating / Sticky Summary Bottom Bar di Mobile
+    [x] 3.2 Fitur Konfirmasi Hapus Notifikasi
 
-        Goal: Pada layar mobile, buat ringkasan total harga dan tombol "Bayar Sekarang" melayang (sticky bottom) di bagian bawah layar agar pembeli tidak perlu menggulir (scroll) ke bawah untuk menyelesaikan pembayaran.
+        Masalah: Notifikasi langsung terhapus begitu tombol ✕ ditekan tanpa adanya dialog konfirmasi, berisiko terjadi salah klik (accidental delete).
 
-    [x] 3.2 Penutupan Modal Alamat via Tombol ESC & Backdrop Click
+        Solusi: Tambahkan konfirmasi ringan (atau animasi geser/undo toast) sebelum perintah DELETE dikirim ke server.
 
-        Goal: Pastikan modal tambah alamat dapat ditutup dengan menekan tombol Escape pada keyboard atau mengeklik area luar kotak modal (backdrop).
+    [x] 3.3 Perbaikan Aksesibilitas Modal (ESC Key & Outside Click)
 
-⚙️ 4. Clean Code & Modularisasi Komponen
-
-Memecah kode file checkout.page.jsx yang cukup panjang agar lebih mudah dipelihara (maintainable).
-
-    [ ] 4.1 Ekstraksi Komponen Alamat & Kurir
-
-        Goal: Pisahkan bagian pengelolaan daftar alamat ke dalam komponen CheckoutAddressSection.jsx dan daftar kurir ke CheckoutCourierSection.jsx.
-
-        Benefit: Menjaga file utama tetap ramping dan fokus pada alur bisnis checkout secara keseluruhan.
-
-    [ ] 4.2 Pemisahan Logika Kalkulasi Ongkir & Promo
-
-        Goal: Pindahkan fungsi kalkulasi berat, pemanggilan API ongkir, dan validasi kode promo ke dalam custom hook (misal: useCheckoutCalculation).
-
-🛡️ 5. Penanganan Error & Keamanan Transaksi (Resilience)
-
-Mengantisipasi kendala jaringan dan kegagalan integrasi pembayaran.
-
-    [ ] 5.1 Tombol Retry / Muat Ulang untuk API Ongkir yang Gagal
-
-        Goal: Jika pemanggilan API RajaOngkir / kurir gagal akibat gangguan jaringan, tampilkan tombol "Coba Hitung Ulang Ongkir" di dalam kotak kurir.
-
-    [ ] 5.2 Konfirmasi Pembatalan / Keluar Checkout
-
-        Goal: Cegah pengguna keluar dari halaman checkout secara tidak sengaja dengan memunculkan dialog peringatan jika keranjang aktif dan mereka mengeklik tautan kembali ke toko.
+        Masalah: Pastikan modal pembuatan notifikasi tertutup secara bersih ketika pengguna menekan tombol Escape pada keyboard sebagai pelengkap outside click.
