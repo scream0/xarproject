@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
@@ -120,6 +120,7 @@ export default function CheckoutPage() {
   const [courierLoading, setCourierLoading] = useState(false);
   const [shippingCost, setShippingCost] = useState(0);
   const [shippingMeta, setShippingMeta] = useState({ kind: "", message: "" });
+  const selectedCourierKeyRef = useRef(null);
 
   // ── Promo ──
   const [promoCode, setPromoCode] = useState("");
@@ -148,6 +149,10 @@ export default function CheckoutPage() {
 
     void loadAddresses();
   }, [currentUser]);
+
+  useEffect(() => {
+    selectedCourierKeyRef.current = selectedCourierKey;
+  }, [selectedCourierKey]);
 
   useEffect(() => {
     if (!addresses.length) return;
@@ -283,7 +288,6 @@ export default function CheckoutPage() {
 
     setCourierLoading(true);
     setCourierOptions([]);
-    setSelectedCourierKey(null);
     setShippingCost(0);
     setShippingMeta({ kind: "", message: "" });
 
@@ -371,14 +375,19 @@ export default function CheckoutPage() {
         });
       }
 
-      const preferredOption = allCosts.find((option) => option.key === selectedCourierKey) || allCosts[0];
+      const preferredKey =
+        allCosts.find((option) => option.key === selectedCourierKeyRef.current)?.key
+        || allCosts[0].key;
+      const preferredOption = allCosts.find((option) => option.key === preferredKey) || allCosts[0];
+
       setSelectedCourierKey(preferredOption.key);
       setShippingCost(preferredOption.cost);
     } catch (err) {
       console.error("Gagal ambil ongkir:", err);
       setCourierOptions(localFallbackOptions);
-      setSelectedCourierKey(localFallbackOptions[0].key);
-      setShippingCost(localFallbackOptions[0].cost);
+      const fallbackOption = localFallbackOptions[0];
+      setSelectedCourierKey(fallbackOption.key);
+      setShippingCost(fallbackOption.cost);
       setShippingMeta({
         kind: "estimated",
         message: "Kami menampilkan opsi pengiriman estimasi lokal karena layanan tarif sedang tidak tersedia.",
@@ -395,14 +404,6 @@ export default function CheckoutPage() {
 
     return () => window.clearTimeout(timer);
   }, [fetchCourierCosts]);
-
-  useEffect(() => {
-    if (!courierOptions.length || selectedCourierKey) return;
-
-    const recommendedCourier = courierOptions[0];
-    setSelectedCourierKey(recommendedCourier.key);
-    setShippingCost(recommendedCourier.cost);
-  }, [courierOptions, selectedCourierKey]);
 
   // ── Handle courier selection ──
   const handleSelectCourier = (key, cost) => {
