@@ -44,6 +44,10 @@ export function Navbar() {
   useEffect(() => {
     document.body.style.overflow =
       activePanel === "navbar" ? "hidden" : "unset";
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [activePanel]);
 
   useEffect(() => {
