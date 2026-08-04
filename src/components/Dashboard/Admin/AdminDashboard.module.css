@@ -30,7 +30,12 @@
   justify-content: space-between;
   align-items: center;
   z-index: 1001;
-  box-shadow: 0 8px 20px rgba(17, 13, 10, 0.04);
+  box-shadow: 0 0 0 rgba(17, 13, 10, 0);
+  transition: box-shadow 0.2s ease;
+}
+
+.mobileTopBarElevated {
+  box-shadow: 0 8px 20px rgba(17, 13, 10, 0.12);
 }
 
 .brandLogo {
@@ -152,6 +157,20 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.18rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.navItem::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14%;
+  bottom: 14%;
+  width: 3px;
+  border-radius: 999px;
+  background: transparent;
+  transition: background 0.25s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -178,6 +197,10 @@
   font-weight: 600;
   border-color: rgba(var(--primary-accent-rgb), 0.2);
   box-shadow: 0 8px 20px rgba(var(--primary-accent-rgb), 0.12);
+}
+
+.navItemActive::before {
+  background: var(--primary-accent);
 }
 
 .navItemActive .navItemMeta {
@@ -223,6 +246,14 @@
   font-size: 0.72rem;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+.statusMetric {
+  margin-top: 0.25rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary-accent);
 }
 
 .logoutBtn {
@@ -277,16 +308,66 @@
   -webkit-backdrop-filter: blur(20px);
   flex-shrink: 0;
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.28);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
 .welcomeTitle {
   font-family: var(--font-serif);
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 400;
-  letter-spacing: 1.5px;
+  letter-spacing: 0.8px;
   color: var(--text-primary);
-  text-transform: uppercase;
   margin: 0;
+}
+
+.wave {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: waveOnce 2.4s ease-in-out;
+}
+
+@keyframes waveOnce {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(18deg);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  30% {
+    transform: rotate(14deg);
+  }
+  40% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.headerSubtitle {
+  margin-top: 0.45rem;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.roleChip {
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.24);
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  border-radius: 999px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .viewWrapper {
@@ -295,6 +376,21 @@
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
+}
+
+.viewWrapperAnimated {
+  animation: viewFadeIn 0.24s ease-out;
+}
+
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .summaryPanel {
@@ -358,6 +454,151 @@
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 16px 36px rgba(17, 13, 10, 0.05);
+}
+
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  z-index: 1000;
+}
+
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+  z-index: 1400;
+  padding: 1rem;
+}
+
+.logoutDialog {
+  width: min(430px, 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  background: rgba(var(--surface-primary-rgb), 0.98);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.25);
+  padding: 1.2rem;
+}
+
+.dialogTitle {
+  margin: 0;
+  font: 400 1.2rem var(--font-serif);
+  color: var(--text-primary);
+}
+
+.dialogDescription {
+  margin: 0.7rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.dialogActions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.dialogSecondaryBtn,
+.dialogPrimaryBtn {
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.dialogSecondaryBtn {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dialogPrimaryBtn {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.14);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.34);
+  color: var(--danger-color);
+}
+
+.dialogSecondaryBtn:disabled,
+.dialogPrimaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.accessDeniedShell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top, rgba(var(--danger-color-rgb, 220, 38, 38), 0.1), transparent 30%),
+    linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98), rgba(var(--surface-secondary-rgb), 0.92));
+}
+
+.accessDeniedCard {
+  width: min(560px, 100%);
+  border-radius: 22px;
+  border: 1px solid var(--border-color);
+  background: rgba(var(--surface-primary-rgb), 0.97);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.13);
+  padding: 1.4rem;
+}
+
+.accessDeniedEyebrow {
+  margin: 0;
+  color: var(--danger-color);
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.accessDeniedTitle {
+  margin: 0.45rem 0 0;
+  font: 400 1.7rem var(--font-serif);
+  color: var(--text-primary);
+}
+
+.accessDeniedText {
+  margin-top: 0.7rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.accessDeniedActions {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.accessSecondaryBtn,
+.accessPrimaryBtn {
+  border-radius: 999px;
+  padding: 0.58rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.accessSecondaryBtn {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.accessPrimaryBtn {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.13);
+  color: var(--danger-color);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
 }
 
 /* --- Loading State --- */
@@ -425,9 +666,19 @@
 
   .header {
     padding: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .viewWrapper {
     padding: 1.5rem;
+  }
+
+  .welcomeTitle {
+    font-size: 1.1rem;
+  }
+
+  .roleChip {
+    font-size: 0.66rem;
   }
 }

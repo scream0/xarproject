@@ -52,6 +52,20 @@
     "settings": "[ SYSTEM CONFIGURATION ]"
   },
   "loading": "LOADING EXECUTIVE SYSTEM...",
-  "logoutText": "Sign Out Control"
+  "logoutText": "Sign Out Control",
+  "greeting": {
+    "fallbackName": "Admin"
+  },
+  "logoutDialog": {
+    "title": "Keluar dari panel admin?",
+    "description": "Sesi admin pada perangkat ini akan ditutup. Pastikan semua perubahan penting sudah tersimpan.",
+    "confirm": "Ya, keluar",
+    "cancel": "Batal"
+  },
+  "aria": {
+    "menu": "Buka menu navigasi admin",
+    "menuExpanded": "Tutup menu navigasi admin",
+    "logoutDialog": "Dialog konfirmasi logout admin"
+  }
 }
 
