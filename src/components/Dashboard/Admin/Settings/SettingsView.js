@@ -15,6 +15,7 @@ const EMPTY = {
     storeName: "",
     storeEmail: "",
     currency: "IDR",
+    adminLocale: "id",
     lowStockThreshold: 10,
     midtransServerKey: "",
     midtransClientKey: "",
@@ -95,6 +96,7 @@ export default function SettingsView() {
       storeName: data?.storeName || "",
       storeEmail: data?.storeEmail || "",
       currency: data?.currency || "IDR",
+      adminLocale: data?.adminLocale || "id",
       lowStockThreshold: Number(data?.lowStockThreshold ?? 10),
       midtransServerKey: data?.midtransServerKey || "",
       midtransClientKey: data?.midtransClientKey || "",
@@ -208,6 +210,16 @@ promo: {
         const data = await getAdminSettings(currentUser);
         setSettings(mapSettingsToState(data));
         setImagePreviewUrl(data?.about?.image || "");
+
+        if (typeof window !== "undefined" && data?.adminLocale) {
+          const nextLocale = data.adminLocale === "en" ? "en" : "id";
+          window.localStorage.setItem("adminLocale", nextLocale);
+          window.dispatchEvent(
+            new CustomEvent("admin-locale-change", {
+              detail: { locale: nextLocale },
+            }),
+          );
+        }
       } catch (error) {
         console.error("Fetch Settings Error:", error.message);
         toast.error(error.message);
@@ -277,6 +289,16 @@ promo: {
       setSettings(mapSettingsToState(fresh));
       setImagePreviewUrl(fresh?.about?.image || "");
 
+      if (typeof window !== "undefined") {
+        const nextLocale = fresh?.adminLocale === "en" ? "en" : "id";
+        window.localStorage.setItem("adminLocale", nextLocale);
+        window.dispatchEvent(
+          new CustomEvent("admin-locale-change", {
+            detail: { locale: nextLocale },
+          }),
+        );
+      }
+
       toast.success(cfg.toast?.success || "Pengaturan disimpan!", {
         id: toastId,
       });
@@ -297,6 +319,7 @@ promo: {
       storeName: strictValue(s.store.storeName),
       storeEmail: strictValue(s.store.storeEmail),
       currency: s.store.currency,
+      adminLocale: s.store.adminLocale === "en" ? "en" : "id",
       lowStockThreshold: Number(s.store.lowStockThreshold) || 10,
       midtransServerKey: strictValue(s.store.midtransServerKey),
       midtransClientKey: strictValue(s.store.midtransClientKey),
@@ -549,6 +572,24 @@ function StoreTab({ settings, handleInputChange, cfg }) {
           >
             <option value="IDR">IDR (Indonesian Rupiah)</option>
             <option value="USD">USD (US Dollar)</option>
+          </select>
+        </div>
+        <div className={styles.inputGroup}>
+          <label className={styles.fieldLabel}>
+            {cfg.labels?.adminLocale || "Bahasa Dashboard Admin"}
+          </label>
+          <select
+            name="adminLocale"
+            value={settings.adminLocale || "id"}
+            onChange={handleInputChange}
+            className={styles.selectField}
+          >
+            <option value="id">
+              {cfg.options?.adminLocaleId || "Indonesia (ID)"}
+            </option>
+            <option value="en">
+              {cfg.options?.adminLocaleEn || "English (EN)"}
+            </option>
           </select>
         </div>
         <div className={styles.inputGroup}>

@@ -55,6 +55,7 @@ const DEFAULT_SETTINGS = {
   storeName: "XAR Perfume",
   storeEmail: "contact@xar.com",
   currency: "IDR",
+  adminLocale: "id",
   lowStockThreshold: 10,
   storeCityId: "",
   storeCityName: "",
@@ -310,6 +311,9 @@ export async function PUT(request) {
       updateData.storeEmail = newSettings.storeEmail;
     if (newSettings.currency !== undefined)
       updateData.currency = newSettings.currency;
+    if (newSettings.adminLocale !== undefined)
+      updateData.adminLocale =
+        String(newSettings.adminLocale).toLowerCase() === "en" ? "en" : "id";
     if (newSettings.lowStockThreshold !== undefined)
       updateData.lowStockThreshold = Number(newSettings.lowStockThreshold);
     if (newSettings.storeCityId !== undefined)

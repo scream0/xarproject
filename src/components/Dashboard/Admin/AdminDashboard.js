@@ -44,6 +44,30 @@ function getRoleLabel(role) {
   return "User";
 }
 
+function getLatencyTone(latencyMs) {
+  if (!latencyMs) {
+    return "Checking";
+  }
+
+  if (latencyMs <= 180) {
+    return "Excellent";
+  }
+
+  if (latencyMs <= 350) {
+    return "Stable";
+  }
+
+  return "Needs attention";
+}
+
+function formatTemplate(template, payload) {
+  return String(template || "").replace(/\{(\w+)\}/g, (_, key) => {
+    return Object.prototype.hasOwnProperty.call(payload, key)
+      ? String(payload[key])
+      : "";
+  });
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const pathname = usePathname();
@@ -62,6 +86,13 @@ export default function AdminDashboard() {
   const [isTopBarElevated, setIsTopBarElevated] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [adminLocale, setAdminLocale] = useState(() => {
+    if (typeof window === "undefined") {
+      return "id";
+    }
+
+    return window.localStorage.getItem("adminLocale") === "en" ? "en" : "id";
+  });
   const [storeStatus, setStoreStatus] = useState({
     latencyMs: null,
     newOrders: 0,
@@ -192,6 +223,38 @@ export default function AdminDashboard() {
     };
   }, [isAdmin, user]);
 
+  useEffect(() => {
+    const handleLocaleEvent = (event) => {
+      const nextLocale =
+        event?.detail?.locale === "en" || event?.detail?.locale === "id"
+          ? event.detail.locale
+          : "id";
+      setAdminLocale(nextLocale);
+    };
+
+    const handleStorage = (event) => {
+      if (event.key !== "adminLocale") {
+        return;
+      }
+
+      setAdminLocale(event.newValue === "en" ? "en" : "id");
+    };
+
+    window.addEventListener("admin-locale-change", handleLocaleEvent);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("admin-locale-change", handleLocaleEvent);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
+  const copy =
+    adminConfig?.copyLocales?.[adminLocale] ||
+    adminConfig?.copyLocales?.id ||
+    adminConfig?.copy ||
+    {};
+
   const handleTabChange = (tabId) => {
     if (!VALID_TABS.includes(tabId)) {
       return;
@@ -314,11 +377,55 @@ export default function AdminDashboard() {
   };
 
   const statusText = storeStatus.hasError
-    ? "Status monitor sedang offline sementara"
-    : `${storeStatus.newOrders} pesanan baru menunggu diproses`;
+    ? copy?.status?.offline || "Status monitor sedang offline sementara"
+    : formatTemplate(
+        copy?.status?.pendingTemplate ||
+          "{count} pesanan baru menunggu diproses",
+        { count: storeStatus.newOrders },
+      );
   const latencyText = storeStatus.latencyMs
-    ? `${storeStatus.latencyMs}ms latency`
-    : "Checking latency...";
+    ? formatTemplate(
+        copy?.status?.latencyTemplate || "Latensi {value}ms",
+        { value: storeStatus.latencyMs },
+      )
+    : copy?.status?.checking || "Memeriksa latensi...";
+  const activeTabLabel =
+    adminConfig.nav.find((item) => item.id === activeTab)?.label || "Overview";
+  const activeTabMeta = navMeta[activeTab] || "Operational snapshot";
+  const commandCards = [
+    {
+      label:
+        copy?.metrics?.pending?.label || "Pesanan tertunda",
+      value: String(storeStatus.newOrders),
+      caption:
+        copy?.metrics?.pending?.caption ||
+        "Perlu ditindak sekarang",
+      tone: storeStatus.newOrders > 0 ? "warn" : "ok",
+    },
+    {
+      label:
+        copy?.metrics?.response?.label || "Respon sistem",
+      value: storeStatus.latencyMs ? `${storeStatus.latencyMs}ms` : "-",
+      caption: getLatencyTone(storeStatus.latencyMs),
+      tone: storeStatus.latencyMs && storeStatus.latencyMs > 350 ? "warn" : "ok",
+    },
+    {
+      label:
+        copy?.metrics?.module?.label || "Modul aktif",
+      value: activeTabLabel,
+      caption: activeTabMeta,
+      tone: "info",
+    },
+  ];
+
+  const quickActions =
+    copy?.quickActions?.length > 0
+      ? copy.quickActions
+      : [
+          { id: "orders", label: "Buka Pesanan" },
+          { id: "products", label: "Kelola Inventori" },
+          { id: "customers", label: "Lihat Pelanggan" },
+        ];
 
   if (loading) {
     return <AdminDashboardSkeleton />;
@@ -328,10 +435,15 @@ export default function AdminDashboard() {
     return (
       <section className={styles.accessDeniedShell}>
         <div className={styles.accessDeniedCard} role="alert">
-          <p className={styles.accessDeniedEyebrow}>Restricted area</p>
-          <h1 className={styles.accessDeniedTitle}>Akses Ditolak</h1>
+          <p className={styles.accessDeniedEyebrow}>
+            {copy?.accessDenied?.eyebrow || "Akses terbatas"}
+          </p>
+          <h1 className={styles.accessDeniedTitle}>
+            {copy?.accessDenied?.title || "Akses Ditolak"}
+          </h1>
           <p className={styles.accessDeniedText}>
             {accessError ||
+              copy?.accessDenied?.description ||
               "Anda bukan Administrator. Hubungi pemilik sistem jika Anda memerlukan akses."}
           </p>
           <div className={styles.accessDeniedActions}>
@@ -340,7 +452,7 @@ export default function AdminDashboard() {
               className={styles.accessSecondaryBtn}
               onClick={() => router.push("/dashboard")}
             >
-              Kembali ke Dashboard
+              {copy?.accessDenied?.backButton || "Kembali ke Dashboard"}
             </button>
             <button
               type="button"
@@ -401,7 +513,9 @@ export default function AdminDashboard() {
             <span>{adminConfig.brand.suffix}</span>
           </div>
           <div className={styles.brandBadge}>{adminConfig.brand.badge}</div>
-          <div className={styles.brandCaption}>Commerce command center</div>
+          <div className={styles.brandCaption}>
+            {copy?.brandCaption || "Pusat kendali operasional toko"}
+          </div>
         </div>
 
         <nav className={styles.navContainer}>
@@ -428,7 +542,9 @@ export default function AdminDashboard() {
           <div className={styles.sidebarStatusCard}>
             <span className={styles.statusDot} />
             <div>
-              <p className={styles.statusTitle}>Store is live</p>
+              <p className={styles.statusTitle}>
+                {copy?.status?.title || "Toko aktif"}
+              </p>
               <p className={styles.statusText}>{statusText}</p>
               <p className={styles.statusMetric}>{latencyText}</p>
             </div>
@@ -447,25 +563,72 @@ export default function AdminDashboard() {
         <header className={styles.header}>
           <div className={styles.headerInfo}>
             <h1 className={styles.welcomeTitle}>
-              Command Center - Halo, {getGreetingName(user)} <span className={styles.wave}>👋</span>
+              {copy?.header?.titlePrefix || "Command Center • Halo"},{" "}
+              {getGreetingName(user)} <span className={styles.wave}>👋</span>
             </h1>
-            <p className={styles.headerSubtitle}>Kelola operasional, pesanan, dan performa toko dari satu panel eksekutif.</p>
+            <p className={styles.headerSubtitle}>
+              {copy?.header?.subtitle ||
+                "Kelola operasional, pesanan, dan performa toko dari satu panel eksekutif."}
+            </p>
           </div>
           <div className={styles.roleChip}>
-            Role: {getRoleLabel(role)}
+            {copy?.header?.rolePrefix || "Peran"}: {getRoleLabel(role)}
           </div>
         </header>
 
         <div key={activeTab} className={`${styles.viewWrapper} ${styles.viewWrapperAnimated}`}>
           <div className={styles.summaryPanel}>
-            <div>
-              <p className={styles.summaryEyebrow}>Commerce control center</p>
-              <h2 className={styles.summaryTitle}>Monitor performance, stock, and customer activity in one place.</h2>
+            <div className={styles.summaryLead}>
+              <p className={styles.summaryEyebrow}>
+                {copy?.summary?.eyebrow || "Pusat kontrol commerce"}
+              </p>
+              <h2 className={styles.summaryTitle}>
+                {copy?.summary?.title ||
+                  "Pantau performa, stok, dan aktivitas pelanggan dalam satu dashboard terpadu."}
+              </h2>
+              <p className={styles.summarySubtext}>{statusText} · {latencyText}</p>
             </div>
+
+            <div className={styles.commandCards}>
+              {commandCards.map((card) => (
+                <article
+                  key={card.label}
+                  className={`${styles.commandCard} ${
+                    card.tone === "warn"
+                      ? styles.commandCardWarn
+                      : card.tone === "info"
+                        ? styles.commandCardInfo
+                        : styles.commandCardOk
+                  }`}
+                >
+                  <p className={styles.commandCardLabel}>{card.label}</p>
+                  <p className={styles.commandCardValue}>{card.value}</p>
+                  <p className={styles.commandCardCaption}>{card.caption}</p>
+                </article>
+              ))}
+            </div>
+
+            <div className={styles.quickActions}>
+              {quickActions.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  className={styles.quickActionBtn}
+                  onClick={() => handleTabChange(action.id)}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+
             <div className={styles.summaryPills}>
-              <span className={styles.summaryPill}>Live operations</span>
-              <span className={styles.summaryPill}>Fast decisions</span>
-              <span className={styles.summaryPill}>Premium store</span>
+              {(copy?.summary?.pills || [
+                "Operasional realtime",
+                "Keputusan cepat",
+                "Pengalaman premium",
+              ]).map((pill) => (
+                <span key={pill} className={styles.summaryPill}>{pill}</span>
+              ))}
             </div>
           </div>
 
