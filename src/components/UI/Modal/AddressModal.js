@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 import styles from "./AddressModal.module.css";
@@ -24,6 +24,17 @@ export function AddressModal() {
     cityType: "",
     postalCode: "",
   });
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !isProcessing) {
+        setIsAddressModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isProcessing, setIsAddressModalOpen]);
 
   if (!isAddressModalOpen) return null;
 

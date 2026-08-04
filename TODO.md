@@ -1,75 +1,70 @@
-🔗 1. Routing, URL Synchronization & Deep Linking
+🚀 Professional E-Commerce Checkout UI/UX Roadmap
 
-Saat ini state tab admin disimpan secara lokal, membuat admin tidak bisa membagikan tautan langsung atau melakukan refresh halaman tanpa kembali ke tab "overview".
+Panduan tugas terstruktur untuk mengoptimalkan kode halaman CheckoutPage agar setara dengan standar e-commerce profesional di Indonesia (seperti Tokopedia, Shopee, atau Blibli).
+🔗 1. State Persistence & LocalStorage Resilience
 
-    [x] 1.1 Sinkronisasi Query Parameter URL (?tab=...)
+Mencegah hilangnya data input pilihan kurir atau alamat saat pengguna melakukan refresh halaman secara tidak sengaja.
 
-        Goal: Gunakan useSearchParams dan useRouter dari next/navigation agar setiap tab admin (?tab=products, ?tab=orders, ?tab=analytics, dll.) memiliki URL yang unik.
+    [ ] 1.1 Restore Pilihan Alamat dan Kurir dari LocalStorage
 
-        Benefit: Memungkinkan bookmarking, deep linking, dan fungsi navigasi Back/Forward browser yang normal.
+        Goal: Saat halaman dimuat ulang, periksa apakah ada data checkout_shipping tersimpan di localStorage untuk langsung mengembalikan state pilihan selectedAddressId dan selectedCourierKey.
 
-    [x] 1.2 Auto-Close Mobile Drawer
+        Benefit: Mencegah pengguna harus memilih ulang dari awal jika tidak sengaja merefresh halaman.
 
-        Goal: Pastikan sidebar drawer di perangkat mobile otomatis tertutup setiap kali admin memilih menu atau menekan tombol keluar.
+    [ ] 1.2 Sinkronisasi Otomatis Data Keranjang & Stok
 
-🎨 2. UI/UX, Command Center Polish & Micro-Interactions
+        Goal: Tambahkan validasi real-time ketersediaan stok produk di dalam keranjang sebelum tombol "Bayar Sekarang" diaktifkan sepenuhnya.
 
-Meningkatkan kesan profesional ala dasbor enterprise (Shopify Admin, Dashboard Toko Tokopedia).
+🎨 2. UI/UX, Visual Polish & Micro-Interactions
 
-    [x] 2.1 Sapaan & Header Command Center yang Elegan
+Meningkatkan kenyamanan visual dan transisi interaksi mikro khas marketplace papan atas.
 
-        Goal: Ubah teks kaku SYSTEM ACCESS: [NAME] menjadi sapaan profesional yang ramah namun berwibawa, contoh: "Command Center • Halo, Admin 👋" lengkap dengan indikator peran (Role: Super Admin).
+    [ ] 2.1 Animasi Skeleton untuk Pemuatan Kurir & Alamat
 
-    [x] 2.2 Perbaikan Rendering Tab yang Terpotong (Fix Truncated Tabs)
+        Goal: Ganti teks statis "Memuat alamat..." atau spinner biasa dengan komponen Skeleton Loader yang menyerupai kartu alamat dan pilihan kurir agar transisi terlihat lebih mulus.
 
-        Goal: Lengkapi blok render kondisi tab di dalam viewWrapper (karena pada cuplikan kode sebelumnya bagian render tab seperti products, reviews, analytics, customers, dll. terpotong). Pastikan semuanya terpanggil dengan benar.
+    [ ] 2.2 Desain Visual Metode Pembayaran yang Lebih Transparan
 
-    [x] 2.3 Indikator Status Toko Interaktif
+        Goal: Berikan ikon visual kecil untuk pilihan metode pembayaran di tombol utama (misal: logo QRIS, Virtual Account BCA/Mandiri, atau Indomaret/Alfamart) agar pembeli langsung tahu opsi pembayaran yang didukung.
 
-        Goal: Jadikan kartu status "Store is live" lebih interaktif (misalnya menampilkan status latensi server atau jumlah pesanan baru yang masuk secara real-time).
+    [ ] 2.3 Indikator Status Langkah (Checkout Step Indicator) yang Interaktif
 
-    [x] 2.4 Transisi & Highlight Menu Aktif yang Mulus
-
-        Goal: Berikan aksen visual yang kuat (garis aksen kiri atau latar belakang kontras) pada navItemActive serta transisi fade-in yang halus saat berpindah menu.
+        Goal: Buat indikator langkah di bagian atas (Alamat → Kurir → Pembayaran) dapat diklik untuk melompat ke bagian terkait jika data sebelumnya sudah valid.
 
 📱 3. Mobile Experience & Accessibility (A11y)
 
-Memastikan pengalaman pengelolaan toko dari smartphone atau tablet tetap optimal.
+Memastikan proses checkout dari ponsel pintar berjalan tanpa hambatan ergonomis.
 
-    [x] 3.1 Outside Click & ESC Key Listener
+    [ ] 3.1 Floating / Sticky Summary Bottom Bar di Mobile
 
-        Goal: Tutup mobile drawer otomatis saat admin mengeklik area luar sidebar atau menekan tombol Escape pada keyboard.
+        Goal: Pada layar mobile, buat ringkasan total harga dan tombol "Bayar Sekarang" melayang (sticky bottom) di bagian bawah layar agar pembeli tidak perlu menggulir (scroll) ke bawah untuk menyelesaikan pembayaran.
 
-    [x] 3.2 Atribut ARIA & Navigasi Keyboard
+    [x] 3.2 Penutupan Modal Alamat via Tombol ESC & Backdrop Click
 
-        Goal: Tambahkan atribut aksesibilitas yang tepat (aria-expanded, aria-controls) pada tombol menu seluler.
+        Goal: Pastikan modal tambah alamat dapat ditutup dengan menekan tombol Escape pada keyboard atau mengeklik area luar kotak modal (backdrop).
 
-    [x] 3.3 Sticky Mobile Top Bar
+⚙️ 4. Clean Code & Modularisasi Komponen
 
-        Goal: Pertahankan bilah atas seluler agar tetap menempel di atas layar saat digulir (scroll), dilengkapi bayangan tipis agar batas konten terlihat jelas.
+Memecah kode file checkout.page.jsx yang cukup panjang agar lebih mudah dipelihara (maintainable).
 
-⚙️ 4. Clean Code, Arsitektur & Manajemen State
+    [ ] 4.1 Ekstraksi Komponen Alamat & Kurir
 
-Menjaga kode tetap bersih, mudah dirawat, dan terhindar dari error.
+        Goal: Pisahkan bagian pengelolaan daftar alamat ke dalam komponen CheckoutAddressSection.jsx dan daftar kurir ke CheckoutCourierSection.jsx.
 
-    [x] 4.1 Ekstraksi Logika Auth & Role ke Custom Hook
+        Benefit: Menjaga file utama tetap ramping dan fokus pada alur bisnis checkout secara keseluruhan.
 
-        Goal: Pindahkan logika onAuthStateChanged dan fetch verifikasi role /api/users ke dalam custom hook (misal: useAdminAuth).
+    [ ] 4.2 Pemisahan Logika Kalkulasi Ongkir & Promo
 
-        Benefit: Membuat komponen AdminDashboard lebih ringkas dan fokus pada tata letak UI.
+        Goal: Pindahkan fungsi kalkulasi berat, pemanggilan API ongkir, dan validasi kode promo ke dalam custom hook (misal: useCheckoutCalculation).
 
-    [x] 4.2 Pembersihan Efek Samping (Effect Cleanup)
+🛡️ 5. Penanganan Error & Keamanan Transaksi (Resilience)
 
-        Goal: Pastikan seluruh listener autentikasi dan fungsi asinkron dibersihkan dengan benar saat komponen dilepas (unmount).
+Mengantisipasi kendala jaringan dan kegagalan integrasi pembayaran.
 
-🛡️ 5. Keamanan Akses & Penanganan Error (RBAC & Resilience)
+    [ ] 5.1 Tombol Retry / Muat Ulang untuk API Ongkir yang Gagal
 
-Melindungi panel admin dari akses ilegal dan mencegah kegagalan sistem yang fatal.
+        Goal: Jika pemanggilan API RajaOngkir / kurir gagal akibat gangguan jaringan, tampilkan tombol "Coba Hitung Ulang Ongkir" di dalam kotak kurir.
 
-    [x] 5.1 Tampilan Akses Ditolak (Unauthorized / Access Denied UI)
+    [ ] 5.2 Konfirmasi Pembatalan / Keluar Checkout
 
-        Goal: Jika verifikasi API /api/users gagal atau mendeteksi bahwa pengguna bukan admin, jangan hanya mencetaknya di console.error. Tampilkan halaman peringatan "Akses Ditolak / Anda bukan Administrator" secara profesional.
-
-    [x] 5.2 Modal Konfirmasi Logout
-
-        Goal: Tambahkan dialog konfirmasi ringkas sebelum menjalankan logoutUser() untuk mencegah ketidaksengajaan saat admin mengeklik tombol keluar.
+        Goal: Cegah pengguna keluar dari halaman checkout secara tidak sengaja dengan memunculkan dialog peringatan jika keranjang aktif dan mereka mengeklik tautan kembali ke toko.

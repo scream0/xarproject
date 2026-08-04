@@ -101,6 +101,19 @@ export default function CheckoutPage() {
   const [addressForm, setAddressForm] = useState(emptyAddressForm());
   const [savingAddress, setSavingAddress] = useState(false);
 
+  useEffect(() => {
+    if (!showAddressModal) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !savingAddress) {
+        setShowAddressModal(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showAddressModal, savingAddress]);
+
   // ── Courier ──
   const [courierOptions, setCourierOptions] = useState([]);
   const [selectedCourierKey, setSelectedCourierKey] = useState(null);
