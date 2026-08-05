@@ -2,9 +2,8 @@
 import { useState, useEffect } from "react";
 import styles from "./UserProfil.module.css";
 import profileConfig from "@/data/ui/userProfilConfig.json";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
-import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 
 export default function ProfileSection() {
@@ -42,7 +41,8 @@ export default function ProfileSection() {
     confirmPassword: "",
   });
 
-  const currentUser = auth.currentUser;
+  const [currentSession, setCurrentSession] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const extractPublicIdFromUrl = (url) => {
     if (!url || !url.includes("cloudinary.com")) return "";
@@ -61,30 +61,43 @@ export default function ProfileSection() {
   };
 
   useEffect(() => {
-    async function fetchUserData() {
-      if (!currentUser) return;
+    let subscription = null;
+
+    const initAuthAndFetch = async () => {
+      const { data: { session } } = await auth.getSession();
+      setCurrentSession(session);
+      const user = session?.user || null;
+      setCurrentUser(user);
+
+      if (!user) return;
+
       try {
-        const res = await fetch(`/api/users?userId=${currentUser.uid}`);
+        const userId = user.id || user.uid;
+        const token = session?.access_token;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const res = await fetch(`/api/users?userId=${userId}`, { headers });
         const result = await res.json();
 
         const defaultUsername =
-          currentUser.email
+          user.email
             ?.split("@")[0]
             .toLowerCase()
             .replace(/[^a-z0-9_]/g, "") ||
-          `user_${currentUser.uid.substring(0, 5)}`;
-        const defaultPhoto = currentUser.photoURL || "";
+          `user_${userId.substring(0, 5)}`;
+        
+        const defaultPhoto = user.user_metadata?.avatar_url || user.user_metadata?.picture || "";
 
         if (res.ok && result.exists && result.data) {
           const data = result.data;
           const photoUrlToUse = data.photo_url || defaultPhoto;
           setProfile({
             username: data.username || defaultUsername,
-            fullName: data.full_name || currentUser.displayName || "",
+            fullName: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || "",
             gender: data.gender || "",
             birthDate: data.birth_date || "",
-            phone: data.phone || currentUser.phoneNumber || "",
-            email: currentUser.email || "",
+            phone: data.phone || user.phone || "",
+            email: user.email || "",
             photoURL: photoUrlToUse,
             photoPublicId:
               data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
@@ -95,9 +108,9 @@ export default function ProfileSection() {
         } else {
           setProfile({
             username: defaultUsername,
-            fullName: currentUser.displayName || "",
-            phone: currentUser.phoneNumber || "",
-            email: currentUser.email || "",
+            fullName: user.user_metadata?.full_name || user.user_metadata?.name || "",
+            phone: user.phone || "",
+            email: user.email || "",
             photoURL: defaultPhoto,
             photoPublicId: extractPublicIdFromUrl(defaultPhoto),
             memberTier: "VIP Collector",
@@ -108,9 +121,21 @@ export default function ProfileSection() {
         console.error("Gagal memuat profil:", err);
         toast.error(profileConfig.toasts.fetchError);
       }
-    }
-    fetchUserData();
-  }, [currentUser]);
+
+      // Listener perubahan sesi Supabase
+      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        setCurrentSession(session);
+        setCurrentUser(session?.user || null);
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuthAndFetch();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
+  }, []);
 
   const handleUsernameChange = (e) => {
     const formatted = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
@@ -119,14 +144,17 @@ export default function ProfileSection() {
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file || !currentUser) return;
+    if (!file || !currentUser || !currentSession) return;
 
     const toastId = toast.loading(profileConfig.toasts.uploadingAvatar);
     setUploadingImage(true);
     try {
+      const userId = currentUser.id || currentUser.uid;
+      const token = currentSession.access_token;
+
       const data = new FormData();
       data.append("file", file);
-      data.append("userId", currentUser.uid);
+      data.append("userId", userId);
       if (tempProfile.photoPublicId)
         data.append("oldPublicId", tempProfile.photoPublicId);
       else if (tempProfile.photoURL)
@@ -134,6 +162,7 @@ export default function ProfileSection() {
 
       const res = await fetch("/api/cloudinary", {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: data,
       });
       const result = await res.json();
@@ -159,6 +188,7 @@ export default function ProfileSection() {
   const handleRemoveAvatar = async () => {
     if (
       !currentUser ||
+      !currentSession ||
       !tempProfile.photoURL ||
       !window.confirm(profileConfig.prompts.removeAvatarConfirm)
     )
@@ -167,11 +197,17 @@ export default function ProfileSection() {
     const toastId = toast.loading(profileConfig.toasts.removeAvatarLoading);
     setRemovingImage(true);
     try {
+      const userId = currentUser.id || currentUser.uid;
+      const token = currentSession.access_token;
+
       const res = await fetch("/api/cloudinary", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
-          userId: currentUser.uid,
+          userId,
           publicId: tempProfile.photoPublicId,
         }),
       });
@@ -196,11 +232,17 @@ export default function ProfileSection() {
     const toastId = toast.loading(profileConfig.toasts.saveProfileLoading);
     setLoading(true);
     try {
+      const userId = currentUser.id || currentUser.uid;
+      const token = currentSession?.access_token;
+
       const res = await fetch("/api/users", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
-          userId: currentUser.uid,
+          userId,
           type: "profile",
           ...tempProfile,
           username: cleanUsername,
@@ -239,24 +281,36 @@ export default function ProfileSection() {
     const toastId = toast.loading(profileConfig.toasts.passwordLoading);
 
     try {
-      const credential = EmailAuthProvider.credential(
-        currentUser.email,
-        currentPassword,
-      );
-      await reauthenticateWithCredential(currentUser, credential);
+      const token = currentSession?.access_token;
 
-      const token = await currentUser.getIdToken();
-      const res = await fetch("/api/users/change-password", {
+      // Re-autentikasi / verifikasi password lama via Supabase signInWithPassword
+      const { error: signInError } = await auth.signInWithPassword({
+        email: currentUser.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        throw new Error("Password saat ini salah.");
+      }
+
+      // Perbarui password via Supabase updateUser
+      const { error: updateError } = await auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        throw new Error(updateError.message || "Gagal memperbarui password.");
+      }
+
+      // Sinkronisasi ke backend jika ada endpoint khusus
+      await fetch("/api/users/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ newPassword }),
       });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
 
       toast.success(profileConfig.toasts.passwordSuccess, { id: toastId });
       setIsPasswordModalOpen(false);
@@ -266,11 +320,7 @@ export default function ProfileSection() {
         confirmPassword: "",
       });
     } catch (error) {
-      let errorMessage = "Gagal mengubah password.";
-      if (error.code === "auth/wrong-password")
-        errorMessage = "Password saat ini salah.";
-      if (error.code === "auth/too-many-requests")
-        errorMessage = "Terlalu banyak percobaan. Coba lagi nanti.";
+      let errorMessage = error.message || "Gagal mengubah password.";
       toast.error(errorMessage, { id: toastId });
     } finally {
       setIsPasswordChanging(false);
@@ -283,11 +333,16 @@ export default function ProfileSection() {
     const toastId = toast.loading(profileConfig.toasts.deleteAccountLoading);
     setDeletingAccount(true);
     try {
-      const res = await fetch(`/api/users?userId=${currentUser.uid}`, {
+      const userId = currentUser.id || currentUser.uid;
+      const token = currentSession?.access_token;
+
+      const res = await fetch(`/api/users?userId=${userId}`, {
         method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
+      
       toast.success(profileConfig.toasts.deleteAccountSuccess, { id: toastId });
       await auth.signOut();
       window.location.href = "/login";
@@ -303,11 +358,17 @@ export default function ProfileSection() {
     successMessage,
     toastId,
   ) => {
+    const userId = currentUser.id || currentUser.uid;
+    const token = currentSession?.access_token;
+
     const res = await fetch("/api/users", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
-        userId: currentUser.uid,
+        userId,
         type: "addresses",
         addresses: updatedAddresses,
       }),
@@ -326,12 +387,12 @@ export default function ProfileSection() {
     setLoading(true);
     try {
       let updatedAddresses = [...addresses];
-      // Normalisasi agar semua field alamat selalu lengkap (termasuk cityId).
-      const newAddressItem = normalizeAddress({
+      
+      const newAddressItem = {
         ...currentAddress,
-        id: currentAddress.id || buildAddressId(),
+        id: currentAddress.id || `addr_${Date.now()}`,
         label: currentAddress.label || "Rumah",
-      });
+      };
 
       if (newAddressItem.isPrimary || updatedAddresses.length === 0) {
         updatedAddresses = updatedAddresses.map((addr) => ({
@@ -423,6 +484,7 @@ export default function ProfileSection() {
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div className={styles.avatar}>
                 {profile.photoURL ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={profile.photoURL} alt="Avatar" />
                 ) : (
                   <span>👤</span>
@@ -476,10 +538,7 @@ export default function ProfileSection() {
             <div className={styles.infoRow}>
               <span>{profileConfig.labels.loginMethod}</span>
               <span className={styles.infoValue}>
-                {currentUser?.providerData?.[0]?.providerId.replace(
-                  ".com",
-                  "",
-                ) || "Email"}
+                {currentUser?.app_metadata?.provider || "Email"}
               </span>
             </div>
           </div>
@@ -620,6 +679,7 @@ export default function ProfileSection() {
                     style={{ width: 60, height: 60 }}
                   >
                     {tempProfile.photoURL ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={tempProfile.photoURL} alt="Avatar" />
                     ) : (
                       <span>👤</span>

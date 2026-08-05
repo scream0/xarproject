@@ -62,7 +62,7 @@ const DEFAULT_SETTINGS = {
     headquarters: {
       title: "Headquarters",
       address: ["Tegalrejo Wedomartani, Kabupaten Sleman,", "Daerah Istimewa Yogyakarta 55584"],
-      coordinates: '07° 43' 36.2" S | 110° 25' 35.3" E',
+      coordinates: `07° 43' 36.2" S | 110° 25' 35.3" E`,
     },
     form: {
       title: "Kirim Pesan Instan",

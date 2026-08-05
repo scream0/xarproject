@@ -7,8 +7,7 @@ import {
   useCallback,
 } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { isPromoActive, getDiscountedPrice, getCartPromoSummary } from "@/utils/promo";
 import { buildAddressId, normalizeAddress } from "@/utils/address";
@@ -18,6 +17,7 @@ const StoreContext = createContext();
 export function StoreProvider({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [currentSession, setCurrentSession] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [products, setProducts] = useState([]);
@@ -91,63 +91,96 @@ export function StoreProvider({ children }) {
     fetchProducts();
   }, [fetchProducts]);
 
+  // Pantau status Auth Supabase secara dinamis
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let subscription = null;
+
+    const initAuth = async () => {
+      const { data: { session } } = await auth.getSession();
+      setCurrentSession(session);
+      const currentUser = session?.user || null;
+
       if (currentUser) {
-        // Default awal menggunakan data dari Firebase Auth
-        let mergedUser = {
-          ...currentUser,
-          photoURL: currentUser.photoURL || "",
-        };
-
-        setCustomer({
-          name:
-            currentUser.displayName ||
-            currentUser.email?.split("@")[0] ||
-            "User",
-          email: currentUser.email || "",
-          phone: currentUser.phoneNumber || "",
-        });
-
-        try {
-          const res = await fetch(`/api/users?userId=${currentUser.uid}`);
-          const result = await res.json();
-          if (res.ok && result.exists && result.data) {
-            const dbData = result.data;
-
-            // Sinkronisasi foto profil dari Database / Cloudinary
-            const photoFromDb = dbData.photo_url || currentUser.photoURL || "";
-
-            mergedUser = {
-              ...currentUser,
-              ...dbData,
-              photoURL: photoFromDb,
-              photo_url: photoFromDb,
-            };
-
-            setCustomer({
-              name:
-                dbData.full_name ||
-                dbData.username ||
-                currentUser.displayName ||
-                currentUser.email?.split("@")[0] ||
-                "User",
-              email: currentUser.email || "",
-              phone: dbData.phone || currentUser.phoneNumber || "",
-            });
-          }
-        } catch (err) {
-          console.error("Gagal memuat profil user untuk navbar:", err);
-        }
-
-        setUser(mergedUser);
+        await handleUserData(currentUser, session?.access_token);
       } else {
         setUser(null);
         setCustomer({ name: "", email: "", phone: "" });
       }
-    });
-    return () => unsubscribe();
+
+      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        setCurrentSession(session);
+        const currentUser = session?.user || null;
+
+        if (currentUser) {
+          await handleUserData(currentUser, session?.access_token);
+        } else {
+          setUser(null);
+          setCustomer({ name: "", email: "", phone: "" });
+        }
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuth();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
+
+  const handleUserData = async (currentUser, token) => {
+    const userId = currentUser.id || currentUser.uid;
+    const defaultPhoto = currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || "";
+
+    let mergedUser = {
+      ...currentUser,
+      uid: userId,
+      photoURL: defaultPhoto,
+    };
+
+    setCustomer({
+      name:
+        currentUser.user_metadata?.full_name ||
+        currentUser.user_metadata?.name ||
+        currentUser.email?.split("@")[0] ||
+        "User",
+      email: currentUser.email || "",
+      phone: currentUser.phone || "",
+    });
+
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`/api/users?userId=${userId}`, { headers });
+      const result = await res.json();
+      if (res.ok && result.exists && result.data) {
+        const dbData = result.data;
+        const photoFromDb = dbData.photo_url || defaultPhoto;
+
+        mergedUser = {
+          ...currentUser,
+          uid: userId,
+          ...dbData,
+          photoURL: photoFromDb,
+          photo_url: photoFromDb,
+        };
+
+        setCustomer({
+          name:
+            dbData.full_name ||
+            dbData.username ||
+            currentUser.user_metadata?.full_name ||
+            currentUser.email?.split("@")[0] ||
+            "User",
+          email: currentUser.email || "",
+          phone: dbData.phone || currentUser.phone || "",
+        });
+      }
+    } catch (err) {
+      console.error("Gagal memuat profil user untuk navbar:", err);
+    }
+
+    setUser(mergedUser);
+  };
 
   const cartQuantity =
     cart?.items?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) ||
@@ -344,9 +377,10 @@ export function StoreProvider({ children }) {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      await auth.signOut();
       setCustomer({ name: "", email: "", phone: "" });
       setUser(null);
+      setCurrentSession(null);
       toast.success("Berhasil keluar!");
       router.push("/");
     } catch (error) {
@@ -354,11 +388,10 @@ export function StoreProvider({ children }) {
     }
   };
 
-const [shippingCost, setShippingCost] = useState(0);
+  const [shippingCost, setShippingCost] = useState(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
 
   // Hitung ongkir via GET /api/ongkir (RajaOngkir starter).
-  // destinationCityId = ID kota RajaOngkir, weight = gram.
   const calculateShippingCost = useCallback(
     async (destinationCityId, weight) => {
       if (!destinationCityId || !weight) return 0;
@@ -370,7 +403,6 @@ const [shippingCost, setShippingCost] = useState(0);
         );
         const data = await res.json();
         if (res.ok && data.success && data.costs?.length > 0) {
-          // Ambil tarif termurah dari layanan JNE.
           const allServices = data.costs.flatMap((c) =>
             (c.services || []).map((s) => Number(s.cost) || 0),
           );
@@ -402,7 +434,11 @@ const [shippingCost, setShippingCost] = useState(0);
     let orderId = "";
 
     try {
-      const userRes = await fetch(`/api/users?userId=${user.uid}`);
+      const userId = user.id || user.uid;
+      const token = currentSession?.access_token;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const userRes = await fetch(`/api/users?userId=${userId}`, { headers });
       const userResult = await userRes.json();
       const userData = userResult?.data || {};
       const userAddresses = userData.addresses || [];
@@ -415,13 +451,10 @@ const [shippingCost, setShippingCost] = useState(0);
       }
 
       orderId = `XAR-${Date.now()}`;
-      // Gunakan harga setelah diskon promo jika aktif
       const amount = activePromo ? discountedCartTotal : cartTotal;
       const primaryAddress =
         userAddresses.find((a) => a.isPrimary) || userAddresses[0];
 
-      // Baca detail shipping dari localStorage (di-set oleh halaman /checkout),
-      // lalu segera bersihkan agar data lama tidak terpakai di checkout berikutnya.
       let shippingDetail = null;
       if (typeof window !== "undefined") {
         const savedShipping = localStorage.getItem("checkout_shipping");
@@ -435,18 +468,15 @@ const [shippingCost, setShippingCost] = useState(0);
         localStorage.removeItem("checkout_shipping");
       }
 
-      // Hitung total berat dari item keranjang berdasarkan data produk
       let totalWeight = 0;
       for (const item of cart.items) {
         const product = products.find(
-          (p) => String(p.id) === String(item.id),
+          (p) => String(p.id || p._id) === String(item.id),
         );
-        const itemWeight = Number(product?.weight) || 250; // default 250gr
+        const itemWeight = Number(product?.weight) || 250;
         totalWeight += itemWeight * (Number(item.quantity) || 1);
       }
 
-      // Gunakan ongkir dari pilihan user di halaman checkout
-      // Jika tidak ada, hitung dari alamat utama user (pakai cityId RajaOngkir)
       let shippingCostAmount = shippingDetail?.shippingCost || 0;
       let selectedShippingAddress = shippingDetail?.address || primaryAddress;
 
@@ -458,14 +488,16 @@ const [shippingCost, setShippingCost] = useState(0);
       }
       setShippingCost(shippingCostAmount);
 
-      // Total akhir = harga produk (setelah diskon) + ongkir
       const finalAmount = amount + shippingCostAmount;
 
       const response = await fetch("/api/midtrans", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
-          userId: user.uid,
+          userId,
           orderId,
           amount: finalAmount,
           items: cart.items,
@@ -505,7 +537,10 @@ const [shippingCost, setShippingCost] = useState(0);
             try {
               await fetch("/api/orders/update-status", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
                 body: JSON.stringify({ orderId, status: "success" }),
               });
 
@@ -543,8 +578,11 @@ const [shippingCost, setShippingCost] = useState(0);
     if (!user) return;
     try {
       setIsProcessing(true);
+      const userId = user.id || user.uid;
+      const token = currentSession?.access_token;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const userRes = await fetch(`/api/users?userId=${user.uid}`);
+      const userRes = await fetch(`/api/users?userId=${userId}`, { headers });
       const userResult = await userRes.json();
       const existingAddresses = userResult?.data?.addresses || [];
 
@@ -568,9 +606,12 @@ const [shippingCost, setShippingCost] = useState(0);
 
       const res = await fetch("/api/users", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
-          userId: user.uid,
+          userId,
           type: "addresses",
           addresses: updatedAddresses,
         }),
@@ -614,7 +655,7 @@ const [shippingCost, setShippingCost] = useState(0);
         updateCartItemVariant,
         getAvailableVariants,
         setCustomer,
-checkoutWa,
+        checkoutWa,
         rupiah,
         processPayment,
         isProcessing,
@@ -625,7 +666,7 @@ checkoutWa,
         isAddressModalOpen,
         setIsAddressModalOpen,
         saveAddressAndPay,
-promoSettings,
+        promoSettings,
         activePromo,
         promoSavings,
         discountedCartTotal,

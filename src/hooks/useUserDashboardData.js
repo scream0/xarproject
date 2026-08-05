@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 import userConfig from "@/data/ui/userDashboardConfig.json";
-
-const db = getFirestore();
 
 function toTitleCase(value) {
   return value
@@ -66,10 +62,13 @@ export function useUserDashboardData() {
 
   useEffect(() => {
     let isCancelled = false;
+    let subscription = null;
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const fetchUserData = async (currentUser, sessionToken) => {
       if (!currentUser) {
-        window.location.replace("/login");
+        if (!isCancelled) {
+          window.location.replace("/login");
+        }
         return;
       }
 
@@ -77,17 +76,21 @@ export function useUserDashboardData() {
       setLoading(true);
       setError("");
 
-      try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
+      const userId = currentUser.id || currentUser.uid;
+      const headers = sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {};
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+      try {
+        const res = await fetch(`/api/users?userId=${userId}`, { headers });
+        const result = await res.json();
+
+        if (res.ok && result.exists && result.data) {
+          const data = result.data;
           const resolvedName = normalizeUserName(
             data.full_name,
             data.username,
-            currentUser.displayName,
-            currentUser.phoneNumber,
+            currentUser.user_metadata?.full_name,
+            currentUser.user_metadata?.name,
+            currentUser.phone,
             currentUser.email,
           );
 
@@ -96,23 +99,27 @@ export function useUserDashboardData() {
           }
         } else {
           const defaultName = normalizeUserName(
-            currentUser.displayName,
-            currentUser.phoneNumber,
+            currentUser.user_metadata?.full_name,
+            currentUser.user_metadata?.name,
+            currentUser.phone,
             currentUser.email,
           );
 
           try {
-            await setDoc(
-              docRef,
-              {
-                uid: currentUser.uid,
-                email: currentUser.email || "",
-                phone_number: currentUser.phoneNumber || "",
-                full_name: defaultName,
-                created_at: new Date().toISOString(),
+            await fetch("/api/users", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                ...headers,
               },
-              { merge: true },
-            );
+              body: JSON.stringify({
+                userId,
+                type: "profile",
+                email: currentUser.email || "",
+                phone: currentUser.phone || "",
+                full_name: defaultName,
+              }),
+            });
           } catch (createErr) {
             console.error(userConfig.toasts.initError, createErr);
           }
@@ -128,8 +135,9 @@ export function useUserDashboardData() {
           setError(userConfig.messages.loadUserError);
           setUserName(
             normalizeUserName(
-              currentUser.displayName,
-              currentUser.phoneNumber,
+              currentUser.user_metadata?.full_name,
+              currentUser.user_metadata?.name,
+              currentUser.phone,
               currentUser.email,
               userConfig.defaultUser,
             ),
@@ -140,11 +148,36 @@ export function useUserDashboardData() {
           setLoading(false);
         }
       }
-    });
+    };
+
+    const initAuth = async () => {
+      const { data: { session } } = await auth.getSession();
+      if (!session?.user) {
+        if (!isCancelled) {
+          window.location.replace("/login");
+        }
+        return;
+      }
+
+      await fetchUserData(session.user, session.access_token);
+
+      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        if (!session?.user) {
+          if (!isCancelled) {
+            window.location.replace("/login");
+          }
+          return;
+        }
+        await fetchUserData(session.user, session.access_token);
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuth();
 
     return () => {
       isCancelled = true;
-      unsubscribe();
+      if (subscription) subscription.unsubscribe();
     };
   }, [retryKey]);
 

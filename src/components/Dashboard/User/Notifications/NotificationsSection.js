@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./NotificationsSection.module.css";
 import notificationsConfig from "@/data/ui/notificationsConfig.json";
@@ -37,15 +36,15 @@ export default function NotificationsSection({ onUnreadCountChange }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [submittingMarkAllRead, setSubmittingMarkAllRead] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [currentSession, setCurrentSession] = useState(null);
 
-  const loadNotifications = useCallback(async (currentUser) => {
+  const loadNotifications = useCallback(async (session) => {
     try {
       setLoading(true);
-      const token = currentUser
-        ? await currentUser.getIdToken()
-        : await auth.currentUser?.getIdToken();
+      const token = session?.access_token;
+      
       const res = await fetch("/api/notifications", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal memuat notifikasi.");
@@ -59,23 +58,50 @@ export default function NotificationsSection({ onUnreadCountChange }) {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) return;
-      await loadNotifications(currentUser);
-    });
-    return () => unsubscribe();
+    let subscription = null;
+
+    const initAuth = async () => {
+      const { data: { session } } = await auth.getSession();
+      setCurrentSession(session);
+
+      if (session) {
+        await loadNotifications(session);
+      } else {
+        setLoading(false);
+      }
+
+      // Listener perubahan sesi Supabase
+      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        setCurrentSession(session);
+        if (session) {
+          await loadNotifications(session);
+        } else {
+          setNotifications([]);
+          setLoading(false);
+        }
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuth();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, [loadNotifications]);
 
   const markAllRead = async () => {
     try {
-      if (!auth.currentUser) {
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
         toast.error("Sesi Anda telah berakhir. Silakan muat ulang.");
         return;
       }
       setSubmittingMarkAllRead(true);
-      const token = await auth.currentUser.getIdToken();
 
-      // Menggunakan endpoint bulk update yang baru
+      // Menggunakan endpoint bulk update
       const res = await fetch("/api/notifications", {
         method: "PUT",
         headers: {
@@ -102,12 +128,14 @@ export default function NotificationsSection({ onUnreadCountChange }) {
   const markRead = async (notification) => {
     if (notification.isRead) return;
     try {
-      const token = await auth.currentUser?.getIdToken();
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+
       await fetch("/api/notifications", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({ notificationId: notification.id, isRead: true }),
       });
@@ -125,12 +153,14 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     }
     try {
       setDeletingId(notification.id);
-      const token = await auth.currentUser?.getIdToken();
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+
       const res = await fetch(
         `/api/notifications?id=${notification.id}`,
         {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
       );
       if (!res.ok) throw new Error("Gagal menghapus notifikasi.");
@@ -293,4 +323,3 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     </div>
   );
 }
-

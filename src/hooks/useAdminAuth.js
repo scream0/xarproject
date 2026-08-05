@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 
 export function useAdminAuth() {
   const [user, setUser] = useState(null);
@@ -15,11 +14,13 @@ export function useAdminAuth() {
     let isDisposed = false;
     let activeController = null;
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const verifyAdmin = async (currentUser, accessToken) => {
       activeController?.abort();
 
       if (!currentUser) {
-        window.location.replace("/login");
+        if (!isDisposed) {
+          window.location.replace("/login");
+        }
         return;
       }
 
@@ -31,7 +32,11 @@ export function useAdminAuth() {
       setLoading(true);
 
       try {
-        const res = await fetch(`/api/users?userId=${currentUser.uid}`, {
+        const userId = currentUser.id || currentUser.uid;
+        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+
+        const res = await fetch(`/api/users?userId=${userId}`, {
+          headers,
           signal: abortController.signal,
         });
 
@@ -68,12 +73,39 @@ export function useAdminAuth() {
           setLoading(false);
         }
       }
-    });
+    };
+
+    let subscription = null;
+
+    const initAuth = async () => {
+      const { data: { session } } = await auth.getSession();
+      if (!session?.user) {
+        if (!isDisposed) {
+          window.location.replace("/login");
+        }
+        return;
+      }
+
+      await verifyAdmin(session.user, session.access_token);
+
+      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        if (!session?.user) {
+          if (!isDisposed) {
+            window.location.replace("/login");
+          }
+          return;
+        }
+        await verifyAdmin(session.user, session.access_token);
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuth();
 
     return () => {
       isDisposed = true;
       activeController?.abort();
-      unsubscribe();
+      if (subscription) subscription.unsubscribe();
     };
   }, []);
 

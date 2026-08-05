@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import styles from "./OverviewUser.module.css";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 import { useStore } from "@/context/StoreContext";
 import { getDiscountedPrice } from "@/utils/promo";
 import toast from "react-hot-toast";
@@ -50,15 +50,52 @@ export default function OverviewUser({ setActiveTab }) {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const currentUser = auth.currentUser;
+  // State untuk sesi & user Supabase
+  const [currentSession, setCurrentSession] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    let subscription = null;
+
+    const initAuth = async () => {
+      const { data: { session } } = await auth.getSession();
+      setCurrentSession(session);
+      setCurrentUser(session?.user || null);
+
+      if (!session) {
+        setLoading(false);
+      }
+
+      const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        setCurrentSession(session);
+        setCurrentUser(session?.user || null);
+        if (!session) {
+          setLoading(false);
+        }
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuth();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchDashboardData() {
-      if (!currentUser) return;
+      if (!currentUser || !currentSession) return;
 
       try {
-        // Ambil data pesanan dan profil dari database secara paralel
-        const orderRes = await fetch(`/api/orders?userId=${currentUser.uid}`);
+        const userId = currentUser.id || currentUser.uid;
+        const token = currentSession.access_token;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        // Ambil data pesanan dari database
+        const orderRes = await fetch(`/api/orders?userId=${userId}`, {
+          headers,
+        });
         if (!orderRes.ok)
           throw new Error(overviewConfig.toasts.fetchOrdersError);
 
@@ -67,10 +104,9 @@ export default function OverviewUser({ setActiveTab }) {
           ? orderResult
           : orderResult.data || orderResult.orders || [];
 
-        // Ambil nama profil asli dari database user jika tersedia
-        let fetchedFullName = currentUser.displayName || "";
+        // Ambil nama profil dari user metadata atau fallback
+        let fetchedFullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || "";
         try {
-          // Fallback ekstraksi dari primaryAddress jika displayName kosong
           if (
             !fetchedFullName &&
             orderResult.primaryAddress &&
@@ -124,7 +160,9 @@ export default function OverviewUser({ setActiveTab }) {
         let userPoints = 0;
         let userBalance = 0;
         try {
-          const userRes = await fetch(`/api/users?userId=${currentUser.uid}`);
+          const userRes = await fetch(`/api/users?userId=${userId}`, {
+            headers,
+          });
           const userResult = await userRes.json();
           if (userRes.ok && userResult.exists && userResult.data) {
             userPoints = Number(userResult.data.points || 0);
@@ -178,7 +216,6 @@ export default function OverviewUser({ setActiveTab }) {
             purchasedProductIds.has(String(p.id || p._id)),
           );
 
-          // Jika rekomendasi dari riwayat kurang dari 3, lengkapi dengan produk unggulan lainnya dari database
           if (recommendations.length < 3) {
             const additionalProducts = products.filter(
               (p) => !purchasedProductIds.has(String(p.id || p._id)),
@@ -199,7 +236,7 @@ export default function OverviewUser({ setActiveTab }) {
     }
 
     fetchDashboardData();
-  }, [currentUser, products]);
+  }, [currentUser, currentSession, products]);
 
   const handleNavigation = (tab) => {
     if (typeof setActiveTab === "function") {
@@ -339,7 +376,6 @@ export default function OverviewUser({ setActiveTab }) {
               recentOrders.map((order) => {
                 const displayId = order.orderId || order.id || "";
 
-                // Ekstraksi nama produk dinamis dari database
                 let itemName = order.product_name || order.name || "";
                 if (
                   !itemName &&
@@ -459,6 +495,7 @@ export default function OverviewUser({ setActiveTab }) {
                 : rawPrice.toLocaleString("id-ID");
               return (
                 <div key={prod.id || prod._id} className={styles.curatedItem}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={
                       prod.image_url ||

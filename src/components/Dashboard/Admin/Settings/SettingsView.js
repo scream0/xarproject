@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import styles from "./SettingsView.module.css";
-import { auth } from "@/lib/firebaseClient";
-import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/supabaseClient";
 import settingsConfig from "@/data/ui/settingsConfig.json";
 import {
   getAdminSettings,
@@ -87,6 +86,7 @@ export default function SettingsView() {
   const [activeTab, setActiveTab] = useState("store");
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [currentSession, setCurrentSession] = useState(null);
 
   const cfg = settingsConfig;
 
@@ -186,7 +186,7 @@ export default function SettingsView() {
       },
       copyright: { text: data?.footer?.copyright?.text || "" },
     },
-promo: {
+    promo: {
       promoBannerEnabled: Boolean(data?.promoBannerEnabled),
       promoBannerText: data?.promoBannerText || "",
       promoDiscountType: data?.promoDiscountType || "percentage",
@@ -199,15 +199,20 @@ promo: {
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        toast.error(cfg.toast?.authRequired || "Authentication required.");
-        setIsFetching(false);
-        return;
-      }
+    let subscription = null;
 
+    const initAuthAndFetch = async () => {
       try {
-        const data = await getAdminSettings(currentUser);
+        const { data: { session } } = await auth.getSession();
+        setCurrentSession(session);
+
+        if (!session) {
+          toast.error(cfg.toast?.authRequired || "Authentication required.");
+          setIsFetching(false);
+          return;
+        }
+
+        const data = await getAdminSettings(session);
         setSettings(mapSettingsToState(data));
         setImagePreviewUrl(data?.about?.image || "");
 
@@ -226,9 +231,28 @@ promo: {
       } finally {
         setIsFetching(false);
       }
-    });
 
-    return () => unsubscribe();
+      // Listener perubahan sesi Supabase
+      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        setCurrentSession(session);
+        if (session) {
+          try {
+            const data = await getAdminSettings(session);
+            setSettings(mapSettingsToState(data));
+            setImagePreviewUrl(data?.about?.image || "");
+          } catch (error) {
+            console.error("Auth Change Fetch Error:", error.message);
+          }
+        }
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuthAndFetch();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -237,8 +261,7 @@ promo: {
     const toastId = toast.loading(cfg.buttons?.saving || "Menyimpan...");
     setLoading(true);
 
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+    if (!currentSession) {
       toast.error(cfg.toast?.sessionExpired || "Sesi berakhir.", {
         id: toastId,
       });
@@ -248,17 +271,18 @@ promo: {
 
     try {
       const payload = buildPayload();
+      const user = currentSession.user;
 
       // Unggah gambar section about jika ada file baru
       if (selectedImageFile) {
         setUploadingImage(true);
         const formData = new FormData();
         formData.append("file", selectedImageFile);
-        formData.append("userId", currentUser.uid);
+        formData.append("userId", user.id);
         formData.append("folder", "storefront");
         formData.append(
           "publicId",
-          `storefront/about-${currentUser.uid}`,
+          `storefront/about-${user.id}`,
         );
         formData.append(
           "oldPublicId",
@@ -268,6 +292,9 @@ promo: {
 
         const uploadRes = await fetch("/api/cloudinary", {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${currentSession.access_token}`,
+          },
           body: formData,
         });
         const uploadResult = await uploadRes.json();
@@ -283,9 +310,9 @@ promo: {
         setUploadingImage(false);
       }
 
-      await saveSettings(payload, currentUser);
+      await saveSettings(payload, currentSession);
 
-      const fresh = await getAdminSettings(currentUser);
+      const fresh = await getAdminSettings(currentSession);
       setSettings(mapSettingsToState(fresh));
       setImagePreviewUrl(fresh?.about?.image || "");
 
@@ -404,7 +431,7 @@ promo: {
         },
         copyright: { text: strictValue(s.footer.copyright?.text) },
       },
-promoBannerEnabled: Boolean(s.promo.promoBannerEnabled),
+      promoBannerEnabled: Boolean(s.promo.promoBannerEnabled),
       promoBannerText: strictValue(s.promo.promoBannerText),
       promoDiscountType: s.promo.promoDiscountType || "percentage",
       promoDiscountValue: Number(s.promo.promoDiscountValue || 0),
@@ -1700,4 +1727,3 @@ function PaymentTab({ settings, handleInputChange, cfg }) {
     </div>
   );
 }
-

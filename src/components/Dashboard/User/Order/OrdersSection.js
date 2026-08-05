@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import styles from "./OrdersSection.module.css";
 import ordersConfig from "@/data/ui/ordersConfig.json";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { useStore } from "@/context/StoreContext";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
@@ -11,7 +11,7 @@ import { formatAddressDisplay } from "@/utils/address";
 import { sortOrdersByNewestFirst } from "./orderSorting";
 import { useRouter } from "next/navigation";
 
-// Mapping status mentah dari Firestore/Admin -> label & tahap yang ditampilkan
+// Mapping status mentah dari database/Admin -> label & tahap yang ditampilkan
 // ke customer. Ini HARUS selalu sinkron dengan alur status di TransactionTable.js
 // (admin): pending -> success -> processing -> shipping -> completed
 const STATUS_INFO = {
@@ -64,9 +64,8 @@ function getStatusInfo(rawStatus) {
   );
 }
 
-// Helper untuk memformat 1 dokumen order mentah dari Firestore menjadi
-// struktur yang dipakai UI. Dipakai baik oleh listener real-time maupun
-// (jika diperlukan) fetch manual, supaya format selalu konsisten.
+// Helper untuk memformat 1 dokumen order mentah dari database menjadi
+// struktur yang dipakai UI. Dipakai supaya format selalu konsisten.
 function formatOrderDoc(item, primaryAddress) {
   const rawStatus = (item.status || "pending").toLowerCase();
 
@@ -133,12 +132,14 @@ export default function OrdersSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState(null);
   const [userPrimaryAddress, setUserPrimaryAddress] = useState("Belum diatur");
   const { addToCart } = useStore();
   const router = useRouter();
-  // State untuk currentUser yang mendengarkan status Auth Firebase secara real-time
+  
+  // State untuk currentUser dan session Supabase
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentSession, setCurrentSession] = useState(null);
+  
   const [isCancelling, setIsCancelling] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -149,16 +150,36 @@ export default function OrdersSection() {
   const [comment, setComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // 1. Pantau status Auth Firebase secara dinamis
+  // 1. Pantau status Auth Supabase secara dinamis
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setCurrentUser(user);
-      if (!user) {
+    let subscription = null;
+
+    const initAuth = async () => {
+      const { data: { session } } = await auth.getSession();
+      setCurrentSession(session);
+      setCurrentUser(session?.user || null);
+
+      if (!session) {
         setLoading(false);
         setOrders([]);
       }
-    });
-    return () => unsubscribe();
+
+      const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        setCurrentSession(session);
+        setCurrentUser(session?.user || null);
+        if (!session) {
+          setLoading(false);
+          setOrders([]);
+        }
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuth();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   // 2. Muat Script Midtrans Snap secara dinamis
@@ -176,19 +197,21 @@ export default function OrdersSection() {
     }
   }, []);
 
-  // 3. Ambil daftar pesanan lewat endpoint backend.
-  // Ini lebih andal daripada listener Firestore client karena menghindari
-  // masalah rules/ACL yang bisa mencegah data order tampil di dashboard user.
+  // 3. Ambil daftar pesanan lewat endpoint backend menggunakan token Supabase.
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !currentSession) return;
 
     let isActive = true;
     setLoading(true);
 
     const loadOrders = async () => {
       try {
-        const response = await fetch(`/api/user/orders?userId=${currentUser.uid}`, {
+        const userId = currentUser.id || currentUser.uid;
+        const token = currentSession.access_token;
+
+        const response = await fetch(`/api/user/orders?userId=${userId}`, {
           cache: "no-store",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
         if (!response.ok) {
@@ -227,12 +250,9 @@ export default function OrdersSection() {
     return () => {
       isActive = false;
     };
-  }, [currentUser]);
+  }, [currentUser, currentSession]);
 
   // 4. Filter & Search Logic
-  // Tab "completed" HANYA menampilkan pesanan yang benar-benar sudah selesai
-  // (barang sudah diterima), bukan sekadar "sudah dibayar" atau "sedang dikirim".
-  // Status lain (pending/success/processing/shipping) tetap dianggap "berjalan".
   const filteredOrders = useMemo(() => {
     let result = orders;
 
@@ -240,7 +260,6 @@ export default function OrdersSection() {
       if (filter === "completed") {
         result = result.filter((o) => o.status === "completed");
       } else if (filter === "processing") {
-        // "Berjalan" mencakup semua tahap sebelum selesai
         result = result.filter((o) =>
           ["pending", "success", "processing", "shipping", "shipped"].includes(o.status),
         );
@@ -289,7 +308,6 @@ export default function OrdersSection() {
     try {
       if (!currentUser) throw new Error("Pengguna tidak terautentikasi.");
 
-      // Ambil data produk terbaru dari database untuk cek stok
       const productsRes = await fetch("/api/products", { cache: "no-store" });
       const productsResult = await productsRes.json();
       if (!productsRes.ok) throw new Error("Gagal memeriksa stok produk.");
@@ -327,7 +345,6 @@ export default function OrdersSection() {
           continue;
         }
 
-        // Cari varian atau produk utama
         let targetVariant = null;
         let currentStock = 0;
 
@@ -355,7 +372,6 @@ export default function OrdersSection() {
           continue;
         }
 
-        // Sesuaikan jumlah dengan sisa stok
         const finalQty = Math.min(orderedQty, currentStock);
         if (finalQty < orderedQty) {
           toast(
@@ -363,7 +379,6 @@ export default function OrdersSection() {
           );
         }
 
-        // Masukkan ke keranjang menggunakan Store Context
         const variantData = targetVariant || {
           size: orderedSize || "Standard",
           price: Number(item.price || foundProduct.price || 0),
@@ -405,16 +420,19 @@ export default function OrdersSection() {
     setIsCancelling(true);
     const toastId = toast.loading("Membatalkan pesanan...");
     try {
-      if (!currentUser) throw new Error("Pengguna tidak terautentikasi.");
-      const token = await currentUser.getIdToken();
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+      const userId = currentUser?.id || currentUser?.uid;
 
-      const res = await fetch(`/api/user/orders/${order.id}/cancel?userId=${currentUser.uid}`, {
+      if (!userId) throw new Error("Pengguna tidak terautentikasi.");
+
+      const res = await fetch(`/api/user/orders/${order.id}/cancel?userId=${userId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
-        body: JSON.stringify({ orderId: order.id, userId: currentUser.uid }),
+        body: JSON.stringify({ orderId: order.id, userId }),
       });
 
       const result = await res.json();
@@ -422,7 +440,11 @@ export default function OrdersSection() {
         throw new Error(result.error || "Gagal membatalkan pesanan.");
 
       toast.success("Pesanan berhasil dibatalkan.", { id: toastId });
-      // Tidak perlu refetch manual — listener onSnapshot akan otomatis update
+      
+      // Perbarui state lokal secara instan
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, status: "cancelled" } : o))
+      );
     } catch (err) {
       console.error("Cancel Order Error:", err);
       toast.error(err.message || "Gagal membatalkan pesanan.", { id: toastId });
@@ -443,14 +465,17 @@ export default function OrdersSection() {
     const toastId = toast.loading("Mengonfirmasi penerimaan pesanan...");
 
     try {
-      if (!currentUser) throw new Error("Pengguna tidak terautentikasi.");
-      const token = await currentUser.getIdToken();
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+      const userId = currentUser?.id || currentUser?.uid;
 
-      const res = await fetch(`/api/user/orders/${order.id}/confirm?userId=${currentUser.uid}`, {
+      if (!userId) throw new Error("Pengguna tidak terautentikasi.");
+
+      const res = await fetch(`/api/user/orders/${order.id}/confirm?userId=${userId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
       });
 
@@ -460,6 +485,11 @@ export default function OrdersSection() {
       }
 
       toast.success("Pesanan berhasil dikonfirmasi diterima.", { id: toastId });
+      
+      // Perbarui state lokal secara instan
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, status: "completed" } : o))
+      );
     } catch (err) {
       console.error("Confirm Order Error:", err);
       toast.error(err.message || "Gagal mengonfirmasi pesanan.", { id: toastId });
@@ -475,7 +505,7 @@ export default function OrdersSection() {
 
   const handleDownloadInvoice = (order) => {
     const invoiceContent = `=====================================
-          INVOICE TRANSAKSI XAR
+         INVOICE TRANSAKSI XAR
 =====================================
 ID Transaksi     : ${order.id}
 Tanggal          : ${order.date}
@@ -507,7 +537,7 @@ Terima kasih telah berbelanja di XAR!`;
     toast.success("Invoice berhasil diunduh!");
   };
 
-  // Buka modal review untuk item TERTENTU dalam order (bukan selalu item pertama)
+  // Buka modal review untuk item TERTENTU dalam order
   const openReviewModal = (order, item) => {
     setReviewModalOrder(order);
     setReviewTargetItem(item);
@@ -530,16 +560,18 @@ Terima kasih telah berbelanja di XAR!`;
     const toastId = toast.loading("Mengirim ulasan Anda...");
 
     try {
-      const token = await currentUser.getIdToken();
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+      const userId = currentUser.id || currentUser.uid;
 
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({
-          userId: currentUser.uid,
+          userId,
           orderId: reviewModalOrder.id,
           productId:
             reviewTargetItem.id ||
@@ -560,11 +592,28 @@ Terima kasih telah berbelanja di XAR!`;
       toast.success("Terima kasih! Ulasan Anda berhasil dikirim.", {
         id: toastId,
       });
+
+      const targetItemId = String(reviewTargetItem.id || reviewTargetItem.productId || "");
+
+      // Perbarui state lokal agar item langsung ditandai sudah diulas
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === reviewModalOrder.id) {
+            const updatedReviewedIds = [...(o.reviewedItemIds || []), targetItemId];
+            return {
+              ...o,
+              reviewedItemIds: updatedReviewedIds,
+              hasBeenReviewed: true,
+            };
+          }
+          return o;
+        })
+      );
+
       setReviewModalOrder(null);
       setReviewTargetItem(null);
       setComment("");
       setRating(5);
-      // Tidak perlu refetch manual — listener onSnapshot akan otomatis update
     } catch (error) {
       console.error("Gagal mengirim ulasan:", error);
       toast.error(error.message, { id: toastId });
@@ -579,7 +628,6 @@ Terima kasih telah berbelanja di XAR!`;
     if (order.reviewedItemIds && order.reviewedItemIds.length > 0) {
       return order.reviewedItemIds.includes(itemId);
     }
-    // Fallback untuk order lama yang cuma punya flag boolean di level order
     return order.hasBeenReviewed;
   };
 

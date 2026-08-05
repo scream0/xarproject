@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 import styles from "./OperationsCenter.module.css";
 
 const money = (value) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
@@ -25,78 +25,98 @@ export default function OperationsCenter() {
   const [shippingEditingId, setShippingEditingId] = useState(null);
   const [shippingDraft, setShippingDraft] = useState({ courierName: "", serviceType: "", trackingNumber: "" });
 
+  // Helper untuk mendapatkan token Supabase yang sedang aktif
+  const getSupabaseToken = async () => {
+    const { data: { session } } = await auth.getSession();
+    return session?.access_token || null;
+  };
+
   useEffect(() => {
-    const reviewRequest = auth.currentUser
-      ? auth.currentUser.getIdToken().then((token) => fetch("/api/reviews", { headers: { Authorization: `Bearer ${token}` } }))
-      : fetch("/api/reviews");
-    const teamRequest = auth.currentUser
-      ? auth.currentUser.getIdToken().then((token) => fetch("/api/team", { headers: { Authorization: `Bearer ${token}` } }))
-      : Promise.resolve(null);
-    const automationRequest = auth.currentUser
-      ? auth.currentUser.getIdToken().then((token) => fetch("/api/automation", { headers: { Authorization: `Bearer ${token}` } }))
-      : Promise.resolve(null);
-    const procurementRequest = auth.currentUser
-      ? auth.currentUser.getIdToken().then((token) => fetch("/api/procurement", { headers: { Authorization: `Bearer ${token}` } }))
-      : Promise.resolve(null);
-    const reconciliationRequest = auth.currentUser
-      ? auth.currentUser.getIdToken().then((token) => fetch("/api/reconciliation", { headers: { Authorization: `Bearer ${token}` } }))
-      : Promise.resolve(null);
-    Promise.all([
-      fetch("/api/admin/orders"), fetch("/api/products"), reviewRequest,
-      teamRequest, automationRequest, procurementRequest, reconciliationRequest,
-    ])
-      .then(async ([ordersRes, productsRes, reviewsRes, teamRes, automationRes, procurementRes, reconciliationRes]) => {
-        const [ordersData, productsData, reviewsData] = await Promise.all([
-          ordersRes.json(), productsRes.json(), reviewsRes?.ok ? reviewsRes.json() : Promise.resolve({ reviews: [] }),
+    const loadAllData = async () => {
+      try {
+        const token = await getSupabaseToken();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const [
+          ordersRes,
+          productsRes,
+          reviewsRes,
+          teamRes,
+          automationRes,
+          procurementRes,
+          reconciliationRes,
+          returnsRes,
+          supportRes,
+        ] = await Promise.all([
+          fetch("/api/admin/orders", { headers }),
+          fetch("/api/products", { headers }),
+          fetch("/api/reviews", { headers }),
+          fetch("/api/team", { headers }),
+          fetch("/api/automation", { headers }),
+          fetch("/api/procurement", { headers }),
+          fetch("/api/reconciliation", { headers }),
+          fetch("/api/returns", { headers }),
+          fetch("/api/support", { headers }),
         ]);
+
+        const ordersData = await ordersRes.json();
+        const productsData = await productsRes.json();
+        const reviewsData = reviewsRes.ok ? await reviewsRes.json() : { reviews: [] };
+
         setOrders(ordersData.orders || ordersData.data || []);
         setProducts(productsData.data || productsData.products || []);
         setReviews(reviewsData.reviews || []);
 
-        if (teamRes?.ok) {
+        if (teamRes.ok) {
           const teamData = await teamRes.json();
           setTeam(teamData.users || []);
         }
-        if (automationRes?.ok) {
+        if (automationRes.ok) {
           const rulesData = await automationRes.json();
           setRules(rulesData.rules || []);
         }
-        if (procurementRes?.ok) {
+        if (procurementRes.ok) {
           const procurementData = await procurementRes.json();
           setProcurement({
             suppliers: procurementData.suppliers || [],
             orders: procurementData.orders || [],
           });
         }
-        if (reconciliationRes?.ok) {
+        if (reconciliationRes.ok) {
           const reconciliationData = await reconciliationRes.json();
           setReconciliation({
             pending: reconciliationData.pending || [],
             summary: reconciliationData.summary || {},
           });
         }
-      })
-      .catch(() => toast.error("Sebagian data operasional belum dapat dimuat."))
-      .finally(() => setLoading(false));
-  }, []);
+        if (returnsRes.ok) {
+          const returnsData = await returnsRes.json();
+          setReturnRequests(returnsData.requests || []);
+        }
+        if (supportRes.ok) {
+          const supportData = await supportRes.json();
+          setTickets(supportData.tickets || []);
+        }
+      } catch (error) {
+        console.error("Error loading operational workspace:", error);
+        toast.error("Sebagian data operasional belum dapat dimuat.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    auth.currentUser?.getIdToken().then((token) => fetch("/api/returns", { headers: { Authorization: `Bearer ${token}` } })).then((res) => res?.json()).then((data) => setReturnRequests(data?.requests || [])).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    auth.currentUser?.getIdToken().then((token) => fetch("/api/support", { headers: { Authorization: `Bearer ${token}` } })).then((res) => res?.json()).then((data) => setTickets(data?.tickets || [])).catch(() => {});
+    loadAllData();
   }, []);
 
   const updateOrderStatus = async (orderId, nextStatus) => {
     try {
       setStatusUpdatingId(orderId);
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const res = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({ status: nextStatus, changedBy: "admin" }),
       });
@@ -115,12 +135,12 @@ export default function OperationsCenter() {
   const saveShipping = async (order) => {
     const orderId = order.id || order.orderId;
     try {
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const res = await fetch(`/api/admin/orders/${orderId}/shipping`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({
           courierName: shippingDraft.courierName,
@@ -144,15 +164,28 @@ export default function OperationsCenter() {
   };
 
   const updateReturn = async (requestId, status) => {
-    try { const token = await auth.currentUser.getIdToken(); const res = await fetch("/api/returns", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ requestId, status }) }); const data = await res.json(); if (!res.ok) throw new Error(data.error); setReturnRequests((items) => items.map((item) => item.id === requestId ? { ...item, status } : item)); toast.success("Return request updated."); } catch (error) { toast.error(error.message || "Unable to update request."); }
+    try {
+      const token = await getSupabaseToken();
+      const res = await fetch("/api/returns", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
+        body: JSON.stringify({ requestId, status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setReturnRequests((items) => items.map((item) => item.id === requestId ? { ...item, status } : item));
+      toast.success("Return request updated.");
+    } catch (error) {
+      toast.error(error.message || "Unable to update request.");
+    }
   };
 
   const updateRole = async (memberId, role) => {
     try {
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const res = await fetch("/api/team", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
         body: JSON.stringify({ userId: memberId, role }),
       });
       const data = await res.json();
@@ -167,10 +200,10 @@ export default function OperationsCenter() {
 
   const saveRules = async (nextRules) => {
     try {
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const res = await fetch("/api/automation", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
         body: JSON.stringify({ rules: nextRules }),
       });
       const data = await res.json();

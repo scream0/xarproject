@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { auth } from "@/lib/firebaseClient";
+import { auth } from "@/lib/supabaseClient";
 import styles from "./OrdersManagement.module.css";
 
 const money = (value) =>
@@ -29,6 +29,12 @@ export default function OrdersManagement() {
   const [printOrders, setPrintOrders] = useState([]);
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
+  // Helper untuk mendapatkan token Supabase yang sedang aktif
+  const getSupabaseToken = async () => {
+    const { data: { session } } = await auth.getSession();
+    return session?.access_token || null;
+  };
+
   const loadOrders = async (targetPage = page, targetStatus = statusFilter, targetSearch = searchTerm) => {
     try {
       setLoading(true);
@@ -36,7 +42,7 @@ export default function OrdersManagement() {
       if (targetStatus && targetStatus !== "all") params.set("status", targetStatus);
       if (targetSearch.trim()) params.set("search", targetSearch.trim());
 
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const res = await fetch(`/api/admin/orders?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -78,12 +84,12 @@ export default function OrdersManagement() {
     const orderId = order.id || order.orderId;
     try {
       setUpdatingId(orderId);
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const res = await fetch(`/api/admin/orders/${orderId}/shipping`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({
           courierName: shippingDraft.courierName,
@@ -131,13 +137,13 @@ export default function OrdersManagement() {
     const toastId = toast.loading("Memperbarui status pesanan terpilih...");
 
     try {
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const promises = selectedOrders.map(async (orderId) => {
         const res = await fetch(`/api/admin/orders/${orderId}/status`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: token ? `Bearer ${token}` : "",
           },
           body: JSON.stringify({ status: bulkStatus, changedBy: "admin" }),
         });
@@ -164,12 +170,12 @@ export default function OrdersManagement() {
   const updateStatus = async (orderId, nextStatus) => {
     try {
       setUpdatingId(orderId);
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const res = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({ status: nextStatus, changedBy: "admin" }),
       });

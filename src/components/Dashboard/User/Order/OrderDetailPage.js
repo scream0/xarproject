@@ -1,10 +1,8 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
-import { auth } from "@/lib/firebaseClient";
 import { formatAddressDisplay } from "@/utils/address";
 import styles from "./OrderDetailPage.module.css";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
@@ -53,15 +51,32 @@ export default function OrderDetailPage({ orderId }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
+    let subscription = null;
+
+    const initAuth = async () => {
+      const { data: { session } } = await auth.getSession();
+      if (!session) {
         router.replace("/login");
         return;
       }
-      setUser(currentUser);
-    });
+      setUser(session.user);
 
-    return () => unsubscribe();
+      // Listener perubahan sesi Supabase
+      const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        if (!session) {
+          router.replace("/login");
+        } else {
+          setUser(session.user);
+        }
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuth();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, [router]);
 
   useEffect(() => {
@@ -78,8 +93,12 @@ export default function OrderDetailPage({ orderId }) {
 
     const loadOrder = async () => {
       try {
-        const res = await fetch(`/api/user/orders/${orderId}?userId=${user.uid}`, {
+        const { data: { session } } = await auth.getSession();
+        const token = session?.access_token;
+
+        const res = await fetch(`/api/user/orders/${orderId}?userId=${user.id || user.uid}`, {
           cache: "no-store",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const result = await res.json();
 

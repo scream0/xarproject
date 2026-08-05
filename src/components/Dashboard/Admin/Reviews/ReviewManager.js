@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
 import styles from "./ReviewManager.module.css";
-import { auth } from "@/lib/firebaseClient";
+import { auth as supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import reviewConfig from "@/data/ui/reviewManagerConfig.json";
 
@@ -12,13 +11,12 @@ export default function ReviewManager() {
   const [filter, setFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState(null);
 
-  const fetchReviews = async () => {
+  const fetchReviews = async (session) => {
     try {
       setLoading(true);
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error(reviewConfig.toasts.authRequired);
+      const token = session?.access_token;
+      if (!token) throw new Error(reviewConfig.toasts.authRequired);
 
-      const token = await currentUser.getIdToken();
       const res = await fetch("/api/reviews", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -39,28 +37,44 @@ export default function ReviewManager() {
     }
   };
 
-  // PERBAIKAN: hook ini sekarang di DALAM body komponen (sebelumnya
-  // tertulis di luar `export default function ReviewManager()`, itu
-  // yang menyebabkan error "Invalid hook call").
-  // Juga menggantikan useEffect lama yang langsung panggil fetchReviews()
-  // tanpa menunggu Firebase selesai resolve auth state.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        fetchReviews();
+    let subscription = null;
+
+    const initAuth = async () => {
+      // Ambil sesi awal Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        await fetchReviews(session);
       } else {
         setLoading(false);
       }
-    });
-    return () => unsubscribe();
+
+      // Dengarkan perubahan status auth Supabase
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          fetchReviews(session);
+        } else {
+          setReviews([]);
+          setLoading(false);
+        }
+      });
+      subscription = data.subscription;
+    };
+
+    initAuth();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   const handleApprove = async (reviewId) => {
     setUpdatingId(reviewId);
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error(reviewConfig.toasts.authRequired);
-      const token = await currentUser.getIdToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error(reviewConfig.toasts.authRequired);
 
       const res = await fetch("/api/reviews", {
         method: "PUT",
@@ -93,9 +107,9 @@ export default function ReviewManager() {
     }
     setUpdatingId(reviewId);
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error(reviewConfig.toasts.authRequired);
-      const token = await currentUser.getIdToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error(reviewConfig.toasts.authRequired);
 
       const res = await fetch("/api/reviews", {
         method: "DELETE",
