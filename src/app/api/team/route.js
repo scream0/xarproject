@@ -1,62 +1,50 @@
-﻿import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
-import { getAuth } from "firebase-admin/auth";
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 async function admin(request) {
   const token = request.headers.get("Authorization")?.split("Bearer ")[1];
   if (!token) throw new Error("Authentication required.");
-  const u = await getAuth().verifyIdToken(token);
-  const profile = await db.collection("users").doc(u.uid).get();
-  if (!(u.role === "admin" || u.admin || profile.data()?.role === "admin"))
-    throw new Error("Admin access required.");
-  return u;
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) throw new Error("Authentication required.");
+
+  let isAdmin = user.user_metadata?.role === "admin";
+  if (!isAdmin) {
+    const { data: profile } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single();
+    if (profile?.role === "admin") isAdmin = true;
+  }
+  if (!isAdmin) throw new Error("Admin access required.");
+  return user;
 }
 
-// Helper: serialize Firestore data (Timestamp -> ISO string)
-function serializeDoc(doc) {
-  const data = doc.data();
-  const serialized = {
-    id: doc.id,
-    email: data.email || "",
-    name: data.full_name || data.username || "User",
-    role: data.role || "customer",
-    phone: data.phone || data.phone_number || "",
-    createdAt: data.created_at?.toDate
-      ? data.created_at.toDate().toISOString()
-      : data.created_at || data.createdAt || "",
-    lastLogin: data.last_login?.toDate
-      ? data.last_login.toDate().toISOString()
-      : data.last_login || "",
-    status: data.status || "active",
-    points: Number(data.points || 0),
-    balance: Number(data.balance || 0),
-    totalSpent: Number(data.total_spent || 0),
-    accountStatusUpdatedAt: data.accountStatusUpdatedAt?.toDate
-      ? data.accountStatusUpdatedAt.toDate().toISOString()
-      : data.accountStatusUpdatedAt || "",
-    accountStatusUpdatedBy: data.accountStatusUpdatedBy || "",
-    roleUpdatedAt: data.roleUpdatedAt?.toDate
-      ? data.roleUpdatedAt.toDate().toISOString()
-      : data.roleUpdatedAt || "",
+function serializeDoc(row) {
+  return {
+    id: row.id,
+    email: row.email || "",
+    name: row.full_name || row.username || "User",
+    role: row.role || "customer",
+    phone: row.phone || row.phone_number || "",
+    createdAt: row.created_at || "",
+    lastLogin: row.last_login || "",
+    status: row.status || "active",
+    points: Number(row.points || 0),
+    balance: Number(row.balance || 0),
+    totalSpent: Number(row.total_spent || 0),
+    accountStatusUpdatedAt: row.accountStatusUpdatedAt || "",
+    accountStatusUpdatedBy: row.accountStatusUpdatedBy || "",
+    roleUpdatedAt: row.roleUpdatedAt || "",
   };
-  return serialized;
 }
 
-// Helper: hitung total belanja user dari koleksi orders (Firestore) — dibungkus try/catch
 async function getUserTotalSpent(userId) {
   try {
-    const snapshot = await db
-      .collection("orders")
-      .where("userId", "==", userId)
-      .get();
-    let total = 0;
-    snapshot.forEach((doc) => {
-      const order = doc.data();
-      total += Number(order.amount || order.price || 0) || 0;
-    });
-    return total;
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select("amount")
+      .eq("user_id", userId);
+    if (error || !data) return 0;
+    return data.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
   } catch (err) {
     console.error("Gagal menghitung total belanja user:", err);
     return 0;
@@ -66,28 +54,24 @@ async function getUserTotalSpent(userId) {
 export async function GET(request) {
   try {
     await admin(request);
-    const users = await db.collection("users").get();
+    const { data: users, error } = await supabaseAdmin.from("users").select("*");
+    if (error) throw error;
 
     const { searchParams } = new URL(request.url);
     const skipSpent = searchParams.get("skipSpent") === "true";
 
     const usersData = await Promise.all(
-      users.docs
-        .filter((doc) => {
-          // Jangan tampilkan admin internal utama dalam manajemen user
-          const role = doc.data().role || "customer";
-          return role !== "superadmin";
-        })
-        .map(async (doc) => {
-          const serialized = serializeDoc(doc);
-          if (!skipSpent) {
-            serialized.totalSpent = await getUserTotalSpent(doc.id);
+      (users || [])
+        .filter((row) => (row.role || "customer") !== "superadmin")
+        .map(async (row) => {
+          const serialized = serializeDoc(row);
+          if (!skipSpent && !serialized.totalSpent) {
+            serialized.totalSpent = await getUserTotalSpent(row.id);
           }
           return serialized;
         }),
     );
 
-    // Urutkan berdasarkan total belanja terbesar (jika tersedia)
     usersData.sort((a, b) => b.totalSpent - a.totalSpent);
 
     return NextResponse.json({ users: usersData });
@@ -106,31 +90,28 @@ export async function PUT(request) {
       return NextResponse.json({ error: "userId is required." }, { status: 400 });
     }
 
-    const userRef = db.collection("users").doc(userId);
-    const userSnap = await userRef.get();
-    if (!userSnap.exists) {
+    const { data: userRecord, error: userErr } = await supabaseAdmin.from("users").select("*").eq("id", userId).single();
+    if (userErr || !userRecord) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
     const updatePayload = {};
 
-    // --- UPDATE ROLE ---
     if (role) {
       if (!["admin", "staff", "customer"].includes(role)) {
         return NextResponse.json({ error: "Invalid role." }, { status: 400 });
       }
-      if (userId === actor.uid && role !== "admin") {
+      if (userId === actor.id && role !== "admin") {
         return NextResponse.json(
           { error: "You cannot remove your own admin access." },
           { status: 400 },
         );
       }
       updatePayload.role = role;
-      updatePayload.roleUpdatedAt = new Date();
-      updatePayload.roleUpdatedBy = actor.uid;
+      updatePayload.roleUpdatedAt = new Date().toISOString();
+      updatePayload.roleUpdatedBy = actor.id;
     }
 
-    // --- UPDATE ACCOUNT STATUS (block / activate) ---
     if (status) {
       if (!["active", "blocked"].includes(status)) {
         return NextResponse.json(
@@ -138,15 +119,15 @@ export async function PUT(request) {
           { status: 400 },
         );
       }
-      if (userId === actor.uid && status === "blocked") {
+      if (userId === actor.id && status === "blocked") {
         return NextResponse.json(
           { error: "You cannot block your own account." },
           { status: 400 },
         );
       }
       updatePayload.status = status;
-      updatePayload.accountStatusUpdatedAt = new Date();
-      updatePayload.accountStatusUpdatedBy = actor.uid;
+      updatePayload.accountStatusUpdatedAt = new Date().toISOString();
+      updatePayload.accountStatusUpdatedBy = actor.id;
     }
 
     if (Object.keys(updatePayload).length === 0) {
@@ -156,19 +137,19 @@ export async function PUT(request) {
       );
     }
 
-    await userRef.set(updatePayload, { merge: true });
+    const { error: updateErr } = await supabaseAdmin.from("users").update(updatePayload).eq("id", userId);
+    if (updateErr) throw updateErr;
 
-    // Sinkronkan status/role ke Firebase Authentication (jika menggunakan email)
-    try {
-      const targetAuthUser = await getAuth().getUser(userId);
-      if (targetAuthUser) {
-        await getAuth().updateUser(userId, {
-          disabled: status === "blocked",
+    // Optional auth metadata sync
+    if (role || status) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          user_metadata: { role: role || userRecord.role },
+          ban_duration: status === "blocked" ? "876000h" : "none",
         });
+      } catch (authErr) {
+        console.warn("Gagal sinkron ke Supabase Auth:", authErr.message);
       }
-    } catch (authErr) {
-      // Non-fatal: user mungkin login via phone/anonim, biarkan berjalan
-      console.warn("Gagal sinkron ke Firebase Auth:", authErr.message);
     }
 
     return NextResponse.json({
@@ -180,4 +161,5 @@ export async function PUT(request) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+
 

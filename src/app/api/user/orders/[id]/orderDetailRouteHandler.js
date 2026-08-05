@@ -1,6 +1,5 @@
 function createUserOrderDetailHandler({
   db,
-  mapOrderDoc,
   createJsonResponse = (body, init) => Response.json(body, init),
   onError = (error) => console.error("Failed to load order detail:", error),
 }) {
@@ -24,32 +23,60 @@ function createUserOrderDetailHandler({
         );
       }
 
-      const orderRef = db.collection("orders").doc(orderId);
-      const [orderSnap, itemsSnap, shippingSnap, historySnap] = await Promise.all([
-        orderRef.get(),
-        orderRef.collection("order_items").get(),
-        orderRef.collection("shipping_details").doc("primary").get(),
-        orderRef.collection("order_status_history").orderBy("created_at", "asc").get(),
+      const [orderRes, itemsRes] = await Promise.all([
+        db.from("orders").select("*").eq("id", orderId).single(),
+        db.from("order_items").select("*").eq("order_id", orderId),
       ]);
 
-      if (!orderSnap.exists) {
+      if (orderRes.error || !orderRes.data) {
         return createJsonResponse(
           { success: false, error: "Order not found" },
           { status: 404 },
         );
       }
 
-      const order = mapOrderDoc(orderSnap);
-      if (String(order.userId || "") !== userId) {
+      const orderData = orderRes.data;
+      if (String(orderData.user_id || orderData.userId || "") !== userId) {
         return createJsonResponse(
           { success: false, error: "Forbidden" },
           { status: 403 },
         );
       }
 
-      const items = itemsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const shipping = shippingSnap.exists ? shippingSnap.data() : null;
-      const statusHistory = historySnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const order = {
+        id: orderData.id,
+        orderId: orderData.id,
+        order_number: orderData.order_number || orderData.id,
+        userId: orderData.user_id,
+        status: orderData.status,
+        amount: Number(orderData.amount || 0),
+        shippingCost: Number(orderData.shipping_cost || 0),
+        discountAmount: Number(orderData.discount_amount || 0),
+        taxAmount: Number(orderData.tax_amount || 0),
+        paymentType: orderData.payment_type,
+        customerName: orderData.customer_name,
+        customerEmail: orderData.customer_email,
+        customerPhone: orderData.customer_phone,
+        shippingAddress: orderData.shipping_address,
+        shippingDetail: orderData.shipping_detail,
+        shippingReceiptNumber: orderData.shipping_receipt_number,
+        notes: orderData.notes,
+        statusHistory: Array.isArray(orderData.status_history) ? orderData.status_history : [],
+        createdAt: orderData.created_at,
+        updatedAt: orderData.updated_at,
+      };
+
+      const items = (itemsRes.data || []).map((item) => ({
+        id: item.id,
+        productId: item.product_id,
+        name: item.product_name,
+        variantName: item.variant_name,
+        quantity: item.quantity,
+        price: Number(item.price || 0),
+      }));
+
+      const shipping = orderData.shipping_detail || orderData.shipping_address || null;
+      const statusHistory = Array.isArray(orderData.status_history) ? orderData.status_history : [];
 
       return createJsonResponse({
         success: true,
@@ -69,3 +96,4 @@ function createUserOrderDetailHandler({
 }
 
 export { createUserOrderDetailHandler };
+

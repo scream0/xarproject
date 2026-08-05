@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
-import { updateOrderStatus } from "@/app/api/orders/orderService";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { createPaymentWebhookHandler } from "./paymentWebhookRouteHandler";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +32,7 @@ function truncateAuditNote(note, maxLength = MAX_AUDIT_NOTE_LENGTH) {
 }
 
 const paymentWebhookHandler = createPaymentWebhookHandler({
-  updateStatus: (orderId, nextStatus, note, metadata = {}) => {
+  updateStatus: async (orderId, nextStatus, note, metadata = {}) => {
     const details = [
       `source=${sanitizeAuditValue(metadata.sourceField || "unknown", 24)}`,
       `raw=${sanitizeAuditValue(metadata.gatewayStatusRaw || "")}`,
@@ -42,9 +41,28 @@ const paymentWebhookHandler = createPaymentWebhookHandler({
 
     const safeBaseNote = sanitizeAuditValue(note, 140) || "Webhook payment status: pending";
     const auditNote = truncateAuditNote(`${safeBaseNote} (${details})`);
-    return updateOrderStatus(db, orderId, nextStatus, "webhook", auditNote, {
-      statusMetadata: metadata,
-    });
+
+    const { data: orderData } = await supabaseAdmin.from("orders").select("status_history").eq("id", orderId).single();
+    const historyEntry = {
+      status: nextStatus,
+      notes: auditNote,
+      actor: "webhook",
+      timestamp: new Date().toISOString(),
+    };
+
+    const { data: updatedOrder, error } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status: nextStatus,
+        status_history: [...(orderData?.status_history || []), historyEntry],
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return updatedOrder;
   },
   createJsonResponse: (body, init) => NextResponse.json(body, init),
 });
@@ -52,3 +70,4 @@ const paymentWebhookHandler = createPaymentWebhookHandler({
 export async function POST(request) {
   return paymentWebhookHandler(request);
 }
+

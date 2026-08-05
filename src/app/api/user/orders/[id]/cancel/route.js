@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
-import { updateOrderStatus } from "@/app/api/orders/orderService";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -17,18 +16,20 @@ export async function POST(request, { params }) {
       );
     }
 
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderSnap = await orderRef.get();
+    const { data: orderData, error: fetchErr } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("id", orderId)
+      .single();
 
-    if (!orderSnap.exists) {
+    if (fetchErr || !orderData) {
       return NextResponse.json(
         { success: false, error: "Order not found" },
         { status: 404 },
       );
     }
 
-    const orderData = orderSnap.data();
-    if (userId && orderData.userId !== userId) {
+    if (userId && String(orderData.user_id || "") !== userId) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },
@@ -42,13 +43,25 @@ export async function POST(request, { params }) {
       );
     }
 
-    const updatedOrder = await updateOrderStatus(
-      db,
-      orderId,
-      "cancelled",
-      "customer",
-      "Pembatalan oleh pelanggan",
-    );
+    const historyEntry = {
+      status: "cancelled",
+      notes: "Pembatalan oleh pelanggan",
+      actor: "customer",
+      timestamp: new Date().toISOString(),
+    };
+
+    const { data: updatedOrder, error: updateErr } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status: "cancelled",
+        status_history: [...(orderData.status_history || []), historyEntry],
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderId)
+      .select()
+      .single();
+
+    if (updateErr) throw updateErr;
 
     return NextResponse.json({ success: true, order: updatedOrder });
   } catch (error) {
@@ -59,3 +72,4 @@ export async function POST(request, { params }) {
     );
   }
 }
+

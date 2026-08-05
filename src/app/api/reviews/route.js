@@ -1,10 +1,7 @@
-import { db } from "@/lib/firebaseAdmin";
-import { getAuth } from "firebase-admin/auth";
-import { FieldValue } from "firebase-admin/firestore";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-// Helper untuk verifikasi token Firebase dari client
 async function verifyUser(authHeader) {
   if (!authHeader) {
     throw new Error("No authorization header provided.");
@@ -13,44 +10,30 @@ async function verifyUser(authHeader) {
   if (!token) {
     throw new Error("Invalid authorization header format.");
   }
-  return getAuth().verifyIdToken(token);
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) {
+    throw new Error(`Authentication failed: ${error?.message || "Invalid token"}`);
+  }
+  return { uid: user.id, email: user.email, name: user.user_metadata?.full_name || user.user_metadata?.name || user.email };
 }
 
-// Helper untuk verifikasi bahwa user adalah admin (Mendukung Custom Claims & Firestore users collection)
 async function verifyAdmin(authHeader) {
-  const decodedToken = await verifyUser(authHeader);
-  const uid = decodedToken.uid;
-
-  if (decodedToken.role === "admin" || decodedToken.admin === true) {
-    return decodedToken;
+  const user = await verifyUser(authHeader);
+  if (user.user_metadata?.role === "admin") {
+    return user;
   }
-
-  try {
-    const user = await getAuth().getUser(uid);
-    if (
-      user.customClaims?.role === "admin" ||
-      user.customClaims?.admin === true
-    ) {
-      return decodedToken;
-    }
-  } catch (e) {}
-
-  try {
-    const userDoc = await db.collection("users").doc(uid).get();
-    if (userDoc.exists && userDoc.data()?.role === "admin") {
-      return decodedToken;
-    }
-  } catch (e) {}
-
+  const { data: profile } = await supabaseAdmin.from("users").select("role").eq("id", user.uid).single();
+  if (profile?.role === "admin") {
+    return user;
+  }
   throw new Error("User is not an administrator.");
 }
 
-// POST -> Kirim Review Baru (per-item, auto-approved)
 export async function POST(request) {
   try {
-    let decodedToken;
+    let currentUser;
     try {
-      decodedToken = await verifyUser(request.headers.get("Authorization"));
+      currentUser = await verifyUser(request.headers.get("Authorization"));
     } catch (error) {
       return Response.json(
         { error: `Authentication failed: ${error.message}` },
@@ -61,91 +44,66 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const { userId, orderId, productId, productName, rating, comment } = body;
 
-    if (decodedToken.uid !== userId) {
+    if (currentUser.uid !== userId) {
       return Response.json(
-        {
-          error: "User ID mismatch. You can only submit reviews for yourself.",
-        },
+        { error: "User ID mismatch. You can only submit reviews for yourself." },
         { status: 403 },
       );
     }
     if (!orderId || !productId || !rating || !comment) {
       return Response.json(
-        {
-          error:
-            "Missing required fields: orderId, productId, rating, comment.",
-        },
+        { error: "Missing required fields: orderId, productId, rating, comment." },
         { status: 400 },
       );
     }
 
-    const orderRef = db.collection("orders").doc(orderId);
-    const productIdStr = String(productId);
+    const { data: orderDoc, error: orderErr } = await supabaseAdmin
+      .from("orders")
+      .select("id, user_id")
+      .eq("id", orderId)
+      .single();
 
-    const result = await db.runTransaction(async (transaction) => {
-      const orderDoc = await transaction.get(orderRef);
-      if (!orderDoc.exists) {
-        throw new Error("Order not found.");
-      }
+    if (orderErr || !orderDoc) {
+      return Response.json({ error: "Order not found." }, { status: 404 });
+    }
+    if (orderDoc.user_id !== userId) {
+      return Response.json({ error: "You are not authorized to review this order." }, { status: 403 });
+    }
 
-      const orderData = orderDoc.data();
-      if (orderData.userId !== userId) {
-        throw new Error("You are not authorized to review this order.");
-      }
+    const { data: existingReviews } = await supabaseAdmin
+      .from("reviews")
+      .select("id")
+      .eq("order_id", orderId)
+      .eq("product_id", productId)
+      .limit(1);
 
-      const reviewedItemIds = Array.isArray(orderData.reviewedItemIds)
-        ? orderData.reviewedItemIds
-        : [];
+    if (existingReviews && existingReviews.length > 0) {
+      return Response.json({ error: "Produk ini pada pesanan tersebut sudah diulas." }, { status: 400 });
+    }
 
-      if (reviewedItemIds.includes(productIdStr)) {
-        throw new Error("Produk ini pada pesanan tersebut sudah diulas.");
-      }
-
-      // Cek juga apakah sudah ada review dengan orderId + productId yang sama
-      // (double-check di luar transaction-read agar tidak duplikat)
-      const existingReviewSnap = await db
-        .collection("reviews")
-        .where("orderId", "==", orderId)
-        .where("productId", "==", productIdStr)
-        .limit(1)
-        .get();
-
-      if (!existingReviewSnap.empty) {
-        throw new Error("Produk ini pada pesanan tersebut sudah diulas.");
-      }
-
-      const newReviewRef = db.collection("reviews").doc();
-      transaction.create(newReviewRef, {
-        userId,
-        userName: decodedToken.name || decodedToken.email || "Pelanggan",
-        orderId,
-        productId: productIdStr,
-        productName: productName || "Product",
+    const { data: newReview, error: insertErr } = await supabaseAdmin
+      .from("reviews")
+      .insert({
+        user_id: userId,
+        order_id: orderId,
+        product_id: productId,
+        user_name: currentUser.name || "Pelanggan",
+        product_name: productName || "Product",
         rating: Number(rating),
         comment,
-        createdAt: FieldValue.serverTimestamp(),
-        // Auto-approve: review langsung tayang di halaman produk.
-        // Admin tetap bisa sembunyikan (approved:false) atau hapus lewat PUT/DELETE
-        // di bawah kalau ada review yang spam/tidak pantas.
         approved: true,
-      });
+      })
+      .select("id")
+      .single();
 
-      const updatedReviewedItemIds = [...reviewedItemIds, productIdStr];
-
-      transaction.update(orderRef, {
-        reviewedItemIds: updatedReviewedItemIds,
-        // Tetap set hasBeenReviewed:true untuk kompatibilitas data lama,
-        // artinya "order ini sudah punya minimal 1 review"
-        hasBeenReviewed: true,
-      });
-
-      return { reviewId: newReviewRef.id };
-    });
+    if (insertErr) {
+      throw insertErr;
+    }
 
     return Response.json(
       {
         message: "Review submitted successfully!",
-        reviewId: result.reviewId,
+        reviewId: newReview.id,
       },
       { status: 201 },
     );
@@ -158,11 +116,6 @@ export async function POST(request) {
   }
 }
 
-// GET -> Ambil Daftar Review
-// - Mode publik (?public=true): review yang approved saja, tanpa perlu login.
-//   Dipakai halaman Shop untuk menampilkan ulasan di setiap produk.
-// - Mode admin (default, tanpa ?public=true): semua review, perlu token admin.
-//   Dipakai dashboard admin untuk moderasi.
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const productId = searchParams.get("productId");
@@ -170,14 +123,24 @@ export async function GET(request) {
 
   try {
     if (isPublicRequest) {
-      let reviewsQuery = db.collection("reviews").where("approved", "==", true);
+      let query = supabaseAdmin.from("reviews").select("*").eq("approved", true);
       if (productId) {
-        reviewsQuery = reviewsQuery.where("productId", "==", String(productId));
+        query = query.eq("product_id", productId);
       }
-      const snapshot = await reviewsQuery.get();
-      const reviews = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const { data, error } = await query.order("created_at", { ascending: false });
+      if (error) throw error;
+      const reviews = (data || []).map((r) => ({
+        id: r.id,
+        userId: r.user_id,
+        orderId: r.order_id,
+        productId: r.product_id,
+        userName: r.user_name,
+        productName: r.product_name,
+        rating: r.rating,
+        comment: r.comment,
+        approved: r.approved,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
       }));
       return Response.json({ reviews }, { status: 200 });
     }
@@ -191,14 +154,20 @@ export async function GET(request) {
       );
     }
 
-    const reviewsSnapshot = await db
-      .collection("reviews")
-      .orderBy("createdAt", "desc")
-      .get();
-
-    const reviews = reviewsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
+    const { data, error } = await supabaseAdmin.from("reviews").select("*").order("created_at", { ascending: false });
+    if (error) throw error;
+    const reviews = (data || []).map((r) => ({
+      id: r.id,
+      userId: r.user_id,
+      orderId: r.order_id,
+      productId: r.product_id,
+      userName: r.user_name,
+      productName: r.product_name,
+      rating: r.rating,
+      comment: r.comment,
+      approved: r.approved,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
     }));
 
     return Response.json({ reviews }, { status: 200 });
@@ -211,8 +180,6 @@ export async function GET(request) {
   }
 }
 
-// PUT -> Update Status Approval Review (Admin) — dipakai untuk sembunyikan
-// review spam/tidak pantas tanpa menghapusnya permanen.
 export async function PUT(request) {
   try {
     try {
@@ -234,8 +201,8 @@ export async function PUT(request) {
       );
     }
 
-    const reviewRef = db.collection("reviews").doc(reviewId);
-    await reviewRef.update({ approved });
+    const { error } = await supabaseAdmin.from("reviews").update({ approved }).eq("id", reviewId);
+    if (error) throw error;
 
     return Response.json(
       { message: `Review ${reviewId} status updated to ${approved}.` },
@@ -250,7 +217,6 @@ export async function PUT(request) {
   }
 }
 
-// DELETE -> Hapus Review Permanen (Admin)
 export async function DELETE(request) {
   try {
     try {
@@ -272,8 +238,8 @@ export async function DELETE(request) {
       );
     }
 
-    const reviewRef = db.collection("reviews").doc(reviewId);
-    await reviewRef.delete();
+    const { error } = await supabaseAdmin.from("reviews").delete().eq("id", reviewId);
+    if (error) throw error;
 
     return Response.json(
       { message: `Review ${reviewId} deleted successfully.` },
@@ -287,3 +253,4 @@ export async function DELETE(request) {
     );
   }
 }
+

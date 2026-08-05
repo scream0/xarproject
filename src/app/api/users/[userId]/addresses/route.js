@@ -1,25 +1,27 @@
 
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
-import { FieldValue } from "firebase-admin/firestore";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-// Helper to serialize data
-function serializeData(doc) {
-  const data = doc.data();
-  if (!data) return null;
-
-  // Serialize Timestamps
-  for (const key in data) {
-    if (data[key]?.toDate) {
-      data[key] = data[key].toDate().toISOString();
-    }
-  }
-  return { id: doc.id, ...data };
+function mapAddressRow(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    recipientName: row.recipient_name,
+    recipientPhone: row.recipient_phone,
+    street: row.street,
+    city: row.city,
+    cityId: row.city_id,
+    province: row.province,
+    postalCode: row.postal_code,
+    label: row.label,
+    isPrimary: row.is_primary,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
-// GET /api/users/[userId]/addresses -> Get all addresses for a user
 export async function GET(request, { params }) {
   try {
     const { userId } = params;
@@ -27,14 +29,17 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
-    const addressesRef = db.collection("users").doc(userId).collection("addresses");
-    const snapshot = await addressesRef.orderBy("createdAt", "desc").get();
+    const { data, error } = await supabaseAdmin
+      .from("addresses")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-    if (snapshot.empty) {
-      return NextResponse.json([], { status: 200 });
+    if (error) {
+      throw error;
     }
 
-    const addresses = snapshot.docs.map(serializeData);
+    const addresses = (data || []).map(mapAddressRow);
     return NextResponse.json(addresses, { status: 200 });
   } catch (error) {
     console.error("Failed to get addresses:", error);
@@ -42,7 +47,6 @@ export async function GET(request, { params }) {
   }
 }
 
-// POST /api/users/[userId]/addresses -> Add a new address
 export async function POST(request, { params }) {
   try {
     const { userId } = params;
@@ -51,36 +55,46 @@ export async function POST(request, { params }) {
     }
 
     const body = await request.json();
-    const { recipientName, recipientPhone, street, city, province, postalCode, label, isPrimary } = body;
+    const { recipientName, recipientPhone, street, city, cityId, province, postalCode, label, isPrimary } = body;
 
     if (!recipientName || !recipientPhone || !street || !city || !province) {
       return NextResponse.json({ error: "Missing required address fields" }, { status: 400 });
     }
 
-    const addressesRef = db.collection("users").doc(userId).collection("addresses");
-    
-    // If isPrimary is true, we need to ensure no other address is primary.
     if (isPrimary) {
-        const primaryQuery = await addressesRef.where("isPrimary", "==", true).get();
-        const batch = db.batch();
-        primaryQuery.forEach(doc => {
-            batch.update(doc.ref, { isPrimary: false });
-        });
-        await batch.commit();
+      await supabaseAdmin
+        .from("addresses")
+        .update({ is_primary: false })
+        .eq("user_id", userId);
     }
 
-    const newAddress = {
-      ...body,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+    const newAddressPayload = {
+      user_id: userId,
+      recipient_name: recipientName,
+      recipient_phone: recipientPhone,
+      street,
+      city,
+      city_id: cityId || body.city_id || "",
+      province,
+      postal_code: postalCode || body.postalCode || "",
+      label: label || "Rumah",
+      is_primary: Boolean(isPrimary),
     };
 
-    const newDocRef = await addressesRef.add(newAddress);
-    const newDoc = await newDocRef.get();
+    const { data: createdAddress, error: insertError } = await supabaseAdmin
+      .from("addresses")
+      .insert(newAddressPayload)
+      .select()
+      .single();
 
-    return NextResponse.json(serializeData(newDoc), { status: 201 });
+    if (insertError) {
+      throw insertError;
+    }
+
+    return NextResponse.json(mapAddressRow(createdAddress), { status: 201 });
   } catch (error) {
     console.error("Failed to add address:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+

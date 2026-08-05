@@ -1,36 +1,8 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin"; // Pastikan path ini sesuai dengan inisialisasi Firebase Admin Anda
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-// Cegah Next.js meng-cache response (penyebab umum data "tidak update")
 export const dynamic = "force-dynamic";
 
-// Helper: ubah Firestore Timestamp (dan nested object) jadi format yang aman di-JSON-kan
-function serializeData(data) {
-  if (data === null || data === undefined) return data;
-
-  // Firestore Timestamp punya method toDate()
-  if (typeof data?.toDate === "function") {
-    return data.toDate().toISOString();
-  }
-
-  if (Array.isArray(data)) {
-    return data.map(serializeData);
-  }
-
-  if (typeof data === "object") {
-    const result = {};
-    for (const key in data) {
-      result[key] = serializeData(data[key]);
-    }
-    return result;
-  }
-
-  return data;
-}
-
-// ==========================================
-// 1. READ (GET) -> Mengambil profil & alamat user
-// ==========================================
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -43,16 +15,25 @@ export async function GET(request) {
       );
     }
 
-    const userDoc = await db.collection("users").doc(userId).get();
+    const { data: userRecord, error } = await supabaseAdmin
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
-    if (!userDoc.exists) {
+    if (error || !userRecord) {
       return NextResponse.json({ exists: false, data: null }, { status: 200 });
     }
 
-    const rawData = userDoc.data();
-    const safeData = serializeData(rawData);
+    const { data: authData } = await supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null }));
 
-    return NextResponse.json({ exists: true, data: safeData }, { status: 200 });
+    const responseData = {
+      ...userRecord,
+      email: authData?.user?.email || userRecord.email,
+      user_metadata: authData?.user?.user_metadata || {},
+    };
+
+    return NextResponse.json({ exists: true, data: responseData }, { status: 200 });
   } catch (error) {
     console.error("Gagal mengambil data user:", error);
     return NextResponse.json(
@@ -62,9 +43,6 @@ export async function GET(request) {
   }
 }
 
-// ==========================================
-// 2. CREATE / SYNC (POST) -> Daftarkan user baru saat login/register
-// ==========================================
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -74,43 +52,51 @@ export async function POST(request) {
       return NextResponse.json({ error: "uid is required" }, { status: 400 });
     }
 
-    const userRef = db.collection("users").doc(uid);
-    const userSnap = await userRef.get();
+    const { data: existingUser } = await supabaseAdmin
+      .from("users")
+      .select("*")
+      .eq("id", uid)
+      .single();
 
-    if (!userSnap.exists) {
+    if (!existingUser) {
       const newUserData = {
-        uid: uid,
-        email: email || "",
-        full_name: name || "Valued Customer",
-        phone_number: phone || "",
-        role: role || "user", // Default role
-        created_at: new Date(),
+        id: uid,
+        role: role || "customer",
+        created_at: new Date().toISOString(),
       };
 
-      await userRef.set(newUserData);
+      const { error: insertErr } = await supabaseAdmin.from("users").insert(newUserData);
+      if (insertErr) {
+        console.warn("Gagal insert users row:", insertErr.message);
+      }
+
+      await supabaseAdmin.auth.admin.updateUserById(uid, {
+        user_metadata: { full_name: name || "Valued Customer", phone: phone || "" },
+      }).catch(() => {});
 
       return NextResponse.json({
         success: true,
         message: "User baru berhasil didaftarkan ke database",
-        data: serializeData(newUserData),
+        data: newUserData,
       });
     } else {
-      await userRef.set(
-        {
-          last_login: new Date(),
-        },
-        { merge: true },
-      );
+      const { error: updateErr } = await supabaseAdmin
+        .from("users")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", uid);
 
-      const updatedSnap = await userRef.get();
+      if (updateErr) {
+        console.warn("Gagal update users row:", updateErr.message);
+      }
+
       return NextResponse.json({
         success: true,
         message: "Data user sudah ada, sinkronisasi berhasil",
-        data: serializeData(updatedSnap.data()),
+        data: existingUser,
       });
     }
   } catch (error) {
-    console.error("Gagal menyinkronkan user ke Firestore:", error);
+    console.error("Gagal menyinkronkan user ke Supabase:", error);
     return NextResponse.json(
       { error: error.message || "Terjadi kesalahan pada server" },
       { status: 500 },
@@ -118,9 +104,6 @@ export async function POST(request) {
   }
 }
 
-// ==========================================
-// 3. UPDATE (PUT) -> Memperbarui profil atau alamat user
-// ==========================================
 export async function PUT(request) {
   try {
     const body = await request.json();
@@ -135,14 +118,11 @@ export async function PUT(request) {
 
     if (!type) {
       return NextResponse.json(
-        { error: "type is required (profile | addresses)" },
+        { error: "type is required (profile | addresses | points)" },
         { status: 400 },
       );
     }
 
-    const userRef = db.collection("users").doc(userId);
-
-    // Update Profil (dengan validasi username unik)
     if (type === "profile") {
       const cleanUsername = updateData.username?.trim();
 
@@ -153,94 +133,48 @@ export async function PUT(request) {
         );
       }
 
-      const usernameQuery = await db
-        .collection("users")
-        .where("username", "==", cleanUsername)
-        .get();
-
-      let isTaken = false;
-      usernameQuery.forEach((doc) => {
-        if (doc.id !== userId) {
-          isTaken = true;
-        }
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          username: cleanUsername,
+          full_name: updateData.fullName || "",
+          gender: updateData.gender || "",
+          birth_date: updateData.birthDate || "",
+          phone: updateData.phone || "",
+          photo_url: updateData.photoURL || "",
+        },
       });
 
-      if (isTaken) {
-        return NextResponse.json(
-          { error: `Username @${cleanUsername} sudah digunakan orang lain.` },
-          { status: 400 },
-        );
-      }
-
-      const profilePayload = {
-        username: cleanUsername,
-        full_name: updateData.fullName || "",
-        gender: updateData.gender || "",
-        birth_date: updateData.birthDate || "",
-        phone: updateData.phone || "",
-        photo_url: updateData.photoURL || "",
-        photo_public_id: updateData.photoPublicId || "",
-        updated_at: new Date(),
-      };
-
-      await userRef.set(profilePayload, { merge: true });
-
-      const updatedDoc = await userRef.get();
+      const { data: updatedRecord } = await supabaseAdmin
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
       return NextResponse.json({
         success: true,
         message: "Profil berhasil diperbarui",
-        data: serializeData(updatedDoc.data()),
+        data: updatedRecord || { id: userId },
       });
     }
 
-    // Update Daftar Alamat
-    if (type === "addresses") {
-      const { addresses } = updateData;
-
-      if (!Array.isArray(addresses)) {
-        return NextResponse.json(
-          { error: "addresses harus berupa array" },
-          { status: 400 },
-        );
-      }
-
-      await userRef.set(
-        {
-          addresses,
-          updated_at: new Date(),
-        },
-        { merge: true },
-      );
-
-      const updatedDoc = await userRef.get();
-
-      return NextResponse.json({
-        success: true,
-        message: "Alamat berhasil diperbarui",
-        data: serializeData(updatedDoc.data()),
-      });
-    }
-
-    // Update Poin / Saldo (points & balance wallet)
     if (type === "points") {
-      const { points, balance, pointHistory } = updateData;
-
-      const pointsPayload = {};
+      const { points, balance } = updateData;
+      const pointsPayload = { updated_at: new Date().toISOString() };
       if (typeof points === "number") pointsPayload.points = points;
       if (typeof balance === "number") pointsPayload.balance = balance;
-      if (Array.isArray(pointHistory))
-        pointsPayload.pointHistory = pointHistory;
-      pointsPayload.updated_at = new Date();
 
-      await userRef.set(pointsPayload, { merge: true });
+      await supabaseAdmin.from("users").update(pointsPayload).eq("id", userId);
 
-      const updatedDoc = await userRef.get();
+      const { data: updatedRecord } = await supabaseAdmin
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
       return NextResponse.json({
         success: true,
         message: "Poin & saldo berhasil diperbarui",
-        data: serializeData(updatedDoc.data()),
+        data: updatedRecord,
       });
     }
 
@@ -254,15 +188,11 @@ export async function PUT(request) {
   }
 }
 
-// ==========================================
-// 4. DELETE (DELETE) -> Menghapus akun pengguna
-// ==========================================
 export async function DELETE(request) {
   try {
     const { searchParams } = new URL(request.url);
     let userId = searchParams.get("userId");
 
-    // Jika userId tidak ada di query, coba ambil dari body JSON
     if (!userId) {
       try {
         const body = await request.json();
@@ -277,22 +207,8 @@ export async function DELETE(request) {
       );
     }
 
-    const userRef = db.collection("users").doc(userId);
-    const userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: "Data pengguna tidak ditemukan di database" },
-        { status: 404 },
-      );
-    }
-
-    // Hapus dokumen user dari Firestore
-    await userRef.delete();
-
-    // Catatan: Jika ingin menghapus user dari Firebase Authentication secara server-side juga,
-    // Anda bisa menambahkan baris ini jika package 'firebase-admin/auth' aktif:
-    // await admin.auth().deleteUser(userId);
+    await supabaseAdmin.from("users").delete().eq("id", userId);
+    await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
 
     return NextResponse.json({
       success: true,
@@ -306,3 +222,4 @@ export async function DELETE(request) {
     );
   }
 }
+

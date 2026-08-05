@@ -1,7 +1,7 @@
 // scripts/migrateData.js
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 
 // =================================================================
 // 1. MIGRATE USERS & AUTH
@@ -46,8 +46,13 @@ async function migratePublicUser(firebaseUserId, supabaseUserId, db, supabaseAdm
  */
 async function migrateAuthUsers(jsonPath, db, supabaseAdmin) {
   console.log("Starting Firebase Auth to Supabase Auth migration...");
+  if (!existsSync(jsonPath)) {
+    console.log(`[NOTE] Export file '${jsonPath}' not found. Skipping auth user migration. (Run 'firebase auth:export users.json' to migrate auth users)`);
+    return;
+  }
   const usersFile = readFileSync(jsonPath, "utf8");
   const { users: firebaseUsers } = JSON.parse(usersFile);
+
 
   console.log(`Found ${firebaseUsers.length} users in the export file.`);
 

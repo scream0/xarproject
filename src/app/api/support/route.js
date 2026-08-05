@@ -1,8 +1,95 @@
-﻿import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
-import { getAuth } from "firebase-admin/auth";
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
 export const dynamic = "force-dynamic";
-async function identity(request) { const token = request.headers.get("Authorization")?.split("Bearer ")[1]; if (!token) throw new Error("Authentication required."); const user = await getAuth().verifyIdToken(token); const profile = await db.collection("users").doc(user.uid).get(); return { uid: user.uid, admin: user.role === "admin" || user.admin === true || profile.data()?.role === "admin" }; }
-export async function GET(request) { try { const user = await identity(request); const snapshot = user.admin ? await db.collection("support_tickets").get() : await db.collection("support_tickets").where("userId", "==", user.uid).get(); const tickets = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate?.().toISOString() || doc.data().createdAt })).sort((a,b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)); return NextResponse.json({ tickets }); } catch (error) { return NextResponse.json({ error: error.message }, { status: 401 }); } }
-export async function POST(request) { try { const user = await identity(request); const { subject, message, orderId = "" } = await request.json(); if (!subject || !message) return NextResponse.json({ error: "Subject and message are required." }, { status: 400 }); const ref = await db.collection("support_tickets").add({ userId:user.uid, subject, orderId, status:"open", messages:[{ sender:"customer", body:message, createdAt:new Date().toISOString() }], createdAt:new Date(), updatedAt:new Date() }); return NextResponse.json({ id:ref.id, message:"Support ticket created." }, { status:201 }); } catch (error) { return NextResponse.json({ error:error.message || "Could not create ticket." }, { status:500 }); } }
-export async function PUT(request) { try { const user = await identity(request); const { ticketId, message, status } = await request.json(); if (!ticketId) return NextResponse.json({ error:"Ticket is required." }, { status:400 }); const ref = db.collection("support_tickets").doc(ticketId); const doc = await ref.get(); if (!doc.exists || (!user.admin && doc.data().userId !== user.uid)) return NextResponse.json({ error:"Ticket not found." }, { status:404 }); const updates={ updatedAt:new Date() }; if (status && (user.admin || status === "closed")) updates.status=status; if (message) updates.messages=[...(doc.data().messages || []), { sender:user.admin ? "admin" : "customer", body:message, createdAt:new Date().toISOString() }]; await ref.set(updates,{merge:true}); return NextResponse.json({ message:"Ticket updated." }); } catch (error) { return NextResponse.json({ error:error.message || "Could not update ticket." },{status:500}); } }
+
+async function identity(request) {
+  const token = request.headers.get("Authorization")?.split("Bearer ")[1];
+  if (!token) throw new Error("Authentication required.");
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) throw new Error("Authentication required.");
+
+  let isAdmin = user.user_metadata?.role === "admin";
+  if (!isAdmin) {
+    const { data: profile } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single();
+    if (profile?.role === "admin") isAdmin = true;
+  }
+  return { uid: user.id, admin: isAdmin };
+}
+
+export async function GET(request) {
+  try {
+    const user = await identity(request);
+    let query = supabaseAdmin.from("support_tickets").select("*");
+    if (!user.admin) {
+      query = query.eq("user_id", user.uid);
+    }
+    const { data, error } = await query.order("updated_at", { ascending: false });
+    if (error) throw error;
+
+    const tickets = (data || []).map((t) => ({
+      id: t.id,
+      userId: t.user_id,
+      subject: t.subject,
+      orderId: t.order_id,
+      status: t.status,
+      messages: t.messages || [],
+      createdAt: t.created_at,
+      updatedAt: t.updated_at,
+    }));
+    return NextResponse.json({ tickets });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 401 });
+  }
+}
+
+export async function POST(request) {
+  try {
+    const user = await identity(request);
+    const { subject, message, orderId = "" } = await request.json();
+    if (!subject || !message) return NextResponse.json({ error: "Subject and message are required." }, { status: 400 });
+
+    const newTicket = {
+      user_id: user.uid,
+      subject,
+      order_id: orderId,
+      status: "open",
+      messages: [{ sender: "customer", body: message, createdAt: new Date().toISOString() }],
+    };
+
+    const { data, error } = await supabaseAdmin.from("support_tickets").insert(newTicket).select("id").single();
+    if (error) throw error;
+
+    return NextResponse.json({ id: data.id, message: "Support ticket created." }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: error.message || "Could not create ticket." }, { status: 500 });
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const user = await identity(request);
+    const { ticketId, message, status } = await request.json();
+    if (!ticketId) return NextResponse.json({ error: "Ticket is required." }, { status: 400 });
+
+    const { data: ticket, error: fetchErr } = await supabaseAdmin.from("support_tickets").select("*").eq("id", ticketId).single();
+    if (fetchErr || !ticket || (!user.admin && ticket.user_id !== user.uid)) {
+      return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
+    }
+
+    const updates = {};
+    if (status && (user.admin || status === "closed")) updates.status = status;
+    if (message) {
+      const existingMessages = Array.isArray(ticket.messages) ? ticket.messages : [];
+      updates.messages = [...existingMessages, { sender: user.admin ? "admin" : "customer", body: message, createdAt: new Date().toISOString() }];
+    }
+
+    const { error: updateErr } = await supabaseAdmin.from("support_tickets").update(updates).eq("id", ticketId);
+    if (updateErr) throw updateErr;
+
+    return NextResponse.json({ message: "Ticket updated." });
+  } catch (error) {
+    return NextResponse.json({ error: error.message || "Could not update ticket." }, { status: 500 });
+  }
+}
+

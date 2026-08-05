@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
-import { mapOrderDoc } from "@/app/api/orders/orderService";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { createUserOrderDetailHandler } from "./orderDetailRouteHandler";
 
 export const dynamic = "force-dynamic";
 
 const userOrderDetailHandler = createUserOrderDetailHandler({
-  db,
-  mapOrderDoc,
+  db: supabaseAdmin,
   createJsonResponse: (body, init) => NextResponse.json(body, init),
 });
 
 export async function GET(request, context) {
   return userOrderDetailHandler(request, context);
 }
+

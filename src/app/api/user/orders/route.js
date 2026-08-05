@@ -1,8 +1,32 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
-import { mapOrderDoc } from "@/app/api/orders/orderService";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
+
+function mapOrderRecord(order) {
+  return {
+    id: order.id,
+    orderId: order.id,
+    order_number: order.order_number || order.id,
+    userId: order.user_id,
+    status: order.status,
+    amount: Number(order.amount || 0),
+    shippingCost: Number(order.shipping_cost || 0),
+    discountAmount: Number(order.discount_amount || 0),
+    taxAmount: Number(order.tax_amount || 0),
+    paymentType: order.payment_type,
+    customerName: order.customer_name,
+    customerEmail: order.customer_email,
+    customerPhone: order.customer_phone,
+    shippingAddress: order.shipping_address,
+    shippingDetail: order.shipping_detail,
+    shippingReceiptNumber: order.shipping_receipt_number,
+    notes: order.notes,
+    statusHistory: Array.isArray(order.status_history) ? order.status_history : [],
+    createdAt: order.created_at,
+    updatedAt: order.updated_at,
+  };
+}
 
 export async function GET(request) {
   try {
@@ -20,18 +44,15 @@ export async function GET(request) {
       );
     }
 
-    const ordersSnapshot = await db
-      .collection("orders")
-      .where("userId", "==", userId)
-      .get();
-
-    let orders = ordersSnapshot.docs.map(mapOrderDoc);
-
+    let query = supabaseAdmin.from("orders").select("*").eq("user_id", userId);
     if (status) {
-      orders = orders.filter(
-        (order) => (order.status || "").toLowerCase() === status,
-      );
+      query = query.eq("status", status);
     }
+
+    const { data: rawOrders, error } = await query.order("created_at", { ascending: false });
+    if (error) throw error;
+
+    let orders = (rawOrders || []).map(mapOrderRecord);
 
     if (search) {
       orders = orders.filter((order) => {
@@ -48,8 +69,6 @@ export async function GET(request) {
         return haystack.includes(search);
       });
     }
-
-    orders.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
     const totalOrders = orders.length;
     const totalPages = Math.max(1, Math.ceil(totalOrders / limit));
@@ -72,3 +91,4 @@ export async function GET(request) {
     );
   }
 }
+
