@@ -1,21 +1,101 @@
 import { NextResponse } from "next/server";
 import midtransClient from "midtrans-client";
-import { db } from "@/lib/firebaseAdmin";
-import { createOrderRecord } from "../orders/orderService";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { v4 as uuidv4 } from 'uuid';
 
-// Inisialisasi Midtrans Snap Client
-let snap = new midtransClient.Snap({
+
+// Initialize Midtrans Snap Client
+const snap = new midtransClient.Snap({
   isProduction: process.env.MIDTRANS_IS_PRODUCTION === "true",
   serverKey: process.env.MIDTRANS_SERVER_KEY,
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY,
 });
+
+/**
+ * Creates an order record in Supabase, including associated order items.
+ * This function replaces the original `createOrderRecord` from `orderService`.
+ */
+async function createOrderInSupabase(orderDetails) {
+  const {
+    userId,
+    orderId,
+    items,
+    shippingAddress,
+    shippingDetail,
+    shippingCost,
+    amount,
+    customerName,
+    customerEmail,
+    customerPhone,
+    status,
+    paymentType,
+    discountAmount
+  } = orderDetails;
+
+  // 1. Prepare the main order payload
+  const orderPayload = {
+    id: orderId,
+    user_id: userId === "guest" ? null : userId,
+    status: status || "pending",
+    amount: amount,
+    shipping_cost: shippingCost || 0,
+    discount_amount: discountAmount || 0,
+    tax_amount: 0, // Assuming no tax for now, adjust if needed
+    payment_type: paymentType,
+    customer_name: customerName,
+    customer_email: customerEmail,
+    customer_phone: customerPhone,
+    shipping_address: shippingAddress,
+    shipping_detail: shippingDetail,
+    status_history: [
+      {
+        status: status || "pending",
+        notes: "Order created, waiting for payment.",
+        actor: "system",
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+
+  // 2. Insert the main order record
+  const { error: orderError } = await supabaseAdmin
+    .from("orders")
+    .insert(orderPayload);
+
+  if (orderError) {
+    console.error("Supabase error creating order:", orderError.message);
+    throw new Error(`Failed to create order record: ${orderError.message}`);
+  }
+
+  // 3. Prepare and insert order items
+  if (items && items.length > 0) {
+    const orderItemsPayload = items.map((item) => ({
+      order_id: orderId,
+      product_id: item.productId || item.id, // Assuming item.id or item.productId holds the UUID
+      product_name: item.name,
+      variant_name: item.size || item.variant_name,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+    const { error: itemsError } = await supabaseAdmin
+      .from("order_items")
+      .insert(orderItemsPayload);
+
+    if (itemsError) {
+      console.error("Supabase error creating order items:", itemsError.message);
+      // Attempt to roll back the order creation for consistency
+      await supabaseAdmin.from("orders").delete().eq("id", orderId);
+      throw new Error(`Failed to create order items: ${itemsError.message}`);
+    }
+  }
+}
 
 export async function POST(request) {
   try {
     const body = await request.json();
     const {
       userId,
-      orderId,
       amount,
       items,
       shippingAddress,
@@ -23,6 +103,9 @@ export async function POST(request) {
       shippingDetail,
       discountAmount,
     } = body;
+
+    // Use provided orderId or generate a new one
+    const orderId = body.orderId || uuidv4();
 
     if (!orderId || !amount) {
       return NextResponse.json(
@@ -35,134 +118,91 @@ export async function POST(request) {
     let customerEmail = "customer@xarstore.com";
     let customerPhone = "08123456789";
 
-    // Ambil data user dari Firestore jika userId tersedia
+    // Fetch user details from Supabase auth if userId is provided
     if (userId) {
       try {
-        const userDoc = await db.collection("users").doc(userId).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          customerName =
-            userData.full_name || userData.username || customerName;
-          customerEmail = userData.email || customerEmail;
-          customerPhone = userData.phone || customerPhone;
+        const { data: user, error } = await supabaseAdmin.auth.api.getUserById(userId);
+        if (error) throw error;
+        if (user) {
+            // In Supabase, name isn't a standard auth field. Use email/phone.
+            // Name will be sourced from shipping address.
+            customerEmail = user.email || customerEmail;
+            customerPhone = user.phone || customerPhone;
         }
       } catch (err) {
-        console.warn(
-          "Gagal mengambil data user dari Firestore untuk Midtrans:",
-          err.message,
-        );
+        console.warn("Failed to fetch user data from Supabase for Midtrans:", err.message);
       }
     }
 
-    // Format item details dari cart items
-    let formattedItems = [];
-    const itemSubtotal = (items || []).reduce(
-      (sum, item) => sum + Math.round(Number(item.price) || 0) * Math.max(1, Number(item.quantity) || 1),
-      0,
-    );
+    // Determine customer name from shipping details if available
+    if (shippingAddress?.recipientName) {
+        customerName = shippingAddress.recipientName;
+    }
 
-    if (items && Array.isArray(items) && items.length > 0) {
-      formattedItems = items.map((item) => ({
-        id: String(item.id || item.cartId || "XAR-ITEM").substring(0, 50),
+
+    // Format item details for Midtrans
+    const formattedItems = (items || []).map((item) => ({
+        id: String(item.productId || item.id).substring(0, 50),
         price: Math.round(Number(item.price) || 0),
         quantity: Math.max(1, Number(item.quantity) || 1),
         name: `${item.name} (${item.size || "Standard"})`.substring(0, 50),
       }));
-    } else {
-      formattedItems = [
-        {
-          id: orderId,
-          price: Math.round(Number(itemSubtotal) || Math.round(Number(amount) || 0)),
-          quantity: 1,
-          name: "XAR Store Order",
-        },
-      ];
-    }
 
-    const promoDiscount = Math.max(0, Math.round(Number(discountAmount) || 0));
-    if (promoDiscount > 0) {
+    if (discountAmount > 0) {
       formattedItems.push({
         id: "PROMO-DISCOUNT",
-        price: -promoDiscount,
+        price: -Math.round(discountAmount),
         quantity: 1,
         name: "Diskon Promo",
       });
     }
 
-    // Jika ada ongkir, tambahkan sebagai item detail "Ongkos Kirim".
-    // Ini memastikan jumlah gross_amount sama dengan penjumlahan item_details
-    // sehingga transaksi Midtrans tidak ditolak karena mismatch harga.
-    const shippingCostNumber = Math.max(0, Math.round(Number(shippingCost) || 0));
-    if (shippingCostNumber > 0) {
+    if (shippingCost > 0) {
       formattedItems.push({
         id: "SHIPPING-COST",
-        price: shippingCostNumber,
+        price: Math.round(shippingCost),
         quantity: 1,
         name: "Ongkos Kirim",
       });
     }
 
-    const computedGrossAmount = formattedItems.reduce(
-      (sum, item) => sum + Number(item.price) * Number(item.quantity),
-      0,
-    );
-    const normalizedGrossAmount = Math.max(0, Math.round(computedGrossAmount || Number(amount) || 0));
-
-    // Format alamat pengiriman untuk Midtrans customer_details
-    let midtransShippingDetail = {};
-    if (shippingAddress) {
-      midtransShippingDetail = {
-        first_name: shippingAddress.recipientName || customerName,
-        phone: shippingAddress.recipientPhone || customerPhone,
-        address: shippingAddress.street || "",
-        city: shippingAddress.city || "",
-        postal_code: shippingAddress.postalCode || "",
-        country_code: "IDN",
-      };
-    }
+    // Ensure gross_amount matches the sum of item_details
+    const computedGrossAmount = formattedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: normalizedGrossAmount,
+        gross_amount: computedGrossAmount,
       },
       item_details: formattedItems,
       customer_details: {
         first_name: customerName,
         email: customerEmail,
         phone: customerPhone,
-        shipping_address: shippingAddress ? midtransShippingDetail : undefined,
+        shipping_address: shippingAddress ? {
+            first_name: shippingAddress.recipientName || customerName,
+            phone: shippingAddress.recipientPhone || customerPhone,
+            address: shippingAddress.street || "",
+            city: shippingAddress.city || "",
+            postal_code: shippingAddress.postalCode || "",
+            country_code: "IDN",
+        } : undefined,
       },
     };
 
-    // 1. Buat Snap Token dari Midtrans dengan pengaman timeout jaringan (15 detik)
-    const transactionPromise = snap.createTransaction(parameter);
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(
-        () =>
-          reject(
-            new Error(
-              "Koneksi ke Midtrans Timeout (ETIMEDOUT). Periksa jaringan Anda.",
-            ),
-          ),
-        15000,
-      ),
-    );
+    // 1. Create Midtrans Snap Token
+    const transaction = await snap.createTransaction(parameter);
 
-    const transaction = await Promise.race([
-      transactionPromise,
-      timeoutPromise,
-    ]);
-
-    // 2. Simpan data pesanan ke Firestore (Collection: orders)
-    await createOrderRecord(db, {
+    // 2. Save the order record to Supabase
+    await createOrderInSupabase({
       userId: userId || "guest",
       orderId,
       items: items || [],
-      address: shippingAddress || null,
+      shippingAddress: shippingAddress || null,
       shippingDetail: shippingDetail || null,
-      shippingCost: shippingCostNumber,
-      amount: normalizedGrossAmount,
+      shippingCost: shippingCost || 0,
+      discountAmount: discountAmount || 0,
+      amount: computedGrossAmount,
       customerName,
       customerEmail,
       customerPhone,
@@ -177,15 +217,8 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Midtrans API Error:", error.message || error);
-
-    // Berikan pesan error yang deskriptif jika terjadi timeout/koneksi terputus
-    const errorMessage =
-      error.message.includes("ETIMEDOUT") || error.message.includes("Timeout")
-        ? "Koneksi ke server Midtrans terhalang (Timeout). Pastikan jaringan atau firewall lokal mengizinkan akses ke port 443."
-        : error.message || "Gagal membuat transaksi Midtrans";
-
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { success: false, error: error.message || "Failed to create Midtrans transaction" },
       { status: 500 },
     );
   }

@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { supabase } from "@/lib/firebaseClient";
 import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
@@ -81,14 +80,27 @@ export default function CheckoutPage() {
   const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setCurrentUser(u);
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user || null;
+      setCurrentUser(user);
       setPageLoading(false);
-      if (!u) {
+      if (!user) {
         router.push("/login?callbackUrl=/checkout");
       }
     });
-    return () => unsub();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user || null;
+      setCurrentUser(user);
+      if (event === 'SIGNED_OUT' || !user) {
+        router.push("/login?callbackUrl=/checkout");
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, [router]);
 
   useEffect(() => {
@@ -164,7 +176,7 @@ export default function CheckoutPage() {
     const loadAddresses = async () => {
       setAddressLoading(true);
       try {
-        const r = await fetch(`/api/users?userId=${currentUser.uid}`);
+        const r = await fetch(`/api/users?userId=${currentUser.id}`);
         const result = await r.json();
 
         if (result.exists && result.data?.addresses) {
@@ -227,7 +239,7 @@ export default function CheckoutPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: currentUser.uid,
+          userId: currentUser.id,
           type: "addresses",
           addresses: updated,
         }),
@@ -565,7 +577,7 @@ export default function CheckoutPage() {
               <button
                 className={styles.sectionAction}
                 onClick={() => {
-                  setAddressForm(emptyAddressForm(currentUser?.displayName));
+                  setAddressForm(emptyAddressForm(currentUser?.user_metadata?.name));
                   setShowAddressModal(true);
                 }}
               >

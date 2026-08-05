@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../lib/firebaseClient";
+import { supabase } from "../../lib/firebaseClient";
 import styles from "./Dashboard.module.css";
 import toast from "react-hot-toast";
 
@@ -62,7 +61,10 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = session?.user;
+
       if (!currentUser) {
         window.location.replace("/login");
         return;
@@ -71,7 +73,7 @@ export default function DashboardPage() {
       setUser(currentUser);
 
       try {
-        const res = await fetch(`/api/users?userId=${currentUser.uid}`);
+        const res = await fetch(`/api/users?userId=${currentUser.id}`);
         const result = await res.json();
 
         if (res.ok && result.exists && result.data && result.data.role) {
@@ -79,23 +81,29 @@ export default function DashboardPage() {
           setRole(userRole);
           localStorage.setItem("userRole", userRole);
         } else {
-          // PERUBAHAN 3: kalau data role tidak ditemukan/tidak valid,
-          // jatuhkan ke defaultRole SAAT INI JUGA, bukan biarkan `role` tetap null selamanya.
-          // Ini yang jadi salah satu penyebab "stuck loading" -- kalau API balikin
-          // res.ok tapi tanpa data.role, role tidak pernah ke-set dan halaman nyangkut.
           setRole(dashboardConfig.defaultRole);
         }
       } catch (error) {
         console.error("Gagal ambil data role via API:", error);
-        // PERUBAHAN 4: kalau fetch gagal total (network error dll), tetap kasih fallback
-        // supaya UI tidak nyangkut looping loading selamanya.
         setRole(dashboardConfig.defaultRole);
       } finally {
         setLoading(false);
       }
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        window.location.replace("/login");
+      } else if (session) {
+        setUser(session.user);
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []); // <-- Dependency array kosong [] agar tidak loop!
 
   // PERUBAHAN 5: "pengaman darurat" 1 detik DIHAPUS.

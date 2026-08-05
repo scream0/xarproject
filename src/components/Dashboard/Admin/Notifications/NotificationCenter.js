@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { supabase } from "@/lib/firebaseClient";
 import toast from "react-hot-toast";
 import styles from "./NotificationCenter.module.css";
 import config from "@/data/ui/notificationCenterConfig.json";

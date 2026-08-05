@@ -1,27 +1,13 @@
 // src/utils/authHelpers.js
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  updateProfile,
-  signOut,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-} from "firebase/auth";
-import { auth } from "@/lib/firebaseClient"; // Sesuaikan path jika berbeda (misal: "../lib/firebaseClient")
-
+import { supabase } from "@/lib/firebaseClient"; // Now this imports Supabase
 // --- HELPER INTERNAL (PRIVATE) ---
 
 // 1. Helper untuk membuat Cookie Sesi di Server
-async function setSessionCookie(user) {
-  const token = await user.getIdToken();
+async function setSessionCookie(accessToken) {
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ accessToken }),
   });
 
   if (!response.ok) {
@@ -50,21 +36,26 @@ async function syncUserToServer(userData) {
  * 1. Login dengan Email & Password
  */
 export const loginWithEmail = async (email, password) => {
-  const userCredential = await signInWithEmailAndPassword(
-    auth,
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
-  );
-  const user = userCredential.user;
-
-  await syncUserToServer({
-    uid: user.uid,
-    email: user.email,
-    name: user.displayName || "User",
-    phone: user.phoneNumber || "",
   });
 
-  await setSessionCookie(user);
+  if (error) {
+    throw error;
+  }
+
+  const user = data.user;
+  const accessToken = data.session.access_token;
+
+  await syncUserToServer({
+    uid: user.id,
+    email: user.email,
+    name: user.user_metadata.name || "User",
+    phone: user.phone || "",
+  });
+
+  await setSessionCookie(accessToken);
   return user;
 };
 
@@ -72,25 +63,33 @@ export const loginWithEmail = async (email, password) => {
  * 2. Registrasi Akun Baru (Email & Password)
  */
 export const registerWithEmail = async (name, email, password) => {
-  const userCredential = await createUserWithEmailAndPassword(
-    auth,
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
-  );
-  const user = userCredential.user;
+    options: {
+      data: {
+        name: name,
+        role: "user",
+      },
+    },
+  });
 
-  await updateProfile(user, { displayName: name });
-  await sendEmailVerification(user);
+  if (error) {
+    throw error;
+  }
+
+  const user = data.user;
+  const accessToken = data.session.access_token;
 
   await syncUserToServer({
-    uid: user.uid,
+    uid: user.id,
     email: user.email,
     name: name,
     phone: "",
     role: "user",
   });
 
-  await setSessionCookie(user);
+  await setSessionCookie(accessToken);
   return user;
 };
 
@@ -98,20 +97,17 @@ export const registerWithEmail = async (name, email, password) => {
  * 3. Login dengan Google Popup
  */
 export const loginWithGoogle = async () => {
-  const provider = new GoogleAuthProvider();
-  const result = await signInWithPopup(auth, provider);
-  const user = result.user;
-
-  await syncUserToServer({
-    uid: user.uid,
-    email: user.email,
-    name: user.displayName || "User",
-    phone: user.phoneNumber || "",
-    role: "user",
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
   });
 
-  await setSessionCookie(user);
-  return user;
+  if (error) {
+    throw error;
+  }
+
+  // Supabase handles the redirect for OAuth, so this function might not return a user directly
+  // The session and user will be available after the redirect
+  return data;
 };
 
 /**
@@ -129,43 +125,45 @@ export const sendOtpCode = async (phoneInput) => {
     throw new Error("Format nomor HP tidak valid.");
   }
 
-  if (!window.recaptchaVerifier) {
-    window.recaptchaVerifier = new RecaptchaVerifier(
-      auth,
-      "recaptcha-container",
-      {
-        size: "invisible",
-        callback: () => {},
-      },
-    );
+  const { data, error } = await supabase.auth.signInWithOtp({
+    phone: formattedPhone,
+  });
+
+  if (error) {
+    throw error;
   }
 
-  const appVerifier = window.recaptchaVerifier;
-  const confirmation = await signInWithPhoneNumber(
-    auth,
-    formattedPhone,
-    appVerifier,
-  );
-
-  return { confirmation, formattedPhone };
+  // Supabase's signInWithOtp sends the code and doesn't return a confirmationResult directly
+  // The client will need to call verifyOtpAndLogin with the phone and OTP
+  return { phone: formattedPhone, data }; // Returning data for potential debugging, phone for verify step
 };
 
 /**
  * 5. Verifikasi Kode OTP dan Login
  */
-export const verifyOtpAndLogin = async (confirmationResult, otpCode) => {
-  const result = await confirmationResult.confirm(otpCode);
-  const user = result.user;
+export const verifyOtpAndLogin = async (phone, otpCode) => {
+  const { data, error } = await supabase.auth.verifyOtp({
+    phone,
+    token: otpCode,
+    type: "sms",
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const user = data.user;
+  const accessToken = data.session.access_token;
 
   await syncUserToServer({
-    uid: user.uid,
+    uid: user.id,
     email: user.email || "",
-    name: user.displayName || "User",
-    phone: user.phoneNumber || "",
+    name: user.user_metadata.name || "User",
+    phone: user.phone || "",
     role: "user",
   });
 
-  await setSessionCookie(user);
+  await setSessionCookie(accessToken);
   return user;
 };
 
@@ -173,7 +171,10 @@ export const verifyOtpAndLogin = async (confirmationResult, otpCode) => {
  * 6. Kirim Email Reset Password
  */
 export const resetPassword = async (email) => {
-  await sendPasswordResetEmail(auth, email);
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) {
+    throw error;
+  }
 };
 
 /**
@@ -184,8 +185,11 @@ export const logoutUser = async () => {
     // Hapus session cookie di server
     await fetch("/api/auth/logout", { method: "POST" });
 
-    // Keluar dari sesi Firebase client
-    await signOut(auth);
+    // Keluar dari sesi Supabase client
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
 
     // Redirect bersih ke halaman login
     window.location.replace("/login");

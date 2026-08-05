@@ -1,11 +1,36 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
-import { updateOrderStatus } from "@/app/api/orders/orderService";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+// Helper for admin verification, adapted from the refactored settings route
+async function verifyAdmin(request) {
+  const token = request.headers.get("authorization")?.split(" ")[1];
+  if (!token) {
+    throw new Error("Unauthorized: No token provided");
+  }
+  const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
+  if (error) {
+    console.error("Auth error:", error.message);
+    throw new Error("Unauthorized: Invalid token");
+  }
+  const { data: adminUser, error: dbError } = await supabaseAdmin
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (dbError || !adminUser || adminUser.role !== "admin") {
+    console.error("DB error or role mismatch:", dbError?.message);
+    throw new Error("Forbidden: User is not an admin");
+  }
+  return user.id;
+}
+
+
 async function handleShippingUpdate(request, { params }) {
   try {
+    await verifyAdmin(request);
+
     const orderId = params?.id;
     const body = await request.json().catch(() => ({}));
 
@@ -16,59 +41,90 @@ async function handleShippingUpdate(request, { params }) {
       );
     }
 
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderSnap = await orderRef.get();
+    // 1. Fetch order data first
+    const { data: orderData, error: fetchError } = await supabaseAdmin
+      .from("orders")
+      .select("status, status_history, shipping_address")
+      .eq("id", orderId)
+      .single();
 
-    if (!orderSnap.exists) {
+    if (fetchError) {
+      console.error("Error fetching order:", fetchError.message);
       return NextResponse.json(
         { success: false, error: "Order not found" },
         { status: 404 },
       );
     }
 
-    const shippingData = {
-      orderId,
-      courier_name: body.courierName || body.courier_name || null,
-      service_type: body.serviceType || body.service_type || null,
-      tracking_number: body.trackingNumber || body.tracking_number || null,
-      shipping_address: body.shippingAddress || body.shipping_address || null,
-      recipient_name: body.recipientName || body.recipient_name || null,
-      phone_number: body.phoneNumber || body.phone_number || null,
-    };
-
-    await orderRef.set(
-      {
-        shippingDetail: shippingData,
-        shippingAddress: shippingData.shipping_address || null,
-        shippingCost: Number(body.shippingCost || body.shipping_cost || 0),
-        updated_at: new Date(),
-      },
-      { merge: true },
-    );
-
-    await orderRef.collection("shipping_details").doc("primary").set(shippingData, { merge: true });
-
-    const currentStatus = (orderSnap.data().status || "").toLowerCase();
-    if (
-      body.updateStatus !== false &&
-      body.status &&
-      currentStatus !== body.status.toLowerCase()
-    ) {
-      await updateOrderStatus(db, orderId, body.status, "admin", body.notes || "Informasi pengiriman diperbarui");
-    } else if (
-      body.updateStatus !== false &&
-      (body.status || shippingData.tracking_number) &&
-      !["cancelled", "delivered"].includes(currentStatus)
-    ) {
-      await updateOrderStatus(db, orderId, "shipped", "admin", "Resi dan kurir telah ditambahkan");
+    const trackingNumber = body.trackingNumber || body.tracking_number || null;
+    
+    // Merge address details into a single JSONB object
+    const shippingAddress = body.shippingAddress || body.shipping_address || orderData.shipping_address || {};
+    if (body.recipientName || body.recipient_name) {
+        shippingAddress.recipient_name = body.recipientName || body.recipient_name;
+    }
+    if (body.phoneNumber || body.phone_number) {
+        shippingAddress.recipient_phone = body.phoneNumber || body.phone_number;
     }
 
-    return NextResponse.json({ success: true, shipping: shippingData });
+    // 2. Prepare the main update payload for Supabase
+    const updatePayload = {
+      shipping_detail: {
+        courier_name: body.courierName || body.courier_name || null,
+        service_type: body.serviceType || body.service_type || null,
+      },
+      shipping_address: shippingAddress,
+      shipping_receipt_number: trackingNumber,
+      shipping_cost: Number(body.shippingCost || body.shipping_cost || 0),
+    };
+
+    // 3. Conditionally add status update to the payload
+    const currentStatus = orderData.status?.toLowerCase();
+    const newStatus = body.status?.toLowerCase();
+    let notes = "";
+    let statusToUpdate = null;
+
+    // Replicate status update logic from original file
+    if (body.updateStatus !== false && newStatus && currentStatus !== newStatus) {
+        statusToUpdate = newStatus;
+        notes = body.notes || "Informasi pengiriman diperbarui";
+    } else if (body.updateStatus !== false && trackingNumber && !["cancelled", "completed", "success", "processing"].includes(currentStatus)) {
+        statusToUpdate = "processing"; // 'shipped' from original code becomes 'processing'
+        notes = "Resi dan kurir telah ditambahkan";
+    }
+
+    if (statusToUpdate) {
+        const historyEntry = {
+            status: statusToUpdate,
+            notes: notes,
+            actor: "admin",
+            timestamp: new Date().toISOString(),
+        };
+        updatePayload.status = statusToUpdate;
+        updatePayload.status_history = [...(orderData.status_history || []), historyEntry];
+    }
+    
+    // 4. Execute the update query
+    const { data: updatedOrder, error: updateError } = await supabaseAdmin
+      .from("orders")
+      .update(updatePayload)
+      .eq("id", orderId)
+      .select()
+      .single();
+
+    if (updateError) {
+        console.error("Failed to update order shipping:", updateError);
+        throw new Error(updateError.message);
+    }
+
+    return NextResponse.json({ success: true, shipping: updatedOrder });
   } catch (error) {
-    console.error("Failed to update order shipping:", error);
+    console.error("Error in handleShippingUpdate:", error.message);
+    const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
+    const statusCode = isAuthError ? 403 : 500;
     return NextResponse.json(
       { success: false, error: error.message || "Internal Server Error" },
-      { status: 500 },
+      { status: statusCode },
     );
   }
 }

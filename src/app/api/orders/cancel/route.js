@@ -1,87 +1,118 @@
-import { db } from "@/lib/firebaseAdmin";
-import { getAuth } from "firebase-admin/auth";
-import { updateOrderStatus } from "@/app/api/orders/orderService";
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-async function verifyUser(authHeader) {
+// Helper to verify a user's token and return their Supabase user object.
+async function verifyUser(request) {
+  const authHeader = request.headers.get("Authorization");
   if (!authHeader) {
-    throw new Error("No authorization header provided.");
+    throw new Error("Unauthorized: No Authorization header provided.");
   }
   const token = authHeader.split("Bearer ")[1];
   if (!token) {
-    throw new Error("Invalid authorization header format.");
+    throw new Error("Unauthorized: Invalid Authorization header format.");
   }
-  return getAuth().verifyIdToken(token);
+
+  const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
+  if (error) {
+    throw new Error(`Authentication failed: ${error.message}`);
+  }
+  if (!user) {
+    throw new Error("Authentication failed: User not found.");
+  }
+  return user;
 }
 
-// POST -> Batalkan pesanan (hanya jika status masih "pending")
+// POST -> Cancels an order if its status is "pending".
 export async function POST(request) {
+  let user;
   try {
-    let decodedToken;
-    try {
-      decodedToken = await verifyUser(request.headers.get("Authorization"));
-    } catch (error) {
-      return Response.json(
-        { error: `Authentication failed: ${error.message}` },
-        { status: 401 },
-      );
-    }
+    user = await verifyUser(request);
+  } catch (error) {
+    console.error("Authentication error in /orders/cancel:", error.message);
+    return NextResponse.json({ success: false, error: error.message }, { status: 401 });
+  }
 
+  try {
     const body = await request.json().catch(() => ({}));
     const { orderId } = body;
 
     if (!orderId) {
-      return Response.json(
-        { error: "Missing required field: orderId." },
+      return NextResponse.json(
+        { success: false, error: "Missing required field: orderId." },
         { status: 400 },
       );
     }
 
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderDoc = await orderRef.get();
-    if (!orderDoc.exists) {
-      return Response.json({ error: "Pesanan tidak ditemukan." }, { status: 404 });
+    // 1. Fetch the order to validate ownership and status
+    const { data: order, error: fetchError } = await supabaseAdmin
+      .from("orders")
+      .select("user_id, status, status_history")
+      .eq("id", orderId)
+      .single();
+
+    if (fetchError) {
+      return NextResponse.json(
+        { success: false, error: "Order not found." },
+        { status: 404 },
+      );
     }
 
-    const orderData = orderDoc.data() || {};
-    if (orderData.userId !== decodedToken.uid) {
-      return Response.json(
-        { error: "Anda tidak berhak membatalkan pesanan ini." },
+    // 2. Perform validation checks
+    if (order.user_id !== user.id) {
+      return NextResponse.json(
+        { success: false, error: "You are not authorized to cancel this order." },
         { status: 403 },
       );
     }
 
-    const currentStatus = (orderData.status || "").toLowerCase();
-    if (currentStatus !== "pending") {
-      return Response.json(
+    if (order.status !== "pending") {
+      return NextResponse.json(
         {
-          error:
-            "Pesanan hanya bisa dibatalkan selama masih menunggu pembayaran.",
+          success: false,
+          error: `Order cannot be cancelled. Status is already '${order.status}'.`,
         },
-        { status: 409 },
+        { status: 409 }, // 409 Conflict is appropriate here
       );
     }
 
-    const updatedOrder = await updateOrderStatus(
-      db,
-      orderId,
-      "cancelled",
-      "customer",
-      "Pembatalan oleh pelanggan",
-    );
+    // 3. Prepare and execute the status update
+    const newStatus = "cancelled";
+    const historyEntry = {
+      status: newStatus,
+      notes: "Cancelled by customer",
+      actor: "customer",
+      timestamp: new Date().toISOString(),
+    };
 
-    return Response.json(
-      {
-        message: `Pesanan ${orderId} berhasil dibatalkan.`,
-        order: updatedOrder,
-      },
-      { status: 200 },
-    );
+    const updatePayload = {
+      status: newStatus,
+      status_history: [...(order.status_history || []), historyEntry],
+    };
+
+    const { data: updatedOrder, error: updateError } = await supabaseAdmin
+      .from("orders")
+      .update(updatePayload)
+      .eq("id", orderId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error(`Error updating order ${orderId} to cancelled:`, updateError.message);
+      throw new Error(updateError.message);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Order ${orderId} has been successfully cancelled.`,
+      order: updatedOrder,
+    });
+
   } catch (error) {
     console.error("Error cancelling order:", error);
-    return Response.json(
-      { error: error.message || "Gagal membatalkan pesanan." },
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to cancel order." },
       { status: 500 },
     );
   }

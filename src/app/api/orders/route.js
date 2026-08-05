@@ -1,377 +1,219 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin"; // Firebase Admin SDK untuk backend (Orders & User)
-import { createClient } from "@supabase/supabase-js"; // Supabase Client untuk Produk
-import { createOrderRecord, mapOrderDoc, updateOrderStatus } from "./orderService";
-import {
-  buildRequestedItems,
-  createCheckoutReservationService,
-} from "./checkoutReservationService";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-// Inisialisasi Supabase Server Client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase =
-  supabaseUrl && supabaseServiceKey
-    ? createClient(supabaseUrl, supabaseServiceKey)
-    : null;
+// ========== AUTH HELPERS ==========
 
-// Helper untuk membersihkan nilai undefined agar tidak error di Firestore
-function sanitizeData(obj) {
-  const cleanObj = {};
-  for (const key in obj) {
-    if (obj[key] !== undefined) {
-      if (
-        typeof obj[key] === "object" &&
-        obj[key] !== null &&
-        !Array.isArray(obj[key]) &&
-        !(obj[key] instanceof Date)
-      ) {
-        cleanObj[key] = sanitizeData(obj[key]);
-      } else {
-        cleanObj[key] = obj[key];
-      }
-    }
-  }
-  return cleanObj;
+async function verifyUser(request) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader) throw new Error("Unauthorized: No Authorization header");
+  const token = authHeader.split("Bearer ")[1];
+  if (!token) throw new Error("Unauthorized: Invalid token format");
+  const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
+  if (error) throw new Error(`Authentication failed: ${error.message}`);
+  return user;
 }
 
-const checkoutReservationService = createCheckoutReservationService({
-  db,
-  supabase,
-});
+async function verifyAdmin(request) {
+    const user = await verifyUser(request);
+    const { data: profile, error } = await supabaseAdmin
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+    if (error || profile?.role !== "admin") {
+        throw new Error("Forbidden: Admin access required");
+    }
+    return user;
+}
 
-// GET -> Mengambil Alamat Utama User & Daftar Pesanan dari Firestore
-// - Jika userId DIKIRIM  -> mode USER: alamat + pesanan milik user tsb (untuk halaman akun user)
-// - Jika userId TIDAK DIKIRIM -> mode ADMIN: SEMUA pesanan (untuk dashboard admin / OverviewStats)
+
+// ========== GET HANDLER ==========
+// Fetches user's primary address and orders, or all orders for an admin.
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
 
-    // ================= MODE ADMIN (tanpa userId) =================
+    // --- ADMIN MODE ---
     if (!userId) {
-      const page = parseInt(searchParams.get("page")) || 1;
-      const limit = parseInt(searchParams.get("limit")) || 10;
+      await verifyAdmin(request);
+      const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+      const limit = Math.max(1, parseInt(searchParams.get("limit") || "10"));
       const offset = (page - 1) * limit;
 
-      // Get total count for pagination
-      const countSnapshot = await db.collection("orders").count().get();
-      const totalOrders = countSnapshot.data().count;
-      const totalPages = Math.ceil(totalOrders / limit);
+      const { data, error, count } = await supabaseAdmin
+        .from("orders")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
       
-      const ordersQuery = db.collection("orders")
-                            .orderBy("createdAt", "desc")
-                            .limit(limit)
-                            .offset(offset);
-      const ordersSnapshot = await ordersQuery.get();
-      
-      let ordersData = [];
-      ordersSnapshot.forEach((doc) => {
-        ordersData.push(mapOrderDoc(doc));
-      });
+      if (error) throw error;
 
       return NextResponse.json({
         success: true,
-        orders: ordersData,
+        orders: data,
         pagination: {
           currentPage: page,
-          totalPages: totalPages,
-          totalOrders: totalOrders
-        }
+          totalPages: Math.ceil((count || 0) / limit),
+          totalOrders: count || 0,
+        },
       });
     }
 
-    // ================= MODE USER (dengan userId) =================
-
-    // 1. Ambil Alamat User dari Firestore
-    let userPrimaryAddress = "Belum diatur";
-    try {
-      const userDoc = await db.collection("users").doc(userId).get();
-      if (userDoc.exists) {
-        const data = userDoc.data();
-        if (
-          data.addresses &&
-          Array.isArray(data.addresses) &&
-          data.addresses.length > 0
-        ) {
-          const primary =
-            data.addresses.find((a) => a.isPrimary) || data.addresses[0];
-          userPrimaryAddress = `${primary.label || "Alamat"} - ${primary.recipientName} (${primary.recipientPhone}): ${primary.street}, ${primary.city} (${primary.postalCode})`;
-        } else if (data.shipping_address) {
-          userPrimaryAddress = data.shipping_address;
-        } else if (data.shippingAddress) {
-          const sa = data.shippingAddress;
-          userPrimaryAddress = `${sa.label || "Alamat"} - ${sa.recipientName} (${sa.recipientPhone}): ${sa.street}, ${sa.city} (${sa.postalCode})`;
-        }
-      }
-    } catch (err) {
-      console.error("Gagal mengambil alamat dari Firestore:", err);
+    // --- USER MODE ---
+    const user = await verifyUser(request);
+    if (user.id !== userId) {
+        return NextResponse.json({ success: false, error: "Cannot fetch data for another user." }, { status: 403 });
     }
+    
+    // 1. Fetch User's Primary Address
+    const { data: primaryAddressData, error: addressError } = await supabaseAdmin
+      .from("addresses")
+      .select("*")
+      .eq("user_id", userId)
+      .order("is_primary", { ascending: false }) // primary first
+      .limit(1)
+      .single();
 
-    // 2. Ambil Daftar Pesanan milik user dari Firestore (Collection: orders)
-    const ordersSnapshot = await db
-      .collection("orders")
-      .where("userId", "==", userId)
-      .get();
+    if (addressError && addressError.code !== 'PGRST116') { // Ignore 'no rows' error
+        console.error("Failed to fetch user address:", addressError.message);
+    }
+    
+    // 2. Fetch User's Orders
+    const { data: ordersData, error: ordersError } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-    let ordersData = [];
-    ordersSnapshot.forEach((doc) => {
-      ordersData.push(mapOrderDoc(doc));
-    });
-
-    // Urutkan pesanan dari yang terbaru
-    ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (ordersError) throw ordersError;
 
     return NextResponse.json({
       success: true,
-      primaryAddress: userPrimaryAddress,
-      orders: ordersData,
+      primaryAddress: primaryAddressData || null,
+      orders: ordersData || [],
     });
+
   } catch (error) {
-    console.error("Gagal mengambil data orders dari Firestore:", error);
+    console.error("GET /api/orders error:", error.message);
+    const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 },
+      { success: false, error: error.message },
+      { status: isAuthError ? 403 : 500 },
     );
   }
 }
 
-// POST -> Menyimpan pesanan baru (Termasuk array items keranjang) ke Firestore
-export async function POST(request) {
-  const stockLockOwner = `checkout-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-  const acquiredLocks = [];
-  let reservations = [];
 
-  try {
-    const body = await request.json().catch(() => ({}));
-    const {
-      userId,
-      orderId,
-      order,
-      items,
-      address,
-      status,
-      paymentType,
-      shippingDetail,
-      shippingCost,
-      discountAmount,
-      taxAmount,
-      amount,
-      customerName,
-      customerEmail,
-      customerPhone,
-      notes,
-    } = body;
-
-    if (!userId || !orderId) {
-      return NextResponse.json(
-        { error: "userId and orderId are required" },
-        { status: 400 },
-      );
-    }
-
-    const orderItems = Array.isArray(items) ? items : [];
-    if (orderItems.length === 0) {
-      return NextResponse.json(
-        { error: "items wajib ada untuk membuat pesanan" },
-        { status: 400 },
-      );
-    }
-
-    const requestedItems = buildRequestedItems(orderItems);
-    const lockKeys = requestedItems
-      .map((item) => `product:${item.productId}:variant:${item.variantNormalized}`)
-      .sort((a, b) => a.localeCompare(b));
-
-    for (const lockKey of lockKeys) {
-      const lockRef = await checkoutReservationService.acquireInventoryLock(
-        lockKey,
-        stockLockOwner,
-      );
-      acquiredLocks.push(lockRef);
-    }
-
-    reservations = await checkoutReservationService.reserveStockInSupabase(
-      requestedItems,
-    );
-    const stockReservedAt = new Date().toISOString();
-
-    const payload = await createOrderRecord(db, {
-      userId,
-      orderId,
-      items: orderItems,
-      address,
-      shippingDetail,
-      shippingCost,
-      discountAmount,
-      taxAmount,
-      paymentType,
-      notes: notes || order?.notes || "",
-      status: status || "pending",
-      amount: amount || Number(order?.rawPrice || order?.price || 0),
-      customerName: customerName || order?.customerName || "",
-      customerEmail: customerEmail || order?.customerEmail || "",
-      customerPhone: customerPhone || order?.customerPhone || "",
-      productName: order?.name || "Katalog Belanja",
-      concentration: order?.concentration || "",
-      stockReservedAt,
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Pesanan berhasil dibuat dan stok sudah direservasi",
-      order: payload,
-    });
-  } catch (error) {
-    if (reservations.length > 0) {
-      await checkoutReservationService.rollbackReservations(reservations);
-    }
-
-    console.error("Gagal menyimpan pesanan ke Firestore:", error);
-
-    const statusCode = Number(error?.status) || 500;
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: statusCode },
-    );
-  } finally {
-    await checkoutReservationService.releaseInventoryLocks(
-      acquiredLocks,
-      stockLockOwner,
-    );
-  }
-}
-
-// PUT -> Memperbarui status pesanan (Pembayaran sukses / Konfirmasi Seller) & Mengurangi Stok di Supabase
+// ========== PUT HANDLER ==========
+// Updates an order's status and decrements stock on payment success.
 export async function PUT(request) {
   try {
+    await verifyAdmin(request); // Updating orders is an admin action
+
     const body = await request.json().catch(() => ({}));
     const { orderId, status, newStatus, shippingReceiptNumber } = body;
-    const targetStatus = newStatus || status;
+    const targetStatus = (newStatus || status || "").toLowerCase();
 
     if (!orderId || !targetStatus) {
-      return NextResponse.json(
-        { error: "orderId and status are required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "orderId and status are required" }, { status: 400 });
     }
 
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderDoc = await orderRef.get();
+    const { data: orderData, error: fetchError } = await supabaseAdmin
+      .from("orders")
+      .select("status, items:order_items(*)")
+      .eq("id", orderId)
+      .single();
 
-    if (!orderDoc.exists) {
-      return NextResponse.json(
-        { error: "Pesanan tidak ditemukan" },
-        { status: 404 },
-      );
+    if (fetchError) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    const orderData = orderDoc.data();
-    const normalizedTargetStatus = String(targetStatus).toLowerCase();
+    const normalizedTargetStatus = targetStatus;
+    const currentStatus = (orderData.status || "").toLowerCase();
 
-    if (normalizedTargetStatus === "cancelled") {
-      const updatedOrder = await updateOrderStatus(
-        db,
-        orderId,
-        "cancelled",
-        "admin",
-        "Pesanan dibatalkan melalui endpoint /api/orders",
-      );
+    const isSuccessStatus = ["success", "settlement", "processing"].includes(normalizedTargetStatus);
+    const wasAlreadySuccess = ["success", "settlement", "processing"].includes(currentStatus);
 
-      return NextResponse.json({
-        success: true,
-        message: "Pesanan dibatalkan dan stok yang direservasi telah dipulihkan",
-        order: updatedOrder,
-      });
-    }
-
-    // JIKA STATUS BERUBAH MENJADI "success" atau "settlement" (Pembayaran Berhasil):
-    // Kurangi stok produk yang ada di Supabase berdasarkan item yang dibeli
-    const isSuccessStatus =
-      targetStatus.toLowerCase() === "success" ||
-      targetStatus.toLowerCase() === "settlement" ||
-      targetStatus.toLowerCase() === "processing";
-
-    const wasAlreadySuccess =
-      orderData.status?.toLowerCase() === "success" ||
-      orderData.status?.toLowerCase() === "settlement" ||
-      orderData.status?.toLowerCase() === "processing";
-
-    const stockWasReserved = Boolean(
-      orderData.stockReservedAt || orderData.stock_reserved_at,
-    );
-
-    if (isSuccessStatus && !wasAlreadySuccess && !stockWasReserved && supabase) {
+    // If status is moving to a success state for the first time, decrement stock.
+    if (isSuccessStatus && !wasAlreadySuccess) {
       const items = orderData.items || [];
-
       for (const item of items) {
-        const productId = String(
-          item.id || item.productId || item.product_id || "",
-        );
-        const orderedSize = String(item.size);
-        const orderedQty = Number(item.quantity || item.qty) || 1;
+        const { data: product, error } = await supabaseAdmin
+          .from("products")
+          .select("id, variants")
+          .eq("id", item.product_id)
+          .single();
 
-        if (productId) {
-          const { data: product, error: fetchError } = await supabase
-            .from("products")
-            .select("variants")
-            .eq("id", productId)
-            .single();
+        if (error || !product) continue;
 
-          if (!fetchError && product && product.variants) {
-            let variants = product.variants;
-
-            variants = variants.map((v) => {
-              if (String(v.size).trim() === orderedSize.trim()) {
-                const currentStock = Number(v.stock ?? v.stok ?? 0);
-                const newStock = Math.max(0, currentStock - orderedQty);
-                return {
-                  ...v,
-                  stock: newStock,
-                  stok: newStock,
-                };
-              }
-              return v;
-            });
-
-            await supabase
-              .from("products")
-              .update({ variants: variants })
-              .eq("id", productId);
+        let variantUpdated = false;
+        const updatedVariants = product.variants.map((v) => {
+          if (v.size === item.variant_name) {
+            const currentStock = v.stock || 0;
+            v.stock = Math.max(0, currentStock - item.quantity);
+            variantUpdated = true;
           }
+          return v;
+        });
+
+        if (variantUpdated) {
+          await supabaseAdmin
+            .from("products")
+            .update({ variants: updatedVariants })
+            .eq("id", product.id);
         }
       }
     }
+    
+    // Update order status and history
+    const { data: currentOrder, error: getOrderError } = await supabaseAdmin
+        .from('orders')
+        .select('status_history')
+        .eq('id', orderId)
+        .single();
+    
+    if (getOrderError) throw getOrderError;
 
-    // Siapkan data untuk diupdate di Firestore
-    const updateData = {
-      status: targetStatus,
-      updated_at: new Date(),
-      statusHistory: [
-        ...(Array.isArray(orderData.statusHistory) ? orderData.statusHistory : []),
-        { status: targetStatus, changedAt: new Date().toISOString(), source: "admin" },
-      ].slice(-50),
+    const historyEntry = {
+        status: normalizedTargetStatus,
+        notes: `Status updated by admin`,
+        actor: "admin",
+        timestamp: new Date().toISOString()
+    };
+    
+    const updatePayload = {
+        status: normalizedTargetStatus,
+        status_history: [...(currentOrder.status_history || []), historyEntry]
     };
 
     if (shippingReceiptNumber) {
-      updateData.shippingReceiptNumber = shippingReceiptNumber;
+        updatePayload.shipping_receipt_number = shippingReceiptNumber;
     }
 
-    await orderRef.set(sanitizeData(updateData), { merge: true });
+    const { data: updatedOrder, error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update(updatePayload)
+        .eq("id", orderId)
+        .select()
+        .single();
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({
       success: true,
-      message: `Status pesanan berhasil diperbarui menjadi ${targetStatus} dan stok Supabase diperbarui`,
+      message: `Order status updated to ${targetStatus}`,
+      order: updatedOrder
     });
+
   } catch (error) {
-    console.error("Gagal memperbarui status pesanan & stok:", error);
+    console.error("PUT /api/orders error:", error);
+    const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
-      { status: 500 },
+      { status: isAuthError ? 403 : 500 },
     );
   }
 }

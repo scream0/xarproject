@@ -13,9 +13,10 @@
     "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.110.7",
+    "@supabase/supabase-js": "^2.112.0",
     "axios": "^1.18.1",
     "cloudinary": "^2.10.0",
+    "dotenv": "^17.4.2",
     "firebase": "^12.17.0",
     "firebase-admin": "^14.2.0",
     "framer-motion": "^12.42.2",

@@ -1,4 +1,61 @@
-﻿import { NextResponse } from "next/server"; import { db } from "@/lib/firebaseAdmin"; import { getAuth } from "firebase-admin/auth";
-export const dynamic="force-dynamic";
-async function verify(request){const token=request.headers.get("Authorization")?.split("Bearer ")[1];if(!token)throw new Error("Authentication required.");const u=await getAuth().verifyIdToken(token);const p=await db.collection("users").doc(u.uid).get();if(!(u.role==="admin"||u.admin||p.data()?.role==="admin"))throw new Error("Admin access required.");}
-export async function GET(request){try{await verify(request);const snapshot=await db.collection("orders").get();const orders=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));const pending=orders.filter(o=>["pending","challenge"].includes((o.status||"").toLowerCase())).map(o=>({id:o.orderId||o.id,customer:o.customerName||o.shipping_address?.recipientName||"Customer",amount:Number(o.amount||o.price||0),paymentType:o.payment_type||"Midtrans",createdAt:o.createdAt?.toDate?.().toISOString()||o.createdAt}));const paid=orders.filter(o=>["success","settlement","processing","shipped","completed"].includes((o.status||"").toLowerCase()));return NextResponse.json({pending,summary:{pendingCount:pending.length,pendingValue:pending.reduce((s,o)=>s+o.amount,0),paidCount:paid.length}});}catch(e){return NextResponse.json({error:e.message},{status:403});}}
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
+export const dynamic = "force-dynamic";
+
+async function verifyAdmin(request) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader) throw new Error("Authentication required.");
+  const token = authHeader.split("Bearer ")[1];
+  if (!token) throw new Error("Invalid token format.");
+
+  const { data: { user }, error: userError } = await supabaseAdmin.auth.api.getUser(token);
+  if (userError) throw new Error(`Invalid token: ${userError.message}`);
+
+  const { data: userRole, error: roleError } = await supabaseAdmin
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (roleError || userRole?.role !== "admin") {
+    throw new Error("Admin access required.");
+  }
+}
+
+export async function GET(request) {
+  try {
+    await verifyAdmin(request);
+
+    const { data: orders, error } = await supabaseAdmin
+      .from("orders")
+      .select("*");
+
+    if (error) throw error;
+
+    const pending = orders
+      .filter(o => ["pending", "challenge"].includes(o.status?.toLowerCase()))
+      .map(o => ({
+        id: o.id,
+        customer: o.customer_name || "Customer",
+        amount: Number(o.amount || 0),
+        paymentType: o.payment_type || "Midtrans",
+        createdAt: o.created_at,
+      }));
+
+    const paidCount = orders.filter(o =>
+      ["success", "settlement", "processing", "completed"].includes(o.status?.toLowerCase())
+    ).length;
+
+    return NextResponse.json({
+      pending,
+      summary: {
+        pendingCount: pending.length,
+        pendingValue: pending.reduce((s, o) => s + o.amount, 0),
+        paidCount: paidCount,
+      },
+    });
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 403 });
+  }
+}

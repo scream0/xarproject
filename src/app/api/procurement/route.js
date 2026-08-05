@@ -1,6 +1,125 @@
-﻿import { NextResponse } from "next/server"; import { db } from "@/lib/firebaseAdmin"; import { getAuth } from "firebase-admin/auth";
-export const dynamic="force-dynamic";
-async function admin(request){const token=request.headers.get("Authorization")?.split("Bearer ")[1];if(!token)throw new Error("Authentication required.");const u=await getAuth().verifyIdToken(token);const p=await db.collection("users").doc(u.uid).get();if(!(u.role==="admin"||u.admin||p.data()?.role==="admin"))throw new Error("Admin access required.");return u;}
-export async function GET(request){try{await admin(request);const [suppliers,orders]=await Promise.all([db.collection("suppliers").get(),db.collection("purchase_orders").get()]);return NextResponse.json({suppliers:suppliers.docs.map(d=>({id:d.id,...d.data()})),orders:orders.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))});}catch(e){return NextResponse.json({error:e.message},{status:403});}}
-export async function POST(request){try{const u=await admin(request);const body=await request.json();if(body.type==="supplier"){if(!body.name)return NextResponse.json({error:"Supplier name required."},{status:400});const ref=await db.collection("suppliers").add({name:body.name,contact:body.contact||"",leadTime:body.leadTime||"",createdAt:new Date()});return NextResponse.json({id:ref.id},{status:201});}if(!body.supplierId||!body.item)return NextResponse.json({error:"Supplier and item required."},{status:400});const ref=await db.collection("purchase_orders").add({supplierId:body.supplierId,item:body.item,quantity:Number(body.quantity||0),status:"draft",createdAt:new Date(),createdBy:u.uid});return NextResponse.json({id:ref.id},{status:201});}catch(e){return NextResponse.json({error:e.message||"Could not save procurement record."},{status:500});}}
-export async function PUT(request){try{await admin(request);const {id,status}=await request.json();if(!id||!["ordered","received","cancelled"].includes(status))return NextResponse.json({error:"Invalid purchase order update."},{status:400});await db.collection("purchase_orders").doc(id).set({status,updatedAt:new Date()},{merge:true});return NextResponse.json({message:"Purchase order updated."});}catch(e){return NextResponse.json({error:e.message},{status:500});}}
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
+export const dynamic = "force-dynamic";
+
+async function verifyAdmin(request) {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader) throw new Error("Unauthorized: No Authorization header");
+    const token = authHeader.split("Bearer ")[1];
+    if (!token) throw new Error("Unauthorized: Invalid token format");
+    
+    const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
+    if (error) throw new Error(`Authentication failed: ${error.message}`);
+
+    const { data: profile, error: dbError } = await supabaseAdmin
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+    if (dbError || profile?.role !== "admin") {
+        throw new Error("Forbidden: Admin access required");
+    }
+    return user;
+}
+
+// GET: Fetches all suppliers and purchase orders.
+export async function GET(request) {
+  try {
+    await verifyAdmin(request);
+
+    const [suppliersRes, ordersRes] = await Promise.all([
+      supabaseAdmin.from("suppliers").select("*"),
+      supabaseAdmin.from("purchase_orders").select("*").order("created_at", { ascending: false })
+    ]);
+
+    if (suppliersRes.error) throw suppliersRes.error;
+    if (ordersRes.error) throw ordersRes.error;
+
+    return NextResponse.json({
+      suppliers: suppliersRes.data,
+      orders: ordersRes.data,
+    });
+  } catch (error) {
+    console.error("GET /procurement error:", error.message);
+    const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
+    return NextResponse.json({ error: error.message }, { status: isAuthError ? 403 : 500 });
+  }
+}
+
+// POST: Creates a new supplier or a new purchase order.
+export async function POST(request) {
+  try {
+    const user = await verifyAdmin(request);
+    const body = await request.json();
+
+    // Create a new Supplier
+    if (body.type === "supplier") {
+      if (!body.name) {
+        return NextResponse.json({ error: "Supplier name is required." }, { status: 400 });
+      }
+      const { data, error } = await supabaseAdmin
+        .from("suppliers")
+        .insert({
+          name: body.name,
+          contact: body.contact || {},
+          lead_time_days: body.leadTime || null,
+        })
+        .select("id")
+        .single();
+      
+      if (error) throw error;
+      return NextResponse.json({ id: data.id }, { status: 201 });
+    }
+    
+    // Create a new Purchase Order
+    if (!body.supplierId || !body.item) {
+      return NextResponse.json({ error: "Supplier ID and item description are required." }, { status: 400 });
+    }
+    
+    const { data, error } = await supabaseAdmin
+      .from("purchase_orders")
+      .insert({
+        supplier_id: body.supplierId,
+        item: body.item,
+        quantity: Number(body.quantity || 0),
+        status: "draft",
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json({ id: data.id }, { status: 201 });
+
+  } catch (error) {
+    console.error("POST /procurement error:", error.message);
+    const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
+    return NextResponse.json({ error: error.message }, { status: isAuthError ? 403 : 500 });
+  }
+}
+
+// PUT: Updates the status of a purchase order.
+export async function PUT(request) {
+  try {
+    await verifyAdmin(request);
+    const { id, status } = await request.json();
+
+    if (!id || !["ordered", "received", "cancelled"].includes(status)) {
+      return NextResponse.json({ error: "Valid 'id' and 'status' are required." }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("purchase_orders")
+      .update({ status: status })
+      .eq("id", id);
+    
+    if (error) throw error;
+
+    return NextResponse.json({ message: "Purchase order updated successfully." });
+  } catch (error) {
+    console.error("PUT /procurement error:", error.message);
+    const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
+    return NextResponse.json({ error: error.message }, { status: isAuthError ? 403 : 500 });
+  }
+}
