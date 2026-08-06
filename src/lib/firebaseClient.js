@@ -30,6 +30,4 @@
 // export const storage = getStorage(app); // Tambahkan ini agar bisa di-import di komponen lain
 // export { analytics };
 
-import { supabase } from "./supabaseClient";
 
-export { supabase };

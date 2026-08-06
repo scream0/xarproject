@@ -1,5 +1,5 @@
 // src/utils/authHelpers.js
-import { supabase } from "@/lib/firebaseClient"; // Now this imports Supabase
+import { supabase } from "@/lib/supabaseClient"; // Now this imports Supabase
 // --- HELPER INTERNAL (PRIVATE) ---
 
 // 1. Helper untuk membuat Cookie Sesi di Server
