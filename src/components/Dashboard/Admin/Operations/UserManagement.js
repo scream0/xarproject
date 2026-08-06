@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./UserManagement.module.css";
 import config from "@/data/ui/userManagementConfig.json";
@@ -35,12 +34,14 @@ export default function UserManagement() {
   const [updatingId, setUpdatingId] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
 
-  const loadUsers = async (currentUser) => {
+  const loadUsers = async () => {
     try {
       setLoading(true);
-      const token = currentUser
-        ? await currentUser.getIdToken()
-        : await auth.currentUser?.getIdToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) throw new Error("No active session found.");
+
       const res = await fetch("/api/team", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -56,17 +57,34 @@ export default function UserManagement() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) await loadUsers(currentUser);
-      else setLoading(false);
+    async function checkAuthAndLoad() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await loadUsers();
+      } else {
+        setLoading(false);
+      }
+    }
+
+    checkAuthAndLoad();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        await loadUsers();
+      } else {
+        setLoading(false);
+      }
     });
-    return () => unsubscribe();
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const updateUser = async (userId, payload) => {
     try {
       setUpdatingId(userId);
-      const token = await auth.currentUser?.getIdToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const res = await fetch("/api/team", {
         method: "PUT",
         headers: {
@@ -377,4 +395,3 @@ export default function UserManagement() {
     </div>
   );
 }
-

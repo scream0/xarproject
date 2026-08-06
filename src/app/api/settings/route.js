@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { promises as fs } from "fs";
 import path from "path";
@@ -110,8 +111,8 @@ async function verifyAdmin(authHeader) {
   const token = authHeader.split("Bearer ")[1];
   if (!token) throw new Error("Invalid token format.");
 
-  const { data: { user }, error: userError } = await supabaseAdmin.auth.api.getUser(token);
-  if (userError) throw new Error(`Invalid token: ${userError.message}`);
+  const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+  if (userError || !user) throw new Error(`Invalid token: ${userError?.message || 'User not found'}`);
   
   const uid = user.id;
 
@@ -133,19 +134,68 @@ async function verifyAdmin(authHeader) {
 }
 
 async function ensureSettingsDoc() {
-  const { data, error } = await supabaseAdmin.from("store_config").select("*").eq("singleton_id", true).single();
+  // Menggunakan id = 'main' sesuai struktur tabel Supabase Anda
+  const { data, error } = await supabaseAdmin
+    .from("store_config")
+    .select("*")
+    .eq("id", "main")
+    .single();
 
   if (error && error.code !== 'PGRST116') {
     throw new Error(`Failed to fetch settings: ${error.message}`);
   }
 
   if (!data) {
-    const { error: insertError } = await supabaseAdmin.from("store_config").insert({ ...DEFAULT_SETTINGS, singleton_id: true });
+    const insertPayload = {
+      id: "main",
+      store_name: DEFAULT_SETTINGS.storeName,
+      store_email: DEFAULT_SETTINGS.storeEmail,
+      currency: DEFAULT_SETTINGS.currency,
+      adminLocale: DEFAULT_SETTINGS.adminLocale,
+      low_stock_threshold: DEFAULT_SETTINGS.lowStockThreshold,
+      hero: DEFAULT_SETTINGS.hero,
+      about: DEFAULT_SETTINGS.about,
+      product: DEFAULT_SETTINGS.product,
+      contact: DEFAULT_SETTINGS.contact,
+      footer: DEFAULT_SETTINGS.footer,
+      promo_banner_enabled: DEFAULT_SETTINGS.promoBannerEnabled,
+      promo_banner_text: DEFAULT_SETTINGS.promoBannerText,
+      promo_discount_type: DEFAULT_SETTINGS.promoDiscountType,
+      promo_discount_value: DEFAULT_SETTINGS.promoDiscountValue,
+      promo_code: DEFAULT_SETTINGS.promoCode,
+      promo_destination: DEFAULT_SETTINGS.promoDestination,
+    };
+    const { error: insertError } = await supabaseAdmin.from("store_config").insert(insertPayload);
     if (insertError) throw new Error(`Failed to create default settings: ${insertError.message}`);
     return { ...DEFAULT_SETTINGS };
   }
 
-  const existing = data;
+  // Memetakan kolom database (snake_case) ke format aplikasi (camelCase)
+  const existing = {
+    storeName: data.store_name !== undefined ? data.store_name : data.storeName,
+    storeEmail: data.store_email !== undefined ? data.store_email : data.storeEmail,
+    currency: data.currency,
+    adminLocale: data.adminLocale || data.admin_locale,
+    lowStockThreshold: data.low_stock_threshold !== undefined ? data.low_stock_threshold : data.lowStockThreshold,
+    storeCityId: data.store_city_id !== undefined ? data.store_city_id : data.storeCityId,
+    storeCityName: data.store_city_name !== undefined ? data.store_city_name : data.storeCityName,
+    midtransServerKey: data.midtrans_server_key !== undefined ? data.midtrans_server_key : data.midtransServerKey,
+    midtransClientKey: data.midtrans_client_key !== undefined ? data.midtrans_client_key : data.midtransClientKey,
+    promoBannerEnabled: data.promo_banner_enabled !== undefined ? data.promo_banner_enabled : data.promoBannerEnabled,
+    promoBannerText: data.promo_banner_text !== undefined ? data.promo_banner_text : data.promoBannerText,
+    promoDiscountType: data.promo_discount_type !== undefined ? data.promo_discount_type : data.promoDiscountType,
+    promoDiscountValue: data.promo_discount_value !== undefined ? data.promo_discount_value : data.promoDiscountValue,
+    promoStartDate: data.promo_start_date !== undefined ? data.promo_start_date : data.promoStartDate,
+    promoEndDate: data.promo_end_date !== undefined ? data.promo_end_date : data.promoEndDate,
+    promoCode: data.promo_code !== undefined ? data.promo_code : data.promoCode,
+    promoDestination: data.promo_destination !== undefined ? data.promo_destination : data.promoDestination,
+    hero: data.hero,
+    about: data.about,
+    product: data.product,
+    contact: data.contact,
+    footer: data.footer,
+  };
+
   const merged = {
     ...DEFAULT_SETTINGS,
     ...existing,
@@ -216,21 +266,21 @@ export async function PUT(request) {
     const current = await ensureSettingsDoc();
     const updateData = {};
 
-    if (newSettings.storeName !== undefined) updateData.storeName = newSettings.storeName;
-    if (newSettings.storeEmail !== undefined) updateData.storeEmail = newSettings.storeEmail;
+    if (newSettings.storeName !== undefined) updateData.store_name = newSettings.storeName;
+    if (newSettings.storeEmail !== undefined) updateData.store_email = newSettings.storeEmail;
     if (newSettings.currency !== undefined) updateData.currency = newSettings.currency;
     if (newSettings.adminLocale !== undefined) updateData.adminLocale = String(newSettings.adminLocale).toLowerCase() === "en" ? "en" : "id";
-    if (newSettings.lowStockThreshold !== undefined) updateData.lowStockThreshold = Number(newSettings.lowStockThreshold);
-    if (newSettings.storeCityId !== undefined) updateData.storeCityId = String(newSettings.storeCityId || "");
-    if (newSettings.storeCityName !== undefined) updateData.storeCityName = String(newSettings.storeCityName || "");
-    if (newSettings.promoBannerEnabled !== undefined) updateData.promoBannerEnabled = Boolean(newSettings.promoBannerEnabled);
-    if (newSettings.promoBannerText !== undefined) updateData.promoBannerText = newSettings.promoBannerText;
-    if (newSettings.promoDiscountType !== undefined) updateData.promoDiscountType = newSettings.promoDiscountType === "fixed" ? "fixed" : "percentage";
-    if (newSettings.promoDiscountValue !== undefined) updateData.promoDiscountValue = Number(newSettings.promoDiscountValue || 0);
-    if (newSettings.promoStartDate !== undefined) updateData.promoStartDate = newSettings.promoStartDate;
-    if (newSettings.promoEndDate !== undefined) updateData.promoEndDate = newSettings.promoEndDate;
-    if (newSettings.promoCode !== undefined) updateData.promoCode = String(newSettings.promoCode || "").toUpperCase();
-    if (newSettings.promoDestination !== undefined) updateData.promoDestination = newSettings.promoDestination;
+    if (newSettings.lowStockThreshold !== undefined) updateData.low_stock_threshold = Number(newSettings.lowStockThreshold);
+    if (newSettings.storeCityId !== undefined) updateData.store_city_id = String(newSettings.storeCityId || "");
+    if (newSettings.storeCityName !== undefined) updateData.store_city_name = String(newSettings.storeCityName || "");
+    if (newSettings.promoBannerEnabled !== undefined) updateData.promo_banner_enabled = Boolean(newSettings.promoBannerEnabled);
+    if (newSettings.promoBannerText !== undefined) updateData.promo_banner_text = newSettings.promoBannerText;
+    if (newSettings.promoDiscountType !== undefined) updateData.promo_discount_type = newSettings.promoDiscountType === "fixed" ? "fixed" : "percentage";
+    if (newSettings.promoDiscountValue !== undefined) updateData.promo_discount_value = Number(newSettings.promoDiscountValue || 0);
+    if (newSettings.promoStartDate !== undefined) updateData.promo_start_date = newSettings.promoStartDate;
+    if (newSettings.promoEndDate !== undefined) updateData.promo_end_date = newSettings.promoEndDate;
+    if (newSettings.promoCode !== undefined) updateData.promo_code = String(newSettings.promoCode || "").toUpperCase();
+    if (newSettings.promoDestination !== undefined) updateData.promo_destination = newSettings.promoDestination;
 
     if (newSettings.hero) updateData.hero = sanitizeData({ ...(current.hero || {}), ...newSettings.hero });
     if (newSettings.about) {
@@ -269,16 +319,16 @@ export async function PUT(request) {
     } catch {}
 
     if (newSettings.midtransServerKey && typeof newSettings.midtransServerKey === "string" && !newSettings.midtransServerKey.includes("•")) {
-      updateData.midtransServerKey = newSettings.midtransServerKey;
+      updateData.midtrans_server_key = newSettings.midtransServerKey;
       envFileContent = updateEnvVariable(envFileContent, "MIDTRANS_SERVER_KEY", newSettings.midtransServerKey);
     }
     if (newSettings.midtransClientKey && typeof newSettings.midtransClientKey === "string" && !newSettings.midtransClientKey.includes("•")) {
-      updateData.midtransClientKey = newSettings.midtransClientKey;
+      updateData.midtrans_client_key = newSettings.midtransClientKey;
       envFileContent = updateEnvVariable(envFileContent, "NEXT_PUBLIC_MIDTRANS_CLIENT_KEY", newSettings.midtransClientKey);
     }
 
     if (Object.keys(updateData).length > 0) {
-      const { error } = await supabaseAdmin.from("store_config").upsert({ ...updateData, singleton_id: true }, { onConflict: 'singleton_id' });
+      const { error } = await supabaseAdmin.from("store_config").upsert({ id: "main", ...updateData }, { onConflict: 'id' });
       if (error) throw new Error(`Failed to update settings: ${error.message}`);
     }
 
@@ -305,7 +355,6 @@ function updateEnvVariable(content, key, value) {
   if (regex.test(content)) {
     return content.replace(regex, newEntry);
   } else {
-    return content + `
-${newEntry}`;
+    return content + `\n${newEntry}`;
   }
 }

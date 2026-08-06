@@ -3,7 +3,6 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-// Default automation rules, to be used if none are set in the database.
 const defaultRules = [
   {
     id: "low-stock",
@@ -28,21 +27,23 @@ const defaultRules = [
   },
 ];
 
-// Helper for admin verification
 async function verifyAdmin(request) {
   const token = request.headers.get("authorization")?.split(" ")[1];
   if (!token) {
     throw new Error("Unauthorized: No token provided");
   }
-  const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
-  if (error) {
+  
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) {
     throw new Error("Unauthorized: Invalid token");
   }
+
   const { data: adminUser, error: dbError } = await supabaseAdmin
     .from("users")
     .select("role")
     .eq("id", user.id)
     .single();
+    
   if (dbError || !adminUser || adminUser.role !== "admin") {
     throw new Error("Forbidden: User is not an admin");
   }
@@ -53,21 +54,18 @@ export async function GET(request) {
   try {
     await verifyAdmin(request);
 
-    // Fetch automation rules from the singleton store_config table
+    // Mengambil langsung dari tabel khusus store_automation
     const { data, error } = await supabaseAdmin
-      .from("store_config")
-      .select("automation_rules")
-      .eq("singleton_id", true)
+      .from("store_automation")
+      .select("rules")
+      .eq("id", "main")
       .single();
 
-    if (error) {
-      console.error("Error fetching automation rules:", error.message);
-      throw new Error("Could not fetch store configuration.");
+    if (error || !data) {
+      return NextResponse.json({ rules: defaultRules });
     }
 
-    // If rules exist in the DB, use them; otherwise, use the defaults.
-    const rules = data?.automation_rules || defaultRules;
-    return NextResponse.json({ rules });
+    return NextResponse.json({ rules: data.rules || defaultRules });
   } catch (error) {
     console.error("GET /api/automation error:", error.message);
     const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
@@ -81,7 +79,7 @@ export async function GET(request) {
 
 export async function PUT(request) {
   try {
-    await verifyAdmin(request);
+    const userId = await verifyAdmin(request);
     const { rules } = await request.json();
 
     if (!Array.isArray(rules)) {
@@ -91,11 +89,15 @@ export async function PUT(request) {
       );
     }
 
-    // Update the automation_rules in the singleton store_config table
+    // Menyimpan langsung ke tabel store_automation menggunakan upsert
     const { error } = await supabaseAdmin
-      .from("store_config")
-      .update({ automation_rules: rules })
-      .eq("singleton_id", true);
+      .from("store_automation")
+      .upsert({
+        id: "main",
+        rules: rules,
+        updated_at: new Date().toISOString(),
+        updated_by: userId,
+      });
 
     if (error) {
       console.error("Error updating automation rules:", error.message);
