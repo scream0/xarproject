@@ -10,18 +10,25 @@ async function verifyUser(request) {
   if (!authHeader) throw new Error("Unauthorized: No Authorization header");
   const token = authHeader.split("Bearer ")[1];
   if (!token) throw new Error("Unauthorized: Invalid token format");
-  const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
-  if (error) throw new Error(`Authentication failed: ${error.message}`);
+  
+  // Diperbarui menggunakan auth.getUser(token) modern
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) {
+    throw new Error(`Authentication failed: ${error?.message || "Invalid token"}`);
+  }
   return user;
 }
 
 async function verifyAdmin(request) {
     const user = await verifyUser(request);
+    
+    // Diperbarui dari tabel "users" ke tabel "profiles"
     const { data: profile, error } = await supabaseAdmin
-        .from("users")
+        .from("profiles")
         .select("role")
         .eq("id", user.id)
         .single();
+        
     if (error || profile?.role !== "admin") {
         throw new Error("Forbidden: Admin access required");
     }

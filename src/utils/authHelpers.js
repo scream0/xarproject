@@ -1,5 +1,6 @@
 // src/utils/authHelpers.js
-import { supabase } from "@/lib/supabaseClient"; // Now this imports Supabase
+import { supabase } from "@/lib/supabaseClient";
+
 // --- HELPER INTERNAL (PRIVATE) ---
 
 // 1. Helper untuk membuat Cookie Sesi di Server
@@ -46,16 +47,19 @@ export const loginWithEmail = async (email, password) => {
   }
 
   const user = data.user;
-  const accessToken = data.session.access_token;
+  const accessToken = data.session?.access_token;
+
+  if (accessToken) {
+    await setSessionCookie(accessToken);
+  }
 
   await syncUserToServer({
     uid: user.id,
     email: user.email,
-    name: user.user_metadata.name || "User",
+    name: user.user_metadata?.name || "User",
     phone: user.phone || "",
   });
 
-  await setSessionCookie(accessToken);
   return user;
 };
 
@@ -79,17 +83,21 @@ export const registerWithEmail = async (name, email, password) => {
   }
 
   const user = data.user;
-  const accessToken = data.session.access_token;
+  const accessToken = data.session?.access_token;
+
+  // Jika sign-up otomatis menghasilkan sesi (email confirmation dimatikan)
+  if (accessToken) {
+    await setSessionCookie(accessToken);
+  }
 
   await syncUserToServer({
-    uid: user.id,
-    email: user.email,
+    uid: user?.id,
+    email: user?.email || email,
     name: name,
     phone: "",
     role: "user",
   });
 
-  await setSessionCookie(accessToken);
   return user;
 };
 
@@ -105,8 +113,6 @@ export const loginWithGoogle = async () => {
     throw error;
   }
 
-  // Supabase handles the redirect for OAuth, so this function might not return a user directly
-  // The session and user will be available after the redirect
   return data;
 };
 
@@ -133,9 +139,7 @@ export const sendOtpCode = async (phoneInput) => {
     throw error;
   }
 
-  // Supabase's signInWithOtp sends the code and doesn't return a confirmationResult directly
-  // The client will need to call verifyOtpAndLogin with the phone and OTP
-  return { phone: formattedPhone, data }; // Returning data for potential debugging, phone for verify step
+  return { phone: formattedPhone, data };
 };
 
 /**
@@ -153,17 +157,20 @@ export const verifyOtpAndLogin = async (phone, otpCode) => {
   }
 
   const user = data.user;
-  const accessToken = data.session.access_token;
+  const accessToken = data.session?.access_token;
+
+  if (accessToken) {
+    await setSessionCookie(accessToken);
+  }
 
   await syncUserToServer({
     uid: user.id,
     email: user.email || "",
-    name: user.user_metadata.name || "User",
+    name: user.user_metadata?.name || "User",
     phone: user.phone || "",
     role: "user",
   });
 
-  await setSessionCookie(accessToken);
   return user;
 };
 
@@ -178,7 +185,7 @@ export const resetPassword = async (email) => {
 };
 
 /**
- * 7. Logout Pengguna (Hapus Cookie Sesi & Firebase Auth)
+ * 7. Logout Pengguna (Hapus Cookie Sesi & Supabase Auth)
  */
 export const logoutUser = async () => {
   try {

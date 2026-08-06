@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { auth } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./NotificationsSection.module.css";
 import notificationsConfig from "@/data/ui/notificationsConfig.json";
@@ -61,7 +61,12 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     let subscription = null;
 
     const initAuth = async () => {
-      const { data: { session } } = await auth.getSession();
+      if (!supabase?.auth) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
       setCurrentSession(session);
 
       if (session) {
@@ -71,7 +76,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
       }
 
       // Listener perubahan sesi Supabase
-      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
         setCurrentSession(session);
         if (session) {
           await loadNotifications(session);
@@ -92,7 +97,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
 
   const markAllRead = async () => {
     try {
-      const { data: { session } } = await auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       if (!token) {
@@ -101,7 +106,6 @@ export default function NotificationsSection({ onUnreadCountChange }) {
       }
       setSubmittingMarkAllRead(true);
 
-      // Menggunakan endpoint bulk update
       const res = await fetch("/api/notifications", {
         method: "PUT",
         headers: {
@@ -128,7 +132,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
   const markRead = async (notification) => {
     if (notification.isRead) return;
     try {
-      const { data: { session } } = await auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       await fetch("/api/notifications", {
@@ -153,7 +157,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     }
     try {
       setDeletingId(notification.id);
-      const { data: { session } } = await auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const res = await fetch(

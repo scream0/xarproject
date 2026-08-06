@@ -11,7 +11,8 @@ async function admin(request) {
 
   let isAdmin = user.user_metadata?.role === "admin";
   if (!isAdmin) {
-    const { data: profile } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single();
+    // Diperbarui dari tabel "users" ke tabel "profiles"
+    const { data: profile } = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
     if (profile?.role === "admin") isAdmin = true;
   }
   if (!isAdmin) throw new Error("Admin access required.");
@@ -54,7 +55,8 @@ async function getUserTotalSpent(userId) {
 export async function GET(request) {
   try {
     await admin(request);
-    const { data: users, error } = await supabaseAdmin.from("users").select("*");
+    // Diperbarui dari tabel "users" ke tabel "profiles"
+    const { data: users, error } = await supabaseAdmin.from("profiles").select("*");
     if (error) throw error;
 
     const { searchParams } = new URL(request.url);
@@ -90,7 +92,8 @@ export async function PUT(request) {
       return NextResponse.json({ error: "userId is required." }, { status: 400 });
     }
 
-    const { data: userRecord, error: userErr } = await supabaseAdmin.from("users").select("*").eq("id", userId).single();
+    // Diperbarui dari tabel "users" ke tabel "profiles"
+    const { data: userRecord, error: userErr } = await supabaseAdmin.from("profiles").select("*").eq("id", userId).single();
     if (userErr || !userRecord) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
@@ -137,7 +140,8 @@ export async function PUT(request) {
       );
     }
 
-    const { error: updateErr } = await supabaseAdmin.from("users").update(updatePayload).eq("id", userId);
+    // Diperbarui dari tabel "users" ke tabel "profiles"
+    const { error: updateErr } = await supabaseAdmin.from("profiles").update(updatePayload).eq("id", userId);
     if (updateErr) throw updateErr;
 
     // Optional auth metadata sync
@@ -161,5 +165,3 @@ export async function PUT(request) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
-
-

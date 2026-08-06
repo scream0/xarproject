@@ -9,11 +9,13 @@ async function verifyAdmin(request) {
   const token = authHeader.split("Bearer ")[1];
   if (!token) throw new Error("Invalid token format.");
 
-  const { data: { user }, error: userError } = await supabaseAdmin.auth.api.getUser(token);
-  if (userError) throw new Error(`Invalid token: ${userError.message}`);
+  // Diperbarui menggunakan auth.getUser(token) modern
+  const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+  if (userError || !user) throw new Error(`Invalid token: ${userError?.message || "User not found"}`);
 
+  // Diperbarui dari tabel "users" ke tabel "profiles"
   const { data: userRole, error: roleError } = await supabaseAdmin
-    .from("users")
+    .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();

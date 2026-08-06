@@ -9,16 +9,21 @@ async function verifyAdmin(request) {
   if (!token) {
     throw new Error("Unauthorized: No token provided");
   }
-  const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
-  if (error) {
-    console.error("Auth error:", error.message);
+  
+  // Diperbarui menggunakan auth.getUser(token) modern
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) {
+    console.error("Auth error:", error?.message || "Invalid token");
     throw new Error("Unauthorized: Invalid token");
   }
+
+  // Diperbarui dari tabel "users" ke tabel "profiles"
   const { data: adminUser, error: dbError } = await supabaseAdmin
-    .from("users")
+    .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
+
   if (dbError || !adminUser || adminUser.role !== "admin") {
     console.error("DB error or role mismatch:", dbError?.message);
     throw new Error("Forbidden: User is not an admin");

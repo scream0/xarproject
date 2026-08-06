@@ -16,7 +16,7 @@ export async function GET(request) {
     }
 
     const { data: userRecord, error } = await supabaseAdmin
-      .from("users")
+      .from("profiles")
       .select("*")
       .eq("id", userId)
       .single();
@@ -53,7 +53,7 @@ export async function POST(request) {
     }
 
     const { data: existingUser } = await supabaseAdmin
-      .from("users")
+      .from("profiles")
       .select("*")
       .eq("id", uid)
       .single();
@@ -65,9 +65,9 @@ export async function POST(request) {
         created_at: new Date().toISOString(),
       };
 
-      const { error: insertErr } = await supabaseAdmin.from("users").insert(newUserData);
+      const { error: insertErr } = await supabaseAdmin.from("profiles").insert(newUserData);
       if (insertErr) {
-        console.warn("Gagal insert users row:", insertErr.message);
+        console.warn("Gagal insert profiles row:", insertErr.message);
       }
 
       await supabaseAdmin.auth.admin.updateUserById(uid, {
@@ -81,12 +81,12 @@ export async function POST(request) {
       });
     } else {
       const { error: updateErr } = await supabaseAdmin
-        .from("users")
+        .from("profiles")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", uid);
 
       if (updateErr) {
-        console.warn("Gagal update users row:", updateErr.message);
+        console.warn("Gagal update profiles row:", updateErr.message);
       }
 
       return NextResponse.json({
@@ -145,7 +145,7 @@ export async function PUT(request) {
       });
 
       const { data: updatedRecord } = await supabaseAdmin
-        .from("users")
+        .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
@@ -163,10 +163,10 @@ export async function PUT(request) {
       if (typeof points === "number") pointsPayload.points = points;
       if (typeof balance === "number") pointsPayload.balance = balance;
 
-      await supabaseAdmin.from("users").update(pointsPayload).eq("id", userId);
+      await supabaseAdmin.from("profiles").update(pointsPayload).eq("id", userId);
 
       const { data: updatedRecord } = await supabaseAdmin
-        .from("users")
+        .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
@@ -207,7 +207,7 @@ export async function DELETE(request) {
       );
     }
 
-    await supabaseAdmin.from("users").delete().eq("id", userId);
+    await supabaseAdmin.from("profiles").delete().eq("id", userId);
     await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
 
     return NextResponse.json({
@@ -222,4 +222,3 @@ export async function DELETE(request) {
     );
   }
 }
-

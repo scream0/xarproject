@@ -121,11 +121,11 @@ export async function POST(request) {
     // Fetch user details from Supabase auth if userId is provided
     if (userId) {
       try {
-        const { data: user, error } = await supabaseAdmin.auth.api.getUserById(userId);
+        // Diperbarui dari auth.api.getUserById ke auth.admin.getUserById modern
+        const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
         if (error) throw error;
+        const user = data?.user;
         if (user) {
-            // In Supabase, name isn't a standard auth field. Use email/phone.
-            // Name will be sourced from shipping address.
             customerEmail = user.email || customerEmail;
             customerPhone = user.phone || customerPhone;
         }

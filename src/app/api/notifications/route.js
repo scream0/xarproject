@@ -10,13 +10,15 @@ async function identity(request) {
     throw new Error("Authentication required.");
   }
 
-  const { data: user, error: authError } = await supabaseAdmin.auth.api.getUser(token);
-  if (authError) {
-    throw new Error(`Authentication failed: ${authError.message}`);
+  // Menggunakan method getUser(token) yang kompatibel dengan versi supabase-js modern
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+  if (authError || !user) {
+    throw new Error(`Authentication failed: ${authError?.message || "Invalid token"}`);
   }
 
+  // Mengambil role dari tabel profiles (menggantikan tabel users)
   const { data: profile, error: dbError } = await supabaseAdmin
-    .from("users")
+    .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();

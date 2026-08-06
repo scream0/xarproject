@@ -22,7 +22,8 @@ async function verifyAdmin(authHeader) {
   if (user.user_metadata?.role === "admin") {
     return user;
   }
-  const { data: profile } = await supabaseAdmin.from("users").select("role").eq("id", user.uid).single();
+  // Diperbarui dari tabel "users" ke tabel "profiles"
+  const { data: profile } = await supabaseAdmin.from("profiles").select("role").eq("id", user.uid).single();
   if (profile?.role === "admin") {
     return user;
   }
@@ -253,4 +254,3 @@ export async function DELETE(request) {
     );
   }
 }
-

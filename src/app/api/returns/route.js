@@ -12,7 +12,8 @@ async function identity(request) {
 
   let isAdmin = user.user_metadata?.role === "admin";
   if (!isAdmin) {
-    const { data: profile } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single();
+    // Diperbarui dari tabel "users" ke tabel "profiles"
+    const { data: profile } = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
     if (profile?.role === "admin") isAdmin = true;
   }
   return { uid: user.id, admin: isAdmin };
@@ -93,4 +94,3 @@ export async function PUT(request) {
     return NextResponse.json({ error: error.message || "Could not update return request." }, { status: 500 });
   }
 }
-

@@ -121,7 +121,8 @@ async function verifyAdmin(authHeader) {
   }
 
   try {
-    const { data, error } = await supabaseAdmin.from("users").select("role").eq("id", uid).single();
+    // Diperbarui dari tabel "users" ke tabel "profiles"
+    const { data, error } = await supabaseAdmin.from("profiles").select("role").eq("id", uid).single();
     if (error) throw error;
     if (data && data.role === "admin") {
       return user;
@@ -134,7 +135,6 @@ async function verifyAdmin(authHeader) {
 }
 
 async function ensureSettingsDoc() {
-  // Menggunakan id = 'main' sesuai struktur tabel Supabase Anda
   const { data, error } = await supabaseAdmin
     .from("store_config")
     .select("*")
@@ -170,7 +170,6 @@ async function ensureSettingsDoc() {
     return { ...DEFAULT_SETTINGS };
   }
 
-  // Memetakan kolom database (snake_case) ke format aplikasi (camelCase)
   const existing = {
     storeName: data.store_name !== undefined ? data.store_name : data.storeName,
     storeEmail: data.store_email !== undefined ? data.store_email : data.storeEmail,

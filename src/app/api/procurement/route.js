@@ -9,14 +9,17 @@ async function verifyAdmin(request) {
     const token = authHeader.split("Bearer ")[1];
     if (!token) throw new Error("Unauthorized: Invalid token format");
     
-    const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
-    if (error) throw new Error(`Authentication failed: ${error.message}`);
+    // Diperbarui menggunakan format auth.getUser(token) modern
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !user) throw new Error(`Authentication failed: ${error?.message || "Invalid token"}`);
 
+    // Diperbarui dari tabel "users" ke tabel "profiles"
     const { data: profile, error: dbError } = await supabaseAdmin
-        .from("users")
+        .from("profiles")
         .select("role")
         .eq("id", user.id)
         .single();
+        
     if (dbError || profile?.role !== "admin") {
         throw new Error("Forbidden: Admin access required");
     }

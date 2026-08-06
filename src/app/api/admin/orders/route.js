@@ -3,21 +3,36 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-// Helper for admin verification
+// Helper for admin verification (Mendukung Header Bearer & Cookie Session)
 async function verifyAdmin(request) {
-  const token = request.headers.get("authorization")?.split(" ")[1];
+  let token = request.headers.get("authorization")?.split(" ")[1];
+  
+  // Fallback: Jika header tidak ada, cek dari cookie "session"
+  if (!token) {
+    const cookieHeader = request.headers.get("cookie") || "";
+    const match = cookieHeader.match(/session=([^;]+)/);
+    if (match) {
+      token = match[1];
+    }
+  }
+
   if (!token) {
     throw new Error("Unauthorized: No token provided");
   }
-  const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
-  if (error) {
+  
+  // Verifikasi token modern menggunakan auth.getUser(token)
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) {
     throw new Error("Unauthorized: Invalid token");
   }
+
+  // Periksa role admin dari tabel "profiles"
   const { data: adminUser, error: dbError } = await supabaseAdmin
-    .from("users")
+    .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
+
   if (dbError || !adminUser || adminUser.role !== "admin") {
     throw new Error("Forbidden: User is not an admin");
   }
@@ -30,8 +45,6 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status")?.trim().toLowerCase();
     const search = searchParams.get("search")?.trim().toLowerCase();
-    // sortBy logic for 'webhook' is deprecated as its implementation details are not available.
-    // const sortBy = searchParams.get("sortBy")?.trim().toLowerCase();
     const page = Math.max(1, Number(searchParams.get("page") || 1));
     const limit = Math.max(1, Math.min(100, Number(searchParams.get("limit") || 20)));
     const offset = (page - 1) * limit;
@@ -48,7 +61,6 @@ export async function GET(request) {
 
     // Apply search filter across multiple relevant fields
     if (search) {
-      // Check if search term could be a UUID for id or user_id
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(search);
       
       const orConditions = [

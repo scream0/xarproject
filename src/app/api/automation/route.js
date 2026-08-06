@@ -38,8 +38,9 @@ async function verifyAdmin(request) {
     throw new Error("Unauthorized: Invalid token");
   }
 
+  // Diperbarui dari tabel "users" ke tabel "profiles"
   const { data: adminUser, error: dbError } = await supabaseAdmin
-    .from("users")
+    .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();

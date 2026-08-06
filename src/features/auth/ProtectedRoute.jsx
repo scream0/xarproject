@@ -1,6 +1,7 @@
 // src/features/auth/ProtectedRoute.jsx
+"use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { auth } from "@/lib/supabaseClient";
 
 const ProtectedRoute = ({ children }) => {
@@ -9,18 +10,44 @@ const ProtectedRoute = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const { data: authListener } = auth.onAuthStateChange((_event, session) => {
-      const user = session?.user;
-      if (!user) {
+    let subscription = null;
+
+    const checkAuth = async () => {
+      try {
+        // 1. Cek sesi awal secara langsung
+        const { data: { session } } = await auth.getSession();
+        if (!session?.user) {
+          router.replace("/login");
+          return;
+        } else {
+          setAuthorized(true);
+        }
+      } catch (err) {
+        console.error("Auth check error:", err);
         router.replace("/login");
-      } else {
-        setAuthorized(true);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+
+      // 2. Pasang listener untuk perubahan status autentikasi selanjutnya
+      const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        const user = session?.user;
+        if (!user) {
+          router.replace("/login");
+          setAuthorized(false);
+        } else {
+          setAuthorized(true);
+        }
+        setLoading(false);
+      });
+      
+      subscription = authListener?.subscription;
+    };
+
+    checkAuth();
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      if (subscription) subscription.unsubscribe();
     };
   }, [router]);
 
@@ -40,4 +67,3 @@ const ProtectedRoute = ({ children }) => {
 };
 
 export default ProtectedRoute;
-
