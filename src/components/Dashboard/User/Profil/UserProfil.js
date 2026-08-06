@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
-import WishlistSection from "@/components/Dashboard/User/Wishlist/WishlistSection"; // Import komponen WishlistSection
+import WishlistSection from "@/components/Dashboard/User/Wishlist/WishlistSection";
 import SupportCenter from "@/components/Dashboard/User/Support/SupportCenter";
 
 export default function ProfileSection() {
@@ -17,6 +17,9 @@ export default function ProfileSection() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [isPasswordChanging, setIsPasswordChanging] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  
+  // State untuk mengontrol modal konfirmasi logout yang elegan
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   // Data Profil Utama
   const [profile, setProfile] = useState({
@@ -35,8 +38,8 @@ export default function ProfileSection() {
   const [addresses, setAddresses] = useState([]);
 
   // State Modals
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // Modal Pengaturan Utama
-  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);   // Modal Bantuan/Support
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); 
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);   
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({});
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -346,7 +349,6 @@ export default function ProfileSection() {
   };
 
   const handleLogout = async () => {
-    if (!window.confirm("Apakah Anda yakin ingin keluar dari akun?")) return;
     const toastId = toast.loading("Keluar dari sesi...");
     setLoggingOut(true);
     try {
@@ -356,6 +358,7 @@ export default function ProfileSection() {
     } catch (err) {
       toast.error("Gagal keluar akun.", { id: toastId });
       setLoggingOut(false);
+      setIsLogoutModalOpen(false);
     }
   };
 
@@ -495,16 +498,16 @@ export default function ProfileSection() {
 
       {/* Header Info: Foto dan Nama Pengguna */}
       <div className={`card ${styles.sectionHeaderCard}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <div className={styles.avatar} style={{ width: "64px", height: "64px", fontSize: "1.5rem" }}>
+        <div className={styles.avatar}>
           {profile.photoURL ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={profile.photoURL} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+            <img src={profile.photoURL} alt="Avatar" />
           ) : (
             <span>👤</span>
           )}
         </div>
         <div>
-          <h3 className={styles.sectionHeaderTitle} style={{ margin: 0, textTransform: "uppercase" }}>
+          <h3 className={styles.sectionHeaderTitle} style={{ margin: 0 }}>
             {profile.fullName || profile.username || "Pengguna"}
           </h3>
           <p className={styles.sectionHeaderSubtitle} style={{ margin: "4px 0 0 0" }}>
@@ -524,7 +527,7 @@ export default function ProfileSection() {
       </div>
 
       {/* ====================================================
-         MODAL PENGATURAN UTAMA (Berisi Edit Profil, Alamat, Password, Logout, Hapus Akun)
+         MODAL PENGATURAN UTAMA
          ==================================================== */}
       {isSettingsModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsSettingsModalOpen(false)}>
@@ -598,18 +601,17 @@ export default function ProfileSection() {
               {/* Menu 4: Logout & Hapus Akun */}
               <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                 <button
-                  onClick={handleLogout}
-                  disabled={loggingOut}
+                  onClick={() => setIsLogoutModalOpen(true)}
                   className={styles.actionBtnDanger}
                   style={{ flex: 1, padding: "0.75rem" }}
                 >
-                  {loggingOut ? "Keluar..." : "Keluar Akun (Logout)"}
+                  Keluar Akun (Logout)
                 </button>
                 <button
                   onClick={handleDeleteAccount}
                   disabled={deletingAccount}
                   className={styles.actionBtnDanger}
-                  style={{ flex: 1, padding: "0.75rem", background: "transparent", border: "1px solid var(--error-color, #ef4444)", color: "var(--error-color, #ef4444)" }}
+                  style={{ flex: 1, padding: "0.75rem", background: "transparent", border: "1px solid var(--danger-color, #ef4444)", color: "var(--danger-color, #ef4444)" }}
                 >
                   {deletingAccount ? "Menghapus..." : "Hapus Akun"}
                 </button>
@@ -620,7 +622,62 @@ export default function ProfileSection() {
       )}
 
       {/* ====================================================
-         MODAL BANTUAN / SUPPORT CENTER (Tampil di Tengah Layar)
+         MODAL KONFIRMASI LOGOUT ELEGAN (High-End Luxury Style)
+         ==================================================== */}
+      {isLogoutModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => !loggingOut && setIsLogoutModalOpen(false)}>
+          <div 
+            className={styles.modalContent} 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ maxWidth: "400px", textAlign: "center", padding: "32px 24px", gap: "20px" }}
+          >
+            <div style={{ 
+              width: "56px", 
+              height: "56px", 
+              borderRadius: "50%", 
+              background: "rgba(var(--primary-accent-rgb), 0.12)", 
+              color: "var(--primary-accent)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center", 
+              margin: "0 auto" 
+            }}>
+              <AppIcon name="log-out" size={26} strokeWidth={2} />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <h3 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: "1.2rem", fontWeight: 500, color: "var(--text-primary)" }}>
+                Keluar dari Akun?
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.5" }}>
+                Anda harus masuk kembali menggunakan kredensial akun Anda untuk mengakses riwayat pesanan dan fitur member.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+              <button
+                type="button"
+                onClick={() => setIsLogoutModalOpen(false)}
+                disabled={loggingOut}
+                style={{ flex: 1, padding: "0.75rem", borderRadius: "6px", background: "var(--surface-secondary)", border: "1px solid var(--border-color)", color: "var(--text-primary)", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                style={{ flex: 1, padding: "0.75rem", borderRadius: "6px", background: "var(--primary-accent)", border: "1px solid var(--primary-accent)", color: "var(--primary-accent-text)", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", cursor: "pointer", opacity: loggingOut ? 0.7 : 1 }}
+              >
+                {loggingOut ? "Keluar..." : "Ya, Keluar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+         MODAL BANTUAN / SUPPORT CENTER
          ==================================================== */}
       {isSupportModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsSupportModalOpen(false)}>
@@ -653,9 +710,9 @@ export default function ProfileSection() {
                     )}
                   </div>
                   <input type="file" id="avatar-upload" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage || removingImage} style={{ display: "none" }} />
-                  <label htmlFor="avatar-upload" className={styles.smallBtn}>{profileConfig.modals.editProfile.selectImage}</label>
+                  <label htmlFor="avatar-upload" className={styles.actionBtnOutline} style={{ cursor: "pointer" }}>{profileConfig.modals.editProfile.selectImage}</label>
                   {tempProfile.photoURL && (
-                    <button type="button" onClick={handleRemoveAvatar} disabled={uploadingImage || removingImage} className={styles.smallBtnDanger}>
+                    <button type="button" onClick={handleRemoveAvatar} disabled={uploadingImage || removingImage} className={styles.actionBtnDanger}>
                       {profileConfig.modals.editProfile.removeImage}
                     </button>
                   )}
@@ -693,7 +750,7 @@ export default function ProfileSection() {
                 <label htmlFor="newsletter">{profileConfig.modals.editProfile.newsletterLabel}</label>
               </div>
               <div className={styles.modalFooter}>
-                <button type="button" onClick={() => setIsProfileModalOpen(false)} className={styles.smallBtn}>{profileConfig.modals.editProfile.cancel}</button>
+                <button type="button" onClick={() => setIsProfileModalOpen(false)} className={styles.actionBtnOutline}>{profileConfig.modals.editProfile.cancel}</button>
                 <button type="submit" disabled={loading || uploadingImage || removingImage} className={styles.actionBtnPrimary}>
                   {loading ? profileConfig.modals.editProfile.saving : profileConfig.modals.editProfile.save}
                 </button>
@@ -736,7 +793,7 @@ export default function ProfileSection() {
                 <input type="text" value={currentAddress.postalCode} onChange={(e) => setCurrentAddress({ ...currentAddress, postalCode: e.target.value })} required className={styles.formInput} />
               </div>
               <div className={styles.modalFooter}>
-                <button type="button" onClick={() => setIsAddressModalOpen(false)} className={styles.smallBtn}>{profileConfig.modals.address.cancel}</button>
+                <button type="button" onClick={() => setIsAddressModalOpen(false)} className={styles.actionBtnOutline}>{profileConfig.modals.address.cancel}</button>
                 <button type="submit" disabled={loading} className={styles.actionBtnPrimary}>
                   {loading ? profileConfig.modals.address.saving : profileConfig.modals.address.save}
                 </button>
@@ -767,7 +824,7 @@ export default function ProfileSection() {
                 <input type="password" value={passwords.confirmPassword} onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })} className={styles.formInput} required />
               </div>
               <div className={styles.modalFooter}>
-                <button type="button" onClick={() => setIsPasswordModalOpen(false)} className={styles.smallBtn}>{profileConfig.modals.password.cancel}</button>
+                <button type="button" onClick={() => setIsPasswordModalOpen(false)} className={styles.actionBtnOutline}>{profileConfig.modals.password.cancel}</button>
                 <button type="submit" disabled={isPasswordChanging} className={styles.actionBtnPrimary}>
                   {isPasswordChanging ? profileConfig.modals.password.submitting : profileConfig.modals.password.submit}
                 </button>

@@ -31,6 +31,7 @@ import {
   Wallet,
   Truck,
   Clock,
+  LogOut,
 } from "lucide-react";
 
 const iconMap = {
@@ -71,12 +72,15 @@ const iconMap = {
   settings: Settings,
   gear: Settings,
   chat: MessageSquare,          
-  message: MessageSquare,       
+  message: MessageSquare,      
   "message-square": MessageSquare,
   "message-circle": MessageCircle,
   grid: Grid,
   wallet: Wallet,
   truck: Truck,
+  "log-out": LogOut,
+  logout: LogOut,
+  exit: LogOut,
 };
 
 export function AppIcon({ name, className, size, strokeWidth = 2, ...props }) {
