@@ -33,6 +33,26 @@ export default function LoginForm() {
 
   const { form } = loginConfig || {};
 
+  // Helper untuk mengecek role di database dan melakukan redirect yang sesuai
+  const handlePostLoginRedirect = async (userId) => {
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
+
+      if (!profileError && profile?.role === "admin") {
+        window.location.replace("/admin");
+      } else {
+        window.location.replace(callbackUrl);
+      }
+    } catch (err) {
+      console.error("Gagal memeriksa role:", err);
+      window.location.replace(callbackUrl);
+    }
+  };
+
   // ==========================================
   // GOOGLE CREDENTIAL RESPONSE HANDLER
   // ==========================================
@@ -57,7 +77,7 @@ export default function LoginForm() {
         phone: data.user?.user_metadata?.phone || "",
       });
 
-      window.location.replace(callbackUrl);
+      await handlePostLoginRedirect(data.user.id);
     } catch (err) {
       setError(err.message || "Gagal masuk menggunakan Google.");
       setIsLoading(false);
@@ -71,7 +91,6 @@ export default function LoginForm() {
       setRememberMe(true);
     }
 
-    // Inisialisasi dan Render Google Official Button secara aman
     const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (googleClientId) {
       const checkGoogleLoaded = setInterval(() => {
@@ -159,7 +178,12 @@ export default function LoginForm() {
         phone: formData.phone,
       });
 
-      window.location.replace(callbackUrl);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await handlePostLoginRedirect(user.id);
+      } else {
+        window.location.replace(callbackUrl);
+      }
     } catch (err) {
       setError(err.message || "Kode OTP salah atau kedaluwarsa.");
       setIsLoading(false);
@@ -210,8 +234,12 @@ export default function LoginForm() {
         });
 
         setSuccessMessage("Registrasi berhasil! Silakan periksa email Anda jika verifikasi diperlukan.");
-        setTimeout(() => {
-          window.location.replace(callbackUrl);
+        setTimeout(async () => {
+          if (data.user) {
+            await handlePostLoginRedirect(data.user.id);
+          } else {
+            window.location.replace(callbackUrl);
+          }
         }, 2000);
       } catch (err) {
         setError(err.message || "Gagal membuat akun.");
@@ -246,22 +274,10 @@ export default function LoginForm() {
         localStorage.removeItem("rememberedEmail");
       }
 
-      window.location.replace(callbackUrl);
+      await handlePostLoginRedirect(data.user.id);
     } catch (err) {
       setError(err.message || "Email atau password salah.");
       setIsLoading(false);
-    }
-  };
-
-  // ==========================================
-  // 4. GOOGLE LOGIN BUTTON (DIHANDLE GOOGLE SDK)
-  // ==========================================
-  const handleGoogleLogin = () => {
-    setError("");
-    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!googleClientId) {
-      setError("Google Client ID belum diatur di file .env.local.");
-      return;
     }
   };
 
@@ -311,7 +327,6 @@ export default function LoginForm() {
 
   return (
     <div className={styles.formWrapper}>
-      {/* Script Google Identity Services */}
       <script src="https://accounts.google.com/gsi/client" async defer></script>
 
       <div className={`${styles.lampContainer} ${isFormFocused ? styles.lampActive : ""}`}>
