@@ -123,6 +123,9 @@ export async function PUT(request) {
       );
     }
 
+    // ==========================================
+    // 1. UPDATE PROFILE
+    // ==========================================
     if (type === "profile") {
       const cleanUsername = updateData.username?.trim();
 
@@ -133,6 +136,7 @@ export async function PUT(request) {
         );
       }
 
+      // Sinkron ke Auth Metadata Supabase
       await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           username: cleanUsername,
@@ -142,7 +146,29 @@ export async function PUT(request) {
           phone: updateData.phone || "",
           photo_url: updateData.photoURL || "",
         },
-      });
+      }).catch(() => {});
+
+      // Payload ke tabel profiles database
+      const profilePayload = {
+        username: cleanUsername,
+        full_name: updateData.fullName || null,
+        gender: updateData.gender || null,
+        birth_date: updateData.birthDate || null,
+        phone: updateData.phone || null,
+        photo_url: updateData.photoURL || null,
+        photo_public_id: updateData.photoPublicId || null,
+        newsletter_opt_in: updateData.newsletterSubscribed ?? true,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: updateProfileErr } = await supabaseAdmin
+        .from("profiles")
+        .update(profilePayload)
+        .eq("id", userId);
+
+      if (updateProfileErr) {
+        throw new Error(updateProfileErr.message);
+      }
 
       const { data: updatedRecord } = await supabaseAdmin
         .from("profiles")
@@ -153,17 +179,60 @@ export async function PUT(request) {
       return NextResponse.json({
         success: true,
         message: "Profil berhasil diperbarui",
-        data: updatedRecord || { id: userId },
+        data: updatedRecord || { id: userId, ...profilePayload },
       });
     }
 
+    // ==========================================
+    // 2. UPDATE ADDRESSES (Buku Alamat)
+    // ==========================================
+    if (type === "addresses") {
+      const { addresses } = updateData;
+
+      const addressPayload = {
+        addresses: addresses || [],
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: updateAddressErr } = await supabaseAdmin
+        .from("profiles")
+        .update(addressPayload)
+        .eq("id", userId);
+
+      if (updateAddressErr) {
+        throw new Error(updateAddressErr.message);
+      }
+
+      const { data: updatedRecord } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      return NextResponse.json({
+        success: true,
+        message: "Alamat berhasil diperbarui",
+        data: updatedRecord,
+      });
+    }
+
+    // ==========================================
+    // 3. UPDATE POINTS & SALDO
+    // ==========================================
     if (type === "points") {
       const { points, balance } = updateData;
       const pointsPayload = { updated_at: new Date().toISOString() };
       if (typeof points === "number") pointsPayload.points = points;
       if (typeof balance === "number") pointsPayload.balance = balance;
 
-      await supabaseAdmin.from("profiles").update(pointsPayload).eq("id", userId);
+      const { error: updatePointsErr } = await supabaseAdmin
+        .from("profiles")
+        .update(pointsPayload)
+        .eq("id", userId);
+
+      if (updatePointsErr) {
+        throw new Error(updatePointsErr.message);
+      }
 
       const { data: updatedRecord } = await supabaseAdmin
         .from("profiles")
