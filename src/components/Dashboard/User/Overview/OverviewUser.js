@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import styles from "./OverviewUser.module.css";
 import { auth } from "@/lib/supabaseClient";
@@ -8,6 +8,7 @@ import { getDiscountedPrice } from "@/utils/promo";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewUserConfig.json";
 import { OverviewUserSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
 
 // Mapping status agar kelas warna badge sinkron dengan OrdersSection
 const STATUS_INFO = {
@@ -33,7 +34,7 @@ function getStatusInfo(rawStatus) {
 export default function OverviewUser({ setActiveTab }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { products, setIsCartOpen, addToCart, activePromo } = useStore();
+  const { products, setIsCartOpen, addToCart, activePromo, cartQuantity } = useStore();
 
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -47,7 +48,6 @@ export default function OverviewUser({ setActiveTab }) {
     username: "",
   });
   const [recentOrders, setRecentOrders] = useState([]);
-  const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // State untuk sesi & user Supabase
@@ -201,32 +201,6 @@ export default function OverviewUser({ setActiveTab }) {
         });
 
         setRecentOrders(sortedOrders.slice(0, 3));
-
-        // Rekomendasi Produk Berbasis Database Produk & Riwayat Pesanan User
-        if (products && products.length > 0) {
-          const purchasedProductIds = new Set(
-            orderData.flatMap((o) =>
-              (o.items || []).map((i) =>
-                String(i.id || i.product_id || i.productId),
-              ),
-            ),
-          );
-
-          let recommendations = products.filter((p) =>
-            purchasedProductIds.has(String(p.id || p._id)),
-          );
-
-          if (recommendations.length < 3) {
-            const additionalProducts = products.filter(
-              (p) => !purchasedProductIds.has(String(p.id || p._id)),
-            );
-            recommendations = [
-              ...recommendations,
-              ...additionalProducts.slice(0, 3 - recommendations.length),
-            ];
-          }
-          setRecommendedProducts(recommendations.slice(0, 3));
-        }
       } catch (err) {
         console.error("Gagal memuat ringkasan dashboard:", err);
         toast.error(overviewConfig.toasts.fetchSummaryError);
@@ -236,7 +210,13 @@ export default function OverviewUser({ setActiveTab }) {
     }
 
     fetchDashboardData();
-  }, [currentUser, currentSession, products]);
+  }, [currentUser, currentSession]);
+
+  // Rekomendasi Produk Berbasis Database Produk
+  const recommendedProducts = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    return products.slice(0, 3);
+  }, [products]);
 
   const handleNavigation = (tab) => {
     if (typeof setActiveTab === "function") {
@@ -264,6 +244,31 @@ export default function OverviewUser({ setActiveTab }) {
 
   return (
     <div className={styles.overviewWorkspace}>
+      {/* Navbar Atas Melayang (Chat & Cart Tanpa Kolom Pencarian) */}
+      <div className={styles.shopNavbar} style={{ position: "relative", marginBottom: "1.5rem", justifyContent: "flex-end" }}>
+        <div className={styles.navbarActions}>
+          <button
+            className={styles.chatIconBtnNavbar}
+            onClick={() => toast.success("Membuka chat...")}
+            aria-label="Chat"
+          >
+            <AppIcon name="message-circle" className={styles.svgIcon} />
+          </button>
+          <button
+            className={styles.cartIconBtnNavbar}
+            onClick={() => setIsCartOpen(true)}
+            aria-label="Keranjang"
+          >
+            <AppIcon name="shopping-cart" className={styles.svgIcon} />
+            {cartQuantity > 0 && (
+              <span className={styles.cartQuantityBadge}>
+                {cartQuantity}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* 1. Metric Cards Grid */}
       <div className={styles.metricsGrid}>
         <div className={styles.metricCard}>
@@ -537,7 +542,7 @@ export default function OverviewUser({ setActiveTab }) {
             })
           ) : (
             <p className={styles.smallLoadingText}>
-              Belum ada rekomendasi produk.
+              Produk rekomendasi tidak ditemukan.
             </p>
           )}
         </div>

@@ -24,6 +24,13 @@ import {
   RotateCcw,
   HelpCircle,
   LayoutDashboard,
+  Settings,
+  MessageSquare,
+  MessageCircle,
+  Grid,
+  Wallet,
+  Truck,
+  Clock,
 } from "lucide-react";
 
 const iconMap = {
@@ -40,7 +47,8 @@ const iconMap = {
   trash: Trash2,
   package: Package,
   mail: Mail,
-  clock: Clock3,
+  clock: Clock,
+  "clock-3": Clock3,
   "map-pin": MapPin,
   instagram: AtSign,
   "shopping-bag": ShoppingBag,
@@ -60,6 +68,15 @@ const iconMap = {
   support: HelpCircle,
   "layout-dashboard": LayoutDashboard,
   dashboard: LayoutDashboard,
+  settings: Settings,
+  gear: Settings,
+  chat: MessageSquare,          
+  message: MessageSquare,       
+  "message-square": MessageSquare,
+  "message-circle": MessageCircle,
+  grid: Grid,
+  wallet: Wallet,
+  truck: Truck,
 };
 
 export function AppIcon({ name, className, size, strokeWidth = 2, ...props }) {

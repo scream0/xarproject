@@ -12,28 +12,26 @@ import { sortOrdersByNewestFirst } from "./orderSorting";
 import { useRouter } from "next/navigation";
 
 // Mapping status mentah dari database/Admin -> label & tahap yang ditampilkan
-// ke customer. Ini HARUS selalu sinkron dengan alur status di TransactionTable.js
-// (admin): pending -> success -> processing -> shipping -> completed
 const STATUS_INFO = {
   pending: {
     label: "Menunggu Pembayaran",
-    badgeClass: "statusProcessing",
+    badgeClass: "statusPending",
   },
   success: {
     label: "Pembayaran Diterima",
-    badgeClass: "statusProcessing",
+    badgeClass: "statusSuccess",
   },
   processing: {
-    label: "Sedang Diracik",
+    label: "Sedang Diracik / Dikemas",
     badgeClass: "statusProcessing",
   },
   shipping: {
     label: "Dalam Pengiriman",
-    badgeClass: "statusProcessing",
+    badgeClass: "statusShipping",
   },
   shipped: {
     label: "Dalam Pengiriman",
-    badgeClass: "statusProcessing",
+    badgeClass: "statusShipping",
   },
   completed: {
     label: "Pesanan Selesai",
@@ -41,16 +39,15 @@ const STATUS_INFO = {
   },
   cancelled: {
     label: "Dibatalkan",
-    badgeClass: "statusCancelled",
+    badgeClass: "statusPending",
   },
-  // fallback untuk status dari Midtrans yang belum sempat di-mapping admin
   settlement: {
     label: "Pembayaran Diterima",
-    badgeClass: "statusProcessing",
+    badgeClass: "statusSuccess",
   },
   capture: {
     label: "Pembayaran Diterima",
-    badgeClass: "statusProcessing",
+    badgeClass: "statusSuccess",
   },
 };
 
@@ -64,8 +61,6 @@ function getStatusInfo(rawStatus) {
   );
 }
 
-// Helper untuk memformat 1 dokumen order mentah dari database menjadi
-// struktur yang dipakai UI. Dipakai supaya format selalu konsisten.
 function formatOrderDoc(item, primaryAddress) {
   const rawStatus = (item.status || "pending").toLowerCase();
 
@@ -86,8 +81,6 @@ function formatOrderDoc(item, primaryAddress) {
 
   const rawAmount = Number(item.amount || item.gross_amount || item.price || 0);
 
-  // reviewedItemIds: array id produk yang sudah direview di order ini.
-  // Fallback ke hasBeenReviewed (boolean lama) supaya data lama tetap kompatibel.
   const reviewedItemIds = Array.isArray(item.reviewedItemIds)
     ? item.reviewedItemIds
     : [];
@@ -136,21 +129,18 @@ export default function OrdersSection() {
   const { addToCart } = useStore();
   const router = useRouter();
   
-  // State untuk currentUser dan session Supabase
   const [currentUser, setCurrentUser] = useState(null);
   const [currentSession, setCurrentSession] = useState(null);
   
   const [isCancelling, setIsCancelling] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
 
-  // State untuk modal ulasan produk
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
   const [reviewTargetItem, setReviewTargetItem] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // 1. Pantau status Auth Supabase secara dinamis
   useEffect(() => {
     let subscription = null;
 
@@ -182,7 +172,6 @@ export default function OrdersSection() {
     };
   }, []);
 
-  // 2. Muat Script Midtrans Snap secara dinamis
   useEffect(() => {
     const snapScriptUrl = "https://app.sandbox.midtrans.com/snap/snap.js";
     const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
@@ -197,7 +186,6 @@ export default function OrdersSection() {
     }
   }, []);
 
-  // 3. Ambil daftar pesanan lewat endpoint backend menggunakan token Supabase.
   useEffect(() => {
     if (!currentUser || !currentSession) return;
 
@@ -252,19 +240,22 @@ export default function OrdersSection() {
     };
   }, [currentUser, currentSession]);
 
-  // 4. Filter & Search Logic
+  // Sinkronisasi Filter Status dengan Database (Shopee-style tabs)
   const filteredOrders = useMemo(() => {
     let result = orders;
 
     if (filter !== "all") {
-      if (filter === "completed") {
-        result = result.filter((o) => o.status === "completed");
+      if (filter === "pending") {
+        result = result.filter((o) => o.status === "pending");
       } else if (filter === "processing") {
-        result = result.filter((o) =>
-          ["pending", "success", "processing", "shipping", "shipped"].includes(o.status),
-        );
-      } else {
-        result = result.filter((o) => o.status === filter);
+        // Mengemas: pembayaran diterima atau sedang diracik admin
+        result = result.filter((o) => ["success", "processing", "settlement", "capture"].includes(o.status));
+      } else if (filter === "shipping") {
+        // Dikirim
+        result = result.filter((o) => ["shipping", "shipped"].includes(o.status));
+      } else if (filter === "history") {
+        // Selesai / Riwayat
+        result = result.filter((o) => ["completed", "cancelled"].includes(o.status));
       }
     }
 
@@ -281,28 +272,28 @@ export default function OrdersSection() {
     return result;
   }, [orders, filter, searchQuery]);
 
+  // Perhitungan Angka Badge Berdasarkan Data Database
   const orderStats = useMemo(() => {
     const total = orders.length;
-    const active = orders.filter((o) =>
-      ["pending", "success", "processing", "shipping", "shipped"].includes(o.status),
-    ).length;
-    const completed = orders.filter((o) => o.status === "completed").length;
-    const cancelled = orders.filter((o) => o.status === "cancelled").length;
+    const pending = orders.filter((o) => o.status === "pending").length;
+    const processing = orders.filter((o) => ["success", "processing", "settlement", "capture"].includes(o.status)).length;
+    const shipping = orders.filter((o) => ["shipping", "shipped"].includes(o.status)).length;
+    const history = orders.filter((o) => ["completed", "cancelled"].includes(o.status)).length;
 
-    return { total, active, completed, cancelled };
+    return { total, pending, processing, shipping, history };
   }, [orders]);
 
   const filterTabs = useMemo(
     () => [
-      { key: "all", label: "Semua", count: orderStats.total },
-      { key: "processing", label: "Berjalan", count: orderStats.active },
-      { key: "completed", label: "Selesai", count: orderStats.completed },
-      { key: "cancelled", label: "Dibatalkan", count: orderStats.cancelled },
+      { key: "all", label: "Semua", icon: "grid", count: orderStats.total },
+      { key: "pending", label: "Belum Bayar", icon: "wallet", count: orderStats.pending },
+      { key: "processing", label: "Sedang Dikemas", icon: "package", count: orderStats.processing },
+      { key: "shipping", label: "Dikirim", icon: "truck", count: orderStats.shipping },
+      { key: "history", label: "Riwayat Pesanan", icon: "clock", count: orderStats.history },
     ],
     [orderStats],
   );
 
-  // Fungsi Pesanan Lagi: Validasi stok & masukkan ke keranjang belanja
   const handleReOrder = async (order) => {
     const toastId = toast.loading("Memeriksa ketersediaan stok produk...");
     try {
@@ -409,7 +400,6 @@ export default function OrdersSection() {
     router.push(`/account/orders/${order.id}`);
   };
 
-  // Batalkan pesanan yang masih berstatus "pending" (belum dibayar)
   const handleCancelOrder = async (order) => {
     if (isCancelling) return;
     const confirmCancel = window.confirm(
@@ -441,7 +431,6 @@ export default function OrdersSection() {
 
       toast.success("Pesanan berhasil dibatalkan.", { id: toastId });
       
-      // Perbarui state lokal secara instan
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: "cancelled" } : o))
       );
@@ -486,7 +475,6 @@ export default function OrdersSection() {
 
       toast.success("Pesanan berhasil dikonfirmasi diterima.", { id: toastId });
       
-      // Perbarui state lokal secara instan
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: "completed" } : o))
       );
@@ -498,46 +486,6 @@ export default function OrdersSection() {
     }
   };
 
-  const handleCopyId = (orderId) => {
-    navigator.clipboard.writeText(orderId);
-    toast.success(`ID Transaksi ${orderId} disalin!`);
-  };
-
-  const handleDownloadInvoice = (order) => {
-    const invoiceContent = `=====================================
-         INVOICE TRANSAKSI XAR
-=====================================
-ID Transaksi     : ${order.id}
-Tanggal          : ${order.date}
-Status Pesanan   : ${getStatusInfo(order.status).label}
--------------------------------------
-PRODUK
-Nama Produk      : ${order.name}
-Spesifikasi      : ${order.concentration}
-Catatan          : ${order.notes}
--------------------------------------
-PEMBAYARAN & PENGIRIMAN
-Metode Pembayaran: ${order.paymentMethod}
-Alamat Pengiriman: ${order.shippingAddress}
-Total Pembayaran : ${order.price}
-=====================================
-Terima kasih telah berbelanja di XAR!`;
-
-    const blob = new Blob([invoiceContent], {
-      type: "text/plain;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Invoice-${order.id}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success("Invoice berhasil diunduh!");
-  };
-
-  // Buka modal review untuk item TERTENTU dalam order
   const openReviewModal = (order, item) => {
     setReviewModalOrder(order);
     setReviewTargetItem(item);
@@ -595,7 +543,6 @@ Terima kasih telah berbelanja di XAR!`;
 
       const targetItemId = String(reviewTargetItem.id || reviewTargetItem.productId || "");
 
-      // Perbarui state lokal agar item langsung ditandai sudah diulas
       setOrders((prev) =>
         prev.map((o) => {
           if (o.id === reviewModalOrder.id) {
@@ -622,7 +569,6 @@ Terima kasih telah berbelanja di XAR!`;
     }
   };
 
-  // Cek apakah item tertentu dalam order sudah direview
   const isItemReviewed = (order, item) => {
     const itemId = String(item.id || item.productId || "");
     if (order.reviewedItemIds && order.reviewedItemIds.length > 0) {
@@ -633,7 +579,7 @@ Terima kasih telah berbelanja di XAR!`;
 
   return (
     <div className={styles.workspaceInner}>
-      {/* Header, Search & Filter Tabs */}
+      {/* Header & Search */}
       <div className={`card ${styles.cardHeader}`}>
         <div className={styles.headerTopRow}>
           <div>
@@ -659,34 +605,29 @@ Terima kasih telah berbelanja di XAR!`;
           </div>
         </div>
 
-        <div className={styles.summaryGrid}>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Total Pesanan</span>
-            <strong className={styles.summaryValue}>{orderStats.total}</strong>
-          </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Sedang Berjalan</span>
-            <strong className={styles.summaryValue}>{orderStats.active}</strong>
-          </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Selesai</span>
-            <strong className={styles.summaryValue}>{orderStats.completed}</strong>
-          </div>
-        </div>
-
+       {/* Tab Navigasi Kategori Pesanan */}
         <div className={styles.filterGroup}>
-          {filterTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`${styles.filterBtn} ${filter === tab.key ? styles.filterBtnActive : ""}`}
-            >
-              {tab.label}
-              <span className={styles.filterCount}>{tab.count}</span>
-            </button>
-          ))}
+          {filterTabs.map((tab) => {
+            const isActive = filter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className={`${styles.filterBtn} ${isActive ? styles.filterBtnActive : ""}`}
+              >
+                <div className={styles.filterIconWrapper}>
+                  <AppIcon name={tab.icon} size={20} strokeWidth={isActive ? 2.2 : 1.8} />
+                  {tab.count > 0 && (
+                    <span className={styles.filterCount}>{tab.count}</span>
+                  )}
+                </div>
+                <span className={styles.filterLabel}>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
+
 
       {/* Orders List Container */}
       <div className={styles.ordersListContainer}>
@@ -731,7 +672,6 @@ Terima kasih telah berbelanja di XAR!`;
                   <p className={styles.orderNotes}>Catatan: {order.notes}</p>
                   <p className={styles.orderDate}>Tanggal: {order.date}</p>
 
-                  {/* Tombol review per-item, hanya tampil jika order sudah selesai */}
                   {isFinished && (
                     <div className={styles.perItemReviewRow}>
                       {reviewableItems.map((item, idx) => {
@@ -800,7 +740,7 @@ Terima kasih telah berbelanja di XAR!`;
         )}
       </div>
 
-      {/* --- MODAL ULASAN PRODUK (per-item) --- */}
+      {/* --- MODAL ULASAN PRODUK --- */}
       {reviewModalOrder && reviewTargetItem && (
         <div
           className={styles.modalOverlay}

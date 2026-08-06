@@ -5,6 +5,10 @@ import profileConfig from "@/data/ui/userProfilConfig.json";
 import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
+import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
+import WishlistSection from "@/components/Dashboard/User/Wishlist/WishlistSection"; // Import komponen WishlistSection
+import SupportCenter from "@/components/Dashboard/User/Support/SupportCenter";
 
 export default function ProfileSection() {
   const [loading, setLoading] = useState(false);
@@ -12,6 +16,7 @@ export default function ProfileSection() {
   const [removingImage, setRemovingImage] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [isPasswordChanging, setIsPasswordChanging] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Data Profil Utama
   const [profile, setProfile] = useState({
@@ -30,6 +35,8 @@ export default function ProfileSection() {
   const [addresses, setAddresses] = useState([]);
 
   // State Modals
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // Modal Pengaturan Utama
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);   // Modal Bantuan/Support
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({});
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -122,7 +129,6 @@ export default function ProfileSection() {
         toast.error(profileConfig.toasts.fetchError);
       }
 
-      // Listener perubahan sesi Supabase
       const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
         setCurrentSession(session);
         setCurrentUser(session?.user || null);
@@ -281,9 +287,6 @@ export default function ProfileSection() {
     const toastId = toast.loading(profileConfig.toasts.passwordLoading);
 
     try {
-      const token = currentSession?.access_token;
-
-      // Re-autentikasi / verifikasi password lama via Supabase signInWithPassword
       const { error: signInError } = await auth.signInWithPassword({
         email: currentUser.email,
         password: currentPassword,
@@ -293,7 +296,6 @@ export default function ProfileSection() {
         throw new Error("Password saat ini salah.");
       }
 
-      // Perbarui password via Supabase updateUser
       const { error: updateError } = await auth.updateUser({
         password: newPassword,
       });
@@ -301,16 +303,6 @@ export default function ProfileSection() {
       if (updateError) {
         throw new Error(updateError.message || "Gagal memperbarui password.");
       }
-
-      // Sinkronisasi ke backend jika ada endpoint khusus
-      await fetch("/api/users/change-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ newPassword }),
-      });
 
       toast.success(profileConfig.toasts.passwordSuccess, { id: toastId });
       setIsPasswordModalOpen(false);
@@ -350,6 +342,20 @@ export default function ProfileSection() {
       toast.error(err.message, { id: toastId });
     } finally {
       setDeletingAccount(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!window.confirm("Apakah Anda yakin ingin keluar dari akun?")) return;
+    const toastId = toast.loading("Keluar dari sesi...");
+    setLoggingOut(true);
+    try {
+      await auth.signOut();
+      toast.success("Berhasil keluar.", { id: toastId });
+      window.location.href = "/login";
+    } catch (err) {
+      toast.error("Gagal keluar akun.", { id: toastId });
+      setLoggingOut(false);
     }
   };
 
@@ -465,219 +471,180 @@ export default function ProfileSection() {
 
   return (
     <div className={styles.workspaceInner}>
-      {/* Header Info */}
-      <div className={`card ${styles.sectionHeaderCard}`}>
-        <div>
-          <h3 className={styles.sectionHeaderTitle}>
-            {profileConfig.header.title}
-          </h3>
-          <p className={styles.sectionHeaderSubtitle}>
-            {profileConfig.header.subtitle}
-          </p>
-        </div>
-      </div>
-
-      {/* Grid Ringkasan Profil */}
-      <div className={styles.profileOverviewGrid}>
-        <div className="card">
-          <div className={styles.cardHeaderFlex}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div className={styles.avatar}>
-                {profile.photoURL ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={profile.photoURL} alt="Avatar" />
-                ) : (
-                  <span>👤</span>
-                )}
-              </div>
-              <h4 className={styles.cardTitle}>
-                {profileConfig.labels.personalInfo}
-              </h4>
-            </div>
-            <button
-              onClick={() => {
-                setTempProfile(profile);
-                setIsProfileModalOpen(true);
-              }}
-              className={styles.actionBtnOutline}
-            >
-              {profileConfig.buttons.editProfile}
-            </button>
-          </div>
-          <div className={styles.profileInfoList}>
-            <div className={styles.infoRow}>
-              <span>{profileConfig.labels.username}</span>
-              <span className={styles.infoValue}>
-                @{profile.username || "belum_diatur"}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span>{profileConfig.labels.fullName}</span>
-              <span className={styles.infoValue}>
-                {profile.fullName || "-"}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span>{profileConfig.labels.email}</span>
-              <span className={styles.infoValue}>{profile.email || "-"}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span>{profileConfig.labels.phone}</span>
-              <span className={styles.infoValue}>{profile.phone || "-"}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className={styles.cardHeaderFlex}>
-            <h4 className={styles.cardTitle}>
-              {profileConfig.labels.security}
-            </h4>
-          </div>
-          <div className={styles.profileInfoList}>
-            <div className={styles.infoRow}>
-              <span>{profileConfig.labels.loginMethod}</span>
-              <span className={styles.infoValue}>
-                {currentUser?.app_metadata?.provider || "Email"}
-              </span>
-            </div>
-          </div>
-          <div className={styles.securityActions}>
-            <button
-              onClick={() => setIsPasswordModalOpen(true)}
-              className={styles.actionBtnPrimary}
-            >
-              {profileConfig.labels.changePassword}
-            </button>
-            <button
-              onClick={handleDeleteAccount}
-              disabled={deletingAccount}
-              className={styles.actionBtnDanger}
-            >
-              {deletingAccount
-                ? profileConfig.labels.deleting
-                : profileConfig.labels.deleteAccount}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Section Buku Alamat */}
-      <div className="card">
-        <div className={styles.cardHeaderFlex}>
-          <h4 className={styles.cardTitle}>
-            {profileConfig.labels.addressBook}
-          </h4>
+      {/* Navbar Atas Melayang */}
+      <div className={styles.shopNavbar}>
+        <div className={styles.navbarActions}>
           <button
-            onClick={() => {
-              setCurrentAddress({
-                id: null,
-                label: "Rumah",
-                recipientName: profile.fullName,
-                recipientPhone: profile.phone,
-                street: "",
-                province: "",
-                city: "",
-                cityId: "",
-                cityType: "",
-                postalCode: "",
-                isPrimary: addresses.length === 0,
-              });
-              setIsAddressModalOpen(true);
-            }}
-            className={styles.actionBtnPrimary}
+            className={styles.chatIconBtnNavbar}
+            onClick={() => setIsSupportModalOpen(true)}
+            aria-label="Bantuan"
+            title="Pusat Bantuan"
           >
-            {profileConfig.buttons.addAddress}
+            <AppIcon name="help-circle" className={styles.svgIcon} />
+          </button>
+          <button
+            className={styles.cartIconBtnNavbar}
+            onClick={() => setIsSettingsModalOpen(true)}
+            aria-label="Pengaturan"
+            title="Pengaturan Akun"
+          >
+            <AppIcon name="settings" className={styles.svgIcon} />
           </button>
         </div>
-        {addresses.length === 0 ? (
-          <p className={styles.emptyStateText}>
-            {profileConfig.states.emptyAddress}
-          </p>
-        ) : (
-          <div className={styles.addressGrid}>
-            {addresses.map((addr) => (
-              <div
-                key={addr.id}
-                className={`${styles.addressCard} ${addr.isPrimary ? styles.addressCardPrimary : ""}`}
-              >
-                {addr.isPrimary && (
-                  <span className={styles.primaryBadge}>
-                    {profileConfig.labels.primaryBadge}
-                  </span>
-                )}
-                <div className={styles.addressContent}>
-                  <h4>
-                    {addr.label} - {addr.recipientName}
-                  </h4>
-                  <p>📞 {addr.recipientPhone}</p>
-                  <p>
-                    📍 {addr.street}, {addr.city}
-                    {addr.province ? `, ${addr.province}` : ""} ({addr.postalCode})
-                  </p>
-                </div>
-                <div className={styles.addressActions}>
-                  <button
-                    onClick={() => {
-                      setCurrentAddress(addr);
-                      setIsAddressModalOpen(true);
-                    }}
-                    className={styles.smallBtn}
-                  >
-                    {profileConfig.labels.edit}
-                  </button>
-                  {!addr.isPrimary && (
-                    <button
-                      onClick={() => handleSetPrimaryAddress(addr.id)}
-                      className={styles.smallBtn}
-                    >
-                      {profileConfig.labels.setPrimary}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteAddress(addr.id)}
-                    className={styles.smallBtnDanger}
-                  >
-                    {profileConfig.labels.delete}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Modal Edit Profil */}
-      {isProfileModalOpen && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => setIsProfileModalOpen(false)}
-        >
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-          >
+      {/* Header Info: Foto dan Nama Pengguna */}
+      <div className={`card ${styles.sectionHeaderCard}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div className={styles.avatar} style={{ width: "64px", height: "64px", fontSize: "1.5rem" }}>
+          {profile.photoURL ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={profile.photoURL} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+          ) : (
+            <span>👤</span>
+          )}
+        </div>
+        <div>
+          <h3 className={styles.sectionHeaderTitle} style={{ margin: 0, textTransform: "uppercase" }}>
+            {profile.fullName || profile.username || "Pengguna"}
+          </h3>
+          <p className={styles.sectionHeaderSubtitle} style={{ margin: "4px 0 0 0" }}>
+            {profile.email || "VIP Collector"}
+          </p>
+        </div>
+      </div>
+
+      {/* OrdersSection */}
+      <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
+        <OrdersSection />
+      </div>
+
+      {/* WishlistSection */}
+      <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
+        <WishlistSection />
+      </div>
+
+      {/* ====================================================
+         MODAL PENGATURAN UTAMA (Berisi Edit Profil, Alamat, Password, Logout, Hapus Akun)
+         ==================================================== */}
+      {isSettingsModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setIsSettingsModalOpen(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "550px" }}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>
-                {profileConfig.modals.editProfile.title}
-              </h3>
-              <button
-                onClick={() => setIsProfileModalOpen(false)}
-                className={styles.closeModalBtn}
-              >
-                ✕
-              </button>
+              <h3 className={styles.modalTitle}>Pengaturan Akun</h3>
+              <button onClick={() => setIsSettingsModalOpen(false)} className={styles.closeModalBtn}>✕</button>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "10px 0" }}>
+              {/* Menu 1: Edit Profil */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>Edit Informasi Profil</h4>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>Perbarui nama, username, nomor telepon & avatar.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setTempProfile(profile);
+                    setIsProfileModalOpen(true);
+                  }}
+                  className={styles.actionBtnOutline}
+                >
+                  Ubah
+                </button>
+              </div>
+
+              {/* Menu 2: Kelola Alamat */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>Buku Alamat Pengiriman</h4>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>Tambah atau atur alamat utama pesanan Anda.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setCurrentAddress({
+                      id: null,
+                      label: "Rumah",
+                      recipientName: profile.fullName,
+                      recipientPhone: profile.phone,
+                      street: "",
+                      province: "",
+                      city: "",
+                      cityId: "",
+                      cityType: "",
+                      postalCode: "",
+                      isPrimary: addresses.length === 0,
+                    });
+                    setIsAddressModalOpen(true);
+                  }}
+                  className={styles.actionBtnPrimary}
+                >
+                  Tambah
+                </button>
+              </div>
+
+              {/* Menu 3: Ganti Password */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>Keamanan & Password</h4>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>Ganti kata sandi akun secara berkala.</p>
+                </div>
+                <button
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  className={styles.actionBtnPrimary}
+                >
+                  Ganti
+                </button>
+              </div>
+
+              {/* Menu 4: Logout & Hapus Akun */}
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                <button
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className={styles.actionBtnDanger}
+                  style={{ flex: 1, padding: "0.75rem" }}
+                >
+                  {loggingOut ? "Keluar..." : "Keluar Akun (Logout)"}
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deletingAccount}
+                  className={styles.actionBtnDanger}
+                  style={{ flex: 1, padding: "0.75rem", background: "transparent", border: "1px solid var(--error-color, #ef4444)", color: "var(--error-color, #ef4444)" }}
+                >
+                  {deletingAccount ? "Menghapus..." : "Hapus Akun"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+         MODAL BANTUAN / SUPPORT CENTER (Tampil di Tengah Layar)
+         ==================================================== */}
+      {isSupportModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setIsSupportModalOpen(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px", padding: "0", background: "transparent", border: "none" }}>
+            <SupportCenter onClose={() => setIsSupportModalOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+         MODAL SUBSIDIARIS (Edit Profil, Alamat, Password)
+         ==================================================== */}
+      {isProfileModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setIsProfileModalOpen(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>{profileConfig.modals.editProfile.title}</h3>
+              <button onClick={() => setIsProfileModalOpen(false)} className={styles.closeModalBtn}>✕</button>
             </div>
             <form onSubmit={handleSaveProfile}>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.editProfile.avatarLabel}
-                </label>
+                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.avatarLabel}</label>
                 <div className={styles.avatarUpload}>
-                  <div
-                    className={styles.avatar}
-                    style={{ width: 60, height: 60 }}
-                  >
+                  <div className={styles.avatar} style={{ width: 60, height: 60 }}>
                     {tempProfile.photoURL ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={tempProfile.photoURL} alt="Avatar" />
@@ -685,139 +652,50 @@ export default function ProfileSection() {
                       <span>👤</span>
                     )}
                   </div>
-                  <input
-                    type="file"
-                    id="avatar-upload"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploadingImage || removingImage}
-                    style={{ display: "none" }}
-                  />
-                  <label htmlFor="avatar-upload" className={styles.smallBtn}>
-                    {profileConfig.modals.editProfile.selectImage}
-                  </label>
+                  <input type="file" id="avatar-upload" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage || removingImage} style={{ display: "none" }} />
+                  <label htmlFor="avatar-upload" className={styles.smallBtn}>{profileConfig.modals.editProfile.selectImage}</label>
                   {tempProfile.photoURL && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveAvatar}
-                      disabled={uploadingImage || removingImage}
-                      className={styles.smallBtnDanger}
-                    >
+                    <button type="button" onClick={handleRemoveAvatar} disabled={uploadingImage || removingImage} className={styles.smallBtnDanger}>
                       {profileConfig.modals.editProfile.removeImage}
                     </button>
                   )}
                 </div>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.editProfile.username}
-                </label>
+                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.username}</label>
                 <div className={styles.inputWithPrefix}>
                   <span>@</span>
-                  <input
-                    type="text"
-                    value={tempProfile.username || ""}
-                    onChange={handleUsernameChange}
-                    required
-                  />
+                  <input type="text" value={tempProfile.username || ""} onChange={handleUsernameChange} required />
                 </div>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.editProfile.fullName}
-                </label>
-                <input
-                  type="text"
-                  value={tempProfile.fullName || ""}
-                  onChange={(e) =>
-                    setTempProfile({ ...tempProfile, fullName: e.target.value })
-                  }
-                  className={styles.formInput}
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.fullName}</label>
+                <input type="text" value={tempProfile.fullName || ""} onChange={(e) => setTempProfile({ ...tempProfile, fullName: e.target.value })} className={styles.formInput} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.editProfile.phone}
-                </label>
-                <input
-                  type="text"
-                  value={tempProfile.phone || ""}
-                  onChange={(e) =>
-                    setTempProfile({ ...tempProfile, phone: e.target.value })
-                  }
-                  className={styles.formInput}
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.phone}</label>
+                <input type="text" value={tempProfile.phone || ""} onChange={(e) => setTempProfile({ ...tempProfile, phone: e.target.value })} className={styles.formInput} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.editProfile.birthDate}
-                </label>
-                <input
-                  type="date"
-                  value={tempProfile.birthDate || ""}
-                  onChange={(e) =>
-                    setTempProfile({
-                      ...tempProfile,
-                      birthDate: e.target.value,
-                    })
-                  }
-                  className={styles.formInput}
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.birthDate}</label>
+                <input type="date" value={tempProfile.birthDate || ""} onChange={(e) => setTempProfile({ ...tempProfile, birthDate: e.target.value })} className={styles.formInput} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.editProfile.gender}
-                </label>
-                <select
-                  value={tempProfile.gender || ""}
-                  onChange={(e) =>
-                    setTempProfile({ ...tempProfile, gender: e.target.value })
-                  }
-                  className={styles.formSelect}
-                >
-                  <option value="">
-                    {profileConfig.modals.editProfile.genderOptions.placeholder}
-                  </option>
-                  <option value="Male">
-                    {profileConfig.modals.editProfile.genderOptions.male}
-                  </option>
-                  <option value="Female">
-                    {profileConfig.modals.editProfile.genderOptions.female}
-                  </option>
+                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.gender}</label>
+                <select value={tempProfile.gender || ""} onChange={(e) => setTempProfile({ ...tempProfile, gender: e.target.value })} className={styles.formSelect}>
+                  <option value="">{profileConfig.modals.editProfile.genderOptions.placeholder}</option>
+                  <option value="Male">{profileConfig.modals.editProfile.genderOptions.male}</option>
+                  <option value="Female">{profileConfig.modals.editProfile.genderOptions.female}</option>
                 </select>
               </div>
               <div className={styles.formGroupCheckbox}>
-                <input
-                  type="checkbox"
-                  id="newsletter"
-                  checked={tempProfile.newsletterSubscribed ?? true}
-                  onChange={(e) =>
-                    setTempProfile({
-                      ...tempProfile,
-                      newsletterSubscribed: e.target.checked,
-                    })
-                  }
-                />
-                <label htmlFor="newsletter">
-                  {profileConfig.modals.editProfile.newsletterLabel}
-                </label>
+                <input type="checkbox" id="newsletter" checked={tempProfile.newsletterSubscribed ?? true} onChange={(e) => setTempProfile({ ...tempProfile, newsletterSubscribed: e.target.checked })} />
+                <label htmlFor="newsletter">{profileConfig.modals.editProfile.newsletterLabel}</label>
               </div>
               <div className={styles.modalFooter}>
-                <button
-                  type="button"
-                  onClick={() => setIsProfileModalOpen(false)}
-                  className={styles.smallBtn}
-                >
-                  {profileConfig.modals.editProfile.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || uploadingImage || removingImage}
-                  className={styles.actionBtnPrimary}
-                >
-                  {loading
-                    ? profileConfig.modals.editProfile.saving
-                    : profileConfig.modals.editProfile.save}
+                <button type="button" onClick={() => setIsProfileModalOpen(false)} className={styles.smallBtn}>{profileConfig.modals.editProfile.cancel}</button>
+                <button type="submit" disabled={loading || uploadingImage || removingImage} className={styles.actionBtnPrimary}>
+                  {loading ? profileConfig.modals.editProfile.saving : profileConfig.modals.editProfile.save}
                 </button>
               </div>
             </form>
@@ -825,147 +703,42 @@ export default function ProfileSection() {
         </div>
       )}
 
-      {/* Modal Alamat */}
       {isAddressModalOpen && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => setIsAddressModalOpen(false)}
-        >
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className={styles.modalOverlay} onClick={() => setIsAddressModalOpen(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>
-                {currentAddress?.id
-                  ? profileConfig.modals.address.editTitle
-                  : profileConfig.modals.address.addTitle}
-              </h3>
-              <button
-                onClick={() => setIsAddressModalOpen(false)}
-                className={styles.closeModalBtn}
-              >
-                ✕
-              </button>
+              <h3 className={styles.modalTitle}>{currentAddress?.id ? profileConfig.modals.address.editTitle : profileConfig.modals.address.addTitle}</h3>
+              <button onClick={() => setIsAddressModalOpen(false)} className={styles.closeModalBtn}>✕</button>
             </div>
             <form onSubmit={handleSaveAddress}>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.address.label}
-                </label>
-                <input
-                  type="text"
-                  value={currentAddress.label}
-                  onChange={(e) =>
-                    setCurrentAddress({
-                      ...currentAddress,
-                      label: e.target.value,
-                    })
-                  }
-                  required
-                  className={styles.formInput}
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.address.label}</label>
+                <input type="text" value={currentAddress.label} onChange={(e) => setCurrentAddress({ ...currentAddress, label: e.target.value })} required className={styles.formInput} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.address.recipientName}
-                </label>
-                <input
-                  type="text"
-                  value={currentAddress.recipientName}
-                  onChange={(e) =>
-                    setCurrentAddress({
-                      ...currentAddress,
-                      recipientName: e.target.value,
-                    })
-                  }
-                  required
-                  className={styles.formInput}
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.address.recipientName}</label>
+                <input type="text" value={currentAddress.recipientName} onChange={(e) => setCurrentAddress({ ...currentAddress, recipientName: e.target.value })} required className={styles.formInput} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.address.recipientPhone}
-                </label>
-                <input
-                  type="text"
-                  value={currentAddress.recipientPhone}
-                  onChange={(e) =>
-                    setCurrentAddress({
-                      ...currentAddress,
-                      recipientPhone: e.target.value,
-                    })
-                  }
-                  required
-                  className={styles.formInput}
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.address.recipientPhone}</label>
+                <input type="text" value={currentAddress.recipientPhone} onChange={(e) => setCurrentAddress({ ...currentAddress, recipientPhone: e.target.value })} required className={styles.formInput} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.address.street}
-                </label>
-                <textarea
-                  rows="2"
-                  value={currentAddress.street}
-                  onChange={(e) =>
-                    setCurrentAddress({
-                      ...currentAddress,
-                      street: e.target.value,
-                    })
-                  }
-                  required
-                  className={styles.formTextarea}
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.address.street}</label>
+                <textarea rows="2" value={currentAddress.street} onChange={(e) => setCurrentAddress({ ...currentAddress, street: e.target.value })} required className={styles.formTextarea} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.address.city}
-                </label>
-                <ProvinceCitySelect
-                  value={{
-                    province: currentAddress.province,
-                    city: currentAddress.city,
-                    cityId: currentAddress.cityId,
-                    cityType: currentAddress.cityType,
-                  }}
-                  onChange={(next) =>
-                    setCurrentAddress((prev) => ({ ...prev, ...next }))
-                  }
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.address.city}</label>
+                <ProvinceCitySelect value={{ province: currentAddress.province, city: currentAddress.city, cityId: currentAddress.cityId, cityType: currentAddress.cityType }} onChange={(next) => setCurrentAddress((prev) => ({ ...prev, ...next }))} />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.address.postalCode}
-                </label>
-                <input
-                  type="text"
-                  value={currentAddress.postalCode}
-                  onChange={(e) =>
-                    setCurrentAddress({
-                      ...currentAddress,
-                      postalCode: e.target.value,
-                    })
-                  }
-                  required
-                  className={styles.formInput}
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.address.postalCode}</label>
+                <input type="text" value={currentAddress.postalCode} onChange={(e) => setCurrentAddress({ ...currentAddress, postalCode: e.target.value })} required className={styles.formInput} />
               </div>
               <div className={styles.modalFooter}>
-                <button
-                  type="button"
-                  onClick={() => setIsAddressModalOpen(false)}
-                  className={styles.smallBtn}
-                >
-                  {profileConfig.modals.address.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={styles.actionBtnPrimary}
-                >
-                  {loading
-                    ? profileConfig.modals.address.saving
-                    : profileConfig.modals.address.save}
+                <button type="button" onClick={() => setIsAddressModalOpen(false)} className={styles.smallBtn}>{profileConfig.modals.address.cancel}</button>
+                <button type="submit" disabled={loading} className={styles.actionBtnPrimary}>
+                  {loading ? profileConfig.modals.address.saving : profileConfig.modals.address.save}
                 </button>
               </div>
             </form>
@@ -973,92 +746,30 @@ export default function ProfileSection() {
         </div>
       )}
 
-      {/* Modal Password */}
       {isPasswordModalOpen && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => setIsPasswordModalOpen(false)}
-        >
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className={styles.modalOverlay} onClick={() => setIsPasswordModalOpen(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>
-                {profileConfig.modals.password.title}
-              </h3>
-              <button
-                onClick={() => setIsPasswordModalOpen(false)}
-                className={styles.closeModalBtn}
-              >
-                ✕
-              </button>
+              <h3 className={styles.modalTitle}>{profileConfig.modals.password.title}</h3>
+              <button onClick={() => setIsPasswordModalOpen(false)} className={styles.closeModalBtn}>✕</button>
             </div>
             <form onSubmit={handlePasswordChange}>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.password.current}
-                </label>
-                <input
-                  type="password"
-                  value={passwords.currentPassword}
-                  onChange={(e) =>
-                    setPasswords({
-                      ...passwords,
-                      currentPassword: e.target.value,
-                    })
-                  }
-                  className={styles.formInput}
-                  required
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.password.current}</label>
+                <input type="password" value={passwords.currentPassword} onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })} className={styles.formInput} required />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.password.new}
-                </label>
-                <input
-                  type="password"
-                  value={passwords.newPassword}
-                  onChange={(e) =>
-                    setPasswords({ ...passwords, newPassword: e.target.value })
-                  }
-                  className={styles.formInput}
-                  required
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.password.new}</label>
+                <input type="password" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} className={styles.formInput} required />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>
-                  {profileConfig.modals.password.confirm}
-                </label>
-                <input
-                  type="password"
-                  value={passwords.confirmPassword}
-                  onChange={(e) =>
-                    setPasswords({
-                      ...passwords,
-                      confirmPassword: e.target.value,
-                    })
-                  }
-                  className={styles.formInput}
-                  required
-                />
+                <label className={styles.inputLabel}>{profileConfig.modals.password.confirm}</label>
+                <input type="password" value={passwords.confirmPassword} onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })} className={styles.formInput} required />
               </div>
               <div className={styles.modalFooter}>
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordModalOpen(false)}
-                  className={styles.smallBtn}
-                >
-                  {profileConfig.modals.password.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPasswordChanging}
-                  className={styles.actionBtnPrimary}
-                >
-                  {isPasswordChanging
-                    ? profileConfig.modals.password.submitting
-                    : profileConfig.modals.password.submit}
+                <button type="button" onClick={() => setIsPasswordModalOpen(false)} className={styles.smallBtn}>{profileConfig.modals.password.cancel}</button>
+                <button type="submit" disabled={isPasswordChanging} className={styles.actionBtnPrimary}>
+                  {isPasswordChanging ? profileConfig.modals.password.submitting : profileConfig.modals.password.submit}
                 </button>
               </div>
             </form>

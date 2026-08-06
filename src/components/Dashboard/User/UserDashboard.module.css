@@ -46,111 +46,6 @@
   color: var(--text-secondary);
 }
 
-/* Mobile Top Navigation Bar — HANYA MUNCUL DI MOBILE (< 1024px) */
-.mobileTopBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  background: linear-gradient(135deg, rgba(255, 253, 249, 0.95), rgba(248, 239, 226, 0.84));
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0 1.25rem;
-  z-index: 100;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-:global([data-theme="dark"]) .mobileTopBar {
-  background: linear-gradient(135deg, rgba(20, 20, 22, 0.96), rgba(29, 29, 32, 0.88));
-}
-
-.mobileTopBarElevated {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-}
-
-:global([data-theme="dark"]) .mobileTopBarElevated {
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-}
-
-.mobileTopBar .brandLogo {
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--text-primary);
-}
-
-.mobileTopBar .brandLogo span {
-  color: var(--primary-accent);
-}
-
-.mobileTopActions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.cartIconBtnMobile,
-.hamburgerBtn {
-  background: var(--surface-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease;
-}
-
-.cartIconBtnMobile:hover,
-.hamburgerBtn:hover {
-  background: var(--border-color);
-}
-
-.cartIconBtnMobile {
-  gap: 6px;
-  position: relative;
-}
-
-.cartQuantityBadge {
-  background: var(--primary-accent);
-  color: var(--primary-accent-text);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: bold;
-}
-
-.pop {
-  animation: pop 0.4s ease-out;
-}
-
-@keyframes pop {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* Sembunyikan Mobile Top Bar secara otomatis di layar Desktop (>= 1024px) */
-@media (min-width: 1024px) {
-  .mobileTopBar {
-    display: none;
-  }
-}
-
 /* Mobile Backdrop Overlay */
 .mobileBackdrop {
   position: fixed;
@@ -363,118 +258,28 @@
   color: #ffffff;
 }
 
-/* Konten Utama */
-.mainContent {
-  flex: 1;
-  margin-top: 64px;
+/* Sidebar User Greeting */
+.sidebarUserGreeting {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border-color);
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  background-color: var(--background);
-  height: calc(100vh - 64px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-@media (min-width: 1024px) {
-  .mainContent {
-    margin-top: 0;
-    margin-left: 260px;
-    height: 100vh;
-  }
-}
-
-/* Header Atas Konten */
-.header {
-  background: linear-gradient(135deg, rgba(255, 253, 249, 0.9), rgba(248, 239, 226, 0.78));
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0.95rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  flex-shrink: 0;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-}
-
-:global([data-theme="dark"]) .header {
-  background: linear-gradient(135deg, rgba(20, 20, 22, 0.92), rgba(29, 29, 32, 0.82));
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-}
-
-.extraNavLeft {
-  display: flex;
-  align-items: center;
-}
-
-.navIndicator {
-  font-size: 0.82rem;
-  color: var(--primary-accent);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: rgba(var(--primary-accent-rgb), 0.1);
-  padding: 0.38rem 0.72rem;
-  border-radius: 999px;
-  border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
-}
-
-.extraNavRight {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.greetingBlock {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
   gap: 0.2rem;
+  text-align: left;
 }
 
-.greetingEyebrow {
+.sidebarUserGreeting .greetingEyebrow {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--primary-accent);
 }
 
-/* Tombol Keranjang untuk Desktop/Tab — tampil di header kanan (>= 1024px) */
-.cartIconBtnDesktop {
-  display: none;
-  background: var(--surface-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.cartIconBtnDesktop:hover {
-  background: var(--border-color);
-  border-color: var(--primary-accent);
-}
-
-/* Tampilkan di layar Desktop/Tab (>= 1024px). Pada < 1024px, top bar
-   mobile-lah yang menampilkan tombol keranjang (cartIconBtnMobile). */
-@media (min-width: 1024px) {
-  .cartIconBtnDesktop {
-    display: flex;
-  }
-}
-
-.welcomeTitle {
-  font-size: 1rem;
+.sidebarUserGreeting .welcomeTitle {
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--text-primary);
@@ -485,18 +290,6 @@
   display: inline-block;
   transform-origin: 70% 70%;
   animation: wave 1.8s ease-in-out infinite;
-}
-
-.greetingSubtitle {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-@media (min-width: 640px) {
-  .welcomeTitle {
-    font-size: 1.1rem;
-  }
 }
 
 @keyframes wave {
@@ -515,6 +308,28 @@
   }
   60% {
     transform: rotate(0deg);
+  }
+}
+
+/* Konten Utama */
+.mainContent {
+  flex: 1;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background-color: var(--background);
+  height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 1024px) {
+  .mainContent {
+    margin-top: 0;
+    margin-left: 280px;
+    height: 100vh;
   }
 }
 
@@ -566,11 +381,6 @@
 
 .svgIcon use {
   fill: none;
-}
-
-.hamburgerBtn .svgIcon {
-  width: 20px;
-  height: 20px;
 }
 
 /* Area Tampilan Konten Dinamis */
@@ -667,19 +477,6 @@
 }
 
 @media (max-width: 639px) {
-  .header {
-    align-items: flex-start;
-    gap: 0.85rem;
-  }
-
-  .extraNavRight {
-    align-items: flex-end;
-  }
-
-  .greetingBlock {
-    max-width: 240px;
-  }
-
   .errorBanner {
     flex-direction: column;
     align-items: stretch;
@@ -712,16 +509,17 @@
   .mobileBottomNav {
     display: flex;
     position: fixed;
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background: var(--surface-primary);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
-    border-radius: 22px;
-    padding: 8px 10px;
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 10px 16px env(safe-area-inset-bottom, 10px);
     justify-content: space-around;
     align-items: center;
     z-index: 100;
@@ -730,7 +528,7 @@
 
   :global([data-theme="dark"]) .mobileBottomNav {
     background: color-mix(in srgb, var(--surface-primary) 90%, #000000);
-    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.35);
   }
 
   .mobileBottomNavItem {
@@ -807,8 +605,12 @@
     border: 1px solid var(--surface-primary);
   }
 
-  /* Berikan ruang tambahan di bagian bawah mainContent agar konten tidak tertutup floating bar */
+  /* Ruang gap tambahan (padding-bottom) agar bagian bawah konten tidak tertutup floating bar */
   .mainContent {
-    padding-bottom: 96px !important;
+    padding-bottom: 120px !important;
+  }
+
+  .viewWrapper {
+    padding-bottom: 3.5rem !important;
   }
 }

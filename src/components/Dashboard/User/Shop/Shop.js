@@ -16,16 +16,14 @@ import shopConfig from "@/data/ui/shopConfig.json";
 const PRODUCTS_PER_PAGE = 12;
 
 export default function Shop() {
-  const { addToCart, products: contextProducts, activePromo } = useStore();
+  const { addToCart, products: contextProducts, activePromo, cartQuantity, setIsCartOpen } = useStore();
   const [products, setProducts] = useState([]);
   const [orderItemsMap, setOrderItemsMap] = useState({});
   const [allReviews, setAllReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 0, activeMin: 0, activeMax: 0 });
 
   // Wishlist State (LocalStorage persistence)
   const [wishlist, setWishlist] = useState(() => {
@@ -46,10 +44,6 @@ export default function Shop() {
 
   const toggleWishlist = (productId, e) => {
     e.stopPropagation();
-    // Hitung state berikutnya di LUAR updater dan pindahkan semua side-effect
-    // (toast + localStorage) ke sini. React bisa memanggil updater setWishlist
-    // secara eagar saat render, sehingga memanggil toast.success di dalamnya
-    // memicu "Cannot update a component while rendering a different component".
     const isExist = wishlist.includes(productId);
     const updated = isExist
       ? wishlist.filter((id) => id !== productId)
@@ -94,21 +88,6 @@ export default function Shop() {
       const fetchedProducts =
         productsResult.data || productsResult.products || productsResult || [];
       setProducts(fetchedProducts);
-
-      // Compute price range from fetched products
-      const prices = fetchedProducts
-        .map((p) => p.variants?.[0]?.price || p.price || 0)
-        .filter((price) => price > 0);
-      if (prices.length > 0) {
-        const min = Math.floor(Math.min(...prices) / 10000) * 10000;
-        const max = Math.ceil(Math.max(...prices) / 10000) * 10000;
-        setPriceRange({
-          min,
-          max,
-          activeMin: min,
-          activeMax: max,
-        });
-      }
     } catch (err) {
       console.error("Gagal memuat produk:", err.message);
       toast.error(
@@ -164,7 +143,7 @@ export default function Shop() {
       console.warn("Catatan: Data orders belum tersedia.", err.message);
     }
 
-    // Fetch review yang sudah approved dari collection "reviews" (bukan dari orders)
+    // Fetch review yang sudah approved dari collection "reviews"
     try {
       const reviewsRes = await fetch("/api/reviews?public=true", {
         cache: "no-store",
@@ -196,24 +175,8 @@ export default function Shop() {
     };
   }, [contextProducts]);
 
-  const dynamicCategories = useMemo(() => {
-    const categoriesSet = new Set();
-    products.forEach((p) => {
-      if (p.category) categoriesSet.add(p.category.trim());
-    });
-    return Array.from(categoriesSet);
-  }, [products]);
-
   const processedProducts = useMemo(() => {
     let result = [...products];
-
-    if (selectedCategory !== "all") {
-      result = result.filter(
-        (p) =>
-          (p.category || "").toLowerCase().trim() ===
-          selectedCategory.toLowerCase().trim(),
-      );
-    }
 
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
@@ -222,16 +185,6 @@ export default function Shop() {
           (p.name || "").toLowerCase().includes(query) ||
           (p.description || "").toLowerCase().includes(query),
       );
-    }
-
-    // Filter harga (rentang aktif)
-    if (priceRange.activeMin > 0 || priceRange.activeMax > 0) {
-      result = result.filter((p) => {
-        const price = p.variants?.[0]?.price || p.price || 0;
-        const minOk = priceRange.activeMin <= 0 || price >= priceRange.activeMin;
-        const maxOk = priceRange.activeMax <= 0 || price <= priceRange.activeMax;
-        return minOk && maxOk;
-      });
     }
 
     switch (sortBy) {
@@ -256,12 +209,8 @@ export default function Shop() {
         break;
     }
     return result;
-  }, [products, selectedCategory, searchQuery, sortBy, priceRange]);
+  }, [products, searchQuery, sortBy]);
 
-  // OPTIMASI PERFORMA: Pre-indexing Ulasan menggunakan Hash Map
-  // Sumber data: collection "reviews" (via /api/reviews?public=true),
-  // BUKAN field di dalam dokumen orders — review disimpan terpisah oleh
-  // endpoint /api/reviews saat customer submit ulasan dari halaman pesanan.
   const productReviewsMap = useMemo(() => {
     const map = {};
     allReviews.forEach((rev) => {
@@ -342,110 +291,69 @@ export default function Shop() {
 
   return (
     <div className={styles.shopContainer}>
-      <header className={styles.shopHeader}>
-        <h1 className={styles.shopTitle}>{shopConfig.header?.title}</h1>
-        <p className={styles.shopSubtitle}>{shopConfig.header?.subtitle}</p>
-      </header>
-
-      <nav className={styles.categoryNavbar}>
-        <button
-          onClick={() => setSelectedCategory("all")}
-          className={`${styles.navCatBtn} ${selectedCategory === "all" ? styles.activeNavCatBtn : ""}`}
-        >
-          {shopConfig.filters?.allLabel || "Semua"}
-        </button>
-        {dynamicCategories.map((kat) => (
-          <button
-            key={kat}
-            onClick={() => setSelectedCategory(kat)}
-            className={`${styles.navCatBtn} ${selectedCategory.toLowerCase() === kat.toLowerCase() ? styles.activeNavCatBtn : ""}`}
-          >
-            {kat}
-          </button>
-        ))}
-      </nav>
-
-      <div className={styles.toolbar}>
-        <input
-          type="text"
-          placeholder={
-            shopConfig.filters?.searchPlaceholder || "Cari produk..."
-          }
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={styles.searchInput}
-        />
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className={styles.sortSelect}
-        >
-          <option value="default">
-            {shopConfig.filters?.sortDefault || "Urutan"}
-          </option>
-          <option value="price-low">
-            {shopConfig.filters?.sortPriceLow || "Harga Terendah"}
-          </option>
-          <option value="price-high">
-            {shopConfig.filters?.sortPriceHigh || "Harga Tertinggi"}
-          </option>
-          <option value="name">{shopConfig.filters?.sortName || "Nama"}</option>
-        </select>
-        <div className={styles.priceFilter}>
-          <div className={styles.priceFilterHeader}>
-            <span className={styles.priceFilterLabel}>Harga</span>
-            {(priceRange.activeMin !== priceRange.min ||
-              priceRange.activeMax !== priceRange.max) && (
-              <button
-                className={styles.priceResetBtn}
-                onClick={() =>
-                  setPriceRange((prev) => ({
-                    ...prev,
-                    activeMin: prev.min,
-                    activeMax: prev.max,
-                  }))
-                }
-              >
-                Reset
-              </button>
-            )}
-          </div>
-          <div className={styles.priceRangeValues}>
-            <span>Rp {Number(priceRange.activeMin).toLocaleString("id-ID")}</span>
-            <span>—</span>
-            <span>Rp {Number(priceRange.activeMax).toLocaleString("id-ID")}</span>
-          </div>
-          <div className={styles.priceRangeInputs}>
-            <input
-              type="range"
-              min={priceRange.min}
-              max={priceRange.max}
-              step={10000}
-              value={priceRange.activeMin}
-              onChange={(e) =>
-                setPriceRange((prev) => ({
-                  ...prev,
-                  activeMin: Math.min(Number(e.target.value), prev.activeMax),
-                }))
-              }
-              className={styles.priceRangeSlider}
-            />
-            <input
-              type="range"
-              min={priceRange.min}
-              max={priceRange.max}
-              step={10000}
-              value={priceRange.activeMax}
-              onChange={(e) =>
-                setPriceRange((prev) => ({
-                  ...prev,
-                  activeMax: Math.max(Number(e.target.value), prev.activeMin),
-                }))
-              }
-              className={styles.priceRangeSlider}
-            />
-          </div>
+      {/* Navbar Atas Melayang */}
+      <div className={styles.shopNavbar}>
+        <div className={styles.navbarSearchWrapper}>
+          <AppIcon name="search" className={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder={
+              shopConfig.filters?.searchPlaceholder || "Cari parfum..."
+            }
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInputNavbar}
+          />
         </div>
+        <div className={styles.navbarActions}>
+          <button
+            className={styles.chatIconBtnNavbar}
+            onClick={() => toast.success("Membuka chat...")}
+            aria-label="Chat"
+          >
+            <AppIcon name="message-circle" className={styles.svgIcon} />
+          </button>
+          <button
+            className={styles.cartIconBtnNavbar}
+            onClick={() => setIsCartOpen(true)}
+            aria-label={shopConfig.aria?.cart || "Keranjang"}
+          >
+            <AppIcon name="shopping-cart" className={styles.svgIcon} />
+            {cartQuantity > 0 && (
+              <span className={styles.cartQuantityBadge}>
+                {cartQuantity}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Tabs (Fungsional) */}
+      <div className={styles.filterTabsWrapper}>
+        <button
+          onClick={() => setSortBy("default")}
+          className={`${styles.filterTabBtn} ${sortBy === "default" ? styles.activeFilterTab : ""}`}
+        >
+          {shopConfig.filters?.sortDefault || "Terbaru"}
+        </button>
+        <button
+          onClick={() => setSortBy("price-low")}
+          className={`${styles.filterTabBtn} ${sortBy === "price-low" ? styles.activeFilterTab : ""}`}
+        >
+          {shopConfig.filters?.sortPriceLow || "Harga Terendah"}
+        </button>
+        <button
+          onClick={() => setSortBy("price-high")}
+          className={`${styles.filterTabBtn} ${sortBy === "price-high" ? styles.activeFilterTab : ""}`}
+        >
+          {shopConfig.filters?.sortPriceHigh || "Harga Tertinggi"}
+        </button>
+        <button
+          onClick={() => setSortBy("name")}
+          className={`${styles.filterTabBtn} ${sortBy === "name" ? styles.activeFilterTab : ""}`}
+        >
+          {shopConfig.filters?.sortName || "Nama"}
+        </button>
       </div>
 
       {loading ? (
@@ -538,7 +446,7 @@ export default function Shop() {
                         <AppIcon name="shopping-cart" />
                       </button>
                     </div>
-<div className={styles.cardPriceRow}>
+                    <div className={styles.cardPriceRow}>
                       {(() => {
                         if (outOfStock) return <span className={styles.cardPrice}>{shopConfig.card?.outOfStockTitle || "Stok Habis"}</span>;
                         const discounted = getDiscountedPrice(displayPrice, activePromo);
@@ -706,7 +614,7 @@ export default function Shop() {
                   </div>
                 </div>
 
-<div className={styles.modalPriceAction}>
+                <div className={styles.modalPriceAction}>
                   {(() => {
                     const rawPrice = Number(selectedProduct.variants?.[activeVariantIdx]?.price || selectedProduct.price || 0);
                     const discounted = getDiscountedPrice(rawPrice, activePromo);

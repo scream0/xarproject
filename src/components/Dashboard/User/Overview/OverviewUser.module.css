@@ -11,6 +11,84 @@
   box-sizing: border-box;
 }
 
+/* Navbar Atas Melayang (Chat & Cart Tanpa Kolom Pencarian) */
+.shopNavbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  background: rgba(var(--surface-primary-rgb, 255, 255, 255), 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+:global([data-theme="dark"]) .shopNavbar {
+  background: rgba(var(--surface-primary-rgb, 20, 20, 22), 0.85);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.navbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatIconBtnNavbar,
+.cartIconBtnNavbar {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chatIconBtnNavbar:hover,
+  .cartIconBtnNavbar:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+}
+
+.cartQuantityBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 9999px;
+  min-width: 16px;
+  text-align: center;
+  border: 1px solid var(--surface-primary);
+}
+
+.svgIcon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
 /* 1. Metric Cards Grid */
 .metricsGrid {
   display: grid;
@@ -446,7 +524,6 @@
   transform: scale(0.95);
 }
 
-/* Promo price display in recommendations */
 .curatedOriginalPrice {
   text-decoration: line-through;
   color: var(--text-secondary);
