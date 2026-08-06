@@ -43,7 +43,7 @@ export default function LoginForm() {
         .single();
 
       if (!profileError && profile?.role === "admin") {
-        window.location.replace("/admin");
+        window.location.replace("/dashboard");
       } else {
         window.location.replace(callbackUrl);
       }

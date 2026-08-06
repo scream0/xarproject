@@ -700,3 +700,115 @@
     padding: 1.4rem 1.5rem 2rem;
   }
 }
+
+/* ====================================================
+   FLOATING BOTTOM NAVIGATION (MOBILE ANDROID STYLE)
+   ==================================================== */
+.mobileBottomNav {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mobileBottomNav {
+    display: flex;
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    background: var(--surface-primary);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    border-radius: 22px;
+    padding: 8px 10px;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    gap: 4px;
+  }
+
+  :global([data-theme="dark"]) .mobileBottomNav {
+    background: color-mix(in srgb, var(--surface-primary) 90%, #000000);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+  }
+
+  .mobileBottomNavItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px 4px;
+    border-radius: 14px;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 0;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .mobileNavIconWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobileNavSvg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    transition: transform 0.2s ease;
+  }
+
+  .mobileNavLabel {
+    font-size: 0.65rem;
+    font-weight: 500;
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1;
+  }
+
+  .mobileBottomNavItemActive {
+    color: var(--primary-accent) !important;
+  }
+
+  .mobileBottomNavItemActive .mobileNavSvg {
+    transform: scale(1.1);
+    stroke-width: 2.2;
+  }
+
+  .mobileBottomNavItemActive .mobileNavLabel {
+    font-weight: 700;
+  }
+
+  .mobileNavBadge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    background: var(--primary-accent);
+    color: var(--primary-accent-text);
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 9999px;
+    min-width: 14px;
+    text-align: center;
+    border: 1px solid var(--surface-primary);
+  }
+
+  /* Berikan ruang tambahan di bagian bawah mainContent agar konten tidak tertutup floating bar */
+  .mainContent {
+    padding-bottom: 96px !important;
+  }
+}

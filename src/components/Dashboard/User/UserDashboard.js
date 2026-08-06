@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import styles from "./UserDashboard.module.css";
@@ -33,7 +34,6 @@ export default function UserDashboard() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, userName, loading, error, retry } = useUserDashboardData();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -42,8 +42,6 @@ export default function UserDashboard() {
 
   const { cartQuantity, isCartOpen, setIsCartOpen } = useStore();
   const mainContentRef = useRef(null);
-  const mobileMenuRef = useRef(null);
-  const mobileMenuButtonRef = useRef(null);
 
   const currentTabParam = searchParams.get("tab");
   const activeTab = VALID_TABS.includes(currentTabParam)
@@ -131,40 +129,6 @@ export default function UserDashboard() {
   }, [user]);
 
   useEffect(() => {
-    if (!isMobileMenuOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    const handlePointerDown = (event) => {
-      if (mobileMenuRef.current?.contains(event.target)) {
-        return;
-      }
-
-      if (mobileMenuButtonRef.current?.contains(event.target)) {
-        return;
-      }
-
-      setIsMobileMenuOpen(false);
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-    };
-  }, [isMobileMenuOpen]);
-
-  useEffect(() => {
     const mainContentNode = mainContentRef.current;
 
     if (!mainContentNode) {
@@ -191,11 +155,9 @@ export default function UserDashboard() {
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("tab", tabId);
     router.push(`${pathname}?${nextParams.toString()}`, { scroll: false });
-    setIsMobileMenuOpen(false);
   };
 
   const handleLogoutRequest = () => {
-    setIsMobileMenuOpen(false);
     setIsLogoutDialogOpen(true);
   };
 
@@ -221,15 +183,7 @@ export default function UserDashboard() {
 
   return (
     <div className={styles.dashboardContainer}>
-      {isMobileMenuOpen && (
-        <button
-          type="button"
-          className={styles.mobileBackdrop}
-          onClick={() => setIsMobileMenuOpen(false)}
-          aria-label={userConfig.aria.menuExpanded}
-        />
-      )}
-
+      {/* Mobile Top Bar */}
       <div
         className={`${styles.mobileTopBar} ${isTopBarElevated ? styles.mobileTopBarElevated : ""}`}
       >
@@ -252,30 +206,13 @@ export default function UserDashboard() {
               </span>
             )}
           </button>
-
-          <button
-            ref={mobileMenuButtonRef}
-            className={styles.hamburgerBtn}
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label={isMobileMenuOpen ? userConfig.aria.menuExpanded : userConfig.aria.menu}
-            aria-expanded={isMobileMenuOpen}
-            aria-haspopup="dialog"
-            aria-controls="user-dashboard-navigation"
-          >
-            <AppIcon
-              name={isMobileMenuOpen ? "x" : "menu"}
-              className={styles.svgIcon}
-            />
-          </button>
         </div>
       </div>
 
+      {/* Desktop Sidebar */}
       <aside
         id="user-dashboard-navigation"
-        ref={mobileMenuRef}
-        className={`${styles.sidebar} ${
-          isMobileMenuOpen ? styles.sidebarOpen : ""
-        }`}
+        className={styles.sidebar}
         aria-label={userConfig.aria.menuPanel}
       >
         <div className={styles.brandSection}>
@@ -287,35 +224,45 @@ export default function UserDashboard() {
 
         <nav className={styles.navContainer}>
           <ul className={styles.navigationList}>
-            {userConfig.nav.map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => handleTabChange(item.id)}
-                  className={`${styles.navItem} ${
-                    activeTab === item.id ? styles.navItemActive : ""
-                  }`}
-                  aria-current={activeTab === item.id ? "page" : undefined}
-                >
-                  <span className={styles.navLabel}>{item.label}</span>
-                  {(item.id === "wishlist" && wishlistCount > 0) ||
-                  (item.id === "notifications" && notificationCount > 0) ? (
-                    <span className={styles.navBadge}>
-                      {item.id === "wishlist" ? wishlistCount : notificationCount}
-                    </span>
-                  ) : null}
-                </button>
-              </li>
-            ))}
+            {userConfig.nav.map((item) => {
+              const isActive = activeTab === item.id;
+              const badgeCount =
+                item.id === "wishlist"
+                  ? wishlistCount
+                  : item.id === "notifications"
+                  ? notificationCount
+                  : 0;
+
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => handleTabChange(item.id)}
+                    className={`${styles.navItem} ${
+                      isActive ? styles.navItemActive : ""
+                    }`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <AppIcon name={item.icon || "circle"} className={styles.navIcon} />
+                    <span className={styles.navLabel}>{item.label}</span>
+                    {badgeCount > 0 && (
+                      <span className={styles.navBadge}>{badgeCount}</span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
         <div className={styles.sidebarFooter}>
           <button onClick={handleLogoutRequest} className={styles.logoutBtn}>
+            <AppIcon name="log-out" className={styles.navIcon} />
             <span>{userConfig.logoutText}</span>
           </button>
         </div>
       </aside>
 
+      {/* Main Content */}
       <main ref={mainContentRef} className={styles.mainContent}>
         <header className={styles.header}>
           <div className={styles.extraNavLeft}>
@@ -374,6 +321,38 @@ export default function UserDashboard() {
           {activeTab === "profile" && <ProfileSection />}
         </div>
       </main>
+
+      {/* Mobile Floating Bottom Navigation (Android Style) */}
+      <nav className={styles.mobileBottomNav} aria-label="Mobile Bottom Navigation">
+        {userConfig.nav.map((item) => {
+          const isActive = activeTab === item.id;
+          const badgeCount =
+            item.id === "wishlist"
+              ? wishlistCount
+              : item.id === "notifications"
+              ? notificationCount
+              : 0;
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleTabChange(item.id)}
+              className={`${styles.mobileBottomNavItem} ${
+                isActive ? styles.mobileBottomNavItemActive : ""
+              }`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <div className={styles.mobileNavIconWrapper}>
+                <AppIcon name={item.icon || "circle"} className={styles.mobileNavSvg} />
+                {badgeCount > 0 && (
+                  <span className={styles.mobileNavBadge}>{badgeCount}</span>
+                )}
+              </div>
+              <span className={styles.mobileNavLabel}>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 
