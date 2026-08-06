@@ -18,8 +18,8 @@ export default function ProfileSection() {
   const [isPasswordChanging, setIsPasswordChanging] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   
-  // State untuk mengontrol modal konfirmasi logout yang elegan
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isManageAddressModalOpen, setIsManageAddressModalOpen] = useState(false); // Modal khusus list alamat
 
   // Data Profil Utama
   const [profile, setProfile] = useState({
@@ -403,6 +403,15 @@ export default function ProfileSection() {
         label: currentAddress.label || "Rumah",
       };
 
+      // Validasi batas maksimal 3 alamat jika sedang membuat alamat baru
+      const isEditing = addresses.some((a) => a.id === newAddressItem.id);
+      if (!isEditing && updatedAddresses.length >= 3) {
+        toast.dismiss(toastId);
+        toast.error("Maksimal hanya dapat menyimpan 3 alamat.");
+        setLoading(false);
+        return;
+      }
+
       if (newAddressItem.isPrimary || updatedAddresses.length === 0) {
         updatedAddresses = updatedAddresses.map((addr) => ({
           ...addr,
@@ -555,32 +564,19 @@ export default function ProfileSection() {
                 </button>
               </div>
 
-              {/* Menu 2: Kelola Alamat */}
+              {/* Menu 2: Kelola Alamat (Maksimal 3 Alamat) */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>Buku Alamat Pengiriman</h4>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>Tambah atau atur alamat utama pesanan Anda.</p>
+                  <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>
+                    Buku Alamat Pengiriman <span style={{ fontSize: "0.75rem", color: "var(--primary-accent)", fontWeight: 600 }}>({addresses.length}/3)</span>
+                  </h4>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>Atur alamat utama dan kantor (maksimal 3 alamat).</p>
                 </div>
                 <button
-                  onClick={() => {
-                    setCurrentAddress({
-                      id: null,
-                      label: "Rumah",
-                      recipientName: profile.fullName,
-                      recipientPhone: profile.phone,
-                      street: "",
-                      province: "",
-                      city: "",
-                      cityId: "",
-                      cityType: "",
-                      postalCode: "",
-                      isPrimary: addresses.length === 0,
-                    });
-                    setIsAddressModalOpen(true);
-                  }}
+                  onClick={() => setIsManageAddressModalOpen(true)}
                   className={styles.actionBtnPrimary}
                 >
-                  Tambah
+                  Kelola Alamat
                 </button>
               </div>
 
@@ -622,7 +618,93 @@ export default function ProfileSection() {
       )}
 
       {/* ====================================================
-         MODAL KONFIRMASI LOGOUT ELEGAN (High-End Luxury Style)
+         MODAL KELOLA & LIST DAFTAR ALAMAT (Maks 3 Alamat)
+         ==================================================== */}
+      {isManageAddressModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setIsManageAddressModalOpen(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Buku Alamat Saya ({addresses.length}/3)</h3>
+              <button onClick={() => setIsManageAddressModalOpen(false)} className={styles.closeModalBtn}>✕</button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "10px 0" }}>
+              {addresses.length === 0 ? (
+                <p style={{ textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem", padding: "1rem 0" }}>
+                  Belum ada alamat tersimpan. Silakan tambahkan alamat pengiriman Anda.
+                </p>
+              ) : (
+                addresses.map((addr) => (
+                  <div key={addr.id} style={{ padding: "14px", background: "var(--surface-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-primary)" }}>{addr.label || "Alamat"}</span>
+                        {addr.isPrimary && (
+                          <span style={{ fontSize: "0.65rem", background: "rgba(var(--primary-accent-rgb), 0.15)", color: "var(--primary-accent)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
+                            UTAMA
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        {!addr.isPrimary && (
+                          <button onClick={() => handleSetPrimaryAddress(addr.id)} style={{ background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-secondary)", fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
+                            Jadikan Utama
+                          </button>
+                        )}
+                        <button onClick={() => { setCurrentAddress(addr); setIsAddressModalOpen(true); }} style={{ background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-primary)", fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
+                          Edit
+                        </button>
+                        <button onClick={() => handleDeleteAddress(addr.id)} style={{ background: "rgba(var(--danger-color-rgb), 0.1)", border: "1px solid rgba(var(--danger-color-rgb), 0.3)", color: "var(--danger-color)", fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: 500 }}>
+                      {addr.recipientName} ({addr.recipientPhone})
+                    </p>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
+                      {addr.street}, {addr.city}, {addr.province} - {addr.postalCode}
+                    </p>
+                  </div>
+                ))
+              )}
+
+              {/* Tombol Tambah Alamat (Disabled jika sudah 3) */}
+              {addresses.length < 3 ? (
+                <button
+                  onClick={() => {
+                    setCurrentAddress({
+                      id: null,
+                      label: addresses.length === 0 ? "Rumah" : "Kantor",
+                      recipientName: profile.fullName,
+                      recipientPhone: profile.phone,
+                      street: "",
+                      province: "",
+                      city: "",
+                      cityId: "",
+                      cityType: "",
+                      postalCode: "",
+                      isPrimary: addresses.length === 0,
+                    });
+                    setIsAddressModalOpen(true);
+                  }}
+                  className={styles.actionBtnPrimary}
+                  style={{ width: "100%", marginTop: "6px" }}
+                >
+                  + Tambah Alamat Baru ({addresses.length}/3)
+                </button>
+              ) : (
+                <p style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--text-secondary)", fontStyle: "italic", margin: "4px 0 0 0" }}>
+                  Batas maksimal 3 alamat telah tercapai. Hapus salah satu alamat jika ingin menambahkan yang baru.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+         MODAL KONFIRMASI LOGOUT ELEGAN
          ==================================================== */}
       {isLogoutModalOpen && (
         <div className={styles.modalOverlay} onClick={() => !loggingOut && setIsLogoutModalOpen(false)}>
@@ -688,7 +770,7 @@ export default function ProfileSection() {
       )}
 
       {/* ====================================================
-         MODAL SUBSIDIARIS (Edit Profil, Alamat, Password)
+         MODAL SUBSIDIARIS (Edit Profil, Tambah/Edit Alamat, Password)
          ==================================================== */}
       {isProfileModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsProfileModalOpen(false)}>
@@ -764,13 +846,13 @@ export default function ProfileSection() {
         <div className={styles.modalOverlay} onClick={() => setIsAddressModalOpen(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>{currentAddress?.id ? profileConfig.modals.address.editTitle : profileConfig.modals.address.addTitle}</h3>
+              <h3 className={styles.modalTitle}>{currentAddress?.id ? "Edit Alamat" : "Tambah Alamat Baru"}</h3>
               <button onClick={() => setIsAddressModalOpen(false)} className={styles.closeModalBtn}>✕</button>
             </div>
             <form onSubmit={handleSaveAddress}>
               <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.address.label}</label>
-                <input type="text" value={currentAddress.label} onChange={(e) => setCurrentAddress({ ...currentAddress, label: e.target.value })} required className={styles.formInput} />
+                <label className={styles.inputLabel}>Label Alamat (Contoh: Rumah, Kantor)</label>
+                <input type="text" value={currentAddress.label} onChange={(e) => setCurrentAddress({ ...currentAddress, label: e.target.value })} required className={styles.formInput} placeholder="Rumah / Kantor / Apartemen" />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.inputLabel}>{profileConfig.modals.address.recipientName}</label>
@@ -782,7 +864,7 @@ export default function ProfileSection() {
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.inputLabel}>{profileConfig.modals.address.street}</label>
-                <textarea rows="2" value={currentAddress.street} onChange={(e) => setCurrentAddress({ ...currentAddress, street: e.target.value })} required className={styles.formTextarea} />
+                <textarea rows="2" value={currentAddress.street} onChange={(e) => setCurrentAddress({ ...currentAddress, street: e.target.value })} required className={styles.formTextarea} placeholder="Nama jalan, nomor rumah, RT/RW, Patokan..." />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.inputLabel}>{profileConfig.modals.address.city}</label>
