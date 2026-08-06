@@ -21,6 +21,9 @@ import {
   Gift,
   AlertTriangle,
   CreditCard,
+  RotateCcw,
+  HelpCircle,
+  LayoutDashboard,
 } from "lucide-react";
 
 const iconMap = {
@@ -51,6 +54,12 @@ const iconMap = {
   gift: Gift,
   alert: AlertTriangle,
   creditcard: CreditCard,
+  "rotate-ccw": RotateCcw,
+  returns: RotateCcw,
+  "help-circle": HelpCircle,
+  support: HelpCircle,
+  "layout-dashboard": LayoutDashboard,
+  dashboard: LayoutDashboard,
 };
 
 export function AppIcon({ name, className, size, strokeWidth = 2, ...props }) {

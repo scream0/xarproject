@@ -7,35 +7,43 @@
   "nav": [
     {
       "id": "shop",
-      "label": "Katalog Parfum"
+      "label": "Katalog Parfum",
+      "icon": "shopping-bag"
     },
     {
       "id": "overview",
-      "label": "Dashboard Overview"
+      "label": "Dashboard Overview",
+      "icon": "layout-dashboard"
     },
     {
       "id": "orders",
-      "label": "Pesanan"
+      "label": "Pesanan",
+      "icon": "package"
     },
     {
       "id": "returns",
-      "label": "Retur & Refund"
+      "label": "Retur & Refund",
+      "icon": "rotate-ccw"
     },
     {
       "id": "notifications",
-      "label": "Notifikasi"
+      "label": "Notifikasi",
+      "icon": "bell"
     },
     {
       "id": "wishlist",
-      "label": "Wishlist"
+      "label": "Wishlist",
+      "icon": "heart"
     },
     {
       "id": "support",
-      "label": "Bantuan"
+      "label": "Bantuan",
+      "icon": "help-circle"
     },
     {
       "id": "profile",
-      "label": "Profil Pengguna"
+      "label": "Profil Pengguna",
+      "icon": "user"
     }
   ],
   "logoutText": "Keluar Akun",
@@ -70,4 +78,3 @@
     "logoutError": "Gagal logout:"
   }
 }
-
