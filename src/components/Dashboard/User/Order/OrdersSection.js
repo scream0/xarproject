@@ -49,6 +49,19 @@ const STATUS_INFO = {
     label: "Pembayaran Diterima",
     badgeClass: "statusSuccess",
   },
+  // Status khusus Return Center
+  return_requested: {
+    label: "Pengajuan Return",
+    badgeClass: "statusPending",
+  },
+  returning: {
+    label: "Barang Dikirim Balik",
+    badgeClass: "statusShipping",
+  },
+  returned: {
+    label: "Return Selesai",
+    badgeClass: "statusCompleted",
+  },
 };
 
 function getStatusInfo(rawStatus) {
@@ -140,6 +153,11 @@ export default function OrdersSection() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // State untuk modal Return / Return Center
+  const [returnModalOrder, setReturnModalOrder] = useState(null);
+  const [returnReason, setReturnReason] = useState("");
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
 
   useEffect(() => {
     let subscription = null;
@@ -240,7 +258,7 @@ export default function OrdersSection() {
     };
   }, [currentUser, currentSession]);
 
-  // Sinkronisasi Filter Status dengan Database (Shopee-style tabs)
+  // Sinkronisasi Filter Status dengan Database (Shopee-style tabs + Return Center)
   const filteredOrders = useMemo(() => {
     let result = orders;
 
@@ -248,14 +266,14 @@ export default function OrdersSection() {
       if (filter === "pending") {
         result = result.filter((o) => o.status === "pending");
       } else if (filter === "processing") {
-        // Mengemas: pembayaran diterima atau sedang diracik admin
         result = result.filter((o) => ["success", "processing", "settlement", "capture"].includes(o.status));
       } else if (filter === "shipping") {
-        // Dikirim
         result = result.filter((o) => ["shipping", "shipped"].includes(o.status));
       } else if (filter === "history") {
-        // Selesai / Riwayat
         result = result.filter((o) => ["completed", "cancelled"].includes(o.status));
+      } else if (filter === "return") {
+        // Tab Return / Return Center
+        result = result.filter((o) => ["return_requested", "returning", "returned"].includes(o.status));
       }
     }
 
@@ -279,8 +297,9 @@ export default function OrdersSection() {
     const processing = orders.filter((o) => ["success", "processing", "settlement", "capture"].includes(o.status)).length;
     const shipping = orders.filter((o) => ["shipping", "shipped"].includes(o.status)).length;
     const history = orders.filter((o) => ["completed", "cancelled"].includes(o.status)).length;
+    const returnCount = orders.filter((o) => ["return_requested", "returning", "returned"].includes(o.status)).length;
 
-    return { total, pending, processing, shipping, history };
+    return { total, pending, processing, shipping, history, return: returnCount };
   }, [orders]);
 
   const filterTabs = useMemo(
@@ -290,6 +309,7 @@ export default function OrdersSection() {
       { key: "processing", label: "Sedang Dikemas", icon: "package", count: orderStats.processing },
       { key: "shipping", label: "Dikirim", icon: "truck", count: orderStats.shipping },
       { key: "history", label: "Riwayat Pesanan", icon: "clock", count: orderStats.history },
+      { key: "return", label: "Return Center", icon: "rotate-ccw", count: orderStats.return },
     ],
     [orderStats],
   );
@@ -577,6 +597,57 @@ export default function OrdersSection() {
     return order.hasBeenReviewed;
   };
 
+  // Handler untuk membuka modal pengajuan Return
+  const openReturnModal = (order) => {
+    setReturnModalOrder(order);
+    setReturnReason("");
+  };
+
+  // Handler untuk mengirim permintaan return pesanan
+  const handleReturnSubmit = async (e) => {
+    e.preventDefault();
+    if (!returnModalOrder || !currentUser || isSubmittingReturn) return;
+
+    setIsSubmittingReturn(true);
+    const toastId = toast.loading("Mengajukan return pesanan...");
+
+    try {
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+      const userId = currentUser.id || currentUser.uid;
+
+      const res = await fetch(`/api/user/orders/${returnModalOrder.id}/return`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({ userId, reason: returnReason }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Gagal mengajukan return pesanan.");
+      }
+
+      toast.success("Pengajuan return berhasil dikirim.", { id: toastId });
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === returnModalOrder.id ? { ...o, status: "return_requested" } : o
+        )
+      );
+
+      setReturnModalOrder(null);
+      setReturnReason("");
+    } catch (error) {
+      console.error("Gagal mengajukan return:", error);
+      toast.error(error.message || "Gagal mengajukan return.", { id: toastId });
+    } finally {
+      setIsSubmittingReturn(false);
+    }
+  };
+
   return (
     <div className={styles.workspaceInner}>
       {/* Header & Search */}
@@ -648,6 +719,7 @@ export default function OrdersSection() {
             const isFinished = order.status === "completed";
             const isPending = order.status === "pending";
             const isDelivered = ["shipping", "shipped", "delivered", "completed"].includes(order.status);
+            const canReturn = ["shipping", "shipped", "delivered", "completed"].includes(order.status) && !["return_requested", "returning", "returned"].includes(order.status);
             const statusInfo = getStatusInfo(order.status);
             const reviewableItems =
               order.items && order.items.length > 0
@@ -724,6 +796,14 @@ export default function OrdersSection() {
                         className={styles.confirmBtn}
                       >
                         {isConfirming ? "Memproses..." : "Konfirmasi Diterima"}
+                      </button>
+                    )}
+                    {canReturn && (
+                      <button
+                        onClick={() => openReturnModal(order)}
+                        className={styles.returnBtn}
+                      >
+                        Ajukan Return
                       </button>
                     )}
                     <button
@@ -812,6 +892,58 @@ export default function OrdersSection() {
                 {isSubmittingReview
                   ? ordersConfig.labels.submittingReview
                   : ordersConfig.labels.submitReview}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL RETURN / RETURN CENTER --- */}
+      {returnModalOrder && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setReturnModalOrder(null)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Pengajuan Return Pesanan</h3>
+              <button
+                onClick={() => setReturnModalOrder(null)}
+                className={styles.modalCloseBtn}
+              >
+                <AppIcon name="x" size={18} strokeWidth={2} />
+              </button>
+            </div>
+
+            <form onSubmit={handleReturnSubmit} className={styles.modalBody}>
+              <div>
+                <span className={styles.modalFieldLabel}>ID Pesanan</span>
+                <strong>{returnModalOrder.id}</strong>
+              </div>
+              <div>
+                <span className={styles.modalFieldLabel}>Produk / Detail</span>
+                <strong>{returnModalOrder.name}</strong>
+              </div>
+              <div>
+                <span className={styles.modalFieldLabel}>Alasan Return</span>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Tuliskan alasan pengembalian/return produk secara detail..."
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  className={styles.formTextarea}
+                />
+              </div>
+              <button
+                type="submit"
+                className={styles.modalCloseActionBtn}
+                disabled={isSubmittingReturn}
+              >
+                {isSubmittingReturn ? "Mengirim Pengajuan..." : "Kirim Pengajuan Return"}
               </button>
             </form>
           </div>

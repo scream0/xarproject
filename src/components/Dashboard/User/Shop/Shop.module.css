@@ -5,9 +5,18 @@
   max-width: 1280px;
   margin: 0 auto;
   /* Berikan padding-top agar konten di bawah navbar melayang tidak tertutup */
-  padding: 5rem 1.25rem 1.5rem;
+  /* Tambahan padding-bottom besar (5.5rem) agar konten tidak tertutup bottom navbar di mobile */
+  padding: 5rem 1.25rem 5.5rem;
   font-family: var(--font-sans);
   position: relative;
+  box-sizing: border-box;
+}
+
+/* Sesuaikan padding bawah sedikit lebih kecil untuk layar desktop/tablet */
+@media (min-width: 768px) {
+  .shopContainer {
+    padding-bottom: 2.5rem;
+  }
 }
 
 /* Navbar Atas Melayang (Floating/Overlay Navbar) */
@@ -130,67 +139,6 @@
   min-width: 16px;
   text-align: center;
   border: 1px solid var(--surface-primary);
-}
-
-/* ====================================================
-   FILTER TABS (Fully Responsive & User-Friendly)
-   ==================================================== */
-.filterTabsWrapper {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 0.25rem 4px 0.75rem 4px;
-  margin-bottom: 1.5rem;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-  -webkit-overflow-scrolling: touch;
-  justify-content: flex-start;
-}
-
-@media (min-width: 768px) {
-  .filterTabsWrapper {
-    justify-content: center;
-  }
-}
-
-.filterTabsWrapper::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-
-.filterTabBtn {
-  background: var(--surface-primary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  padding: 0.55rem 1.2rem;
-  border-radius: 9999px;
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  flex: 0 0 auto;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.filterTabBtn:active {
-  transform: scale(0.96);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .filterTabBtn:hover {
-    background: var(--surface-secondary);
-    color: var(--text-primary);
-    border-color: var(--primary-accent);
-  }
-}
-
-.activeFilterTab {
-  background: var(--primary-accent) !important;
-  color: var(--primary-accent-text) !important;
-  border-color: var(--primary-accent) !important;
-  font-weight: 600;
-  box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb), 0.25);
 }
 
 .stateContainer {
@@ -460,6 +408,7 @@
   display: flex;
   justify-content: center;
   padding: 2rem 0 1rem 0;
+  margin-bottom: 1.5rem; /* Memberikan jarak ekstra di atas bottom navbar mobile */
 }
 
 .loadMoreBtn {

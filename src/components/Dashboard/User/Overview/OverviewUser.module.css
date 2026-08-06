@@ -9,6 +9,14 @@
   max-width: 1400px;
   margin: 0 auto;
   box-sizing: border-box;
+  /* Tambahan padding bawah besar agar konten tidak tertutup bottom navbar di mobile */
+  padding-bottom: 5.5rem; 
+}
+
+@media (min-width: 768px) {
+  .overviewWorkspace {
+    padding-bottom: 2rem;
+  }
 }
 
 /* Navbar Atas Melayang (Chat & Cart Tanpa Kolom Pencarian) */
