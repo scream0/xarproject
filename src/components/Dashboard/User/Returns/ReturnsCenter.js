@@ -11,6 +11,7 @@ export default function ReturnsCenter() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
 
+
   const load = async (sessionToken) => {
     try {
       const token = sessionToken || (await auth.getSession()).data.session?.access_token;

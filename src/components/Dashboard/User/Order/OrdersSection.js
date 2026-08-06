@@ -10,6 +10,7 @@ import { OrdersSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import { formatAddressDisplay } from "@/utils/address";
 import { sortOrdersByNewestFirst } from "./orderSorting";
 import { useRouter } from "next/navigation";
+import ReturnsCenter from "@/components/Dashboard/User/Returns/ReturnsCenter"; // Sesuaikan path jika berbeda
 
 // Mapping status mentah dari database/Admin -> label & tahap yang ditampilkan
 const STATUS_INFO = {
@@ -49,7 +50,6 @@ const STATUS_INFO = {
     label: "Pembayaran Diterima",
     badgeClass: "statusSuccess",
   },
-  // Status khusus Return Center
   return_requested: {
     label: "Pengajuan Return",
     badgeClass: "statusPending",
@@ -154,7 +154,6 @@ export default function OrdersSection() {
   const [comment, setComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // State untuk modal Return / Return Center
   const [returnModalOrder, setReturnModalOrder] = useState(null);
   const [returnReason, setReturnReason] = useState("");
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
@@ -258,11 +257,10 @@ export default function OrdersSection() {
     };
   }, [currentUser, currentSession]);
 
-  // Sinkronisasi Filter Status dengan Database (Shopee-style tabs + Return Center)
   const filteredOrders = useMemo(() => {
     let result = orders;
 
-    if (filter !== "all") {
+    if (filter !== "all" && filter !== "return") {
       if (filter === "pending") {
         result = result.filter((o) => o.status === "pending");
       } else if (filter === "processing") {
@@ -271,9 +269,6 @@ export default function OrdersSection() {
         result = result.filter((o) => ["shipping", "shipped"].includes(o.status));
       } else if (filter === "history") {
         result = result.filter((o) => ["completed", "cancelled"].includes(o.status));
-      } else if (filter === "return") {
-        // Tab Return / Return Center
-        result = result.filter((o) => ["return_requested", "returning", "returned"].includes(o.status));
       }
     }
 
@@ -290,7 +285,6 @@ export default function OrdersSection() {
     return result;
   }, [orders, filter, searchQuery]);
 
-  // Perhitungan Angka Badge Berdasarkan Data Database
   const orderStats = useMemo(() => {
     const total = orders.length;
     const pending = orders.filter((o) => o.status === "pending").length;
@@ -597,13 +591,11 @@ export default function OrdersSection() {
     return order.hasBeenReviewed;
   };
 
-  // Handler untuk membuka modal pengajuan Return
   const openReturnModal = (order) => {
     setReturnModalOrder(order);
     setReturnReason("");
   };
 
-  // Handler untuk mengirim permintaan return pesanan
   const handleReturnSubmit = async (e) => {
     e.preventDefault();
     if (!returnModalOrder || !currentUser || isSubmittingReturn) return;
@@ -699,126 +691,130 @@ export default function OrdersSection() {
         </div>
       </div>
 
+      {/* Tampilan Kondisional: Jika tab "return" diklik, tampilkan ReturnsCenter */}
+      {filter === "return" ? (
+        <ReturnsCenter />
+      ) : (
+        /* Orders List Container */
+        <div className={styles.ordersListContainer}>
+          {loading ? (
+            <OrdersSkeleton count={3} />
+          ) : filteredOrders.length === 0 ? (
+            <div className={`card ${styles.centerStateCard}`}>
+              <AppIcon
+                name="package"
+                size={36}
+                strokeWidth={1.5}
+                style={{ color: "#71717a", marginBottom: "0.5rem" }}
+              />
+              <p className={styles.emptyText}>{ordersConfig.emptyText}</p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => {
+              const isFinished = order.status === "completed";
+              const isPending = order.status === "pending";
+              const isDelivered = ["shipping", "shipped", "delivered", "completed"].includes(order.status);
+              const canReturn = ["shipping", "shipped", "delivered", "completed"].includes(order.status) && !["return_requested", "returning", "returned"].includes(order.status);
+              const statusInfo = getStatusInfo(order.status);
+              const reviewableItems =
+                order.items && order.items.length > 0
+                  ? order.items
+                  : [{ id: order.id, name: order.name }];
 
-      {/* Orders List Container */}
-      <div className={styles.ordersListContainer}>
-        {loading ? (
-          <OrdersSkeleton count={3} />
-        ) : filteredOrders.length === 0 ? (
-          <div className={`card ${styles.centerStateCard}`}>
-            <AppIcon
-              name="package"
-              size={36}
-              strokeWidth={1.5}
-              style={{ color: "#71717a", marginBottom: "0.5rem" }}
-            />
-            <p className={styles.emptyText}>{ordersConfig.emptyText}</p>
-          </div>
-        ) : (
-          filteredOrders.map((order) => {
-            const isFinished = order.status === "completed";
-            const isPending = order.status === "pending";
-            const isDelivered = ["shipping", "shipped", "delivered", "completed"].includes(order.status);
-            const canReturn = ["shipping", "shipped", "delivered", "completed"].includes(order.status) && !["return_requested", "returning", "returned"].includes(order.status);
-            const statusInfo = getStatusInfo(order.status);
-            const reviewableItems =
-              order.items && order.items.length > 0
-                ? order.items
-                : [{ id: order.id, name: order.name }];
-
-            return (
-              <div key={order.id} className={`card ${styles.orderCard}`}>
-                <div className={styles.orderInfoCol}>
-                  <div className={styles.orderIdRow}>
-                    <span className={styles.orderIdText}>{order.id}</span>
-                    <span
-                      className={`${styles.statusBadge} ${styles[statusInfo.badgeClass]}`}
-                    >
-                      {statusInfo.label}
-                    </span>
-                  </div>
-                  <h4 className={styles.orderName}>{order.name}</h4>
-                  <p className={styles.orderSpec}>
-                    Spesifikasi: {order.concentration}
-                  </p>
-                  <p className={styles.orderNotes}>Catatan: {order.notes}</p>
-                  <p className={styles.orderDate}>Tanggal: {order.date}</p>
-
-                  {isFinished && (
-                    <div className={styles.perItemReviewRow}>
-                      {reviewableItems.map((item, idx) => {
-                        const reviewed = isItemReviewed(order, item);
-                        return (
-                          <button
-                            key={idx}
-                            onClick={() =>
-                              !reviewed && openReviewModal(order, item)
-                            }
-                            disabled={reviewed}
-                            className={
-                              reviewed
-                                ? styles.reviewBtnDisabled
-                                : styles.reviewBtn
-                            }
-                          >
-                            {reviewed
-                              ? `✓ ${item.name} sudah diulas`
-                              : `Ulas ${item.name}`}
-                          </button>
-                        );
-                      })}
+              return (
+                <div key={order.id} className={`card ${styles.orderCard}`}>
+                  <div className={styles.orderInfoCol}>
+                    <div className={styles.orderIdRow}>
+                      <span className={styles.orderIdText}>{order.id}</span>
+                      <span
+                        className={`${styles.statusBadge} ${styles[statusInfo.badgeClass]}`}
+                      >
+                        {statusInfo.label}
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <h4 className={styles.orderName}>{order.name}</h4>
+                    <p className={styles.orderSpec}>
+                      Spesifikasi: {order.concentration}
+                    </p>
+                    <p className={styles.orderNotes}>Catatan: {order.notes}</p>
+                    <p className={styles.orderDate}>Tanggal: {order.date}</p>
 
-                <div className={styles.orderActionCol}>
-                  <span className={styles.orderPrice}>{order.price}</span>
-                  <div className={styles.buttonGroup}>
-                    <button
-                      onClick={() => handleOpenOrderDetail(order)}
-                      className={styles.detailBtn}
-                    >
-                      {ordersConfig.buttons.details}
-                    </button>
-                    {isPending && (
-                      <button
-                        onClick={() => handleCancelOrder(order)}
-                        disabled={isCancelling}
-                        className={styles.cancelBtn}
-                      >
-                        Batalkan
-                      </button>
+                    {isFinished && (
+                      <div className={styles.perItemReviewRow}>
+                        {reviewableItems.map((item, idx) => {
+                          const reviewed = isItemReviewed(order, item);
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() =>
+                                !reviewed && openReviewModal(order, item)
+                              }
+                              disabled={reviewed}
+                              className={
+                                reviewed
+                                  ? styles.reviewBtnDisabled
+                                  : styles.reviewBtn
+                              }
+                            >
+                              {reviewed
+                                ? `✓ ${item.name} sudah diulas`
+                                : `Ulas ${item.name}`}
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
-                    {isDelivered && !isFinished && (
+                  </div>
+
+                  <div className={styles.orderActionCol}>
+                    <span className={styles.orderPrice}>{order.price}</span>
+                    <div className={styles.buttonGroup}>
                       <button
-                        onClick={() => handleConfirmReceived(order)}
-                        disabled={isConfirming}
-                        className={styles.confirmBtn}
+                        onClick={() => handleOpenOrderDetail(order)}
+                        className={styles.detailBtn}
                       >
-                        {isConfirming ? "Memproses..." : "Konfirmasi Diterima"}
+                        {ordersConfig.buttons.details}
                       </button>
-                    )}
-                    {canReturn && (
+                      {isPending && (
+                        <button
+                          onClick={() => handleCancelOrder(order)}
+                          disabled={isCancelling}
+                          className={styles.cancelBtn}
+                        >
+                          Batalkan
+                        </button>
+                      )}
+                      {isDelivered && !isFinished && (
+                        <button
+                          onClick={() => handleConfirmReceived(order)}
+                          disabled={isConfirming}
+                          className={styles.confirmBtn}
+                        >
+                          {isConfirming ? "Memproses..." : "Konfirmasi Diterima"}
+                        </button>
+                      )}
+                      {canReturn && (
+                        <button
+                          onClick={() => openReturnModal(order)}
+                          className={styles.returnBtn}
+                        >
+                          Ajukan Return
+                        </button>
+                      )}
                       <button
-                        onClick={() => openReturnModal(order)}
-                        className={styles.returnBtn}
+                        onClick={() => handleReOrder(order)}
+                        className={styles.reorderBtn}
                       >
-                        Ajukan Return
+                        {ordersConfig.buttons.reorder}
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleReOrder(order)}
-                      className={styles.reorderBtn}
-                    >
-                      {ordersConfig.buttons.reorder}
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {/* --- MODAL ULASAN PRODUK --- */}
       {reviewModalOrder && reviewTargetItem && (
