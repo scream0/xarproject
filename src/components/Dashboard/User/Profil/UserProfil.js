@@ -9,6 +9,7 @@ import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
 import WishlistSection from "@/components/Dashboard/User/Wishlist/WishlistSection";
 import SupportCenter from "@/components/Dashboard/User/Support/SupportCenter";
+import UserSettings from "@/components/Dashboard/User/Settings/UserSettings";
 
 export default function ProfileSection() {
   const [loading, setLoading] = useState(false);
@@ -18,8 +19,11 @@ export default function ProfileSection() {
   const [isPasswordChanging, setIsPasswordChanging] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   
+  // State untuk kontrol tab tampilan ("profile" | "settings" | "wishlist" | "support")
+  const [activeTab, setActiveTab] = useState("profile");
+
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isManageAddressModalOpen, setIsManageAddressModalOpen] = useState(false); // Modal khusus list alamat
+  const [isManageAddressModalOpen, setIsManageAddressModalOpen] = useState(false);
 
   // Data Profil Utama
   const [profile, setProfile] = useState({
@@ -38,8 +42,6 @@ export default function ProfileSection() {
   const [addresses, setAddresses] = useState([]);
 
   // State Modals
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); 
-  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);   
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({});
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -403,7 +405,6 @@ export default function ProfileSection() {
         label: currentAddress.label || "Rumah",
       };
 
-      // Validasi batas maksimal 3 alamat jika sedang membuat alamat baru
       const isEditing = addresses.some((a) => a.id === newAddressItem.id);
       if (!isEditing && updatedAddresses.length >= 3) {
         toast.dismiss(toastId);
@@ -483,138 +484,113 @@ export default function ProfileSection() {
 
   return (
     <div className={styles.workspaceInner}>
-      {/* Navbar Atas Melayang */}
+      {/* Navbar Atas Melayang (Support, Wishlist, Settings) */}
       <div className={styles.shopNavbar}>
         <div className={styles.navbarActions}>
           <button
             className={styles.chatIconBtnNavbar}
-            onClick={() => setIsSupportModalOpen(true)}
+            onClick={() => setActiveTab("support")}
             aria-label="Bantuan"
             title="Pusat Bantuan"
+            style={activeTab === "support" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
           >
             <AppIcon name="help-circle" className={styles.svgIcon} />
           </button>
           <button
+            className={styles.chatIconBtnNavbar}
+            onClick={() => setActiveTab("wishlist")}
+            aria-label="Wishlist"
+            title="Wishlist Saya"
+            style={activeTab === "wishlist" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
+          >
+            <AppIcon name="heart" className={styles.svgIcon} />
+          </button>
+          <button
             className={styles.cartIconBtnNavbar}
-            onClick={() => setIsSettingsModalOpen(true)}
+            onClick={() => setActiveTab("settings")}
             aria-label="Pengaturan"
             title="Pengaturan Akun"
+            style={activeTab === "settings" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
           >
             <AppIcon name="settings" className={styles.svgIcon} />
           </button>
         </div>
       </div>
 
-      {/* Header Info: Foto dan Nama Pengguna */}
-      <div className={`card ${styles.sectionHeaderCard}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <div className={styles.avatar}>
-          {profile.photoURL ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={profile.photoURL} alt="Avatar" />
-          ) : (
-            <span>👤</span>
-          )}
+      {/* Conditional Rendering Berdasarkan Active Tab */}
+      {activeTab === "settings" ? (
+        <UserSettings
+          addresses={addresses}
+          deletingAccount={deletingAccount}
+          onBackToProfile={() => setActiveTab("profile")}
+          onOpenProfileModal={() => {
+            setTempProfile(profile);
+            setIsProfileModalOpen(true);
+          }}
+          onOpenManageAddressModal={() => setIsManageAddressModalOpen(true)}
+          onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
+          onOpenLogoutModal={() => setIsLogoutModalOpen(true)}
+          onDeleteAccount={handleDeleteAccount}
+        />
+      ) : activeTab === "wishlist" ? (
+        <div className={styles.tabContainer}>
+          <div className={styles.tabHeaderCard}>
+            <button
+              onClick={() => setActiveTab("profile")}
+              className={styles.backToProfileBtn}
+            >
+              <AppIcon name="arrow-left" size={16} />
+              <span>Kembali ke Profil</span>
+            </button>
+            <h3 className={styles.tabTitle}>
+              Wishlist Saya
+            </h3>
+          </div>
+          <WishlistSection />
         </div>
-        <div>
-          <h3 className={styles.sectionHeaderTitle} style={{ margin: 0 }}>
-            {profile.fullName || profile.username || "Pengguna"}
-          </h3>
-          <p className={styles.sectionHeaderSubtitle} style={{ margin: "4px 0 0 0" }}>
-            {profile.email || "VIP Collector"}
-          </p>
+      ) : activeTab === "support" ? (
+        <div className={styles.tabContainer}>
+          <div className={styles.tabHeaderCard}>
+            <button
+              onClick={() => setActiveTab("profile")}
+              className={styles.backToProfileBtn}
+            >
+              <AppIcon name="arrow-left" size={16} />
+              <span>Kembali ke Profil</span>
+            </button>
+            <h3 className={styles.tabTitle}>
+              Pusat Bantuan
+            </h3>
+          </div>
+          <SupportCenter onClose={() => setActiveTab("profile")} />
         </div>
-      </div>
-
-      {/* OrdersSection */}
-      <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
-        <OrdersSection />
-      </div>
-
-      {/* WishlistSection */}
-      <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
-        <WishlistSection />
-      </div>
-
-      {/* ====================================================
-         MODAL PENGATURAN UTAMA
-         ==================================================== */}
-      {isSettingsModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsSettingsModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "550px" }}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Pengaturan Akun</h3>
-              <button onClick={() => setIsSettingsModalOpen(false)} className={styles.closeModalBtn}>✕</button>
+      ) : (
+        <>
+          {/* Header Info: Foto dan Nama Pengguna */}
+          <div className={`card ${styles.sectionHeaderCard}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div className={styles.avatar}>
+              {profile.photoURL ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={profile.photoURL} alt="Avatar" />
+              ) : (
+                <span>👤</span>
+              )}
             </div>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "10px 0" }}>
-              {/* Menu 1: Edit Profil */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>Edit Informasi Profil</h4>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>Perbarui nama, username, nomor telepon & avatar.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setTempProfile(profile);
-                    setIsProfileModalOpen(true);
-                  }}
-                  className={styles.actionBtnOutline}
-                >
-                  Ubah
-                </button>
-              </div>
-
-              {/* Menu 2: Kelola Alamat (Maksimal 3 Alamat) */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>
-                    Buku Alamat Pengiriman <span style={{ fontSize: "0.75rem", color: "var(--primary-accent)", fontWeight: 600 }}>({addresses.length}/3)</span>
-                  </h4>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>Atur alamat utama dan kantor (maksimal 3 alamat).</p>
-                </div>
-                <button
-                  onClick={() => setIsManageAddressModalOpen(true)}
-                  className={styles.actionBtnPrimary}
-                >
-                  Kelola Alamat
-                </button>
-              </div>
-
-              {/* Menu 3: Ganti Password */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>Keamanan & Password</h4>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>Ganti kata sandi akun secara berkala.</p>
-                </div>
-                <button
-                  onClick={() => setIsPasswordModalOpen(true)}
-                  className={styles.actionBtnPrimary}
-                >
-                  Ganti
-                </button>
-              </div>
-
-              {/* Menu 4: Logout & Hapus Akun */}
-              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                <button
-                  onClick={() => setIsLogoutModalOpen(true)}
-                  className={styles.actionBtnDanger}
-                  style={{ flex: 1, padding: "0.75rem" }}
-                >
-                  Keluar Akun (Logout)
-                </button>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deletingAccount}
-                  className={styles.actionBtnDanger}
-                  style={{ flex: 1, padding: "0.75rem", background: "transparent", border: "1px solid var(--danger-color, #ef4444)", color: "var(--danger-color, #ef4444)" }}
-                >
-                  {deletingAccount ? "Menghapus..." : "Hapus Akun"}
-                </button>
-              </div>
+            <div>
+              <h3 className={styles.sectionHeaderTitle} style={{ margin: 0 }}>
+                {profile.fullName || profile.username || "Pengguna"}
+              </h3>
+              <p className={styles.sectionHeaderSubtitle} style={{ margin: "4px 0 0 0" }}>
+                {profile.email || "VIP Collector"}
+              </p>
             </div>
           </div>
-        </div>
+
+          {/* OrdersSection */}
+          <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
+            <OrdersSection />
+          </div>
+        </>
       )}
 
       {/* ====================================================
@@ -669,7 +645,6 @@ export default function ProfileSection() {
                 ))
               )}
 
-              {/* Tombol Tambah Alamat (Disabled jika sudah 3) */}
               {addresses.length < 3 ? (
                 <button
                   onClick={() => {
@@ -754,17 +729,6 @@ export default function ProfileSection() {
                 {loggingOut ? "Keluar..." : "Ya, Keluar"}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-         MODAL BANTUAN / SUPPORT CENTER
-         ==================================================== */}
-      {isSupportModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsSupportModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px", padding: "0", background: "transparent", border: "none" }}>
-            <SupportCenter onClose={() => setIsSupportModalOpen(false)} />
           </div>
         </div>
       )}

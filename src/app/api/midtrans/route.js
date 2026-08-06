@@ -3,7 +3,6 @@ import midtransClient from "midtrans-client";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { v4 as uuidv4 } from 'uuid';
 
-
 // Initialize Midtrans Snap Client
 const snap = new midtransClient.Snap({
   isProduction: process.env.MIDTRANS_IS_PRODUCTION === "true",
@@ -13,7 +12,6 @@ const snap = new midtransClient.Snap({
 
 /**
  * Creates an order record in Supabase, including associated order items.
- * This function replaces the original `createOrderRecord` from `orderService`.
  */
 async function createOrderInSupabase(orderDetails) {
   const {
@@ -29,7 +27,8 @@ async function createOrderInSupabase(orderDetails) {
     customerPhone,
     status,
     paymentType,
-    discountAmount
+    discountAmount,
+    appliedVoucherId
   } = orderDetails;
 
   // 1. Prepare the main order payload
@@ -40,7 +39,7 @@ async function createOrderInSupabase(orderDetails) {
     amount: amount,
     shipping_cost: shippingCost || 0,
     discount_amount: discountAmount || 0,
-    tax_amount: 0, // Assuming no tax for now, adjust if needed
+    tax_amount: 0,
     payment_type: paymentType,
     customer_name: customerName,
     customer_email: customerEmail,
@@ -71,7 +70,7 @@ async function createOrderInSupabase(orderDetails) {
   if (items && items.length > 0) {
     const orderItemsPayload = items.map((item) => ({
       order_id: orderId,
-      product_id: item.productId || item.id, // Assuming item.id or item.productId holds the UUID
+      product_id: item.productId || item.id,
       product_name: item.name,
       variant_name: item.size || item.variant_name,
       quantity: item.quantity,
@@ -84,9 +83,24 @@ async function createOrderInSupabase(orderDetails) {
 
     if (itemsError) {
       console.error("Supabase error creating order items:", itemsError.message);
-      // Attempt to roll back the order creation for consistency
       await supabaseAdmin.from("orders").delete().eq("id", orderId);
       throw new Error(`Failed to create order items: ${itemsError.message}`);
+    }
+  }
+
+  // 4. Jika ada voucher yang dipakai, catat ke tabel voucher_usage
+  if (appliedVoucherId && userId && userId !== "guest") {
+    const { error: usageError } = await supabaseAdmin
+      .from("voucher_usage")
+      .insert({
+        user_id: userId,
+        voucher_id: appliedVoucherId,
+        order_id: orderId,
+      });
+
+    if (usageError) {
+      console.error("Gagal mencatat voucher usage:", usageError.message);
+      // Tidak perlu menggagalkan order, cukup log errornya
     }
   }
 }
@@ -101,10 +115,10 @@ export async function POST(request) {
       shippingAddress,
       shippingCost,
       shippingDetail,
-      discountAmount,
+      appliedVoucherId, // ID Voucher dari client
+      voucherDiscount: clientVoucherDiscount = 0, // Nominal diskon dari client
     } = body;
 
-    // Use provided orderId or generate a new one
     const orderId = body.orderId || uuidv4();
 
     if (!orderId || !amount) {
@@ -114,14 +128,47 @@ export async function POST(request) {
       );
     }
 
+    // ── VALIDASI VOUCHER DI SERVER (Security Check) ──
+    let verifiedVoucherDiscount = 0;
+    let validVoucherId = null;
+    let actualShippingCost = Number(shippingCost) || 0;
+
+    if (appliedVoucherId) {
+      // Ambil data asli dari database berdasarkan ID Voucher
+      const { data: dbVoucher, error: vErr } = await supabaseAdmin
+        .from("vouchers")
+        .select("*")
+        .eq("id", appliedVoucherId)
+        .eq("is_active", true)
+        .single();
+
+      if (!vErr && dbVoucher) {
+        // Hitung subtotal produk mentah terlebih dahulu untuk validasi
+        const rawSubtotal = (items || []).reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+
+        // Cek syarat minimum belanja
+        if (rawSubtotal >= Number(dbVoucher.min_purchase)) {
+          validVoucherId = dbVoucher.id;
+
+          if (dbVoucher.type === 'shipping') {
+            // Jika tipe gratis ongkir, diskon dihitung maksimal sebesar ongkir asli
+            verifiedVoucherDiscount = Math.min(actualShippingCost, Number(dbVoucher.discount_amount || 0));
+            actualShippingCost = Math.max(0, actualShippingCost - verifiedVoucherDiscount);
+          } else if (dbVoucher.type === 'percentage') {
+            verifiedVoucherDiscount = (rawSubtotal * Number(dbVoucher.discount_amount || 0)) / 100;
+          } else {
+            verifiedVoucherDiscount = Number(dbVoucher.discount_amount || 0);
+          }
+        }
+      }
+    }
+
     let customerName = "Customer XAR Store";
     let customerEmail = "customer@xarstore.com";
     let customerPhone = "08123456789";
 
-    // Fetch user details from Supabase auth if userId is provided
     if (userId) {
       try {
-        // Diperbarui dari auth.api.getUserById ke auth.admin.getUserById modern
         const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
         if (error) throw error;
         const user = data?.user;
@@ -134,45 +181,45 @@ export async function POST(request) {
       }
     }
 
-    // Determine customer name from shipping details if available
     if (shippingAddress?.recipientName) {
         customerName = shippingAddress.recipientName;
     }
 
-
     // Format item details for Midtrans
     const formattedItems = (items || []).map((item) => ({
-        id: String(item.productId || item.id).substring(0, 50),
-        price: Math.round(Number(item.price) || 0),
-        quantity: Math.max(1, Number(item.quantity) || 1),
-        name: `${item.name} (${item.size || "Standard"})`.substring(0, 50),
-      }));
+      id: String(item.productId || item.id).substring(0, 50),
+      price: Math.round(Number(item.price) || 0),
+      quantity: Math.max(1, Number(item.quantity) || 1),
+      name: `${item.name} (${item.size || "Standard"})`.substring(0, 50),
+    }));
 
-    if (discountAmount > 0) {
+    // Masukkan baris diskon voucher jika ada
+    if (verifiedVoucherDiscount > 0) {
       formattedItems.push({
-        id: "PROMO-DISCOUNT",
-        price: -Math.round(discountAmount),
+        id: "VOUCHER-DISCOUNT",
+        price: -Math.round(verifiedVoucherDiscount),
         quantity: 1,
-        name: "Diskon Promo",
+        name: "Diskon Voucher / Gratis Ongkir",
       });
     }
 
-    if (shippingCost > 0) {
+    // Masukkan baris ongkos kirim setelah dipotong (jika ada)
+    if (actualShippingCost > 0) {
       formattedItems.push({
         id: "SHIPPING-COST",
-        price: Math.round(shippingCost),
+        price: Math.round(actualShippingCost),
         quantity: 1,
         name: "Ongkos Kirim",
       });
     }
 
-    // Ensure gross_amount matches the sum of item_details
+    // Hitung ulang total gross amount secara akurat di server
     const computedGrossAmount = formattedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: computedGrossAmount,
+        gross_amount: Math.max(1000, computedGrossAmount), // Midtrans minimal Rp 1.000
       },
       item_details: formattedItems,
       customer_details: {
@@ -193,21 +240,22 @@ export async function POST(request) {
     // 1. Create Midtrans Snap Token
     const transaction = await snap.createTransaction(parameter);
 
-    // 2. Save the order record to Supabase
+    // 2. Save the order record & voucher usage to Supabase
     await createOrderInSupabase({
       userId: userId || "guest",
       orderId,
       items: items || [],
       shippingAddress: shippingAddress || null,
       shippingDetail: shippingDetail || null,
-      shippingCost: shippingCost || 0,
-      discountAmount: discountAmount || 0,
-      amount: computedGrossAmount,
+      shippingCost: actualShippingCost,
+      discountAmount: verifiedVoucherDiscount,
+      amount: Math.max(1000, computedGrossAmount),
       customerName,
       customerEmail,
       customerPhone,
       status: "pending",
       paymentType: "Midtrans",
+      appliedVoucherId: validVoucherId,
     });
 
     return NextResponse.json({

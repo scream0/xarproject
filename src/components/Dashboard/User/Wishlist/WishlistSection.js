@@ -5,6 +5,7 @@ import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import styles from "./WishlistSection.module.css";
 import wishlistConfig from "@/data/ui/wishlistConfig.json";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
 
 function readWishlist() {
   if (typeof window === "undefined") {
@@ -120,19 +121,35 @@ export default function WishlistSection() {
         detail: { count: nextWishlist.length, items: nextWishlist },
       }),
     );
-    toast.success(wishlistConfig.toasts.removeSuccess);
+    toast.success(wishlistConfig.toasts.removeSuccess || "Produk dihapus dari wishlist");
+  };
+
+  const handleClearAll = () => {
+    if (!window.confirm("Apakah Anda yakin ingin mengosongkan seluruh wishlist?")) return;
+    setWishlist([]);
+    window.dispatchEvent(
+      new CustomEvent("wishlist-updated", {
+        detail: { count: 0, items: [] },
+      }),
+    );
+    toast.success("Wishlist berhasil dikosongkan");
   };
 
   const handleAddToCart = (product, e) => {
     e.stopPropagation();
     const status = getStockStatus(product);
     if (status === "outOfStock") {
-      toast.error(wishlistConfig.stock.outOfStock);
+      toast.error(wishlistConfig.stock.outOfStock || "Produk habis");
       return;
     }
     const variant = getFirstAvailableVariant(product);
     addToCart(product, variant, 1);
-    toast.success(wishlistConfig.toasts.addedSuccess);
+    toast.success(wishlistConfig.toasts.addedSuccess || "Berhasil ditambahkan ke keranjang");
+  };
+
+  const handleCardClick = (product) => {
+    const pId = product.id || product._id;
+    router.push(`/product/${pId}`);
   };
 
   const handleExplore = () => {
@@ -161,25 +178,36 @@ export default function WishlistSection() {
             </p>
           </div>
           <div className={styles.headerActions}>
-            <input
-              type="text"
-              placeholder={wishlistConfig.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={styles.searchInput}
-            />
+            <div className={styles.searchWrapper}>
+              <AppIcon name="search" size={16} className={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder={wishlistConfig.searchPlaceholder || "Cari koleksi parfum..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={styles.searchInput}
+              />
+            </div>
+            {wishlistProducts.length > 0 && (
+              <button onClick={handleClearAll} className={styles.clearAllBtn} title="Kosongkan Wishlist">
+                <AppIcon name="trash" size={15} />
+                <span>Kosongkan</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Product Grid */}
+      {/* Product Grid / Empty State */}
       {filteredProducts.length === 0 ? (
         <div className={`card ${styles.centerStateCard}`}>
-          <div className={styles.emptyIcon}>❤️</div>
-          <p className={styles.emptyTitle}>{wishlistConfig.emptyTitle}</p>
-          <p className={styles.emptyText}>{wishlistConfig.emptyText}</p>
+          <div className={styles.emptyIconWrapper}>
+            <AppIcon name="heart" size={36} className={styles.emptySvg} />
+          </div>
+          <h4 className={styles.emptyTitle}>{wishlistConfig.emptyTitle || "Wishlist Anda Masih Kosong"}</h4>
+          <p className={styles.emptyText}>{wishlistConfig.emptyText || "Simpan aroma parfum favorit Anda ke sini untuk memudahkan akses pembelian di kemudian hari."}</p>
           <button onClick={handleExplore} className={styles.exploreBtn}>
-            {wishlistConfig.buttons.explore}
+            {wishlistConfig.buttons.explore || "Jelajahi Koleksi"}
           </button>
         </div>
       ) : (
@@ -196,12 +224,14 @@ export default function WishlistSection() {
             return (
               <div
                 key={pId}
+                onClick={() => handleCardClick(product)}
                 className={`${styles.productCard} ${
                   stockStatus === "outOfStock" ? styles.outOfStock : ""
                 }`}
               >
                 <div className={styles.productImageWrapper}>
                   {product.image_url || product.imageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={product.image_url || product.imageUrl}
                       alt={product.name}
@@ -209,22 +239,23 @@ export default function WishlistSection() {
                     />
                   ) : (
                     <div className={styles.productPlaceholder}>
-                      No Image
+                      <span>No Image</span>
                     </div>
                   )}
                   <span className={styles.categoryBadge}>
-                    {product.category || "Parfum"}
+                    {product.category || "Extrait de Parfum"}
                   </span>
                   <button
                     className={styles.removeBtn}
                     onClick={(e) => handleRemove(pId, e)}
-                    aria-label={wishlistConfig.buttons.remove}
+                    aria-label={wishlistConfig.buttons.remove || "Hapus"}
+                    title="Hapus dari wishlist"
                   >
-                    ✕
+                    <AppIcon name="x" size={14} />
                   </button>
                   {stockStatus === "outOfStock" && (
                     <span className={styles.outOfStockBadge}>
-                      {wishlistConfig.stock.outOfStock}
+                      {wishlistConfig.stock.outOfStock || "Habis"}
                     </span>
                   )}
                 </div>
@@ -241,11 +272,11 @@ export default function WishlistSection() {
                       }`}
                     >
                       {stockStatus === "available" &&
-                        wishlistConfig.stock.available}
+                        (wishlistConfig.stock.available || "Tersedia")}
                       {stockStatus === "lowStock" &&
-                        wishlistConfig.stock.lowStock}
+                        (wishlistConfig.stock.lowStock || "Stok Terbatas")}
                       {stockStatus === "outOfStock" &&
-                        wishlistConfig.stock.outOfStock}
+                        (wishlistConfig.stock.outOfStock || "Habis")}
                     </span>
                   </div>
                   <button
@@ -253,7 +284,8 @@ export default function WishlistSection() {
                     onClick={(e) => handleAddToCart(product, e)}
                     disabled={stockStatus === "outOfStock"}
                   >
-                    {wishlistConfig.buttons.addToCart}
+                    <AppIcon name="shopping-bag" size={15} />
+                    <span>{wishlistConfig.buttons.addToCart || "+ Keranjang"}</span>
                   </button>
                 </div>
               </div>
@@ -264,4 +296,3 @@ export default function WishlistSection() {
     </div>
   );
 }
-

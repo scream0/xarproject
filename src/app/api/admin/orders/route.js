@@ -26,7 +26,7 @@ async function verifyAdmin(request) {
     throw new Error("Unauthorized: Invalid token");
   }
 
-  // Periksa role admin dari tabel "profiles"
+  // Periksa role admin dari tabel "profiles" menggunakan .eq("id", user.id).single()
   const { data: adminUser, error: dbError } = await supabaseAdmin
     .from("profiles")
     .select("role")

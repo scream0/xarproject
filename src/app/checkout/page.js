@@ -80,7 +80,6 @@ export default function CheckoutPage() {
   const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user || null;
       setCurrentUser(user);
@@ -146,13 +145,11 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!showAddressModal) return;
-
     const handleKeyDown = (event) => {
       if (event.key === "Escape" && !savingAddress) {
         setShowAddressModal(false);
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showAddressModal, savingAddress]);
@@ -165,9 +162,14 @@ export default function CheckoutPage() {
   const [shippingMeta, setShippingMeta] = useState({ kind: "", message: "" });
   const selectedCourierKeyRef = useRef(null);
 
-  // ── Promo ──
+  // ── Promo & Vouchers ──
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
+
+  // State Voucher Database
+  const [voucherInput, setVoucherInput] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [voucherLoading, setVoucherLoading] = useState(false);
 
   // ── Fetch user addresses ──
   useEffect(() => {
@@ -199,7 +201,6 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!addresses.length) return;
-
     const existingSelection = addresses.find((addr) => addr.id === selectedAddressId);
     if (existingSelection) return;
 
@@ -452,13 +453,65 @@ export default function CheckoutPage() {
     return () => window.clearTimeout(timer);
   }, [fetchCourierCosts]);
 
-  // ── Handle courier selection ──
   const handleSelectCourier = (key, cost) => {
     setSelectedCourierKey(key);
     setShippingCost(cost);
   };
 
-  // ── Apply promo ──
+  // ── Handle Database Voucher / Gratis Ongkir ──
+  const subtotal = activePromo ? discountedCartTotal : cartTotal;
+
+  const handleApplyVoucher = async () => {
+    if (!voucherInput.trim()) {
+      toast.error("Masukkan kode voucher terlebih dahulu");
+      return;
+    }
+
+    setVoucherLoading(true);
+    try {
+      const res = await fetch("/api/vouchers/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: voucherInput.trim(),
+          cartTotal: subtotal,
+          userId: currentUser?.id,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || "Voucher tidak valid");
+
+      setAppliedVoucher(data.voucher);
+      toast.success(data.message || "Voucher berhasil diterapkan!");
+    } catch (err) {
+      toast.error(err.message || "Gagal menerapkan voucher");
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherInput("");
+    toast.success("Voucher dibatalkan");
+  };
+
+  // Hitung besaran potongan diskon voucher dari database
+  const voucherDiscount = useMemo(() => {
+    if (!appliedVoucher) return 0;
+    if (appliedVoucher.type === 'shipping') {
+      // Potongan khusus ongkir, dibatasi maksimal sebesar shippingCost asli
+      return Math.min(shippingCost, Number(appliedVoucher.discount_amount || 0));
+    } else if (appliedVoucher.type === 'percentage') {
+      return (subtotal * Number(appliedVoucher.discount_amount || 0)) / 100;
+    } else {
+      // tipe fixed / nominal biasa
+      return Number(appliedVoucher.discount_amount || 0);
+    }
+  }, [appliedVoucher, shippingCost, subtotal]);
+
+  // ── Apply promo (legacy) ──
   const handleApplyPromo = () => {
     if (!promoCode.trim()) {
       toast.error("Masukkan kode promo");
@@ -490,6 +543,7 @@ export default function CheckoutPage() {
 
     const selectedCourierInfo = courierOptions.find((c) => c.key === selectedCourierKey);
 
+    // Simpan data pengiriman & voucher terpilih ke localStorage untuk diproses backend pembayaran
     localStorage.setItem(
       "checkout_shipping",
       JSON.stringify({
@@ -500,15 +554,25 @@ export default function CheckoutPage() {
         courierService: selectedCourierInfo?.service || "",
         courierEtd: selectedCourierInfo?.etd || "",
         shippingCost,
+        appliedVoucherId: appliedVoucher?.id || null,
+        voucherDiscount,
       }),
     );
 
     await processPayment();
   };
 
-  // ── Total ──
-  const subtotal = activePromo ? discountedCartTotal : cartTotal;
-  const grandTotal = subtotal + shippingCost;
+  // ── Final Grand Total calculation ──
+  // Jika voucher bertipe 'shipping', ongkir dipotong langsung. Jika tipe lain, dipotong dari subtotal.
+  const finalShippingCost = appliedVoucher?.type === 'shipping' 
+    ? Math.max(0, shippingCost - voucherDiscount) 
+    : shippingCost;
+
+  const finalSubtotalDiscount = appliedVoucher?.type !== 'shipping' 
+    ? voucherDiscount 
+    : 0;
+
+  const grandTotal = Math.max(0, subtotal - finalSubtotalDiscount) + finalShippingCost;
 
   // ── Derive selected courier info ──
   const selectedCourierInfo = useMemo(
@@ -694,35 +758,35 @@ export default function CheckoutPage() {
                           }`}
                           onClick={() => handleSelectCourier(option.key, option.cost)}
                         >
-                        <input
-                          type="radio"
-                          className={styles.courierRadio}
-                          checked={selectedCourierKey === option.key}
-                          onChange={() => handleSelectCourier(option.key, option.cost)}
-                        />
-                        <div className={styles.courierInfo}>
-                          <div className={styles.courierHeaderRow}>
-                            <p className={styles.courierName}>
-                              {option.courierName.toUpperCase()} — {option.service}
-                            </p>
-                            <div className={styles.courierBadgeRow}>
-                              {option.estimated && (
-                                <span className={styles.courierBadge}>Estimasi</span>
-                              )}
+                          <input
+                            type="radio"
+                            className={styles.courierRadio}
+                            checked={selectedCourierKey === option.key}
+                            onChange={() => handleSelectCourier(option.key, option.cost)}
+                          />
+                          <div className={styles.courierInfo}>
+                            <div className={styles.courierHeaderRow}>
+                              <p className={styles.courierName}>
+                                {option.courierName.toUpperCase()} — {option.service}
+                              </p>
+                              <div className={styles.courierBadgeRow}>
+                                {option.estimated && (
+                                  <span className={styles.courierBadge}>Estimasi</span>
+                                )}
+                              </div>
                             </div>
+                            <p className={styles.courierService}>{option.description}</p>
+                            {option.etd && option.etd !== "-" && (
+                              <p className={styles.courierEtd}>Estimasi tiba: {option.etd} hari</p>
+                            )}
                           </div>
-                          <p className={styles.courierService}>{option.description}</p>
-                          {option.etd && option.etd !== "-" && (
-                            <p className={styles.courierEtd}>Estimasi tiba: {option.etd} hari</p>
-                          )}
+                          <div className={styles.courierPriceBox}>
+                            <span className={styles.courierCost}>{rupiah(option.cost)}</span>
+                            <span className={styles.courierPriceHint}>termasuk biaya paket</span>
+                          </div>
                         </div>
-                        <div className={styles.courierPriceBox}>
-                          <span className={styles.courierCost}>{rupiah(option.cost)}</span>
-                          <span className={styles.courierPriceHint}>termasuk biaya paket</span>
-                        </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -730,22 +794,22 @@ export default function CheckoutPage() {
             )}
           </section>
 
-          {/* ====== 3. KODE PROMO ====== */}
+          {/* ====== 3. VOUCHER & GRATIS ONGKIR (DATABASE) ====== */}
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sectionStep}>3</span>
-                Kode Promo
+                Voucher & Promo
               </h2>
             </div>
 
-            {promoApplied ? (
+            {appliedVoucher ? (
               <div className={styles.promoApplied}>
                 <span>
-                  ✅ Kode <strong>{promoCode.toUpperCase()}</strong> diterapkan
-                  {promoSavings > 0 && ` — Hemat ${rupiah(promoSavings)}`}
+                  🎉 Voucher <strong>{appliedVoucher.code}</strong> ({appliedVoucher.title}) diterapkan
+                  {voucherDiscount > 0 && ` — Hemat ${rupiah(voucherDiscount)}`}
                 </span>
-                <button className={styles.promoRemoveBtn} onClick={handleRemovePromo}>
+                <button className={styles.promoRemoveBtn} onClick={handleRemoveVoucher}>
                   Hapus
                 </button>
               </div>
@@ -754,13 +818,17 @@ export default function CheckoutPage() {
                 <input
                   type="text"
                   className={styles.promoInput}
-                  placeholder="Masukkan kode promo"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
+                  placeholder="Masukkan kode voucher / gratis ongkir"
+                  value={voucherInput}
+                  onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && handleApplyVoucher()}
                 />
-                <button className={styles.promoApplyBtn} onClick={handleApplyPromo}>
-                  Pakai
+                <button 
+                  className={styles.promoApplyBtn} 
+                  onClick={handleApplyVoucher}
+                  disabled={voucherLoading}
+                >
+                  {voucherLoading ? "Memeriksa..." : "Gunakan"}
                 </button>
               </div>
             )}
@@ -805,17 +873,28 @@ export default function CheckoutPage() {
             <span>{rupiah(subtotal)}</span>
           </div>
 
-          {activePromo && promoSavings > 0 && (
+          {appliedVoucher && voucherDiscount > 0 && (
             <div className={`${styles.summaryLine} ${styles.summaryLineDiscount}`}>
-              <span>Diskon Promo</span>
-              <span>-{rupiah(promoSavings)}</span>
+              <span>Diskon {appliedVoucher.type === 'shipping' ? 'Gratis Ongkir' : 'Voucher'}</span>
+              <span>-{rupiah(voucherDiscount)}</span>
             </div>
           )}
 
           <div className={styles.summaryLine}>
             <span>Ongkos Kirim</span>
             <span className={styles.summaryLineShipping}>
-              {selectedCourierInfo ? rupiah(shippingCost) : "—"}
+              {selectedCourierInfo ? (
+                appliedVoucher?.type === 'shipping' && voucherDiscount > 0 ? (
+                  <span>
+                    <span style={{ textDecoration: "line-through", color: "var(--text-secondary)", marginRight: "6px" }}>
+                      {rupiah(shippingCost)}
+                    </span>
+                    {rupiah(finalShippingCost)}
+                  </span>
+                ) : (
+                  rupiah(shippingCost)
+                )
+              ) : "—"}
             </span>
           </div>
 
@@ -850,95 +929,95 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-        {showAddressModal && (
-            <div className={styles.modalOverlay} onClick={() => setShowAddressModal(false)}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-                <div className={styles.modalHeader}>
-                  <div>
-                    <h2 className={styles.modalTitle}>Tambah Alamat Baru</h2>
-                    <p className={styles.modalSubtitle}>Data yang lengkap membuat pengiriman lebih cepat dan akurat.</p>
-                  </div>
-                  <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>&times;</button>
-                </div>
-                <div className={styles.modalHint}>
-                  <div className={styles.modalHintIcon}>i</div>
-                  <div>
-                    <strong>Tips:</strong> Kode pos membantu sistem mengenali wilayah pengiriman lebih cepat.
-                  </div>
-                </div>
-                <form onSubmit={handleSaveAddress}>
-                <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Label Alamat</label>
-                    <input
-                    type="text"
-                    className={styles.formInput}
-                    value={addressForm.label}
-                    onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
-                    />
-                </div>
-                <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Nama Penerima</label>
-                    <input
-                    type="text"
-                    className={styles.formInput}
-                    value={addressForm.recipientName}
-                    onChange={(e) => setAddressForm({ ...addressForm, recipientName: e.target.value })}
-                    required
-                    />
-                </div>
-                <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Nomor Telepon</label>
-                    <input
-                    type="tel"
-                    className={styles.formInput}
-                    value={addressForm.recipientPhone}
-                    onChange={(e) => setAddressForm({ ...addressForm, recipientPhone: e.target.value })}
-                    required
-                    />
-                </div>
-                <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Provinsi & Kota</label>
-                    <ProvinceCitySelect
-                    value={{
-                        province: addressForm.province,
-                        city: addressForm.city,
-                        cityId: addressForm.cityId,
-                        cityType: addressForm.cityType,
-                    }}
-                    postalCode={addressForm.postalCode}
-                    onChange={(value) => setAddressForm({ ...addressForm, ...value })}
-                    />
-                </div>
-                <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Alamat Lengkap</label>
-                    <textarea
-                    className={styles.formTextarea}
-                    value={addressForm.street}
-                    onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
-                    required
-                    ></textarea>
-                </div>
-                <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Kode Pos</label>
-                    <input
-                    type="text"
-                    className={styles.formInput}
-                    value={addressForm.postalCode}
-                    onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
-                    />
-                </div>
-                <div className={styles.modalFooter}>
-                    <button type="button" className={styles.modalBtnCancel} onClick={() => setShowAddressModal(false)} disabled={savingAddress}>
-                    Batal
-                    </button>
-                    <button type="submit" className={styles.modalBtnSave} disabled={savingAddress}>
-                    {savingAddress ? "Menyimpan..." : "Simpan Alamat"}
-                    </button>
-                </div>
-                </form>
+      {showAddressModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowAddressModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 className={styles.modalTitle}>Tambah Alamat Baru</h2>
+                <p className={styles.modalSubtitle}>Data yang lengkap membuat pengiriman lebih cepat dan akurat.</p>
+              </div>
+              <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>&times;</button>
             </div>
+            <div className={styles.modalHint}>
+              <div className={styles.modalHintIcon}>i</div>
+              <div>
+                <strong>Tips:</strong> Kode pos membantu sistem mengenali wilayah pengiriman lebih cepat.
+              </div>
             </div>
-        )}
+            <form onSubmit={handleSaveAddress}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Label Alamat</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={addressForm.label}
+                  onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Nama Penerima</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={addressForm.recipientName}
+                  onChange={(e) => setAddressForm({ ...addressForm, recipientName: e.target.value })}
+                  required
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Nomor Telepon</label>
+                <input
+                  type="tel"
+                  className={styles.formInput}
+                  value={addressForm.recipientPhone}
+                  onChange={(e) => setAddressForm({ ...addressForm, recipientPhone: e.target.value })}
+                  required
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Provinsi & Kota</label>
+                <ProvinceCitySelect
+                  value={{
+                    province: addressForm.province,
+                    city: addressForm.city,
+                    cityId: addressForm.cityId,
+                    cityType: addressForm.cityType,
+                  }}
+                  postalCode={addressForm.postalCode}
+                  onChange={(value) => setAddressForm({ ...addressForm, ...value })}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Alamat Lengkap</label>
+                <textarea
+                  className={styles.formTextarea}
+                  value={addressForm.street}
+                  onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                  required
+                ></textarea>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Kode Pos</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={addressForm.postalCode}
+                  onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                />
+              </div>
+              <div className={styles.modalFooter}>
+                <button type="button" className={styles.modalBtnCancel} onClick={() => setShowAddressModal(false)} disabled={savingAddress}>
+                  Batal
+                </button>
+                <button type="submit" className={styles.modalBtnSave} disabled={savingAddress}>
+                  {savingAddress ? "Menyimpan..." : "Simpan Alamat"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

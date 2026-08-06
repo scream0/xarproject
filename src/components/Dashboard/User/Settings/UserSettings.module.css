@@ -1,0 +1,398 @@
+/* ====================================================
+   USER SETTINGS PROFESSIONAL E-COMMERCE THEME
+   ==================================================== */
+.settingsContainer {
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  box-sizing: border-box;
+  animation: fadeInSettings 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInSettings {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settingsHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.25rem;
+}
+
+.headerTitleWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.backBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.backBtn:hover {
+  background: var(--surface-primary);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+.settingsTitle {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  color: var(--text-primary);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.settingsSubtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.settingsSectionsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sectionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.groupLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  margin: 0 0 2px 4px;
+}
+
+.settingsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Item Menu Kartu Profesional (Gaya List Shopee/Tokopedia) */
+.settingItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--surface-secondary);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settingItem:hover {
+  border-color: var(--primary-accent);
+  background: var(--surface-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.settingLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.iconBox {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(var(--primary-accent-rgb, 197, 160, 89), 0.1);
+  color: var(--primary-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settingInfo h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.settingInfo p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.addressCountBadge {
+  color: var(--primary-accent);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.settingRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionText {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary-accent);
+}
+
+.chevronIcon {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  font-weight: 300;
+  transition: transform 0.2s ease;
+}
+
+.settingItem:hover .chevronIcon {
+  transform: translateX(3px);
+  color: var(--primary-accent);
+}
+
+/* Zona Bahaya / Logout & Hapus Akun */
+.dangerActionsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dangerCardBtn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 14px 20px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.dangerCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--text-primary);
+}
+
+.dangerCardBtn:hover {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.05);
+  border-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  color: var(--danger-color, #ef4444);
+}
+
+.dangerCardBtn:hover .dangerCardLeft {
+  color: var(--danger-color, #ef4444);
+}
+
+.deleteCardBtn {
+  border-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.2);
+  color: var(--danger-color, #ef4444);
+}
+
+.deleteCardBtn .dangerCardLeft {
+  color: var(--danger-color, #ef4444);
+}
+
+.deleteCardBtn:hover {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+  border-color: var(--danger-color, #ef4444);
+}
+
+/* ====================================================
+   MODAL KONFIRMASI (Luxury Enterprise Style)
+   ==================================================== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  box-sizing: border-box;
+  animation: fadeInOverlay 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+  box-sizing: border-box;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  animation: scaleUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUpModal {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.deleteIconWrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.deleteContentText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.deleteContentText h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.deleteContentText p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.deleteActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.modalCancelBtn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCancelBtn:hover {
+  border-color: var(--text-secondary);
+}
+
+.modalConfirmDeleteBtn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: #ef4444;
+  border: 1px solid #ef4444;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.modalConfirmDeleteBtn:hover {
+  opacity: 0.9;
+}
+
+.modalConfirmDeleteBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .settingItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .settingRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

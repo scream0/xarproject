@@ -67,7 +67,7 @@
   display: flex;
   gap: .75rem;
   align-items: center;
-  position: relative; /* Added for dot positioning */
+  position: relative;
 }
 
 .notificationDot {
@@ -76,7 +76,7 @@
   right: 0.5rem;
   width: 0.75rem;
   height: 0.75rem;
-  background-color: var(--danger-color); /* Using danger color for visibility */
+  background-color: var(--danger-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -196,7 +196,7 @@
   color: var(--text-secondary);
 }
 
-.formGrid input {
+.formGrid input, .formGrid select {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--border-color);

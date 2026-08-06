@@ -32,6 +32,7 @@ import {
   Truck,
   Clock,
   LogOut,
+  ArrowLeft,
 } from "lucide-react";
 
 const iconMap = {
@@ -62,6 +63,7 @@ const iconMap = {
   trending: TrendingUp,
   gift: Gift,
   alert: AlertTriangle,
+  "alert-triangle": AlertTriangle,
   creditcard: CreditCard,
   "rotate-ccw": RotateCcw,
   returns: RotateCcw,
@@ -81,6 +83,8 @@ const iconMap = {
   "log-out": LogOut,
   logout: LogOut,
   exit: LogOut,
+  "arrow-left": ArrowLeft,
+  back: ArrowLeft,
 };
 
 export function AppIcon({ name, className, size, strokeWidth = 2, ...props }) {
