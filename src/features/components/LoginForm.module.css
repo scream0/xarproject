@@ -1,44 +1,518 @@
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+/* ====================================================
+   LOGIN FORM CSS (Luxury High-End & Warm Flashlight Beam)
+   ==================================================== */
+.formWrapper {
+  position: relative;
   width: 100%;
-  max-width: 400px;
-}
-
-.inputGroup {
+  max-width: 440px;
   display: flex;
   flex-direction: column;
+  margin: auto 0;
+  padding-top: 24px;
 }
 
-.inputGroup label {
-  margin-bottom: 0.5rem;
-  font-weight: 600;
+.loginContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  height: auto;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
 }
 
-.inputGroup input {
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
+.loginCard {
+  width: 100%;
+  max-width: 100%;
+  padding: 2.4rem 2rem;
+  box-sizing: border-box;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98) 0%, rgba(var(--surface-secondary-rgb), 0.8) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 36px rgba(22, 19, 17, 0.06);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.button {
-  padding: 0.75rem;
-  background-color: #0070f3;
-  color: white;
+/* Titik Jatuh Sinar Warm di Atas Kartu */
+.loginCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 183, 77, 0.22) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  z-index: 2;
+}
+
+.loginCard > * {
+  position: relative;
+  z-index: 3;
+}
+
+.loginTitle {
+  text-align: center;
+  color: var(--text-primary);
+  margin-bottom: 1.6rem;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.inputWrapper {
+  position: relative;
+  width: 100%;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inputField {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+  background-color: rgba(var(--surface-primary-rgb), 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 400;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.inputField::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.inputField:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.fieldHidden {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+  margin-bottom: 0 !important;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fieldVisible {
+  max-height: 90px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.togglePassword {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  background: none;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  padding: 0;
+  transition: color 0.3s ease;
 }
 
-.button:disabled {
-  background-color: #ccc;
+.togglePassword:hover {
+  color: var(--text-primary);
+}
+
+.togglePassword svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* --- Tombol Utama (Login / Submit / Register) --- */
+.btnLogin {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0.9rem 1.75rem;
+  min-height: 46px;
+  background-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: 1px solid var(--primary-accent);
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btnLogin:hover:not(:disabled) {
+  background-color: transparent;
+  color: var(--primary-accent);
+  border-color: var(--primary-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.2);
+}
+
+.btnLogin:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 3px 10px rgba(var(--primary-accent-rgb), 0.16);
+}
+
+/* Kilatan Cahaya Berjalan di Tombol */
+.btnLogin:not(:disabled)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  transform: skewX(-20deg);
+  animation: shineEffect 5s infinite ease-in-out;
+}
+
+@keyframes shineEffect {
+  0% {
+    left: -150%;
+  }
+  25% {
+    left: 150%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+.btnOtpRequest {
+  width: 100%;
+  padding: 0.85rem;
+  min-height: 44px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.btnOtpRequest:hover:not(:disabled) {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+.switchModeBtn {
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 1.25rem;
+  width: 100%;
+  text-align: center;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.switchModeBtn:hover {
+  color: var(--text-primary);
+}
+
+/* Loading & Spinner */
+.btnLoading {
   cursor: not-allowed;
+  opacity: 0.8;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-.button:not(:disabled):hover {
-  background-color: #0051a2;
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+.errorMessage,
+.successMessage {
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.errorMessage {
+  background-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.2);
+  color: var(--danger-color);
+}
+
+.successMessage {
+  background-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.1);
+  border: 1px solid rgba(var(--success-color-rgb, 16, 185, 129), 0.2);
+  color: var(--success-color);
+}
+
+.optionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.25rem 0 1.5rem 0;
+}
+
+.forgotPasswordLink {
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.forgotPasswordLink:hover {
+  color: var(--primary-accent);
+}
+
+/* Checkbox Label */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 1.5rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.checkboxLabel input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.customCheckmark {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  height: 14px;
+  width: 14px;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.checkboxLabel input:checked ~ .customCheckmark {
+  background-color: var(--primary-accent);
+  border-color: var(--primary-accent);
+}
+
+.customCheckmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 7px;
+  border: solid var(--primary-accent-text);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkboxLabel input:checked ~ .customCheckmark:after {
+  display: block;
+}
+
+/* Divider & Social Buttons */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.75rem 0;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.divider span {
+  padding: 0 1rem;
+}
+
+.socialWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.btnGoogle {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.btnGoogle:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  background-color: rgba(var(--primary-accent-rgb), 0.05);
+  transform: translateY(-2px);
+}
+
+/* ====================================================
+   EFEK SILUET SOROTAN SENTER WARM (Warm Flashlight Beam)
+   ==================================================== */
+.lampContainer {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.2;
+  transition: opacity 0.5s ease;
+}
+
+.lampActive {
+  opacity: 1;
+}
+
+.lampActive ~ .loginCard::before {
+  opacity: 1;
+}
+
+.lampSvg {
+  width: 32px;
+  height: 90px;
+  overflow: visible;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.lampCord {
+  stroke: var(--border-color);
+  stroke-width: 1.5;
+}
+
+/* Bohlam Warm (Pijar Kuning Keemasan) */
+.lampBulb {
+  fill: #ffe082;
+  filter: drop-shadow(0 0 4px #ffe082) drop-shadow(0 0 12px #ffb300);
+}
+
+.lampActive .lampBulb {
+  fill: #fff8e1;
+  filter: drop-shadow(0 0 6px #ffe082) drop-shadow(0 0 20px #ffb300)
+    drop-shadow(0 0 35px rgba(255, 179, 0, 0.8));
+}
+
+/* Siluet Sorotan Senter Nuansa Warm (Amber/Gold Soft) */
+.lampConeLight {
+  position: absolute;
+  top: 75px;
+  width: 140px;
+  height: 160px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 183, 77, 0.4) 0%,
+    rgba(255, 143, 0, 0.12) 50%,
+    transparent 100%
+  );
+  /* Siluet beam senter terarah */
+  clip-path: polygon(44% 0%, 56% 0%, 82% 100%, 18% 100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  mix-blend-mode: screen;
+}
+
+.lampActive .lampConeLight {
+  opacity: 1;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
