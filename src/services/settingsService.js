@@ -6,8 +6,8 @@
  * Semua komponen (landing publik maupun dashboard admin) HARUS memakai service ini
  * untuk membaca/menyimpan konfigurasi. Dengan begitu:
  *   1. Halaman landing publik memakai getPublicSettings() → TANPA token (bisa diakses siapa saja).
- *   2. Dashboard admin memakai getAdminSettings(token) → wajib bearer token admin.
- *   3. Penyimpanan memakai saveSettings(payload, token) → wajib bearer token admin.
+ *   2. Dashboard admin memakai getAdminSettings(session) → wajib bearer token admin (Supabase session).
+ *   3. Penyimpanan memakai saveSettings(payload, session) → wajib bearer token admin (Supabase session).
  *
  * Service ini juga menangani cache sederhana (untuk menghindari request berulang
  * di komponen landing yang sama) dan fallback ke config JSON default.
@@ -41,11 +41,11 @@ export async function getPublicSettings({ force = false } = {}) {
 }
 
 /**
- * GET admin settings — wajib auth admin. Memakai token ID Firebase.
- * @param {string|object} tokenOrUser - ID token atau Firebase user object
+ * GET admin settings — wajib auth admin. Memakai Supabase session (access_token).
+ * @param {string|object} tokenOrSession - access_token string atau Supabase session object
  */
-export async function getAdminSettings(tokenOrUser) {
-  const token = await resolveTokenAsync(tokenOrUser);
+export async function getAdminSettings(tokenOrSession) {
+  const token = await resolveTokenAsync(tokenOrSession);
   if (!token) throw new Error("Admin token required.");
 
   const res = await fetch("/api/settings", {
@@ -66,10 +66,10 @@ export async function getAdminSettings(tokenOrUser) {
 /**
  * PUT /api/settings — simpan pengaturan (store + landing + promo + payment).
  * @param {object} payload - object settings lengkap
- * @param {string|object} tokenOrUser - ID token atau Firebase user object
+ * @param {string|object} tokenOrSession - access_token string atau Supabase session object
  */
-export async function saveSettings(payload, tokenOrUser) {
-  const token = await resolveTokenAsync(tokenOrUser);
+export async function saveSettings(payload, tokenOrSession) {
+  const token = await resolveTokenAsync(tokenOrSession);
   if (!token) throw new Error("Admin token required.");
 
   const res = await fetch("/api/settings", {
@@ -94,11 +94,23 @@ export async function saveSettings(payload, tokenOrUser) {
 }
 
 /**
- * Helper async untuk resolve token (mendukung user object langsung).
+ * Helper async untuk resolve token dari berbagai bentuk input.
+ * Mendukung:
+ *   - string token langsung
+ *   - Supabase session object → { access_token, user, ... }
+ *   - (legacy) Firebase user object → user.getIdToken()
+ *   - (legacy) object dengan properti .token
  */
 export async function resolveTokenAsync(tokenOrUser) {
   if (!tokenOrUser) return "";
   if (typeof tokenOrUser === "string") return tokenOrUser;
+
+  // Supabase session object: { access_token, user, ... }
+  if (tokenOrUser.access_token) {
+    return tokenOrUser.access_token;
+  }
+
+  // Legacy: Firebase-style user object
   if (typeof tokenOrUser.getIdToken === "function") {
     try {
       return await tokenOrUser.getIdToken();
@@ -106,6 +118,7 @@ export async function resolveTokenAsync(tokenOrUser) {
       return "";
     }
   }
+
+  // Legacy: object dengan properti .token
   return tokenOrUser.token || "";
 }
-

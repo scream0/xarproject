@@ -16,19 +16,6 @@ async function setSessionCookie(accessToken) {
   }
 }
 
-// 2. Helper untuk sinkronisasi data user ke database via API
-async function syncUserToServer(userData) {
-  try {
-    await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
-  } catch (err) {
-    console.error("Gagal menyinkronkan user ke server:", err);
-  }
-}
-
 // ==========================================
 // EKSPOR FUNGSI AUTENTIKASI
 // ==========================================
@@ -53,12 +40,8 @@ export const loginWithEmail = async (email, password) => {
     await setSessionCookie(accessToken);
   }
 
-  await syncUserToServer({
-    uid: user.id,
-    email: user.email,
-    name: user.user_metadata?.name || "User",
-    phone: user.phone || "",
-  });
+  // Catatan: Sinkronisasi data ke tabel 'profiles' sekarang ditangani 
+  // secara otomatis oleh Supabase Database Trigger (handle_new_user)
 
   return user;
 };
@@ -72,8 +55,8 @@ export const registerWithEmail = async (name, email, password) => {
     password,
     options: {
       data: {
-        name: name,
-        role: "user",
+        full_name: name, // Disesuaikan dengan trigger database (full_name)
+        role: "customer", // Default role
       },
     },
   });
@@ -90,13 +73,7 @@ export const registerWithEmail = async (name, email, password) => {
     await setSessionCookie(accessToken);
   }
 
-  await syncUserToServer({
-    uid: user?.id,
-    email: user?.email || email,
-    name: name,
-    phone: "",
-    role: "user",
-  });
+  // Data profil akan otomatis dibuat di tabel 'profiles' oleh Database Trigger Supabase
 
   return user;
 };
@@ -163,13 +140,7 @@ export const verifyOtpAndLogin = async (phone, otpCode) => {
     await setSessionCookie(accessToken);
   }
 
-  await syncUserToServer({
-    uid: user.id,
-    email: user.email || "",
-    name: user.user_metadata?.name || "User",
-    phone: user.phone || "",
-    role: "user",
-  });
+  // Trigger database akan otomatis membuatkan profil jika user baru via OTP
 
   return user;
 };

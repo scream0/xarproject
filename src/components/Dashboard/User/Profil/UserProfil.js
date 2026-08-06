@@ -88,7 +88,8 @@ export default function ProfileSection() {
         const token = session?.access_token;
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        const res = await fetch(`/api/users?userId=${userId}`, { headers });
+        // Menggunakan endpoint /api/profile
+        const res = await fetch(`/api/profile`, { headers });
         const result = await res.json();
 
         const defaultUsername =
@@ -100,8 +101,8 @@ export default function ProfileSection() {
         
         const defaultPhoto = user.user_metadata?.avatar_url || user.user_metadata?.picture || "";
 
-        if (res.ok && result.exists && result.data) {
-          const data = result.data;
+        if (res.ok && result.success && result.profile) {
+          const data = result.profile;
           const photoUrlToUse = data.photo_url || defaultPhoto;
           setProfile({
             username: data.username || defaultUsername,
@@ -243,24 +244,32 @@ export default function ProfileSection() {
     const toastId = toast.loading(profileConfig.toasts.saveProfileLoading);
     setLoading(true);
     try {
-      const userId = currentUser.id || currentUser.uid;
       const token = currentSession?.access_token;
 
-      const res = await fetch("/api/users", {
+      // Pemetaan payload ke format snake_case agar sesuai dengan kolom database profiles
+      const payload = {
+        username: cleanUsername,
+        full_name: tempProfile.fullName,
+        phone: tempProfile.phone,
+        gender: tempProfile.gender,
+        birth_date: tempProfile.birthDate,
+        photo_url: tempProfile.photoURL,
+        photo_public_id: tempProfile.photoPublicId,
+        newsletter_subscribed: tempProfile.newsletterSubscribed,
+      };
+
+      const res = await fetch("/api/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          userId,
-          type: "profile",
-          ...tempProfile,
-          username: cleanUsername,
-        }),
+        body: JSON.stringify(payload),
       });
+
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal menyimpan profil.");
+
       setProfile((prev) => ({
         ...prev,
         ...tempProfile,
@@ -369,18 +378,15 @@ export default function ProfileSection() {
     successMessage,
     toastId,
   ) => {
-    const userId = currentUser.id || currentUser.uid;
     const token = currentSession?.access_token;
 
-    const res = await fetch("/api/users", {
+    const res = await fetch("/api/profile", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        userId,
-        type: "addresses",
         addresses: updatedAddresses,
       }),
     });
