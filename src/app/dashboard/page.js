@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../../lib/firebaseClient";
+import { supabase } from "../../lib/supabaseClient";
 import styles from "./Dashboard.module.css";
 import toast from "react-hot-toast";
 

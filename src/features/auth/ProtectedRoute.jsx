@@ -1,8 +1,7 @@
-// src/components/auth/ProtectedRoute.jsx
+// src/features/auth/ProtectedRoute.jsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { auth } from "../../lib/firebaseClient";
-import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/supabaseClient";
 
 const ProtectedRoute = ({ children }) => {
   const [authorized, setAuthorized] = useState(false);
@@ -10,28 +9,18 @@ const ProtectedRoute = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    let unsubscribe = () => {};
-
-    const verifyAuth = async () => {
-      // Tunggu hingga Firebase selesai memuat status autentikasi dari storage
-      if (auth.authStateReady) {
-        await auth.authStateReady();
+    const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+      const user = session?.user;
+      if (!user) {
+        router.replace("/login");
+      } else {
+        setAuthorized(true);
       }
-
-      unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (!user) {
-          router.replace("/login");
-        } else {
-          setAuthorized(true);
-          setLoading(false);
-        }
-      });
-    };
-
-    verifyAuth();
+      setLoading(false);
+    });
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      authListener?.subscription.unsubscribe();
     };
   }, [router]);
 
@@ -51,3 +40,4 @@ const ProtectedRoute = ({ children }) => {
 };
 
 export default ProtectedRoute;
+
