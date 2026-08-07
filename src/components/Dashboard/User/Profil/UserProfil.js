@@ -73,44 +73,80 @@ export default function ProfileSection() {
   };
 
   useEffect(() => {
-    let subscription = null;
-
-    const initAuthAndFetch = async () => {
-      const { data: { session } } = await auth.getSession();
+    // Effect to get the initial session and listen for auth changes
+    const getSessionData = async () => {
+      const {
+        data: { session },
+      } = await auth.getSession();
       setCurrentSession(session);
-      const user = session?.user || null;
-      setCurrentUser(user);
+      setCurrentUser(session?.user ?? null);
+    };
 
-      if (!user) return;
+    getSessionData();
+
+    const {
+      data: { subscription },
+    } = auth.onAuthStateChange((_event, session) => {
+      setCurrentSession(session);
+      setCurrentUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!currentUser || !currentSession) {
+        setProfile({
+          username: "",
+          fullName: "",
+          gender: "",
+          birthDate: "",
+          phone: "",
+          email: "",
+          photoURL: "",
+          photoPublicId: "",
+          memberTier: "VIP Collector",
+          newsletterSubscribed: true,
+        });
+        setAddresses([]);
+        return;
+      }
 
       try {
-        const userId = user.id || user.uid;
-        const token = session?.access_token;
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const userId = currentUser.id;
+        const token = currentSession.access_token;
+        const headers = { Authorization: `Bearer ${token}` };
 
-        // Menggunakan endpoint /api/profile
         const res = await fetch(`/api/profile`, { headers });
         const result = await res.json();
 
         const defaultUsername =
-          user.email
+          currentUser.email
             ?.split("@")[0]
             .toLowerCase()
-            .replace(/[^a-z0-9_]/g, "") ||
-          `user_${userId.substring(0, 5)}`;
-        
-        const defaultPhoto = user.user_metadata?.avatar_url || user.user_metadata?.picture || "";
+            .replace(/[^a-z0-9_]/g, "") || `user_${userId.substring(0, 5)}`;
+        const defaultPhoto =
+          currentUser.user_metadata?.avatar_url ||
+          currentUser.user_metadata?.picture ||
+          "";
+        const defaultFullName =
+          currentUser.user_metadata?.full_name ||
+          currentUser.user_metadata?.name ||
+          "";
 
         if (res.ok && result.success && result.profile) {
           const data = result.profile;
           const photoUrlToUse = data.photo_url || defaultPhoto;
           setProfile({
             username: data.username || defaultUsername,
-            fullName: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || "",
+            fullName: data.full_name || defaultFullName,
             gender: data.gender || "",
             birthDate: data.birth_date || "",
-            phone: data.phone || user.phone || "",
-            email: user.email || "",
+            phone: data.phone || currentUser.phone || "",
+            email: currentUser.email || "",
             photoURL: photoUrlToUse,
             photoPublicId:
               data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
@@ -121,33 +157,26 @@ export default function ProfileSection() {
         } else {
           setProfile({
             username: defaultUsername,
-            fullName: user.user_metadata?.full_name || user.user_metadata?.name || "",
-            phone: user.phone || "",
-            email: user.email || "",
+            fullName: defaultFullName,
+            phone: currentUser.phone || "",
+            email: currentUser.email || "",
             photoURL: defaultPhoto,
             photoPublicId: extractPublicIdFromUrl(defaultPhoto),
             memberTier: "VIP Collector",
             newsletterSubscribed: true,
+            gender: "",
+            birthDate: "",
           });
+          setAddresses([]);
         }
       } catch (err) {
         console.error("Gagal memuat profil:", err);
         toast.error(profileConfig.toasts.fetchError);
       }
-
-      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
-        setCurrentSession(session);
-        setCurrentUser(session?.user || null);
-      });
-      subscription = authListener?.subscription;
     };
 
-    initAuthAndFetch();
-
-    return () => {
-      if (subscription) subscription.unsubscribe();
-    };
-  }, []);
+    fetchProfile();
+  }, [currentUser, currentSession]);
 
   const handleUsernameChange = (e) => {
     const formatted = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
