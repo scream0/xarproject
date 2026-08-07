@@ -1,15 +1,18 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import styles from "./UserProfil.module.css";
 import profileConfig from "@/data/ui/userProfilConfig.json";
 import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
-import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
-import WishlistSection from "@/components/Dashboard/User/Wishlist/WishlistSection";
-import SupportCenter from "@/components/Dashboard/User/Support/SupportCenter";
-import UserSettings from "@/components/Dashboard/User/Settings/UserSettings";
+import { OrdersSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers";
+
+const OrdersSection = lazy(() => import("@/components/Dashboard/User/Order/OrdersSection"));
+const WishlistSection = lazy(() => import("@/components/Dashboard/User/Wishlist/WishlistSection"));
+const SupportCenter = lazy(() => import("@/components/Dashboard/User/Support/SupportCenter"));
+const UserSettings = lazy(() => import("@/components/Dashboard/User/Settings/UserSettings"));
 
 export default function ProfileSection() {
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,7 @@ export default function ProfileSection() {
     photoPublicId: "",
     memberTier: "VIP Collector",
     newsletterSubscribed: true,
+    claimed_vouchers: [], // Initialize claimed_vouchers
   });
 
   const [addresses, setAddresses] = useState([]);
@@ -96,87 +100,90 @@ export default function ProfileSection() {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!currentUser || !currentSession) {
+  const fetchProfile = useCallback(async () => {
+    if (!currentUser || !currentSession) {
+      setProfile({
+        username: "",
+        fullName: "",
+        gender: "",
+        birthDate: "",
+        phone: "",
+        email: "",
+        photoURL: "",
+        photoPublicId: "",
+        memberTier: "VIP Collector",
+        newsletterSubscribed: true,
+        claimed_vouchers: [], // Ensure this is also reset
+      });
+      setAddresses([]);
+      return;
+    }
+
+    try {
+      const userId = currentUser.id;
+      const token = currentSession.access_token;
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const res = await fetch(`/api/profile`, { headers });
+      const result = await res.json();
+
+      const defaultUsername =
+        currentUser.email
+          ?.split("@")[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/g, "") || `user_${userId.substring(0, 5)}`;
+      const defaultPhoto =
+        currentUser.user_metadata?.avatar_url ||
+        currentUser.user_metadata?.picture ||
+        "";
+      const defaultFullName =
+        currentUser.user_metadata?.full_name ||
+        currentUser.user_metadata?.name ||
+        "";
+
+      if (res.ok && result.success && result.profile) {
+        const data = result.profile;
+        const photoUrlToUse = data.photo_url || defaultPhoto;
         setProfile({
-          username: "",
-          fullName: "",
-          gender: "",
-          birthDate: "",
-          phone: "",
-          email: "",
-          photoURL: "",
-          photoPublicId: "",
+          username: data.username || defaultUsername,
+          fullName: data.full_name || defaultFullName,
+          gender: data.gender || "",
+          birthDate: data.birth_date || "",
+          phone: data.phone || currentUser.phone || "",
+          email: currentUser.email || "",
+          photoURL: photoUrlToUse,
+          photoPublicId:
+            data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
+          memberTier: data.member_tier || "VIP Collector",
+          newsletterSubscribed: data.newsletter_subscribed ?? true,
+          claimed_vouchers: data.claimed_vouchers || [], // Set from API response
+        });
+        setAddresses(data.addresses || []);
+      } else {
+        setProfile({
+          username: defaultUsername,
+          fullName: defaultFullName,
+          phone: currentUser.phone || "",
+          email: currentUser.email || "",
+          photoURL: defaultPhoto,
+          photoPublicId: extractPublicIdFromUrl(defaultPhoto),
           memberTier: "VIP Collector",
           newsletterSubscribed: true,
+          gender: "",
+          birthDate: "",
+          claimed_vouchers: [], // Ensure this is also reset
         });
         setAddresses([]);
-        return;
       }
+    } catch (err) {
+      console.error("Gagal memuat profil:", err);
+      toast.error(profileConfig.toasts.fetchError);
+    }
+  }, [currentUser, currentSession]); // Dependencies for useCallback
 
-      try {
-        const userId = currentUser.id;
-        const token = currentSession.access_token;
-        const headers = { Authorization: `Bearer ${token}` };
-
-        const res = await fetch(`/api/profile`, { headers });
-        const result = await res.json();
-
-        const defaultUsername =
-          currentUser.email
-            ?.split("@")[0]
-            .toLowerCase()
-            .replace(/[^a-z0-9_]/g, "") || `user_${userId.substring(0, 5)}`;
-        const defaultPhoto =
-          currentUser.user_metadata?.avatar_url ||
-          currentUser.user_metadata?.picture ||
-          "";
-        const defaultFullName =
-          currentUser.user_metadata?.full_name ||
-          currentUser.user_metadata?.name ||
-          "";
-
-        if (res.ok && result.success && result.profile) {
-          const data = result.profile;
-          const photoUrlToUse = data.photo_url || defaultPhoto;
-          setProfile({
-            username: data.username || defaultUsername,
-            fullName: data.full_name || defaultFullName,
-            gender: data.gender || "",
-            birthDate: data.birth_date || "",
-            phone: data.phone || currentUser.phone || "",
-            email: currentUser.email || "",
-            photoURL: photoUrlToUse,
-            photoPublicId:
-              data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
-            memberTier: data.member_tier || "VIP Collector",
-            newsletterSubscribed: data.newsletter_subscribed ?? true,
-          });
-          setAddresses(data.addresses || []);
-        } else {
-          setProfile({
-            username: defaultUsername,
-            fullName: defaultFullName,
-            phone: currentUser.phone || "",
-            email: currentUser.email || "",
-            photoURL: defaultPhoto,
-            photoPublicId: extractPublicIdFromUrl(defaultPhoto),
-            memberTier: "VIP Collector",
-            newsletterSubscribed: true,
-            gender: "",
-            birthDate: "",
-          });
-          setAddresses([]);
-        }
-      } catch (err) {
-        console.error("Gagal memuat profil:", err);
-        toast.error(profileConfig.toasts.fetchError);
-      }
-    };
-
+  useEffect(() => {
     fetchProfile();
-  }, [currentUser, currentSession]);
+  }, [fetchProfile]); // Dependency for useEffect
 
   const handleUsernameChange = (e) => {
     const formatted = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
@@ -553,80 +560,88 @@ export default function ProfileSection() {
       </div>
 
       {/* Conditional Rendering Berdasarkan Active Tab */}
-      {activeTab === "settings" ? (
-        <UserSettings
-          addresses={addresses}
-          deletingAccount={deletingAccount}
-          onBackToProfile={() => setActiveTab("profile")}
-          onOpenProfileModal={() => {
-            setTempProfile(profile);
-            setIsProfileModalOpen(true);
-          }}
-          onOpenManageAddressModal={() => setIsManageAddressModalOpen(true)}
-          onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
-          onOpenLogoutModal={() => setIsLogoutModalOpen(true)}
-          onDeleteAccount={handleDeleteAccount}
-        />
-      ) : activeTab === "wishlist" ? (
-        <div className={styles.tabContainer}>
-          <div className={styles.tabHeaderCard}>
-            <button
-              onClick={() => setActiveTab("profile")}
-              className={styles.backToProfileBtn}
-            >
-              <AppIcon name="arrow-left" size={16} />
-              <span>Kembali ke Profil</span>
-            </button>
-            <h3 className={styles.tabTitle}>
-              Wishlist Saya
-            </h3>
-          </div>
-          <WishlistSection />
-        </div>
-      ) : activeTab === "support" ? (
-        <div className={styles.tabContainer}>
-          <div className={styles.tabHeaderCard}>
-            <button
-              onClick={() => setActiveTab("profile")}
-              className={styles.backToProfileBtn}
-            >
-              <AppIcon name="arrow-left" size={16} />
-              <span>Kembali ke Profil</span>
-            </button>
-            <h3 className={styles.tabTitle}>
-              Pusat Bantuan
-            </h3>
-          </div>
-          <SupportCenter onClose={() => setActiveTab("profile")} />
-        </div>
-      ) : (
-        <>
-          {/* Header Info: Foto dan Nama Pengguna */}
-          <div className={`card ${styles.sectionHeaderCard}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div className={styles.avatar}>
-              {profile.photoURL ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={profile.photoURL} alt="Avatar" />
-              ) : (
-                <span>👤</span>
-              )}
-            </div>
-            <div>
-              <h3 className={styles.sectionHeaderTitle} style={{ margin: 0 }}>
-                {profile.fullName || profile.username || "Pengguna"}
+      <Suspense fallback={<OrdersSkeleton count={3} />}>
+        {activeTab === "settings" ? (
+          <UserSettings
+            addresses={addresses}
+            deletingAccount={deletingAccount}
+            onBackToProfile={() => setActiveTab("profile")}
+            onOpenProfileModal={() => {
+              setTempProfile(profile);
+              setIsProfileModalOpen(true);
+            }}
+            onOpenManageAddressModal={() => setIsManageAddressModalOpen(true)}
+            onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
+            onOpenLogoutModal={() => setIsLogoutModalOpen(true)}
+            onDeleteAccount={handleDeleteAccount}
+          />
+        ) : activeTab === "wishlist" ? (
+          <div className={styles.tabContainer}>
+            <div className={styles.tabHeaderCard}>
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={styles.backToProfileBtn}
+              >
+                <AppIcon name="arrow-left" size={16} />
+                <span>Kembali ke Profil</span>
+              </button>
+              <h3 className={styles.tabTitle}>
+                Wishlist Saya
               </h3>
-              <p className={styles.sectionHeaderSubtitle} style={{ margin: "4px 0 0 0" }}>
-                {profile.email || "VIP Collector"}
-              </p>
             </div>
+            <WishlistSection />
           </div>
+        ) : activeTab === "support" ? (
+          <div className={styles.tabContainer}>
+            <div className={styles.tabHeaderCard}>
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={styles.backToProfileBtn}
+              >
+                <AppIcon name="arrow-left" size={16} />
+                <span>Kembali ke Profil</span>
+              </button>
+              <h3 className={styles.tabTitle}>
+                Pusat Bantuan
+              </h3>
+            </div>
+            <SupportCenter onClose={() => setActiveTab("profile")} />
+          </div>
+        ) : (
+          <>
+            {/* Header Info: Foto dan Nama Pengguna */}
+            <div className={`card ${styles.sectionHeaderCard}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <div className={styles.avatar}>
+                {profile.photoURL ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={profile.photoURL} alt="Avatar" />
+                ) : (
+                  <span>👤</span>
+                )}
+              </div>
+              <div>
+                <h3 className={styles.sectionHeaderTitle} style={{ margin: 0 }}>
+                  {profile.fullName || profile.username || "Pengguna"}
+                </h3>
+                <p className={styles.sectionHeaderSubtitle} style={{ margin: "4px 0 0 0" }}>
+                  {profile.email || "VIP Collector"}
+                </p>
+              </div>
+            </div>
 
-          {/* OrdersSection */}
-          <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
-            <OrdersSection />
-          </div>
-        </>
-      )}
+            {/* OrdersSection */}
+            <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
+                <OrdersSection />
+            </div>
+
+            {/* MyVouchers Section */}
+            <MyVouchers
+              claimedVouchers={profile.claimed_vouchers || []}
+              refreshProfile={fetchProfile}
+            />
+          </>
+        )}
+      </Suspense>
 
       {/* ====================================================
          MODAL KELOLA & LIST DAFTAR ALAMAT (Maks 3 Alamat)

@@ -6,6 +6,32 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+async function verifyAdmin(request: Request) {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader) throw new Error("Unauthorized: No token provided");
+  const token = authHeader.split("Bearer ")[1];
+  if (!token) throw new Error("Unauthorized: Invalid token format");
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabaseAdmin.auth.getUser(token);
+  if (userError || !user) throw new Error("Unauthorized: Invalid token");
+
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError)
+    throw new Error("Server Error: Could not retrieve user profile");
+  if (!profile || profile.role !== "admin")
+    throw new Error("Forbidden: User is not an admin");
+
+  return user;
+}
+
 // ── 1. READ (GET): Mengambil daftar semua voucher atau detail voucher berdasarkan ID ──
 export async function GET(req: Request) {
   try {
@@ -19,19 +45,33 @@ export async function GET(req: Request) {
       if (error) throw error;
       return NextResponse.json({ success: true, voucher: data });
     } else {
+      await verifyAdmin(req); // Reading all vouchers should be admin-only
       const { data, error } = await query.order("id", { ascending: false });
       if (error) throw error;
       return NextResponse.json({ success: true, vouchers: data });
     }
   } catch (error: any) {
     console.error("GET Voucher Error:", error.message);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    if (
+      error.message.includes("Unauthorized") ||
+      error.message.includes("Forbidden")
+    ) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.message.includes("Unauthorized") ? 401 : 403 },
+      );
+    }
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
   }
 }
 
 // ── 2. CREATE (POST): Membuat voucher baru ──
 export async function POST(req: Request) {
   try {
+    await verifyAdmin(req);
     const body = await req.json();
     const { 
       code, 
@@ -70,6 +110,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "Voucher berhasil dibuat", voucher: data });
   } catch (error: any) {
     console.error("CREATE Voucher Error:", error.message);
+    if (
+      error.message.includes("Unauthorized") ||
+      error.message.includes("Forbidden")
+    ) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.message.includes("Unauthorized") ? 401 : 403 },
+      );
+    }
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
@@ -77,6 +126,7 @@ export async function POST(req: Request) {
 // ── 3. UPDATE (PUT): Memperbarui data voucher yang sudah ada ──
 export async function PUT(req: Request) {
   try {
+    await verifyAdmin(req);
     const body = await req.json();
     const { 
       id, 
@@ -118,6 +168,15 @@ export async function PUT(req: Request) {
     return NextResponse.json({ success: true, message: "Voucher berhasil diperbarui", voucher: data });
   } catch (error: any) {
     console.error("UPDATE Voucher Error:", error.message);
+    if (
+      error.message.includes("Unauthorized") ||
+      error.message.includes("Forbidden")
+    ) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.message.includes("Unauthorized") ? 401 : 403 },
+      );
+    }
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
@@ -125,6 +184,7 @@ export async function PUT(req: Request) {
 // ── 4. DELETE (DELETE): Menghapus voucher berdasarkan ID ──
 export async function DELETE(req: Request) {
   try {
+    await verifyAdmin(req);
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -142,6 +202,15 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: true, message: "Voucher berhasil dihapus" });
   } catch (error: any) {
     console.error("DELETE Voucher Error:", error.message);
+    if (
+      error.message.includes("Unauthorized") ||
+      error.message.includes("Forbidden")
+    ) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.message.includes("Unauthorized") ? 401 : 403 },
+      );
+    }
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

@@ -70,7 +70,7 @@ export default function OperationsCenter() {
           fetch("/api/reconciliation", { headers }),
           fetch("/api/returns", { headers }),
           fetch("/api/support", { headers }),
-          fetch("/api/admin/vouchers", { headers }),
+          fetch("/api/vouchers", { headers }),
         ]);
 
         const ordersData = await ordersRes.json();
@@ -154,7 +154,7 @@ export default function OperationsCenter() {
   const handleSaveVoucher = async () => {
     try {
       const token = await getSupabaseToken();
-      const res = await fetch("/api/admin/vouchers", {
+      const res = await fetch("/api/vouchers", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
         body: JSON.stringify(voucherForm),
@@ -165,7 +165,7 @@ export default function OperationsCenter() {
       toast.success("Voucher berhasil disimpan");
       setVoucherForm({ code: "", title: "", type: "shipping", discount_amount: 0, min_purchase: 0, valid_until: "", usage_limit: 1 });
       
-      const updated = await (await fetch("/api/admin/vouchers", { headers: { Authorization: `Bearer ${token}` } })).json();
+      const updated = await (await fetch("/api/vouchers", { headers: { Authorization: `Bearer ${token}` } })).json();
       setVouchers(updated.vouchers || []);
     } catch (err) {
       toast.error(err.message);
@@ -175,7 +175,7 @@ export default function OperationsCenter() {
   const handleDeleteVoucher = async (id) => {
     try {
       const token = await getSupabaseToken();
-      const res = await fetch(`/api/admin/vouchers?id=${id}`, {
+      const res = await fetch(`/api/vouchers?id=${id}`, {
         method: "DELETE",
         headers: { Authorization: token ? `Bearer ${token}` : "" },
       });

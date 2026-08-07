@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       .single();
 
     // Jika profil belum ada di database, buatkan secara otomatis (Self-healing)
-    if (dbError && dbError.code === 'PGRST116') {
+    if (dbError && dbError.code === 'PGRST116') { // PGRST116 is code for 'No rows found'
       const defaultProfile = {
         id: user.id,
         email: user.email,
@@ -47,7 +47,30 @@ export async function GET(request: Request) {
       throw new Error(dbError.message);
     }
 
-    return NextResponse.json({ success: true, profile });
+    // --- Fetch claimed vouchers ---
+    const { data: claimedVouchers, error: claimedVouchersError } = await supabaseAdmin
+      .from("claimed_vouchers")
+      .select(`
+        *, // Select all from claimed_vouchers
+        vouchers ( // Select all from joined vouchers table
+          id, code, title, description, discount_type, discount_value, max_discount_amount, min_purchase_amount, valid_from, valid_until
+        )
+      `)
+      .eq("user_id", user.id)
+      .order("claimed_at", { ascending: false });
+
+    if (claimedVouchersError) {
+      console.error("Error fetching claimed vouchers:", claimedVouchersError);
+      // Log the error but don't block the profile response
+    }
+
+    // Add claimed vouchers to the profile object
+    const responseProfile = {
+      ...profile,
+      claimed_vouchers: claimedVouchers || [],
+    };
+
+    return NextResponse.json({ success: true, profile: responseProfile });
   } catch (error: any) {
     const status = error.message.includes("Unauthorized") ? 401 : 500;
     return NextResponse.json({ success: false, error: error.message }, { status });

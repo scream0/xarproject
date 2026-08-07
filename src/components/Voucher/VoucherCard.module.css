@@ -1,0 +1,161 @@
+.voucherCard {
+  background-color: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  min-width: 300px; /* Adjust as needed */
+  flex-shrink: 0;
+}
+
+.voucherCard:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.iconContainer {
+  flex-shrink: 0;
+  padding: 0.75rem;
+  background-color: var(--primary-accent-bg);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voucherIcon {
+  color: var(--primary-accent);
+  width: 24px;
+  height: 24px;
+}
+
+.content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.discount {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+  padding: 0.25rem 0.6rem;
+  border-radius: 5px;
+  font-weight: 600;
+}
+
+.code {
+  background-color: var(--surface-secondary);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.6rem;
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+.expiry {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.statusText {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--success-color); /* Or appropriate color for status */
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background-color: var(--success-bg);
+}
+
+.actionButton {
+  background-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.actionButton:hover:not(:disabled) {
+  background-color: var(--primary-accent-hover);
+}
+
+.actionButton:disabled {
+  background-color: var(--surface-secondary);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.actionButton.claimed {
+  background-color: var(--surface-secondary);
+  color: var(--text-secondary);
+}
+
+/* Dark theme adjustments (example, assuming theme variables are set) */
+[data-theme="dark"] .voucherCard {
+  background-color: var(--surface-primary);
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .iconContainer {
+  background-color: rgba(var(--primary-accent-rgb), 0.2);
+}
+
+[data-theme="dark"] .discount {
+  background-color: rgba(var(--success-color-rgb), 0.2);
+  color: var(--success-color);
+}
+
+[data-theme="dark"] .code {
+  background-color: var(--surface-secondary);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .actionButton:disabled {
+  background-color: var(--border-color);
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .actionButton.claimed {
+  background-color: var(--surface-secondary);
+  color: var(--text-secondary);
+}
