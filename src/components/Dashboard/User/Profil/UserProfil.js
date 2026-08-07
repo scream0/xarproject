@@ -27,7 +27,7 @@ export default function ProfileSection() {
 
   const [isManageAddressModalOpen, setIsManageAddressModalOpen] = useState(false);
 
-  // Data Profil Utama (Sinkronkan claimed_vouchers menjadi user_vouchers sesuai API)
+  // Data Profil Utama
   const [profile, setProfile] = useState({
     username: "",
     fullName: "",
@@ -151,6 +151,14 @@ export default function ProfileSection() {
       if (res.ok && result.success && result.profile) {
         const data = result.profile;
         const photoUrlToUse = data.photo_url || defaultPhoto;
+        
+        // Memastikan user_vouchers selalu memiliki format yang seragam (menyertakan voucher_id)
+        const rawVouchers = data.user_vouchers || [];
+        const formattedVouchers = rawVouchers.map((v) => ({
+          ...v,
+          voucher_id: Number(v.voucher_id || v.vouchers?.id || 0),
+        }));
+
         setProfile({
           username: data.username || defaultUsername,
           fullName: data.full_name || defaultFullName,
@@ -163,7 +171,7 @@ export default function ProfileSection() {
             data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
           memberTier: data.member_tier || "VIP Collector",
           newsletterSubscribed: data.newsletter_subscribed ?? true,
-          user_vouchers: data.user_vouchers || [], 
+          user_vouchers: formattedVouchers, 
         });
         setAddresses(data.addresses || []);
       } else {
@@ -640,7 +648,7 @@ export default function ProfileSection() {
                 <OrdersSection />
             </div>
 
-            {/* MyVouchers Section: Mengirimkan user_vouchers yang diambil dari profil */}
+            {/* MyVouchers Section */}
             <MyVouchers
               availableVouchers={availableVouchers}
               claimedVouchers={profile.user_vouchers || []}
@@ -650,9 +658,7 @@ export default function ProfileSection() {
         )}
       </Suspense>
 
-      {/* ====================================================
-          MODAL KELOLA & LIST DAFTAR ALAMAT (Maks 3 Alamat)
-          ==================================================== */}
+      {/* MODAL KELOLA ALAMAT */}
       {isManageAddressModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsManageAddressModalOpen(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
@@ -735,9 +741,7 @@ export default function ProfileSection() {
         </div>
       )}
 
-      {/* ====================================================
-          MODAL SUBSIDIARIS (Edit Profil, Tambah/Edit Alamat, Password)
-          ==================================================== */}
+      {/* MODAL EDIT PROFIL */}
       {isProfileModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsProfileModalOpen(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -808,6 +812,7 @@ export default function ProfileSection() {
         </div>
       )}
 
+      {/* MODAL ALAMAT */}
       {isAddressModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsAddressModalOpen(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -851,6 +856,7 @@ export default function ProfileSection() {
         </div>
       )}
 
+      {/* MODAL PASSWORD */}
       {isPasswordModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsPasswordModalOpen(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>

@@ -1,28 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    // 1. Verifikasi user langsung melalui Header Authorization & Supabase Admin
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized: Token tidak ditemukan" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized: Token tidak valid atau kedaluwarsa" },
-        { status: 401 }
-      );
-    }
+    // 1. Verifikasi user secara ringkas menggunakan helper terpusat
+    const user = await verifyUser(req);
 
     // 2. Ambil voucher_id dari body request frontend
     const body = await req.json();
@@ -62,9 +47,13 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error("API Claim Voucher Unhandled Error:", error.message || error);
+    
+    // Otomatis tangkap error Unauthorized dari helper verifyUser
+    const status = error.message.includes("Unauthorized") ? 401 : 500;
+    
     return NextResponse.json(
       { success: false, error: error.message || "Internal Server Error" },
-      { status: 500 }
+      { status }
     );
   }
 }

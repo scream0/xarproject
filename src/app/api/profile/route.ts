@@ -23,7 +23,7 @@ async function getClaimedVouchersForUser(userId: string) {
         id,
         code,
         title,
-        discount_type,
+        type,
         discount_amount,
         min_purchase,
         max_discount,
