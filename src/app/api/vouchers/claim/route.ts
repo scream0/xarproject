@@ -7,26 +7,27 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   try {
     const user = await verifyUser(req); // Authenticate user
-    const { code } = await req.json(); // Get voucher code from body
+    const { voucher_id } = await req.json(); // Ambil voucher_id dari body request frontend
 
-    if (!code) {
+    if (!voucher_id) {
       return NextResponse.json(
-        { success: false, error: "Voucher code is required" },
-        { status: 400 },
+        { success: false, error: "Voucher ID is required" },
+        { status: 400 }
       );
     }
 
-    // Panggil function PostgreSQL untuk klaim voucher (atomic, anti race-condition)
+    // Panggil function PostgreSQL untuk klaim voucher berdasarkan voucher_id
     const { data, error } = await supabaseAdmin.rpc("claim_voucher", {
       p_user_id: user.id,
-      p_voucher_code: code,
+      p_voucher_id: voucher_id,
+      p_order_id: null, // Default null karena diklaim manual dari card
     });
 
     if (error) {
-      // Mapping error code dari SQL function ke HTTP status yang sesuai
       let status = 500;
       let errorMessage = error.message;
 
+      // Mapping error code dari SQL function (sesuaikan dengan logika PL/pgSQL Anda)
       if (error.code === "P0001") {
         status = 404;
         errorMessage = "Voucher tidak ditemukan.";
@@ -53,9 +54,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: errorMessage }, { status });
     }
 
-    // data = row claimed_vouchers yang baru dibuat (belum ter-join detail voucher).
-    // Frontend cukup panggil refreshProfile() setelah ini agar daftar voucher
-    // ter-update lengkap dengan detail (lihat /api/profile yang sudah include join).
     return NextResponse.json({
       success: true,
       message: "Voucher berhasil diklaim!",

@@ -5,32 +5,32 @@ import { verifyUser } from "@/lib/apiAuth";
 export const dynamic = "force-dynamic";
 
 /**
- * Ambil daftar voucher yang sudah diklaim user, lengkap dengan detail
- * voucher-nya (judul, kode, jenis diskon, dsb) via join ke tabel vouchers.
- * Hasilnya di-flatten jadi satu object per klaim, siap dipakai langsung
- * oleh <VoucherCard voucher={claimedVoucher} .../> di frontend.
+ * Ambil daftar voucher yang sudah diklaim user dari tabel user_vouchers,
+ * lengkap dengan detail voucher-nya via join ke tabel vouchers.
  */
 async function getClaimedVouchersForUser(userId: string) {
   const { data, error } = await supabaseAdmin
-    .from("claimed_vouchers")
+    .from("user_vouchers")
     .select(
       `
       id,
-      status,
       claimed_at,
       used_at,
-      expired_at,
-      discount_applied,
       order_id,
-      voucher:vouchers (
+      status,
+      vouchers (
         id,
         code,
         title,
-        type,
-        discount_amount,
-        min_purchase,
+        description,
+        discount_type,
+        discount_value,
+        max_discount_amount,
+        min_purchase_amount,
+        valid_from,
         valid_until,
-        is_active
+        is_active,
+        publicly_visible
       )
     `,
     )
@@ -38,28 +38,32 @@ async function getClaimedVouchersForUser(userId: string) {
     .order("claimed_at", { ascending: false });
 
   if (error) {
-    console.error("Gagal memuat claimed_vouchers:", error.message);
+    console.error("Gagal memuat user_vouchers:", error.message);
     return [];
   }
 
-  // Flatten: gabungkan field klaim + field voucher jadi satu object rata,
-  // supaya frontend tidak perlu tahu struktur nested (claimedVoucher.voucher.code, dst)
+  // Petakan data dengan mempertahankan struktur objek vouchers agar terbaca oleh <MyVouchers />
   return (data || []).map((cv: any) => ({
-    id: cv.id, // id baris claimed_vouchers (dipakai sebagai key & referensi klaim)
-    status: cv.status,
+    id: cv.id, // ID dari tabel user_vouchers
     claimed_at: cv.claimed_at,
     used_at: cv.used_at,
-    expired_at: cv.expired_at,
-    discount_applied: cv.discount_applied,
+    status: cv.status,
     order_id: cv.order_id,
-    voucher_id: cv.voucher?.id,
-    code: cv.voucher?.code,
-    title: cv.voucher?.title,
-    type: cv.voucher?.type, // 'shipping' | 'percentage' | 'fixed'
-    discount_amount: cv.voucher?.discount_amount,
-    min_purchase: cv.voucher?.min_purchase,
-    valid_until: cv.voucher?.valid_until,
-    voucher_is_active: cv.voucher?.is_active,
+    // Sediakan objek vouchers agar komponen UI dapat mengakses properties di dalamnya (misal: voucher.code, voucher.title)
+    vouchers: cv.vouchers ? {
+      id: cv.vouchers.id,
+      code: cv.vouchers.code,
+      title: cv.vouchers.title,
+      description: cv.vouchers.description,
+      discount_type: cv.vouchers.discount_type,
+      discount_value: cv.vouchers.discount_value,
+      max_discount_amount: cv.vouchers.max_discount_amount,
+      min_purchase_amount: cv.vouchers.min_purchase_amount,
+      valid_from: cv.vouchers.valid_from,
+      valid_until: cv.vouchers.valid_until,
+      is_active: cv.vouchers.is_active,
+      publicly_visible: cv.vouchers.publicly_visible,
+    } : null,
   }));
 }
 
@@ -97,14 +101,14 @@ export async function GET(request: Request) {
       throw new Error(dbError.message);
     }
 
-    // Ambil daftar voucher yang sudah diklaim user, sertakan di response profil
+    // Ambil daftar voucher yang sudah diklaim user dari tabel user_vouchers
     const claimedVouchers = await getClaimedVouchersForUser(user.id);
 
     return NextResponse.json({
       success: true,
       profile: {
         ...profile,
-        claimed_vouchers: claimedVouchers,
+        user_vouchers: claimedVouchers,
       },
     });
   } catch (error: any) {
@@ -193,7 +197,6 @@ export async function DELETE(request: Request) {
   try {
     const user = await verifyUser(request);
 
-    // Hapus data dari tabel profiles
     const { error: deleteProfileError } = await supabaseAdmin
       .from("profiles")
       .delete()
@@ -201,7 +204,6 @@ export async function DELETE(request: Request) {
 
     if (deleteProfileError) throw new Error(deleteProfileError.message);
 
-    // Hapus user dari Supabase Auth agar benar-benar terhapus total
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
     if (deleteAuthError) {
       console.warn("Gagal menghapus user dari Auth:", deleteAuthError.message);

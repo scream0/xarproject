@@ -7,6 +7,7 @@ import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 import { buildAddressId, normalizeAddress, resolveAddressRegion, resolveCityId } from "@/utils/address";
+import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers"; // <-- Import MyVouchers
 import styles from "./checkout.module.css";
 
 const ORIGIN_CITY_ID = "114"; // Jakarta
@@ -72,12 +73,17 @@ const buildLocalCourierOptions = (weight = 0) => {
 // ─── CHECKOUT PAGE ──────────────────────────────────────────
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, products, processPayment, isProcessing, activePromo, promoSavings, discountedCartTotal, cartTotal } =
+  const { cart, products, processPayment, isProcessing, activePromo, discountedCartTotal, cartTotal } =
     useStore();
 
   // ── Auth ──
   const [currentUser, setCurrentUser] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
+
+  // State Voucher Milik User (Claimed Vouchers)
+  const [claimedVouchers, setClaimedVouchers] = useState([]);
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [showVoucherModal, setShowVoucherModal] = useState(false); // Modal pilih voucher
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -86,6 +92,8 @@ export default function CheckoutPage() {
       setPageLoading(false);
       if (!user) {
         router.push("/login?callbackUrl=/checkout");
+      } else {
+        fetchUserClaimedVouchers(user.id, session.access_token);
       }
     });
 
@@ -101,6 +109,21 @@ export default function CheckoutPage() {
       subscription?.unsubscribe();
     };
   }, [router]);
+
+  // Fetch voucher yang sudah diklaim oleh user dari API profile
+  const fetchUserClaimedVouchers = async (userId, token) => {
+    try {
+      const res = await fetch("/api/profile", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await res.json();
+      if (res.ok && result.success && result.profile) {
+        setClaimedVouchers(result.profile.claimed_vouchers || []);
+      }
+    } catch (err) {
+      console.error("Gagal memuat voucher tersimpan:", err);
+    }
+  };
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -144,35 +167,6 @@ export default function CheckoutPage() {
   const [savingAddress, setSavingAddress] = useState(false);
 
   useEffect(() => {
-    if (!showAddressModal) return;
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape" && !savingAddress) {
-        setShowAddressModal(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showAddressModal, savingAddress]);
-
-  // ── Courier ──
-  const [courierOptions, setCourierOptions] = useState([]);
-  const [selectedCourierKey, setSelectedCourierKey] = useState(null);
-  const [courierLoading, setCourierLoading] = useState(false);
-  const [shippingCost, setShippingCost] = useState(0);
-  const [shippingMeta, setShippingMeta] = useState({ kind: "", message: "" });
-  const selectedCourierKeyRef = useRef(null);
-
-  // ── Promo & Vouchers ──
-  const [promoCode, setPromoCode] = useState("");
-  const [promoApplied, setPromoApplied] = useState(false);
-
-  // State Voucher Database
-  const [voucherInput, setVoucherInput] = useState("");
-  const [appliedVoucher, setAppliedVoucher] = useState(null);
-  const [voucherLoading, setVoucherLoading] = useState(false);
-
-  // ── Fetch user addresses ──
-  useEffect(() => {
     if (!currentUser) return;
 
     const loadAddresses = async () => {
@@ -194,6 +188,14 @@ export default function CheckoutPage() {
 
     void loadAddresses();
   }, [currentUser]);
+
+  // ── Courier ──
+  const [courierOptions, setCourierOptions] = useState([]);
+  const [selectedCourierKey, setSelectedCourierKey] = useState(null);
+  const [courierLoading, setCourierLoading] = useState(false);
+  const [shippingCost, setShippingCost] = useState(0);
+  const [shippingMeta, setShippingMeta] = useState({ kind: "", message: "" });
+  const selectedCourierKeyRef = useRef(null);
 
   useEffect(() => {
     selectedCourierKeyRef.current = selectedCourierKey;
@@ -458,77 +460,31 @@ export default function CheckoutPage() {
     setShippingCost(cost);
   };
 
-  // ── Handle Database Voucher / Gratis Ongkir ──
+  // ── Pilihan Voucher ──
   const subtotal = activePromo ? discountedCartTotal : cartTotal;
 
-  const handleApplyVoucher = async () => {
-    if (!voucherInput.trim()) {
-      toast.error("Masukkan kode voucher terlebih dahulu");
-      return;
-    }
-
-    setVoucherLoading(true);
-    try {
-      const res = await fetch("/api/vouchers/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code: voucherInput.trim(),
-          cartTotal: subtotal,
-          userId: currentUser?.id,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || data.error || "Voucher tidak valid");
-
-      setAppliedVoucher(data.voucher);
-      toast.success(data.message || "Voucher berhasil diterapkan!");
-    } catch (err) {
-      toast.error(err.message || "Gagal menerapkan voucher");
-    } finally {
-      setVoucherLoading(false);
-    }
+  const handleSelectVoucherFromModal = (voucher) => {
+    setAppliedVoucher(voucher);
+    setShowVoucherModal(false);
+    toast.success(`Voucher ${voucher.code} berhasil diterapkan!`);
   };
 
   const handleRemoveVoucher = () => {
     setAppliedVoucher(null);
-    setVoucherInput("");
     toast.success("Voucher dibatalkan");
   };
 
-  // Hitung besaran potongan diskon voucher dari database
+  // Hitung besaran diskon voucher
   const voucherDiscount = useMemo(() => {
     if (!appliedVoucher) return 0;
     if (appliedVoucher.type === 'shipping') {
-      // Potongan khusus ongkir, dibatasi maksimal sebesar shippingCost asli
       return Math.min(shippingCost, Number(appliedVoucher.discount_amount || 0));
     } else if (appliedVoucher.type === 'percentage') {
       return (subtotal * Number(appliedVoucher.discount_amount || 0)) / 100;
     } else {
-      // tipe fixed / nominal biasa
       return Number(appliedVoucher.discount_amount || 0);
     }
   }, [appliedVoucher, shippingCost, subtotal]);
-
-  // ── Apply promo (legacy) ──
-  const handleApplyPromo = () => {
-    if (!promoCode.trim()) {
-      toast.error("Masukkan kode promo");
-      return;
-    }
-    if (promoCode.toUpperCase() === "XAR10" || promoCode.toUpperCase() === "WELCOME") {
-      setPromoApplied(true);
-      toast.success("Kode promo berhasil diterapkan!");
-    } else {
-      toast.error("Kode promo tidak valid");
-    }
-  };
-
-  const handleRemovePromo = () => {
-    setPromoApplied(false);
-    setPromoCode("");
-  };
 
   // ── Handle payment ──
   const handlePay = async () => {
@@ -543,7 +499,6 @@ export default function CheckoutPage() {
 
     const selectedCourierInfo = courierOptions.find((c) => c.key === selectedCourierKey);
 
-    // Simpan data pengiriman & voucher terpilih ke localStorage untuk diproses backend pembayaran
     localStorage.setItem(
       "checkout_shipping",
       JSON.stringify({
@@ -562,8 +517,6 @@ export default function CheckoutPage() {
     await processPayment();
   };
 
-  // ── Final Grand Total calculation ──
-  // Jika voucher bertipe 'shipping', ongkir dipotong langsung. Jika tipe lain, dipotong dari subtotal.
   const finalShippingCost = appliedVoucher?.type === 'shipping' 
     ? Math.max(0, shippingCost - voucherDiscount) 
     : shippingCost;
@@ -574,13 +527,11 @@ export default function CheckoutPage() {
 
   const grandTotal = Math.max(0, subtotal - finalSubtotalDiscount) + finalShippingCost;
 
-  // ── Derive selected courier info ──
   const selectedCourierInfo = useMemo(
     () => courierOptions.find((c) => c.key === selectedCourierKey),
     [courierOptions, selectedCourierKey],
   );
 
-  // ── Redirect if cart empty ──
   if (!pageLoading && (!cart.items || cart.items.length === 0)) {
     return (
       <div className={styles.checkoutPage}>
@@ -689,11 +640,6 @@ export default function CheckoutPage() {
                             <span className={`${styles.addressPill} ${statusTone}`}>
                               {detectedRegion?.cityId ? "Wilayah terdeteksi" : addr.postalCode ? "Kode pos terdaftar" : "Lengkapi detail alamat"}
                             </span>
-                            {detectedRegion?.cityId && (
-                              <p className={styles.addressRegion}>
-                                {detectedRegion.city}, {detectedRegion.province}
-                              </p>
-                            )}
                           </div>
                         </div>
                       );
@@ -742,64 +688,51 @@ export default function CheckoutPage() {
                 ) : courierOptions.length === 0 ? (
                   <div className={styles.courierEmpty}>
                     <p>Belum ada opsi pengiriman yang bisa kami sarankan untuk alamat ini.</p>
-                    <p style={{ fontSize: "0.75rem", marginTop: "0.3rem" }}>
-                      Berat paket: {(totalWeight / 1000).toFixed(1)} kg
-                    </p>
                   </div>
                 ) : (
-                  <>
-                    <div className={styles.courierGrid}>
-                      {courierOptions.map((option) => {
-                        return (
-                        <div
-                          key={option.key}
-                          className={`${styles.courierCard} ${
-                            selectedCourierKey === option.key ? styles.courierCardSelected : ""
-                          }`}
-                          onClick={() => handleSelectCourier(option.key, option.cost)}
-                        >
-                          <input
-                            type="radio"
-                            className={styles.courierRadio}
-                            checked={selectedCourierKey === option.key}
-                            onChange={() => handleSelectCourier(option.key, option.cost)}
-                          />
-                          <div className={styles.courierInfo}>
-                            <div className={styles.courierHeaderRow}>
-                              <p className={styles.courierName}>
-                                {option.courierName.toUpperCase()} — {option.service}
-                              </p>
-                              <div className={styles.courierBadgeRow}>
-                                {option.estimated && (
-                                  <span className={styles.courierBadge}>Estimasi</span>
-                                )}
-                              </div>
-                            </div>
-                            <p className={styles.courierService}>{option.description}</p>
-                            {option.etd && option.etd !== "-" && (
-                              <p className={styles.courierEtd}>Estimasi tiba: {option.etd} hari</p>
-                            )}
+                  <div className={styles.courierGrid}>
+                    {courierOptions.map((option) => (
+                      <div
+                        key={option.key}
+                        className={`${styles.courierCard} ${
+                          selectedCourierKey === option.key ? styles.courierCardSelected : ""
+                        }`}
+                        onClick={() => handleSelectCourier(option.key, option.cost)}
+                      >
+                        <input
+                          type="radio"
+                          className={styles.courierRadio}
+                          checked={selectedCourierKey === option.key}
+                          onChange={() => handleSelectCourier(option.key, option.cost)}
+                        />
+                        <div className={styles.courierInfo}>
+                          <div className={styles.courierHeaderRow}>
+                            <p className={styles.courierName}>
+                              {option.courierName.toUpperCase()} — {option.service}
+                            </p>
                           </div>
-                          <div className={styles.courierPriceBox}>
-                            <span className={styles.courierCost}>{rupiah(option.cost)}</span>
-                            <span className={styles.courierPriceHint}>termasuk biaya paket</span>
-                          </div>
+                          <p className={styles.courierService}>{option.description}</p>
+                          {option.etd && option.etd !== "-" && (
+                            <p className={styles.courierEtd}>Estimasi tiba: {option.etd} hari</p>
+                          )}
                         </div>
-                        );
-                      })}
-                    </div>
-                  </>
+                        <div className={styles.courierPriceBox}>
+                          <span className={styles.courierCost}>{rupiah(option.cost)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </>
             )}
           </section>
 
-          {/* ====== 3. VOUCHER & GRATIS ONGKIR (DATABASE) ====== */}
+          {/* ====== 3. VOUCHER & PROMO (Voucher Saya) ====== */}
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sectionStep}>3</span>
-                Voucher & Promo
+                Voucher Toko
               </h2>
             </div>
 
@@ -810,27 +743,18 @@ export default function CheckoutPage() {
                   {voucherDiscount > 0 && ` — Hemat ${rupiah(voucherDiscount)}`}
                 </span>
                 <button className={styles.promoRemoveBtn} onClick={handleRemoveVoucher}>
-                  Hapus
+                  Ganti / Hapus
                 </button>
               </div>
             ) : (
-              <div className={styles.promoRow}>
-                <input
-                  type="text"
-                  className={styles.promoInput}
-                  placeholder="Masukkan kode voucher / gratis ongkir"
-                  value={voucherInput}
-                  onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === "Enter" && handleApplyVoucher()}
-                />
-                <button 
-                  className={styles.promoApplyBtn} 
-                  onClick={handleApplyVoucher}
-                  disabled={voucherLoading}
-                >
-                  {voucherLoading ? "Memeriksa..." : "Gunakan"}
-                </button>
-              </div>
+              <button
+                type="button"
+                className={styles.promoApplyBtn}
+                style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
+                onClick={() => setShowVoucherModal(true)}
+              >
+                Pilih atau Masukkan Voucher Anda ({claimedVouchers.length} tersedia)
+              </button>
             )}
           </section>
         </div>
@@ -838,18 +762,13 @@ export default function CheckoutPage() {
         {/* ─── RIGHT COLUMN — RINGKASAN ─── */}
         <div className={styles.summaryCard}>
           <div className={styles.summaryHeader}>
-            <div>
-              <h3 className={styles.summaryTitle}>Ringkasan Belanja</h3>
-            </div>
+            <h3 className={styles.summaryTitle}>Ringkasan Belanja</h3>
           </div>
 
           <div className={styles.summaryItems}>
             {(cart.items || []).map((item) => {
-              const prod = (products || []).find(
-                (p) => String(p.id) === String(item.id),
-              );
-              const imgSrc =
-                item.image || prod?.image_url || prod?.imageUrl || "/assets/placeholder.jpg";
+              const prod = (products || []).find((p) => String(p.id) === String(item.id));
+              const imgSrc = item.image || prod?.image_url || prod?.imageUrl || "/assets/placeholder.jpg";
               return (
                 <div key={item.cartId} className={styles.summaryItem}>
                   <div className={styles.summaryItemImg}>
@@ -898,13 +817,6 @@ export default function CheckoutPage() {
             </span>
           </div>
 
-          {selectedCourierInfo && (
-            <div className={styles.summaryCourierNote}>
-              {selectedCourierInfo.courierName.toUpperCase()} — {selectedCourierInfo.service}
-              {selectedCourierInfo.etd !== "-" && ` · ${selectedCourierInfo.etd} hari`}
-            </div>
-          )}
-
           <div className={`${styles.summaryLine} ${styles.summaryLineTotal}`}>
             <span>Total Pembayaran</span>
             <span>{rupiah(grandTotal)}</span>
@@ -929,32 +841,36 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      {/* ─── MODAL PILIH VOUCHER SAYA ─── */}
+      {showVoucherModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowVoucherModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Pilih Voucher Saya</h2>
+              <button className={styles.modalCloseBtn} onClick={() => setShowVoucherModal(false)}>&times;</button>
+            </div>
+            <div style={{ maxHeight: "70vh", overflowY: "auto", padding: "10px 0" }}>
+              <MyVouchers
+                claimedVouchers={claimedVouchers}
+                isCheckoutMode={true}
+                onSelectVoucher={handleSelectVoucherFromModal}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL TAMBAH ALAMAT ─── */}
       {showAddressModal && (
         <div className={styles.modalOverlay} onClick={() => setShowAddressModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div>
                 <h2 className={styles.modalTitle}>Tambah Alamat Baru</h2>
-                <p className={styles.modalSubtitle}>Data yang lengkap membuat pengiriman lebih cepat dan akurat.</p>
               </div>
               <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>&times;</button>
             </div>
-            <div className={styles.modalHint}>
-              <div className={styles.modalHintIcon}>i</div>
-              <div>
-                <strong>Tips:</strong> Kode pos membantu sistem mengenali wilayah pengiriman lebih cepat.
-              </div>
-            </div>
             <form onSubmit={handleSaveAddress}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Label Alamat</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={addressForm.label}
-                  onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
-                />
-              </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Nama Penerima</label>
                 <input
@@ -996,15 +912,6 @@ export default function CheckoutPage() {
                   onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
                   required
                 ></textarea>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Kode Pos</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={addressForm.postalCode}
-                  onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
-                />
               </div>
               <div className={styles.modalFooter}>
                 <button type="button" className={styles.modalBtnCancel} onClick={() => setShowAddressModal(false)} disabled={savingAddress}>

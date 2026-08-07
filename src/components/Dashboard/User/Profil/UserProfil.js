@@ -25,7 +25,6 @@ export default function ProfileSection() {
   // State untuk kontrol tab tampilan ("profile" | "settings" | "wishlist" | "support")
   const [activeTab, setActiveTab] = useState("profile");
 
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isManageAddressModalOpen, setIsManageAddressModalOpen] = useState(false);
 
   // Data Profil Utama
@@ -40,9 +39,10 @@ export default function ProfileSection() {
     photoPublicId: "",
     memberTier: "VIP Collector",
     newsletterSubscribed: true,
-    claimed_vouchers: [], // Initialize claimed_vouchers
+    claimed_vouchers: [], 
   });
 
+  const [availableVouchers, setAvailableVouchers] = useState([]);
   const [addresses, setAddresses] = useState([]);
 
   // State Modals
@@ -77,7 +77,6 @@ export default function ProfileSection() {
   };
 
   useEffect(() => {
-    // Effect to get the initial session and listen for auth changes
     const getSessionData = async () => {
       const {
         data: { session },
@@ -113,8 +112,9 @@ export default function ProfileSection() {
         photoPublicId: "",
         memberTier: "VIP Collector",
         newsletterSubscribed: true,
-        claimed_vouchers: [], // Ensure this is also reset
+        claimed_vouchers: [], 
       });
+      setAvailableVouchers([]);
       setAddresses([]);
       return;
     }
@@ -126,6 +126,13 @@ export default function ProfileSection() {
 
       const res = await fetch(`/api/profile`, { headers });
       const result = await res.json();
+
+      const resVouchers = await fetch(`/api/vouchers/available`, { headers });
+      const resultVouchers = await resVouchers.json();
+
+      if (resVouchers.ok && resultVouchers.success) {
+        setAvailableVouchers(resultVouchers.vouchers || []);
+      }
 
       const defaultUsername =
         currentUser.email
@@ -156,7 +163,7 @@ export default function ProfileSection() {
             data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
           memberTier: data.member_tier || "VIP Collector",
           newsletterSubscribed: data.newsletter_subscribed ?? true,
-          claimed_vouchers: data.claimed_vouchers || [], // Set from API response
+          claimed_vouchers: data.claimed_vouchers || [], 
         });
         setAddresses(data.addresses || []);
       } else {
@@ -171,7 +178,7 @@ export default function ProfileSection() {
           newsletterSubscribed: true,
           gender: "",
           birthDate: "",
-          claimed_vouchers: [], // Ensure this is also reset
+          claimed_vouchers: [], 
         });
         setAddresses([]);
       }
@@ -179,11 +186,11 @@ export default function ProfileSection() {
       console.error("Gagal memuat profil:", err);
       toast.error(profileConfig.toasts.fetchError);
     }
-  }, [currentUser, currentSession]); // Dependencies for useCallback
+  }, [currentUser, currentSession]); 
 
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]); // Dependency for useEffect
+  }, [fetchProfile]); 
 
   const handleUsernameChange = (e) => {
     const formatted = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
@@ -282,7 +289,6 @@ export default function ProfileSection() {
     try {
       const token = currentSession?.access_token;
 
-      // Pemetaan payload ke format snake_case agar sesuai dengan kolom database profiles
       const payload = {
         username: cleanUsername,
         full_name: tempProfile.fullName,
@@ -395,7 +401,9 @@ export default function ProfileSection() {
     }
   };
 
+  // Fungsi Logout Langsung tanpa Modal Pop-up
   const handleLogout = async () => {
+    if (loggingOut) return;
     const toastId = toast.loading("Keluar dari sesi...");
     setLoggingOut(true);
     try {
@@ -405,7 +413,6 @@ export default function ProfileSection() {
     } catch (err) {
       toast.error("Gagal keluar akun.", { id: toastId });
       setLoggingOut(false);
-      setIsLogoutModalOpen(false);
     }
   };
 
@@ -572,7 +579,7 @@ export default function ProfileSection() {
             }}
             onOpenManageAddressModal={() => setIsManageAddressModalOpen(true)}
             onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
-            onOpenLogoutModal={() => setIsLogoutModalOpen(true)}
+            onOpenLogoutModal={handleLogout} // Langsung panggil handleLogout tanpa modal pop-up
             onDeleteAccount={handleDeleteAccount}
           />
         ) : activeTab === "wishlist" ? (
@@ -636,6 +643,7 @@ export default function ProfileSection() {
 
             {/* MyVouchers Section */}
             <MyVouchers
+              availableVouchers={availableVouchers}
               claimedVouchers={profile.claimed_vouchers || []}
               refreshProfile={fetchProfile}
             />
@@ -723,61 +731,6 @@ export default function ProfileSection() {
                   Batas maksimal 3 alamat telah tercapai. Hapus salah satu alamat jika ingin menambahkan yang baru.
                 </p>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-         MODAL KONFIRMASI LOGOUT ELEGAN
-         ==================================================== */}
-      {isLogoutModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => !loggingOut && setIsLogoutModalOpen(false)}>
-          <div 
-            className={styles.modalContent} 
-            onClick={(e) => e.stopPropagation()} 
-            style={{ maxWidth: "400px", textAlign: "center", padding: "32px 24px", gap: "20px" }}
-          >
-            <div style={{ 
-              width: "56px", 
-              height: "56px", 
-              borderRadius: "50%", 
-              background: "rgba(var(--primary-accent-rgb), 0.12)", 
-              color: "var(--primary-accent)", 
-              display: "flex", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              margin: "0 auto" 
-            }}>
-              <AppIcon name="log-out" size={26} strokeWidth={2} />
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <h3 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: "1.2rem", fontWeight: 500, color: "var(--text-primary)" }}>
-                Keluar dari Akun?
-              </h3>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.5" }}>
-                Anda harus masuk kembali menggunakan kredensial akun Anda untuk mengakses riwayat pesanan dan fitur member.
-              </p>
-            </div>
-
-            <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
-              <button
-                type="button"
-                onClick={() => setIsLogoutModalOpen(false)}
-                disabled={loggingOut}
-                style={{ flex: 1, padding: "0.75rem", borderRadius: "6px", background: "var(--surface-secondary)", border: "1px solid var(--border-color)", color: "var(--text-primary)", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", cursor: "pointer" }}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                style={{ flex: 1, padding: "0.75rem", borderRadius: "6px", background: "var(--primary-accent)", border: "1px solid var(--primary-accent)", color: "var(--primary-accent-text)", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", cursor: "pointer", opacity: loggingOut ? 0.7 : 1 }}
-              >
-                {loggingOut ? "Keluar..." : "Ya, Keluar"}
-              </button>
             </div>
           </div>
         </div>

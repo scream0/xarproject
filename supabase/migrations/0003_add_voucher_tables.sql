@@ -1,5 +1,5 @@
 -- ============================================================
--- SCHEMA: VOUCHER SYSTEM (vouchers + claimed_vouchers)
+-- SCHEMA: VOUCHER SYSTEM (vouchers + user_vouchers)
 -- Target: PostgreSQL / Supabase
 -- Author: Generated for XAR Project
 -- ============================================================
@@ -72,13 +72,13 @@ CREATE INDEX IF NOT EXISTS idx_vouchers_public_visible
 
 
 -- ============================================================
--- 3. TABEL: claimed_vouchers (klaim voucher oleh user)
+-- 3. TABEL: user_vouchers (klaim voucher oleh user)
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS public.claimed_vouchers (
+CREATE TABLE IF NOT EXISTS public.user_vouchers (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   voucher_id      uuid NOT NULL REFERENCES public.vouchers(id) ON DELETE CASCADE,
-  user_id         uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE, -- Changed from auth.users to public.users
+  user_id         uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
 
   status          claimed_voucher_status NOT NULL DEFAULT 'claimed',
 
@@ -96,11 +96,11 @@ CREATE TABLE IF NOT EXISTS public.claimed_vouchers (
 );
 
 -- Index penting untuk query dashboard user & admin
-CREATE INDEX IF NOT EXISTS idx_claimed_vouchers_user ON public.claimed_vouchers (user_id);
-CREATE INDEX IF NOT EXISTS idx_claimed_vouchers_voucher ON public.claimed_vouchers (voucher_id);
-CREATE INDEX IF NOT EXISTS idx_claimed_vouchers_status ON public.claimed_vouchers (status);
-CREATE INDEX IF NOT EXISTS idx_claimed_vouchers_user_status
-  ON public.claimed_vouchers (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_user_vouchers_user ON public.user_vouchers (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_vouchers_voucher ON public.user_vouchers (voucher_id);
+CREATE INDEX IF NOT EXISTS idx_user_vouchers_status ON public.user_vouchers (status);
+CREATE INDEX IF NOT EXISTS idx_user_vouchers_user_status
+  ON public.user_vouchers (user_id, status);
 
 
 -- ============================================================
@@ -120,9 +120,9 @@ CREATE TRIGGER trg_vouchers_updated_at
   BEFORE UPDATE ON public.vouchers
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
-DROP TRIGGER IF EXISTS trg_claimed_vouchers_updated_at ON public.claimed_vouchers;
-CREATE TRIGGER trg_claimed_vouchers_updated_at
-  BEFORE UPDATE ON public.claimed_vouchers
+DROP TRIGGER IF EXISTS trg_user_vouchers_updated_at ON public.user_vouchers;
+CREATE TRIGGER trg_user_vouchers_updated_at
+  BEFORE UPDATE ON public.user_vouchers
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
@@ -134,11 +134,11 @@ CREATE TRIGGER trg_claimed_vouchers_updated_at
 -- banyak user klaim voucher bersamaan.
 -- ============================================================
 
-CREATE OR OR REPLACE FUNCTION public.claim_voucher(
+CREATE OR REPLACE FUNCTION public.claim_voucher(
   p_user_id uuid,
   p_voucher_code text
 )
-RETURNS public.claimed_vouchers
+RETURNS public.user_vouchers
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -146,7 +146,7 @@ AS $$
 DECLARE
   v_voucher     public.vouchers%ROWTYPE;
   v_claim_count integer;
-  v_result      public.claimed_vouchers%ROWTYPE;
+  v_result      public.user_vouchers%ROWTYPE;
 BEGIN
   -- Lock baris voucher untuk mencegah race condition kuota
   SELECT * INTO v_voucher
@@ -175,7 +175,7 @@ BEGIN
   END IF;
 
   SELECT count(*) INTO v_claim_count
-  FROM public.claimed_vouchers
+  FROM public.user_vouchers
   WHERE voucher_id = v_voucher.id
     AND user_id = p_user_id
     AND status IN ('claimed', 'used');
@@ -184,7 +184,7 @@ BEGIN
     RAISE EXCEPTION 'Anda sudah mengklaim voucher ini.' USING ERRCODE = 'P0006';
   END IF;
 
-  INSERT INTO public.claimed_vouchers (voucher_id, user_id, status)
+  INSERT INTO public.user_vouchers (voucher_id, user_id, status)
   VALUES (v_voucher.id, p_user_id, 'claimed')
   RETURNING * INTO v_result;
 
@@ -206,15 +206,15 @@ CREATE OR REPLACE FUNCTION public.mark_voucher_used(
   p_order_id uuid,
   p_discount_applied numeric
 )
-RETURNS public.claimed_vouchers
+RETURNS public.user_vouchers
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_result public.claimed_vouchers%ROWTYPE;
+  v_result public.user_vouchers%ROWTYPE;
 BEGIN
-  UPDATE public.claimed_vouchers
+  UPDATE public.user_vouchers
   SET status = 'used',
       order_id = p_order_id,
       discount_applied = p_discount_applied,
@@ -249,7 +249,7 @@ AS $$
 DECLARE
   v_count integer;
 BEGIN
-  UPDATE public.claimed_vouchers cv
+  UPDATE public.user_vouchers cv
   SET status = 'expired',
       expired_at = now()
   FROM public.vouchers v
@@ -284,7 +284,7 @@ SELECT
   count(cv.id) FILTER (WHERE cv.status = 'cancelled')   AS total_cancelled,
   coalesce(sum(cv.discount_applied) FILTER (WHERE cv.status = 'used'), 0) AS total_discount_given
 FROM public.vouchers v
-LEFT JOIN public.claimed_vouchers cv ON cv.voucher_id = v.id
+LEFT JOIN public.user_vouchers cv ON cv.voucher_id = v.id
 GROUP BY v.id;
 
 
@@ -293,7 +293,7 @@ GROUP BY v.id;
 -- ============================================================
 
 ALTER TABLE public.vouchers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.claimed_vouchers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_vouchers ENABLE ROW LEVEL SECURITY;
 
 -- --- vouchers: semua orang boleh baca voucher aktif (public) ---
 DROP POLICY IF EXISTS "vouchers_select_active_public" ON public.vouchers;
@@ -320,17 +320,17 @@ CREATE POLICY "vouchers_admin_all"
     )
   );
 
--- --- claimed_vouchers: user hanya bisa lihat klaim miliknya sendiri ---
-DROP POLICY IF EXISTS "claimed_vouchers_select_own" ON public.claimed_vouchers;
-CREATE POLICY "claimed_vouchers_select_own"
-  ON public.claimed_vouchers
+-- --- user_vouchers: user hanya bisa lihat klaim miliknya sendiri ---
+DROP POLICY IF EXISTS "user_vouchers_select_own" ON public.user_vouchers;
+CREATE POLICY "user_vouchers_select_own"
+  ON public.user_vouchers
   FOR SELECT
   USING (auth.uid() = user_id);
 
--- --- claimed_vouchers: admin bisa lihat & kelola semua klaim ---
-DROP POLICY IF EXISTS "claimed_vouchers_admin_all" ON public.claimed_vouchers;
-CREATE POLICY "claimed_vouchers_admin_all"
-  ON public.claimed_vouchers
+-- --- user_vouchers: admin bisa lihat & kelola semua klaim ---
+DROP POLICY IF EXISTS "user_vouchers_admin_all" ON public.user_vouchers;
+CREATE POLICY "user_vouchers_admin_all"
+  ON public.user_vouchers
   FOR ALL
   USING (
     EXISTS (
@@ -343,7 +343,8 @@ CREATE POLICY "claimed_vouchers_admin_all"
       SELECT 1 FROM public.users p
       WHERE p.id = auth.uid() AND p.role = 'admin'
     )
-  );
+  )
+);
 
 -- Catatan: INSERT/UPDATE untuk claim & pemakaian voucher SEBAIKNYA
 -- tidak lewat RLS langsung dari client, melainkan lewat function
@@ -364,7 +365,7 @@ CREATE POLICY "claimed_vouchers_admin_all"
 
 -- Lihat semua voucher yang diklaim seorang user (dipanggil dari client, aman via RLS):
 --   SELECT cv.*, v.code, v.title, v.discount_type, v.discount_value
---   FROM public.claimed_vouchers cv
+--   FROM public.user_vouchers cv
 --   JOIN public.vouchers v ON v.id = cv.voucher_id
 --   WHERE cv.user_id = auth.uid()
 --   ORDER BY cv.claimed_at DESC;
