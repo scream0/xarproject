@@ -1,34 +1,33 @@
 /* ==========================================================
-   VOUCHER CARD - COMPACT & RESPONSIVE SHOPEE STYLE
+   VOUCHER CARD - CLEAN SHOPEE STYLE
    ================================================---------- */
 
 .myVouchersSection {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   width: 100%;
 }
 
 .sectionGroup {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sectionTitle {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
   letter-spacing: -0.01em;
 }
 
-/* Responsif: Menyesuaikan kolom grid secara otomatis */
 .availableVouchersList,
 .claimedVouchersList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
   width: 100%;
 }
 
@@ -39,76 +38,72 @@
 }
 
 /* ==========================================================
-   KARTU UTAMA (Compact & Clean)
+   KARTU UTAMA ALA SHOPEE (Clean, Minimalist, Border-radius Halus)
    ================================================---------- */
 .voucherCard {
   background-color: var(--background, #ffffff);
   border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 8px;
-  padding: 0;
+  border-radius: 10px;
+  padding: 0; /* Menggunakan layout internal grid/flex bersih */
   display: flex;
-  align-items: stretch;
+  align-items: stretch; /* Tinggi card rata */
   position: relative;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
 }
 
 .voucherCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
   border-color: var(--primary-accent);
 }
 
-/* Bagian Kiri: Icon / Badge Promo (Lebih Kecil) */
+/* Bagian Kiri: Icon / Badge Promo */
 .iconContainer {
   background-color: rgba(var(--primary-accent-rgb, 238, 77, 45), 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 0.6rem;
-  min-width: 75px;
-  border-right: 1px dashed var(--border-color, #e5e7eb);
+  padding: 1.25rem 1rem;
+  min-width: 95px;
+  border-right: 1px dashed var(--border-color, #e5e7eb); /* Efek kupon potong */
   position: relative;
   flex-shrink: 0;
 }
 
 .voucherIcon {
   color: var(--primary-accent);
-  width: 22px;
-  height: 22px;
-  margin-bottom: 2px;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 4px;
 }
 
-/* Bagian Tengah: Informasi Detail Voucher (Padding Ringkas) */
+/* Bagian Tengah: Informasi Detail Voucher */
 .content {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0.6rem 0.75rem;
-  gap: 3px;
-  min-width: 0; /* Agar teks panjang tidak merusak layout */
+  padding: 0.85rem 1rem;
+  gap: 4px;
 }
 
 .title {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .description {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--text-secondary, #6b7280);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -118,56 +113,56 @@
 .details {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 6px;
+  margin-top: 4px;
   align-items: center;
 }
 
 .discount {
   background-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.12);
   color: var(--success-color, #10b981);
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-weight: 700;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
 }
 
 .code {
   background-color: var(--surface-secondary, #f3f4f6);
   color: var(--text-secondary, #4b5563);
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-weight: 600;
-  font-size: 0.65rem;
-  letter-spacing: 0.3px;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
 }
 
 .expiry {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   color: var(--text-tertiary, #9ca3af);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
-/* Bagian Kanan: Aksi / Tombol Klaim (Minimalis) */
+/* Bagian Kanan: Aksi / Tombol Klaim */
 .actions {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.6rem;
+  padding: 0.85rem;
   flex-shrink: 0;
   border-left: 1px dashed var(--border-color, #e5e7eb);
   background-color: var(--surface-secondary, #fafafa);
 }
 
 .statusText {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--success-color, #10b981);
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
   background-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.1);
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   text-align: center;
 }
 
@@ -176,14 +171,14 @@
   background-color: var(--primary-accent);
   color: var(--primary-accent-text, #ffffff);
   border: none;
-  padding: 0.35rem 0.65rem;
-  border-radius: 5px;
+  padding: 0.5rem 0.85rem;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   transition: background-color 0.15s ease, transform 0.1s ease;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .claimButton:hover:not(:disabled),
@@ -211,57 +206,14 @@
   background-color: transparent !important;
   color: var(--text-secondary, #6b7280) !important;
   border: 1px solid var(--border-color, #d1d5db);
-  padding: 0.3rem 0.5rem;
 }
 
 .emptyState {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--text-secondary, #6b7280);
   font-style: italic;
-  padding: 0.75rem 0;
+  padding: 1rem 0;
   margin: 0;
-}
-
-/* ==========================================================
-   RESPONSIF UNTUK LAYAR KECIL (HP / Mobile)
-   ================================================---------- */
-@media (max-width: 480px) {
-  .availableVouchersList,
-  .claimedVouchersList {
-    grid-template-columns: 1fr; /* 1 kolom penuh di HP agar proporsional */
-  }
-
-  .iconContainer {
-    min-width: 68px;
-    padding: 0.5rem;
-  }
-
-  .voucherIcon {
-    width: 20px;
-    height: 20px;
-  }
-
-  .content {
-    padding: 0.5rem 0.6rem;
-  }
-
-  .title {
-    font-size: 0.8rem;
-  }
-
-  .description {
-    font-size: 0.68rem;
-  }
-
-  .actions {
-    padding: 0.5rem;
-  }
-
-  .claimButton,
-  .actionButton {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.65rem;
-  }
 }
 
 /* ==========================================================

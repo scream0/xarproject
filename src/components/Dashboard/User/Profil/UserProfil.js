@@ -4,10 +4,14 @@ import styles from "./UserProfil.module.css";
 import profileConfig from "@/data/ui/userProfilConfig.json";
 import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
-import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import { OrdersSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers";
+
+// Import komponen modular baru
+import ProfileHeader from "./ProfileHeader";
+import AddressManagerModal from "./AddressManagerModal";
+import { EditProfileModal, AddressFormModal, PasswordModal } from "./ProfileModals";
 
 const OrdersSection = lazy(() => import("@/components/Dashboard/User/Order/OrdersSection"));
 const WishlistSection = lazy(() => import("@/components/Dashboard/User/Wishlist/WishlistSection"));
@@ -22,12 +26,9 @@ export default function ProfileSection() {
   const [isPasswordChanging, setIsPasswordChanging] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   
-  // State untuk kontrol tab tampilan ("profile" | "settings" | "wishlist" | "support")
   const [activeTab, setActiveTab] = useState("profile");
-
   const [isManageAddressModalOpen, setIsManageAddressModalOpen] = useState(false);
 
-  // Data Profil Utama
   const [profile, setProfile] = useState({
     username: "",
     fullName: "",
@@ -45,7 +46,6 @@ export default function ProfileSection() {
   const [availableVouchers, setAvailableVouchers] = useState([]);
   const [addresses, setAddresses] = useState([]);
 
-  // State Modals
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({});
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -66,10 +66,7 @@ export default function ProfileSection() {
       const parts = url.split("/upload/");
       if (parts.length < 2) return "";
       let pathWithoutVersion = parts[1].replace(/^v\d+\//, "");
-      return pathWithoutVersion.substring(
-        0,
-        pathWithoutVersion.lastIndexOf("."),
-      );
+      return pathWithoutVersion.substring(0, pathWithoutVersion.lastIndexOf("."));
     } catch (e) {
       console.error("Gagal mengekstrak public_id:", e);
       return "";
@@ -78,18 +75,14 @@ export default function ProfileSection() {
 
   useEffect(() => {
     const getSessionData = async () => {
-      const {
-        data: { session },
-      } = await auth.getSession();
+      const { data: { session } } = await auth.getSession();
       setCurrentSession(session);
       setCurrentUser(session?.user ?? null);
     };
 
     getSessionData();
 
-    const {
-      data: { subscription },
-    } = auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
       setCurrentSession(session);
       setCurrentUser(session?.user ?? null);
     });
@@ -101,19 +94,7 @@ export default function ProfileSection() {
 
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !currentSession) {
-      setProfile({
-        username: "",
-        fullName: "",
-        gender: "",
-        birthDate: "",
-        phone: "",
-        email: "",
-        photoURL: "",
-        photoPublicId: "",
-        memberTier: "VIP Collector",
-        newsletterSubscribed: true,
-        user_vouchers: [], 
-      });
+      setProfile({ username: "", fullName: "", gender: "", birthDate: "", phone: "", email: "", photoURL: "", photoPublicId: "", memberTier: "VIP Collector", newsletterSubscribed: true, user_vouchers: [] });
       setAvailableVouchers([]);
       setAddresses([]);
       return;
@@ -134,25 +115,14 @@ export default function ProfileSection() {
         setAvailableVouchers(resultVouchers.vouchers || []);
       }
 
-      const defaultUsername =
-        currentUser.email
-          ?.split("@")[0]
-          .toLowerCase()
-          .replace(/[^a-z0-9_]/g, "") || `user_${userId.substring(0, 5)}`;
-      const defaultPhoto =
-        currentUser.user_metadata?.avatar_url ||
-        currentUser.user_metadata?.picture ||
-        "";
-      const defaultFullName =
-        currentUser.user_metadata?.full_name ||
-        currentUser.user_metadata?.name ||
-        "";
+      const defaultUsername = currentUser.email?.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "") || `user_${userId.substring(0, 5)}`;
+      const defaultPhoto = currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || "";
+      const defaultFullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || "";
 
       if (res.ok && result.success && result.profile) {
         const data = result.profile;
         const photoUrlToUse = data.photo_url || defaultPhoto;
         
-        // Memastikan user_vouchers selalu memiliki format yang seragam (menyertakan voucher_id)
         const rawVouchers = data.user_vouchers || [];
         const formattedVouchers = rawVouchers.map((v) => ({
           ...v,
@@ -167,8 +137,7 @@ export default function ProfileSection() {
           phone: data.phone || currentUser.phone || "",
           email: currentUser.email || "",
           photoURL: photoUrlToUse,
-          photoPublicId:
-            data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
+          photoPublicId: data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
           memberTier: data.member_tier || "VIP Collector",
           newsletterSubscribed: data.newsletter_subscribed ?? true,
           user_vouchers: formattedVouchers, 
@@ -218,10 +187,8 @@ export default function ProfileSection() {
       const data = new FormData();
       data.append("file", file);
       data.append("userId", userId);
-      if (tempProfile.photoPublicId)
-        data.append("oldPublicId", tempProfile.photoPublicId);
-      else if (tempProfile.photoURL)
-        data.append("oldUrl", tempProfile.photoURL);
+      if (tempProfile.photoPublicId) data.append("oldPublicId", tempProfile.photoPublicId);
+      else if (tempProfile.photoURL) data.append("oldUrl", tempProfile.photoURL);
 
       const res = await fetch("/api/cloudinary", {
         method: "POST",
@@ -231,11 +198,7 @@ export default function ProfileSection() {
       const result = await res.json();
 
       if (res.ok && result.secure_url) {
-        setTempProfile((prev) => ({
-          ...prev,
-          photoURL: result.secure_url,
-          photoPublicId: result.public_id,
-        }));
+        setTempProfile((prev) => ({ ...prev, photoURL: result.secure_url, photoPublicId: result.public_id }));
         toast.success(profileConfig.toasts.uploadSuccess, { id: toastId });
       } else {
         throw new Error(result.error || "Gagal mengunggah gambar.");
@@ -249,13 +212,7 @@ export default function ProfileSection() {
   };
 
   const handleRemoveAvatar = async () => {
-    if (
-      !currentUser ||
-      !currentSession ||
-      !tempProfile.photoURL ||
-      !window.confirm(profileConfig.prompts.removeAvatarConfirm)
-    )
-      return;
+    if (!currentUser || !currentSession || !tempProfile.photoURL || !window.confirm(profileConfig.prompts.removeAvatarConfirm)) return;
 
     const toastId = toast.loading(profileConfig.toasts.removeAvatarLoading);
     setRemovingImage(true);
@@ -265,14 +222,8 @@ export default function ProfileSection() {
 
       const res = await fetch("/api/cloudinary", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          userId,
-          publicId: tempProfile.photoPublicId,
-        }),
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ userId, publicId: tempProfile.photoPublicId }),
       });
       if (!res.ok) throw new Error("Gagal menghapus avatar.");
       setTempProfile((prev) => ({ ...prev, photoURL: "", photoPublicId: "" }));
@@ -296,7 +247,6 @@ export default function ProfileSection() {
     setLoading(true);
     try {
       const token = currentSession?.access_token;
-
       const payload = {
         username: cleanUsername,
         full_name: tempProfile.fullName,
@@ -310,21 +260,14 @@ export default function ProfileSection() {
 
       const res = await fetch("/api/profile", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(payload),
       });
 
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal menyimpan profil.");
 
-      setProfile((prev) => ({
-        ...prev,
-        ...tempProfile,
-        username: cleanUsername,
-      }));
+      setProfile((prev) => ({ ...prev, ...tempProfile, username: cleanUsername }));
       setIsProfileModalOpen(false);
       toast.success(profileConfig.toasts.saveProfileSuccess, { id: toastId });
     } catch (err) {
@@ -351,33 +294,17 @@ export default function ProfileSection() {
     const toastId = toast.loading(profileConfig.toasts.passwordLoading);
 
     try {
-      const { error: signInError } = await auth.signInWithPassword({
-        email: currentUser.email,
-        password: currentPassword,
-      });
+      const { error: signInError } = await auth.signInWithPassword({ email: currentUser.email, password: currentPassword });
+      if (signInError) throw new Error("Password saat ini salah.");
 
-      if (signInError) {
-        throw new Error("Password saat ini salah.");
-      }
-
-      const { error: updateError } = await auth.updateUser({
-        password: newPassword,
-      });
-
-      if (updateError) {
-        throw new Error(updateError.message || "Gagal memperbarui password.");
-      }
+      const { error: updateError } = await auth.updateUser({ password: newPassword });
+      if (updateError) throw new Error(updateError.message || "Gagal memperbarui password.");
 
       toast.success(profileConfig.toasts.passwordSuccess, { id: toastId });
       setIsPasswordModalOpen(false);
-      setPasswords({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error) {
-      let errorMessage = error.message || "Gagal mengubah password.";
-      toast.error(errorMessage, { id: toastId });
+      toast.error(error.message || "Gagal mengubah password.", { id: toastId });
     } finally {
       setIsPasswordChanging(false);
     }
@@ -423,22 +350,12 @@ export default function ProfileSection() {
     }
   };
 
-  const updateAddressesOnServer = async (
-    updatedAddresses,
-    successMessage,
-    toastId,
-  ) => {
+  const updateAddressesOnServer = async (updatedAddresses, successMessage, toastId) => {
     const token = currentSession?.access_token;
-
     const res = await fetch("/api/profile", {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        addresses: updatedAddresses,
-      }),
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ addresses: updatedAddresses }),
     });
     if (!res.ok) {
       const result = await res.json();
@@ -454,7 +371,6 @@ export default function ProfileSection() {
     setLoading(true);
     try {
       let updatedAddresses = [...addresses];
-      
       const newAddressItem = {
         ...currentAddress,
         id: currentAddress.id || `addr_${Date.now()}`,
@@ -470,27 +386,18 @@ export default function ProfileSection() {
       }
 
       if (newAddressItem.isPrimary || updatedAddresses.length === 0) {
-        updatedAddresses = updatedAddresses.map((addr) => ({
-          ...addr,
-          isPrimary: false,
-        }));
+        updatedAddresses = updatedAddresses.map((addr) => ({ ...addr, isPrimary: false }));
         newAddressItem.isPrimary = true;
       }
 
-      const existingIndex = updatedAddresses.findIndex(
-        (addr) => addr.id === newAddressItem.id,
-      );
+      const existingIndex = updatedAddresses.findIndex((addr) => addr.id === newAddressItem.id);
       if (existingIndex > -1) {
         updatedAddresses[existingIndex] = newAddressItem;
       } else {
         updatedAddresses.push(newAddressItem);
       }
 
-      await updateAddressesOnServer(
-        updatedAddresses,
-        profileConfig.toasts.saveAddressSuccess,
-        toastId,
-      );
+      await updateAddressesOnServer(updatedAddresses, profileConfig.toasts.saveAddressSuccess, toastId);
       setIsAddressModalOpen(false);
       setCurrentAddress(null);
     } catch (err) {
@@ -505,17 +412,10 @@ export default function ProfileSection() {
     const toastId = toast.loading(profileConfig.toasts.deleteAddressLoading);
     try {
       let updatedAddresses = addresses.filter((addr) => addr.id !== id);
-      if (
-        updatedAddresses.length > 0 &&
-        !updatedAddresses.some((a) => a.isPrimary)
-      ) {
+      if (updatedAddresses.length > 0 && !updatedAddresses.some((a) => a.isPrimary)) {
         updatedAddresses[0].isPrimary = true;
       }
-      await updateAddressesOnServer(
-        updatedAddresses,
-        profileConfig.toasts.deleteAddressSuccess,
-        toastId,
-      );
+      await updateAddressesOnServer(updatedAddresses, profileConfig.toasts.deleteAddressSuccess, toastId);
     } catch (err) {
       toast.error(err.message, { id: toastId });
     }
@@ -524,15 +424,8 @@ export default function ProfileSection() {
   const handleSetPrimaryAddress = async (id) => {
     const toastId = toast.loading(profileConfig.toasts.setPrimaryLoading);
     try {
-      const updatedAddresses = addresses.map((addr) => ({
-        ...addr,
-        isPrimary: addr.id === id,
-      }));
-      await updateAddressesOnServer(
-        updatedAddresses,
-        profileConfig.toasts.setPrimarySuccess,
-        toastId,
-      );
+      const updatedAddresses = addresses.map((addr) => ({ ...addr, isPrimary: addr.id === id }));
+      await updateAddressesOnServer(updatedAddresses, profileConfig.toasts.setPrimarySuccess, toastId);
     } catch (err) {
       toast.error(err.message, { id: toastId });
     }
@@ -540,50 +433,29 @@ export default function ProfileSection() {
 
   return (
     <div className={styles.workspaceInner}>
-      {/* Navbar Atas Melayang (Support, Wishlist, Settings) */}
+      {/* Navbar Atas Melayang */}
       <div className={styles.shopNavbar}>
         <div className={styles.navbarActions}>
-          <button
-            className={styles.chatIconBtnNavbar}
-            onClick={() => setActiveTab("support")}
-            aria-label="Bantuan"
-            title="Pusat Bantuan"
-            style={activeTab === "support" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
-          >
+          <button className={styles.chatIconBtnNavbar} onClick={() => setActiveTab("support")} title="Pusat Bantuan" style={activeTab === "support" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}>
             <AppIcon name="help-circle" className={styles.svgIcon} />
           </button>
-          <button
-            className={styles.chatIconBtnNavbar}
-            onClick={() => setActiveTab("wishlist")}
-            aria-label="Wishlist"
-            title="Wishlist Saya"
-            style={activeTab === "wishlist" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
-          >
+          <button className={styles.chatIconBtnNavbar} onClick={() => setActiveTab("wishlist")} title="Wishlist Saya" style={activeTab === "wishlist" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}>
             <AppIcon name="heart" className={styles.svgIcon} />
           </button>
-          <button
-            className={styles.cartIconBtnNavbar}
-            onClick={() => setActiveTab("settings")}
-            aria-label="Pengaturan"
-            title="Pengaturan Akun"
-            style={activeTab === "settings" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
-          >
+          <button className={styles.cartIconBtnNavbar} onClick={() => setActiveTab("settings")} title="Pengaturan Akun" style={activeTab === "settings" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}>
             <AppIcon name="settings" className={styles.svgIcon} />
           </button>
         </div>
       </div>
 
-      {/* Conditional Rendering Berdasarkan Active Tab */}
+      {/* Konten Tab Aktif */}
       <Suspense fallback={<OrdersSkeleton count={3} />}>
         {activeTab === "settings" ? (
           <UserSettings
             addresses={addresses}
             deletingAccount={deletingAccount}
             onBackToProfile={() => setActiveTab("profile")}
-            onOpenProfileModal={() => {
-              setTempProfile(profile);
-              setIsProfileModalOpen(true);
-            }}
+            onOpenProfileModal={() => { setTempProfile(profile); setIsProfileModalOpen(true); }}
             onOpenManageAddressModal={() => setIsManageAddressModalOpen(true)}
             onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
             onOpenLogoutModal={handleLogout}
@@ -592,63 +464,31 @@ export default function ProfileSection() {
         ) : activeTab === "wishlist" ? (
           <div className={styles.tabContainer}>
             <div className={styles.tabHeaderCard}>
-              <button
-                onClick={() => setActiveTab("profile")}
-                className={styles.backToProfileBtn}
-              >
+              <button onClick={() => setActiveTab("profile")} className={styles.backToProfileBtn}>
                 <AppIcon name="arrow-left" size={16} />
                 <span>Kembali ke Profil</span>
               </button>
-              <h3 className={styles.tabTitle}>
-                Wishlist Saya
-              </h3>
+              <h3 className={styles.tabTitle}>Wishlist Saya</h3>
             </div>
             <WishlistSection />
           </div>
         ) : activeTab === "support" ? (
           <div className={styles.tabContainer}>
             <div className={styles.tabHeaderCard}>
-              <button
-                onClick={() => setActiveTab("profile")}
-                className={styles.backToProfileBtn}
-              >
+              <button onClick={() => setActiveTab("profile")} className={styles.backToProfileBtn}>
                 <AppIcon name="arrow-left" size={16} />
                 <span>Kembali ke Profil</span>
               </button>
-              <h3 className={styles.tabTitle}>
-                Pusat Bantuan
-              </h3>
+              <h3 className={styles.tabTitle}>Pusat Bantuan</h3>
             </div>
             <SupportCenter onClose={() => setActiveTab("profile")} />
           </div>
         ) : (
           <>
-            {/* Header Info: Foto dan Nama Pengguna */}
-            <div className={`card ${styles.sectionHeaderCard}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <div className={styles.avatar}>
-                {profile.photoURL ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={profile.photoURL} alt="Avatar" />
-                ) : (
-                  <span>👤</span>
-                )}
-              </div>
-              <div>
-                <h3 className={styles.sectionHeaderTitle} style={{ margin: 0 }}>
-                  {profile.fullName || profile.username || "Pengguna"}
-                </h3>
-                <p className={styles.sectionHeaderSubtitle} style={{ margin: "4px 0 0 0" }}>
-                  {profile.email || "VIP Collector"}
-                </p>
-              </div>
-            </div>
-
-            {/* OrdersSection */}
+            <ProfileHeader profile={profile} />
             <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
-                <OrdersSection />
+              <OrdersSection />
             </div>
-
-            {/* MyVouchers Section */}
             <MyVouchers
               availableVouchers={availableVouchers}
               claimedVouchers={profile.user_vouchers || []}
@@ -658,235 +498,61 @@ export default function ProfileSection() {
         )}
       </Suspense>
 
-      {/* MODAL KELOLA ALAMAT */}
-      {isManageAddressModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsManageAddressModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Buku Alamat Saya ({addresses.length}/3)</h3>
-              <button onClick={() => setIsManageAddressModalOpen(false)} className={styles.closeModalBtn}>✕</button>
-            </div>
+      {/* Modal Terpisah */}
+      <AddressManagerModal
+        isOpen={isManageAddressModalOpen}
+        onClose={() => setIsManageAddressModalOpen(false)}
+        addresses={addresses}
+        onSetPrimary={handleSetPrimaryAddress}
+        onEdit={(addr) => { setCurrentAddress(addr); setIsAddressModalOpen(true); }}
+        onDelete={handleDeleteAddress}
+        onOpenAdd={() => {
+          setCurrentAddress({
+            id: null,
+            label: addresses.length === 0 ? "Rumah" : "Kantor",
+            recipientName: profile.fullName,
+            recipientPhone: profile.phone,
+            street: "", province: "", city: "", cityId: "", cityType: "", postalCode: "",
+            isPrimary: addresses.length === 0,
+          });
+          setIsAddressModalOpen(true);
+        }}
+      />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "10px 0" }}>
-              {addresses.length === 0 ? (
-                <p style={{ textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem", padding: "1rem 0" }}>
-                  Belum ada alamat tersimpan. Silakan tambahkan alamat pengiriman Anda.
-                </p>
-              ) : (
-                addresses.map((addr) => (
-                  <div key={addr.id} style={{ padding: "14px", background: "var(--surface-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-primary)" }}>{addr.label || "Alamat"}</span>
-                        {addr.isPrimary && (
-                          <span style={{ fontSize: "0.65rem", background: "rgba(var(--primary-accent-rgb), 0.15)", color: "var(--primary-accent)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
-                            UTAMA
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", gap: "6px" }}>
-                        {!addr.isPrimary && (
-                          <button onClick={() => handleSetPrimaryAddress(addr.id)} style={{ background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-secondary)", fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
-                            Jadikan Utama
-                          </button>
-                        )}
-                        <button onClick={() => { setCurrentAddress(addr); setIsAddressModalOpen(true); }} style={{ background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-primary)", fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
-                          Edit
-                        </button>
-                        <button onClick={() => handleDeleteAddress(addr.id)} style={{ background: "rgba(var(--danger-color-rgb), 0.1)", border: "1px solid rgba(var(--danger-color-rgb), 0.3)", color: "var(--danger-color)", fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
-                          Hapus
-                        </button>
-                      </div>
-                    </div>
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: 500 }}>
-                      {addr.recipientName} ({addr.recipientPhone})
-                    </p>
-                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                      {addr.street}, {addr.city}, {addr.province} - {addr.postalCode}
-                    </p>
-                  </div>
-                ))
-              )}
+      <EditProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        profileConfig={profileConfig}
+        tempProfile={tempProfile}
+        setTempProfile={setTempProfile}
+        handleUsernameChange={handleUsernameChange}
+        handleImageUpload={handleImageUpload}
+        handleRemoveAvatar={handleRemoveAvatar}
+        handleSaveProfile={handleSaveProfile}
+        uploadingImage={uploadingImage}
+        removingImage={removingImage}
+        loading={loading}
+      />
 
-              {addresses.length < 3 ? (
-                <button
-                  onClick={() => {
-                    setCurrentAddress({
-                      id: null,
-                      label: addresses.length === 0 ? "Rumah" : "Kantor",
-                      recipientName: profile.fullName,
-                      recipientPhone: profile.phone,
-                      street: "",
-                      province: "",
-                      city: "",
-                      cityId: "",
-                      cityType: "",
-                      postalCode: "",
-                      isPrimary: addresses.length === 0,
-                    });
-                    setIsAddressModalOpen(true);
-                  }}
-                  className={styles.actionBtnPrimary}
-                  style={{ width: "100%", marginTop: "6px" }}
-                >
-                  + Tambah Alamat Baru ({addresses.length}/3)
-                </button>
-              ) : (
-                <p style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--text-secondary)", fontStyle: "italic", margin: "4px 0 0 0" }}>
-                  Batas maksimal 3 alamat telah tercapai. Hapus salah satu alamat jika ingin menambahkan yang baru.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <AddressFormModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        currentAddress={currentAddress}
+        setCurrentAddress={setCurrentAddress}
+        handleSaveAddress={handleSaveAddress}
+        profileConfig={profileConfig}
+        loading={loading}
+      />
 
-      {/* MODAL EDIT PROFIL */}
-      {isProfileModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsProfileModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>{profileConfig.modals.editProfile.title}</h3>
-              <button onClick={() => setIsProfileModalOpen(false)} className={styles.closeModalBtn}>✕</button>
-            </div>
-            <form onSubmit={handleSaveProfile}>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.avatarLabel}</label>
-                <div className={styles.avatarUpload}>
-                  <div className={styles.avatar} style={{ width: 60, height: 60 }}>
-                    {tempProfile.photoURL ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={tempProfile.photoURL} alt="Avatar" />
-                    ) : (
-                      <span>👤</span>
-                    )}
-                  </div>
-                  <input type="file" id="avatar-upload" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage || removingImage} style={{ display: "none" }} />
-                  <label htmlFor="avatar-upload" className={styles.actionBtnOutline} style={{ cursor: "pointer" }}>{profileConfig.modals.editProfile.selectImage}</label>
-                  {tempProfile.photoURL && (
-                    <button type="button" onClick={handleRemoveAvatar} disabled={uploadingImage || removingImage} className={styles.actionBtnDanger}>
-                      {profileConfig.modals.editProfile.removeImage}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.username}</label>
-                <div className={styles.inputWithPrefix}>
-                  <span>@</span>
-                  <input type="text" value={tempProfile.username || ""} onChange={handleUsernameChange} required />
-                </div>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.fullName}</label>
-                <input type="text" value={tempProfile.fullName || ""} onChange={(e) => setTempProfile({ ...tempProfile, fullName: e.target.value })} className={styles.formInput} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.phone}</label>
-                <input type="text" value={tempProfile.phone || ""} onChange={(e) => setTempProfile({ ...tempProfile, phone: e.target.value })} className={styles.formInput} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.birthDate}</label>
-                <input type="date" value={tempProfile.birthDate || ""} onChange={(e) => setTempProfile({ ...tempProfile, birthDate: e.target.value })} className={styles.formInput} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.editProfile.gender}</label>
-                <select value={tempProfile.gender || ""} onChange={(e) => setTempProfile({ ...tempProfile, gender: e.target.value })} className={styles.formSelect}>
-                  <option value="">{profileConfig.modals.editProfile.genderOptions.placeholder}</option>
-                  <option value="Male">{profileConfig.modals.editProfile.genderOptions.male}</option>
-                  <option value="Female">{profileConfig.modals.editProfile.genderOptions.female}</option>
-                </select>
-              </div>
-              <div className={styles.formGroupCheckbox}>
-                <input type="checkbox" id="newsletter" checked={tempProfile.newsletterSubscribed ?? true} onChange={(e) => setTempProfile({ ...tempProfile, newsletterSubscribed: e.target.checked })} />
-                <label htmlFor="newsletter">{profileConfig.modals.editProfile.newsletterLabel}</label>
-              </div>
-              <div className={styles.modalFooter}>
-                <button type="button" onClick={() => setIsProfileModalOpen(false)} className={styles.actionBtnOutline}>{profileConfig.modals.editProfile.cancel}</button>
-                <button type="submit" disabled={loading || uploadingImage || removingImage} className={styles.actionBtnPrimary}>
-                  {loading ? profileConfig.modals.editProfile.saving : profileConfig.modals.editProfile.save}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL ALAMAT */}
-      {isAddressModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsAddressModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>{currentAddress?.id ? "Edit Alamat" : "Tambah Alamat Baru"}</h3>
-              <button onClick={() => setIsAddressModalOpen(false)} className={styles.closeModalBtn}>✕</button>
-            </div>
-            <form onSubmit={handleSaveAddress}>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>Label Alamat (Contoh: Rumah, Kantor)</label>
-                <input type="text" value={currentAddress.label} onChange={(e) => setCurrentAddress({ ...currentAddress, label: e.target.value })} required className={styles.formInput} placeholder="Rumah / Kantor / Apartemen" />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.address.recipientName}</label>
-                <input type="text" value={currentAddress.recipientName} onChange={(e) => setCurrentAddress({ ...currentAddress, recipientName: e.target.value })} required className={styles.formInput} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.address.recipientPhone}</label>
-                <input type="text" value={currentAddress.recipientPhone} onChange={(e) => setCurrentAddress({ ...currentAddress, recipientPhone: e.target.value })} required className={styles.formInput} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.address.street}</label>
-                <textarea rows="2" value={currentAddress.street} onChange={(e) => setCurrentAddress({ ...currentAddress, street: e.target.value })} required className={styles.formTextarea} placeholder="Nama jalan, nomor rumah, RT/RW, Patokan..." />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.address.city}</label>
-                <ProvinceCitySelect value={{ province: currentAddress.province, city: currentAddress.city, cityId: currentAddress.cityId, cityType: currentAddress.cityType }} onChange={(next) => setCurrentAddress((prev) => ({ ...prev, ...next }))} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.address.postalCode}</label>
-                <input type="text" value={currentAddress.postalCode} onChange={(e) => setCurrentAddress({ ...currentAddress, postalCode: e.target.value })} required className={styles.formInput} />
-              </div>
-              <div className={styles.modalFooter}>
-                <button type="button" onClick={() => setIsAddressModalOpen(false)} className={styles.actionBtnOutline}>{profileConfig.modals.address.cancel}</button>
-                <button type="submit" disabled={loading} className={styles.actionBtnPrimary}>
-                  {loading ? profileConfig.modals.address.saving : profileConfig.modals.address.save}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL PASSWORD */}
-      {isPasswordModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsPasswordModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>{profileConfig.modals.password.title}</h3>
-              <button onClick={() => setIsPasswordModalOpen(false)} className={styles.closeModalBtn}>✕</button>
-            </div>
-            <form onSubmit={handlePasswordChange}>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.password.current}</label>
-                <input type="password" value={passwords.currentPassword} onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })} className={styles.formInput} required />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.password.new}</label>
-                <input type="password" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} className={styles.formInput} required />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>{profileConfig.modals.password.confirm}</label>
-                <input type="password" value={passwords.confirmPassword} onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })} className={styles.formInput} required />
-              </div>
-              <div className={styles.modalFooter}>
-                <button type="button" onClick={() => setIsPasswordModalOpen(false)} className={styles.actionBtnOutline}>{profileConfig.modals.password.cancel}</button>
-                <button type="submit" disabled={isPasswordChanging} className={styles.actionBtnPrimary}>
-                  {isPasswordChanging ? profileConfig.modals.password.submitting : profileConfig.modals.password.submit}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <PasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        passwords={passwords}
+        setPasswords={setPasswords}
+        handlePasswordChange={handlePasswordChange}
+        profileConfig={profileConfig}
+        isPasswordChanging={isPasswordChanging}
+      />
     </div>
   );
 }

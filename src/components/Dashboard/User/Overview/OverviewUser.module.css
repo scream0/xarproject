@@ -1,16 +1,15 @@
 /* ====================================================
-   OVERVIEW SECTION CSS (Luxury High-End Theme)
+   OVERVIEW SECTION CSS (Clean Look Modern System)
    ==================================================== */
 .overviewWorkspace {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 20px;
   width: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   box-sizing: border-box;
-  /* Tambahan padding bawah besar agar konten tidak tertutup bottom navbar di mobile */
-  padding-bottom: 5.5rem; 
+  padding-bottom: 5rem; 
 }
 
 @media (min-width: 768px) {
@@ -19,26 +18,24 @@
   }
 }
 
-/* Navbar Atas Melayang (Chat & Cart Tanpa Kolom Pencarian) */
+/* Navbar Atas Melayang */
 .shopNavbar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  background: rgba(var(--surface-primary-rgb, 255, 255, 255), 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  gap: 8px;
+  background: var(--surface-primary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   width: 100%;
   box-sizing: border-box;
 }
 
 :global([data-theme="dark"]) .shopNavbar {
-  background: rgba(var(--surface-primary-rgb, 20, 20, 22), 0.85);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  background: var(--surface-primary);
+  box-shadow: none;
 }
 
 .navbarActions {
@@ -54,13 +51,13 @@
   color: var(--text-primary);
   width: 36px;
   height: 36px;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -75,23 +72,22 @@
 .cartQuantityBadge {
   position: absolute;
   top: -5px;
-  right: -5px;
+  right: -7px;
   background: var(--primary-accent);
-  color: var(--primary-accent-text);
+  color: var(--primary-accent-text, #ffffff);
   font-size: 0.6rem;
-  font-weight: bold;
-  padding: 1px 4px;
-  border-radius: 9999px;
-  min-width: 16px;
+  font-weight: 600;
+  padding: 1px 3px;
+  border-radius: 99px;
+  min-width: 14px;
   text-align: center;
-  border: 1px solid var(--surface-primary);
 }
 
 .svgIcon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
   fill: none;
@@ -100,119 +96,98 @@
 /* 1. Metric Cards Grid */
 .metricsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
   width: 100%;
   box-sizing: border-box;
 }
 
 .metricCard {
   background: var(--surface-primary);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
   border: 1px solid var(--border-color);
-  padding: 24px;
-  border-radius: 12px;
+  padding: 20px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.15s ease;
   position: relative;
   overflow: hidden;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .metricCard:hover {
-    transform: translateY(-3px);
-    border-color: rgba(var(--primary-accent-rgb), 0.3);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+    border-color: var(--primary-accent);
   }
 }
 
 .metricTitle {
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  letter-spacing: 1.5px;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
   text-transform: uppercase;
   margin: 0;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .metricValue {
-  font-family: var(--font-serif);
-  font-size: 1.8rem;
-  font-weight: 400;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.01em;
 }
 
 .metricDesc {
-  font-family: var(--font-sans);
   font-size: 0.75rem;
   color: var(--text-secondary);
   margin: 0;
-  letter-spacing: 0.5px;
 }
 
 /* 2. Overview Grid Two (Welcome Banner & Recent Orders) */
 .overviewGridTwo {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: 16px;
   width: 100%;
   box-sizing: border-box;
 }
 
 @media (min-width: 992px) {
   .overviewGridTwo {
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: 1.4fr 1fr;
   }
 }
 
 .sectionCard {
   background: var(--surface-primary);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 28px;
+  border-radius: 10px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
   width: 100%;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .sectionCard:hover {
-    border-color: rgba(var(--primary-accent-rgb), 0.2);
-  }
 }
 
 .welcomeBadge {
-  font-family: var(--font-sans);
-  font-size: 0.65rem;
-  letter-spacing: 2px;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
   color: var(--primary-accent);
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .cardTitle {
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 400;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  padding-bottom: 0.75rem;
+  padding-bottom: 0.65rem;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -221,19 +196,17 @@
 }
 
 .cardDesc {
-  font-family: var(--font-sans);
   font-size: 0.85rem;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.5;
   margin: 0;
-  letter-spacing: 0.5px;
 }
 
 .actionButtonGroup {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 4px;
+  gap: 10px;
+  margin-top: 2px;
 }
 
 .btnPrimary,
@@ -242,32 +215,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-family: var(--font-sans);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
   border: 1px solid transparent;
 }
 
 .btnPrimary {
   background-color: var(--primary-accent);
-  color: var(--primary-accent-text);
+  color: var(--primary-accent-text, #ffffff);
   border-color: var(--primary-accent);
-  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .btnPrimary:hover {
-    background-color: transparent;
-    color: var(--primary-accent);
-    border-color: var(--primary-accent);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+    opacity: 0.9;
   }
 }
 
@@ -283,8 +248,8 @@
 
 @media (hover: hover) and (pointer: fine) {
   .btnOutline:hover {
-    background-color: var(--border-color);
-    color: var(--text-primary);
+    background-color: var(--surface-primary);
+    border-color: var(--text-secondary);
   }
 }
 
@@ -296,7 +261,7 @@
 .recentOrdersList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .recentOrderItem {
@@ -304,11 +269,11 @@
   align-items: center;
   justify-content: space-between;
   background: var(--surface-secondary);
-  padding: 14px 16px;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
   border: 1px solid var(--border-color);
-  gap: 12px;
-  transition: all 0.3s ease;
+  gap: 10px;
+  transition: border-color 0.15s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -321,45 +286,40 @@
 .orderItemInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
   flex: 1;
 }
 
 .orderId {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
   font-family: monospace;
-  letter-spacing: 0.5px;
 }
 
 .orderItemName {
-  font-family: var(--font-serif);
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.88rem;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  letter-spacing: 0.5px;
 }
 
 .orderItemStatus {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .statusBadge {
-  font-family: var(--font-sans);
   font-size: 0.65rem;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
   display: inline-block;
 }
 
@@ -367,29 +327,26 @@
 .success,
 .shipping {
   background: rgba(var(--success-color-rgb, 16, 185, 129), 0.1);
-  color: var(--success-color);
-  border: 1px solid rgba(var(--success-color-rgb, 16, 185, 129), 0.25);
+  color: var(--success-color, #10b981);
+  border: 1px solid rgba(var(--success-color-rgb, 16, 185, 129), 0.2);
 }
 
 .pending,
 .processing {
   background: rgba(var(--primary-accent-rgb), 0.1);
   color: var(--primary-accent);
-  border: 1px solid rgba(var(--primary-accent-rgb), 0.25);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
 }
 
 .detailsLink {
   background: transparent;
   border: none;
   color: var(--primary-accent);
-  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
   cursor: pointer;
   padding: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.15s ease;
 }
 
 .detailsLink:hover {
@@ -397,14 +354,11 @@
 }
 
 .smallLoadingText {
-  font-family: var(--font-sans);
   font-size: 0.8rem;
   color: var(--text-secondary);
   margin: 0;
   text-align: center;
-  padding: 1.5rem 0;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  padding: 1rem 0;
 }
 
 /* 3. Personalized Recommendations */
@@ -417,21 +371,18 @@
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.75rem;
-  margin-bottom: 4px;
+  padding-bottom: 0.65rem;
+  margin-bottom: 2px;
 }
 
 .seeAllLink {
   background: transparent;
   border: none;
   color: var(--primary-accent);
-  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.15s ease;
 }
 
 .seeAllLink:hover {
@@ -440,21 +391,21 @@
 
 .curatedList {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  margin-top: 4px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 2px;
 }
 
 .curatedItem {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   background: var(--surface-secondary);
   border: 1px solid var(--border-color);
-  padding: 14px;
+  padding: 12px;
   border-radius: 8px;
   box-sizing: border-box;
-  transition: all 0.3s ease;
+  transition: border-color 0.15s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -465,8 +416,8 @@
 }
 
 .curatedThumb {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid var(--border-color);
@@ -477,54 +428,49 @@
 .curatedInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
 }
 
 .curatedName {
-  font-family: var(--font-serif);
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.88rem;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  letter-spacing: 0.5px;
 }
 
 .curatedSub {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-secondary);
   margin: 0;
-  letter-spacing: 0.5px;
 }
 
 .curatedQuickAddBtn {
   background: var(--surface-primary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .curatedQuickAddBtn:hover {
     background: var(--primary-accent);
-    color: var(--primary-accent-text);
+    color: var(--primary-accent-text, #ffffff);
     border-color: var(--primary-accent);
-    transform: scale(1.05);
   }
 }
 
@@ -535,24 +481,20 @@
 .curatedOriginalPrice {
   text-decoration: line-through;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   margin-right: 4px;
   opacity: 0.7;
 }
 
 .curatedDiscountedPrice {
-  color: var(--primary-accent, #fbbf24);
+  color: var(--primary-accent);
   font-weight: 600;
 }
 
 /* === POINTS & BALANCE ACCENT CARDS === */
 .metricCardAccent {
-  background: linear-gradient(
-    135deg,
-    rgba(var(--primary-accent-rgb), 0.15),
-    var(--surface-primary)
-  );
-  border-color: rgba(var(--primary-accent-rgb), 0.4);
+  background: var(--surface-primary);
+  border-color: rgba(var(--primary-accent-rgb), 0.3);
 }
 
 .metricCardAccent .metricValue {
@@ -560,16 +502,12 @@
 }
 
 .metricCardWallet {
-  background: linear-gradient(
-    135deg,
-    rgba(var(--success-color-rgb, 16, 185, 129), 0.12),
-    var(--surface-primary)
-  );
-  border-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.35);
+  background: var(--surface-primary);
+  border-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.3);
 }
 
 .metricCardWallet .metricValue {
-  color: var(--success-color);
+  color: var(--success-color, #10b981);
 }
 
 /* === POINTS BANNER SECTION === */
@@ -578,22 +516,10 @@
   overflow: hidden;
 }
 
-.pointsBannerCard::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at 85% 20%,
-    rgba(var(--primary-accent-rgb), 0.08) 0%,
-    transparent 55%
-  );
-  pointer-events: none;
-}
-
 .pointsBannerContent {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: 16px;
   align-items: stretch;
   position: relative;
   z-index: 1;
@@ -606,13 +532,12 @@
 }
 
 .pointsRulesTitle {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
 }
 
 .pointsRulesList {
@@ -621,65 +546,60 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .pointsRulesList li {
-  font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
-  letter-spacing: 0.3px;
   position: relative;
-  padding-left: 18px;
+  padding-left: 14px;
 }
 
 .pointsRulesList li::before {
-  content: "✦";
+  content: "•";
   position: absolute;
   left: 0;
   color: var(--primary-accent);
-  font-size: 0.7rem;
+  font-weight: bold;
 }
 
 .pointsBalanceBox {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
   background: var(--surface-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 16px;
 }
 
 .pointsBalanceItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
   background: var(--surface-primary);
   border: 1px solid var(--border-color);
 }
 
 .pointsBalanceItem span {
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
   font-weight: 600;
 }
 
 .pointsBalanceItem strong {
-  font-family: var(--font-serif);
-  font-size: 1.2rem;
-  font-weight: 400;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--primary-accent);
-  letter-spacing: 0.5px;
 }
 
 .pointsBalanceItem:nth-child(2) strong {
-  color: var(--success-color);
+  color: var(--success-color, #10b981);
 }

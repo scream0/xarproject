@@ -16,7 +16,6 @@ export default function LoginForm() {
     email: "",
     password: "",
     confirmPassword: "",
-    phone: "",
   });
 
   const [rememberMe, setRememberMe] = useState(false);
@@ -26,9 +25,6 @@ export default function LoginForm() {
   const [successMessage, setSuccessMessage] = useState("");
 
   const [isRegister, setIsRegister] = useState(false);
-  const [isPhoneMode, setIsPhoneMode] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [isFormFocused, setIsFormFocused] = useState(false);
 
   const { form } = loginConfig || {};
@@ -122,87 +118,13 @@ export default function LoginForm() {
   };
 
   // ==========================================
-  // 1. KIRIM OTP KE WHATSAPP
-  // ==========================================
-  const handleSendOtp = async () => {
-    if (!formData.phone) {
-      setError(form?.validation?.phoneRequired || "Silakan isi nomor HP Anda terlebih dahulu.");
-      return;
-    }
-    setError("");
-    setSuccessMessage("");
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("/api/auth/send-whatsapp-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Gagal mengirim OTP.");
-
-      setOtpSent(true);
-      setSuccessMessage(`Kode OTP sukses dikirim ke WhatsApp ${formData.phone}`);
-    } catch (err) {
-      setError(err.message || "Gagal mengirim WhatsApp OTP.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ==========================================
-  // 2. VERIFIKASI OTP & LOGIN WHATSAPP
-  // ==========================================
-  const handleVerifyOtp = async () => {
-    if (!otpCode) {
-      setError(form?.validation?.otpRequired || "Silakan masukkan kode OTP terlebih dahulu.");
-      return;
-    }
-    setError("");
-    setSuccessMessage("");
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("/api/auth/verify-whatsapp-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone, otp: otpCode }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Verifikasi OTP gagal.");
-
-      setCustomer({
-        name: "User WhatsApp",
-        email: data.email,
-        phone: formData.phone,
-      });
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await handlePostLoginRedirect(user.id);
-      } else {
-        window.location.replace(callbackUrl);
-      }
-    } catch (err) {
-      setError(err.message || "Kode OTP salah atau kedaluwarsa.");
-      setIsLoading(false);
-    }
-  };
-
-  // ==========================================
-  // 3. LOGIN & REGISTER DENGAN EMAIL/PASSWORD SUPABASE
+  // LOGIN & REGISTER DENGAN EMAIL/PASSWORD SUPABASE
   // ==========================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccessMessage("");
     setIsLoading(true);
-
-    if (isPhoneMode) {
-      await handleVerifyOtp();
-      return;
-    }
 
     if (isRegister) {
       if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -305,23 +227,17 @@ export default function LoginForm() {
 
   const toggleRegisterMode = () => {
     setIsRegister(!isRegister);
-    setIsPhoneMode(false);
     setError("");
     setSuccessMessage("");
-    setOtpSent(false);
-    setOtpCode("");
   };
 
   const getFormTitle = () => {
     if (isRegister) return form?.titles?.register || "CREATE ACCOUNT";
-    if (isPhoneMode) return form?.titles?.phone || "WHATSAPP OTP SIGN IN";
     return form?.title || "SIGN IN";
   };
 
   const getSubmitButtonText = () => {
     if (isRegister) return form?.buttons?.signUp || "SIGN UP";
-    if (isPhoneMode && otpSent) return form?.buttons?.verifyOtp || "VERIFIKASI OTP";
-    if (isPhoneMode && !otpSent) return form?.buttons?.sendOtp || "KIRIM KODE OTP";
     return form?.buttonText || "SIGN IN";
   };
 
@@ -351,7 +267,7 @@ export default function LoginForm() {
       <div className={styles.loginCard}>
         <h2 className={styles.loginTitle}>{getFormTitle()}</h2>
 
-        <form onSubmit={isPhoneMode && !otpSent ? (e) => { e.preventDefault(); handleSendOtp(); } : handleSubmit} className={styles.loginForm}>
+        <form onSubmit={handleSubmit} className={styles.loginForm}>
           {error && <div className={styles.errorMessage}>{error}</div>}
           {successMessage && <div className={styles.successMessage}>{successMessage}</div>}
 
@@ -360,8 +276,7 @@ export default function LoginForm() {
             const shouldRender =
               field.visibility === "always" ||
               (field.visibility === "registerOnly" && isRegister) ||
-              (field.visibility === "phoneModeOnly" && isPhoneMode && !otpSent && field.name === "phone") ||
-              (field.visibility === "emailModeOnly" && !isPhoneMode);
+              field.visibility === "emailModeOnly";
 
             if (!shouldRender) return null;
 
@@ -375,7 +290,7 @@ export default function LoginForm() {
                   onChange={handleChange}
                   className={styles.inputField}
                   disabled={isLoading}
-                  required={field.required && (isRegister || !isPhoneMode)}
+                  required={field.required}
                   onFocus={() => setIsFormFocused(true)}
                   onBlur={() => setIsFormFocused(false)}
                 />
@@ -383,23 +298,7 @@ export default function LoginForm() {
             );
           })}
 
-          {isPhoneMode && otpSent && (
-            <div className={styles.inputWrapper}>
-              <input
-                type="text"
-                placeholder={form?.otpPlaceholder || "Masukkan 6 digit OTP WhatsApp"}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                className={styles.inputField}
-                disabled={isLoading}
-                maxLength={6}
-                onFocus={() => setIsFormFocused(true)}
-                onBlur={() => setIsFormFocused(false)}
-              />
-            </div>
-          )}
-
-          {!isRegister && !isPhoneMode && (
+          {!isRegister && (
             <div className={styles.optionsRow}>
               <label className={styles.checkboxLabel}>
                 <input
@@ -430,25 +329,6 @@ export default function LoginForm() {
             {isLoading ? <span className={styles.spinner}></span> : getSubmitButtonText()}
           </button>
         </form>
-
-        {!isRegister && (
-          <button
-            type="button"
-            className={styles.switchModeBtn}
-            onClick={() => {
-              setIsPhoneMode(!isPhoneMode);
-              setError("");
-              setSuccessMessage("");
-              setOtpSent(false);
-              setOtpCode("");
-            }}
-            disabled={isLoading}
-          >
-            {isPhoneMode
-              ? form?.switchText?.emailMode || "Masuk dengan Email & Password"
-              : form?.switchText?.phoneMode || "Masuk dengan WhatsApp OTP"}
-          </button>
-        )}
 
         <button
           type="button"

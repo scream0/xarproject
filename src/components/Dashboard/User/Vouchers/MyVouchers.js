@@ -64,14 +64,12 @@ const MyVouchers = ({
       {!isCheckoutMode && (
         <div className={styles.sectionGroup}>
           <h2 className={styles.sectionTitle}>Voucher Tersedia</h2>
-         <div className={styles.availableVouchersList}>
+          <div className={styles.availableVouchersList}>
             {availableVouchers.length > 0 ? (
               availableVouchers.map((voucher) => {
-                // Perhatikan penggunaan Number() di sini agar sinkron dengan claimedVoucherIds
-    const voucherNumId = Number(voucher.id);
-                const isClaimed = claimedVoucherIds.has(voucherNumId) || 
-                                  claimedVouchers.some(cv => Number(cv.voucher_id || cv.vouchers?.id) === voucherNumId);
+                const isClaimed = claimedVoucherIds.has(String(voucher.id));
                 const isClaiming = claimingId === voucher.id;
+
                 return (
                   <div key={voucher.id} className={styles.voucherCardWrapper}>
                     <VoucherCard voucher={voucher} />

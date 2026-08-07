@@ -113,7 +113,7 @@ export default function UserSettings({
             >
               <div className={styles.dangerCardLeft}>
                 <AppIcon name="log-out" size={18} />
-                <span>Keluar dari Sesi (Logout)</span>
+                <span>LOGOUT</span>
               </div>
               <span className={styles.chevronIcon}>›</span>
             </button>

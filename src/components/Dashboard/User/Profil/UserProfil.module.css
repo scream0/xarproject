@@ -1,17 +1,15 @@
 /* ====================================================
-   NAVBAR ATAS MELAYANG (Clean & Luxury)
+   NAVBAR ATAS MELAYANG (Clean & Minimalist)
    ==================================================== */
 .shopNavbar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   background: var(--surface-primary);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 0.75rem 1.25rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 1rem;
@@ -20,7 +18,7 @@
 .navbarActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .chatIconBtnNavbar,
@@ -28,14 +26,14 @@
   background: var(--surface-secondary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -44,33 +42,31 @@
     background: var(--surface-primary);
     border-color: var(--primary-accent);
     color: var(--primary-accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 }
 
 .svgIcon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
   fill: none;
 }
 
 /* ====================================================
-   PROFILE SECTION CSS (Luxury High-End Theme)
+   PROFILE SECTION CSS (Clean Look Modern System)
    ==================================================== */
 .workspaceInner {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  max-width: 1400px;
+  gap: 20px;
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
-  padding-bottom: 5.5rem; 
+  padding-bottom: 5rem; 
 }
 
 @media (min-width: 768px) {
@@ -81,47 +77,40 @@
 
 .sectionHeaderCard {
   background: var(--surface-primary);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .sectionHeaderTitle {
-  font-family: var(--font-serif);
-  font-size: 1.25rem;
-  font-weight: 400;
-  letter-spacing: 2px;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 
 .sectionHeaderSubtitle {
-  font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   margin: 0;
-  letter-spacing: 0.5px;
 }
 
 .avatar {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   overflow: hidden;
   background: var(--surface-secondary);
-  border: 1.5px solid var(--primary-accent);
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .avatar img {
@@ -145,61 +134,56 @@
   align-items: center;
   justify-content: space-between;
   background: var(--surface-primary);
-  padding: 16px 20px;
-  border-radius: 14px;
+  padding: 14px 18px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .backToProfileBtn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: var(--surface-secondary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 0.55rem 1.1rem;
-  border-radius: 10px;
-  font-family: var(--font-sans, sans-serif);
-  font-size: 0.78rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .backToProfileBtn:hover {
   border-color: var(--primary-accent);
   color: var(--primary-accent);
-  background: rgba(var(--primary-accent-rgb, 197, 160, 89), 0.08);
-  transform: translateX(-2px);
+  background: var(--surface-primary);
 }
 
 .tabTitle {
   margin: 0;
-  font-family: var(--font-serif, serif);
-  font-size: 1.15rem;
-  font-weight: 500;
-  letter-spacing: 1px;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
 /* ====================================================
-   Modals
+   Modals (Clean Flat Design)
    ==================================================== */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: 20px;
+  padding: 16px;
   box-sizing: border-box;
-  animation: fadeInOverlay 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeInOverlay 0.2s ease-out;
 }
 
 @keyframes fadeInOverlay {
@@ -211,23 +195,23 @@
   background: var(--surface-primary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 28px;
+  padding: 24px;
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   max-height: 90vh;
   overflow-y: auto;
   box-sizing: border-box;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-  animation: scaleUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  animation: scaleUpModal 0.2s ease-out;
 }
 
 @keyframes scaleUpModal {
   from {
     opacity: 0;
-    transform: translateY(15px) scale(0.97);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -240,26 +224,23 @@
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.85rem;
+  padding-bottom: 0.75rem;
 }
 
 .modalTitle {
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 400;
-  letter-spacing: 2px;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  text-transform: uppercase;
 }
 
 .closeModalBtn {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: color 0.3s ease;
+  transition: color 0.15s ease;
 }
 
 .closeModalBtn:hover {
@@ -278,15 +259,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  font-family: var(--font-sans);
+  border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 0.6rem 1.25rem;
+  transition: all 0.15s ease;
+  padding: 0.55rem 1rem;
   border: 1px solid transparent;
 }
 
@@ -296,35 +274,45 @@
   color: var(--text-primary);
 }
 
+.actionBtnOutline:hover {
+  background: var(--surface-primary);
+  border-color: var(--text-secondary);
+}
+
 .actionBtnPrimary {
   background: var(--primary-accent);
   border-color: var(--primary-accent);
-  color: var(--primary-accent-text);
-  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+  color: var(--primary-accent-text, #ffffff);
+  box-shadow: none;
   text-align: center;
 }
 
+.actionBtnPrimary:hover {
+  opacity: 0.9;
+}
+
 .actionBtnDanger {
-  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
-  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.08);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.2);
   color: var(--danger-color, #ef4444);
   text-align: center;
+}
+
+.actionBtnDanger:hover {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.15);
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
 .inputLabel {
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
 }
 
 .formInput,
@@ -333,13 +321,19 @@
   background: var(--surface-secondary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 0.85rem 1rem;
-  border-radius: 6px;
-  font-family: var(--font-sans);
-  font-size: 0.9rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
   outline: none;
   width: 100%;
   box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.formInput:focus,
+.formSelect:focus,
+.formTextarea:focus {
+  border-color: var(--primary-accent);
 }
 
 .inputWithPrefix {
@@ -347,44 +341,46 @@
   align-items: center;
   background: var(--surface-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
 .inputWithPrefix span {
-  padding-left: 1rem;
+  padding-left: 0.85rem;
   color: var(--text-secondary);
   font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .inputWithPrefix input {
   background: transparent;
   border: none;
   color: var(--text-primary);
-  padding: 0.85rem 1rem;
+  padding: 0.7rem 0.85rem;
   outline: none;
   width: 100%;
+  font-size: 0.85rem;
 }
 
 .avatarUpload {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .formGroupCheckbox {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 14px 0;
-  font-size: 0.85rem;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 0.82rem;
   color: var(--text-primary);
 }
 
 .modalFooter {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
   border-top: 1px solid var(--border-color);
-  padding-top: 16px;
+  padding-top: 14px;
 }
