@@ -27,7 +27,7 @@ export default function ProfileSection() {
 
   const [isManageAddressModalOpen, setIsManageAddressModalOpen] = useState(false);
 
-  // Data Profil Utama
+  // Data Profil Utama (Sinkronkan claimed_vouchers menjadi user_vouchers sesuai API)
   const [profile, setProfile] = useState({
     username: "",
     fullName: "",
@@ -39,7 +39,7 @@ export default function ProfileSection() {
     photoPublicId: "",
     memberTier: "VIP Collector",
     newsletterSubscribed: true,
-    claimed_vouchers: [], 
+    user_vouchers: [], 
   });
 
   const [availableVouchers, setAvailableVouchers] = useState([]);
@@ -112,7 +112,7 @@ export default function ProfileSection() {
         photoPublicId: "",
         memberTier: "VIP Collector",
         newsletterSubscribed: true,
-        claimed_vouchers: [], 
+        user_vouchers: [], 
       });
       setAvailableVouchers([]);
       setAddresses([]);
@@ -163,7 +163,7 @@ export default function ProfileSection() {
             data.photo_public_id || extractPublicIdFromUrl(photoUrlToUse),
           memberTier: data.member_tier || "VIP Collector",
           newsletterSubscribed: data.newsletter_subscribed ?? true,
-          claimed_vouchers: data.claimed_vouchers || [], 
+          user_vouchers: data.user_vouchers || [], 
         });
         setAddresses(data.addresses || []);
       } else {
@@ -178,7 +178,7 @@ export default function ProfileSection() {
           newsletterSubscribed: true,
           gender: "",
           birthDate: "",
-          claimed_vouchers: [], 
+          user_vouchers: [], 
         });
         setAddresses([]);
       }
@@ -401,7 +401,6 @@ export default function ProfileSection() {
     }
   };
 
-  // Fungsi Logout Langsung tanpa Modal Pop-up
   const handleLogout = async () => {
     if (loggingOut) return;
     const toastId = toast.loading("Keluar dari sesi...");
@@ -579,7 +578,7 @@ export default function ProfileSection() {
             }}
             onOpenManageAddressModal={() => setIsManageAddressModalOpen(true)}
             onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
-            onOpenLogoutModal={handleLogout} // Langsung panggil handleLogout tanpa modal pop-up
+            onOpenLogoutModal={handleLogout}
             onDeleteAccount={handleDeleteAccount}
           />
         ) : activeTab === "wishlist" ? (
@@ -641,10 +640,10 @@ export default function ProfileSection() {
                 <OrdersSection />
             </div>
 
-            {/* MyVouchers Section */}
+            {/* MyVouchers Section: Mengirimkan user_vouchers yang diambil dari profil */}
             <MyVouchers
               availableVouchers={availableVouchers}
-              claimedVouchers={profile.claimed_vouchers || []}
+              claimedVouchers={profile.user_vouchers || []}
               refreshProfile={fetchProfile}
             />
           </>
@@ -652,8 +651,8 @@ export default function ProfileSection() {
       </Suspense>
 
       {/* ====================================================
-         MODAL KELOLA & LIST DAFTAR ALAMAT (Maks 3 Alamat)
-         ==================================================== */}
+          MODAL KELOLA & LIST DAFTAR ALAMAT (Maks 3 Alamat)
+          ==================================================== */}
       {isManageAddressModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsManageAddressModalOpen(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
@@ -737,8 +736,8 @@ export default function ProfileSection() {
       )}
 
       {/* ====================================================
-         MODAL SUBSIDIARIS (Edit Profil, Tambah/Edit Alamat, Password)
-         ==================================================== */}
+          MODAL SUBSIDIARIS (Edit Profil, Tambah/Edit Alamat, Password)
+          ==================================================== */}
       {isProfileModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsProfileModalOpen(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>

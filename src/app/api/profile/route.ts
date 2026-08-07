@@ -14,23 +14,21 @@ async function getClaimedVouchersForUser(userId: string) {
     .select(
       `
       id,
+      voucher_id,
       claimed_at,
       used_at,
       order_id,
       status,
-      vouchers (
+      vouchers:voucher_id (
         id,
         code,
         title,
-        description,
         discount_type,
-        discount_value,
-        max_discount_amount,
-        min_purchase_amount,
-        valid_from,
+        discount_amount,
+        min_purchase,
+        max_discount,
         valid_until,
-        is_active,
-        publicly_visible
+        is_active
       )
     `,
     )
@@ -42,31 +40,16 @@ async function getClaimedVouchersForUser(userId: string) {
     return [];
   }
 
-  // Petakan data dengan mempertahankan struktur objek vouchers agar terbaca oleh <MyVouchers />
   return (data || []).map((cv: any) => ({
-    id: cv.id, // ID dari tabel user_vouchers
+    id: cv.id, // Berupa UUID (misal: d1cf2709-...)
+    voucher_id: cv.voucher_id, // Berupa Integer (misal: 1)
     claimed_at: cv.claimed_at,
     used_at: cv.used_at,
-    status: cv.status,
+    status: cv.status || "active",
     order_id: cv.order_id,
-    // Sediakan objek vouchers agar komponen UI dapat mengakses properties di dalamnya (misal: voucher.code, voucher.title)
-    vouchers: cv.vouchers ? {
-      id: cv.vouchers.id,
-      code: cv.vouchers.code,
-      title: cv.vouchers.title,
-      description: cv.vouchers.description,
-      discount_type: cv.vouchers.discount_type,
-      discount_value: cv.vouchers.discount_value,
-      max_discount_amount: cv.vouchers.max_discount_amount,
-      min_purchase_amount: cv.vouchers.min_purchase_amount,
-      valid_from: cv.vouchers.valid_from,
-      valid_until: cv.vouchers.valid_until,
-      is_active: cv.vouchers.is_active,
-      publicly_visible: cv.vouchers.publicly_visible,
-    } : null,
+    vouchers: cv.vouchers || null,
   }));
 }
-
 // 1. READ: Mengambil profil user yang sedang login (+ claimed_vouchers)
 export async function GET(request: Request) {
   try {

@@ -15,10 +15,11 @@ const MyVouchers = ({
 }) => {
   const [claimingId, setClaimingId] = useState(null);
 
-  // Fleksibel menangkap key ID dari database (bisa cv.voucher_id atau cv.id)
+  // Pencocokan ID voucher yang sudah diklaim secara aman (mendukung cv.voucher_id atau cv.vouchers?.id)
+// Mencocokkan berdasarkan voucher_id (integer) agar akurat mendeteksi klaim
   const claimedVoucherIds = useMemo(() => {
     return new Set(
-      claimedVouchers.map((cv) => String(cv.voucher_id || cv.id))
+      claimedVouchers.map((cv) => Number(cv.voucher_id || cv.vouchers?.id))
     );
   }, [claimedVouchers]);
 
@@ -73,6 +74,7 @@ const MyVouchers = ({
                   <div key={voucher.id} className={styles.voucherCardWrapper}>
                     <VoucherCard voucher={voucher} />
                     <button
+                      type="button"
                       onClick={() => handleClaimVoucher(voucher.id)}
                       disabled={isClaimed || isClaiming}
                       className={`${styles.claimButton} ${isClaimed ? styles.claimedButton : ""}`}
@@ -93,16 +95,28 @@ const MyVouchers = ({
         <h2 className={styles.sectionTitle}>Voucher Saya</h2>
         <div className={styles.claimedVouchersList}>
           {claimedVouchers.length > 0 ? (
-            claimedVouchers.map((cv) => (
-              <div key={cv.id || cv.voucher_id} className={styles.voucherCardWrapper}>
-                <VoucherCard voucher={cv} statusText={cv.status === "used" ? "Digunakan" : "Diklaim"} />
-                {isCheckoutMode && (
-                  <button className={styles.claimButton} onClick={() => onSelectVoucher(cv)}>
-                    Pakai Voucher
-                  </button>
-                )}
-              </div>
-            ))
+            claimedVouchers.map((cv) => {
+              // Menyatukan data dari relasi object cv.vouchers agar terbaca oleh VoucherCard
+              const voucherData = cv.vouchers ? { ...cv.vouchers, status: cv.status } : cv;
+
+              return (
+                <div key={cv.id || cv.voucher_id} className={styles.voucherCardWrapper}>
+                  <VoucherCard 
+                    voucher={voucherData} 
+                    statusText={cv.status === "used" ? "Digunakan" : "Diklaim"} 
+                  />
+                  {isCheckoutMode && (
+                    <button 
+                      type="button" 
+                      className={styles.claimButton} 
+                      onClick={() => onSelectVoucher(cv)}
+                    >
+                      Pakai Voucher
+                    </button>
+                  )}
+                </div>
+              );
+            })
           ) : (
             <p className={styles.emptyState}>Belum ada voucher diklaim.</p>
           )}
