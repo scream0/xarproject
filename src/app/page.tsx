@@ -11,6 +11,28 @@ import { Modal } from "@/components/UI/Modal/ProductModal";
 import { useStore } from "@/context/StoreContext";
 import VoucherCard from "@/components/Voucher/VoucherCard"; // New import
 
+// Define the PublicVoucher interface based on the database schema
+interface PublicVoucher {
+  id: string; // uuid
+  code: string;
+  title: string;
+  description?: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  max_discount_amount?: number;
+  min_purchase_amount: number;
+  valid_from: string; // ISO string
+  valid_until?: string; // ISO string
+  is_active: boolean;
+  publicly_visible: boolean;
+  claim_limit?: number;
+  claim_count: number;
+  max_claim_per_user: number;
+  created_by?: string; // uuid
+  created_at: string; // timestamptz
+  updated_at: string; // timestamptz
+}
+
 // Komponen Wrapper untuk animasi
 const FadeInSection = ({
   children,
@@ -33,7 +55,7 @@ export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart, rupiah } = useStore();
-  const [publicVouchers, setPublicVouchers] = useState([]); // New state
+  const [publicVouchers, setPublicVouchers] = useState<PublicVoucher[]>([]); // New state with type
 
   // New useEffect to fetch public vouchers
   useEffect(() => {
@@ -58,7 +80,7 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const handleClaimVoucher = async (voucher) => {
+  const handleClaimVoucher = async (voucher: PublicVoucher) => { // Type the parameter
     // This part requires user authentication, which isn't present on landing page
     // For now, I will just log. A real implementation would require a login flow.
     // Or this button on the landing page could redirect to login/register.
@@ -87,7 +109,7 @@ export default function Home() {
                   Voucher Menarik Untukmu
                 </h2>
                 <div style={{ display: "flex", gap: "1rem", overflowX: "auto", paddingBottom: "1rem" }}>
-                  {publicVouchers.map((voucher) => (
+                  {publicVouchers.map((voucher: PublicVoucher) => ( // Type the map parameter
                     <VoucherCard key={voucher.id} voucher={voucher} onActionClick={handleClaimVoucher} buttonText="Klaim Sekarang" />
                   ))}
                 </div>
