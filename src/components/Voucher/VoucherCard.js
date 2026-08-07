@@ -6,8 +6,8 @@ import { AppIcon } from '@/components/UI/Icon/AppIcon'; // Assuming this is a re
 
 const formatDiscount = (voucher) => {
   if (!voucher) return '';
-  const value = voucher.discount_value;
-  switch (voucher.discount_type) {
+  const value = voucher.discount_amount || 0;
+  switch (voucher.type) {
     case 'percentage':
       return `${value}% Diskon`;
     case 'fixed':

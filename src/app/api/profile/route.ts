@@ -26,13 +26,11 @@ async function getClaimedVouchersForUser(userId: string) {
         id,
         code,
         title,
-        description,
-        discount_type,
-        discount_value,
-        max_discount_amount,
-        min_purchase_amount,
-        valid_from,
-        valid_until
+        type,
+        discount_amount,
+        min_purchase,
+        valid_until,
+        is_active
       )
     `,
     )
@@ -57,13 +55,11 @@ async function getClaimedVouchersForUser(userId: string) {
     voucher_id: cv.voucher?.id,
     code: cv.voucher?.code,
     title: cv.voucher?.title,
-    description: cv.voucher?.description,
-    discount_type: cv.voucher?.discount_type,
-    discount_value: cv.voucher?.discount_value,
-    max_discount_amount: cv.voucher?.max_discount_amount,
-    min_purchase_amount: cv.voucher?.min_purchase_amount,
-    valid_from: cv.voucher?.valid_from,
+    type: cv.voucher?.type, // 'shipping' | 'percentage' | 'fixed'
+    discount_amount: cv.voucher?.discount_amount,
+    min_purchase: cv.voucher?.min_purchase,
     valid_until: cv.voucher?.valid_until,
+    voucher_is_active: cv.voucher?.is_active,
   }));
 }
 
