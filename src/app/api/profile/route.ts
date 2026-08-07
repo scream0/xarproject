@@ -1,21 +1,73 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-// Helper untuk verifikasi user dari token
-async function verifyUser(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) throw new Error("Unauthorized: No token provided");
-  const token = authHeader.split("Bearer ")[1];
-  if (!token) throw new Error("Unauthorized: Invalid token format");
+/**
+ * Ambil daftar voucher yang sudah diklaim user, lengkap dengan detail
+ * voucher-nya (judul, kode, jenis diskon, dsb) via join ke tabel vouchers.
+ * Hasilnya di-flatten jadi satu object per klaim, siap dipakai langsung
+ * oleh <VoucherCard voucher={claimedVoucher} .../> di frontend.
+ */
+async function getClaimedVouchersForUser(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("claimed_vouchers")
+    .select(
+      `
+      id,
+      status,
+      claimed_at,
+      used_at,
+      expired_at,
+      discount_applied,
+      order_id,
+      voucher:vouchers (
+        id,
+        code,
+        title,
+        description,
+        discount_type,
+        discount_value,
+        max_discount_amount,
+        min_purchase_amount,
+        valid_from,
+        valid_until
+      )
+    `,
+    )
+    .eq("user_id", userId)
+    .order("claimed_at", { ascending: false });
 
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) throw new Error("Unauthorized: Invalid token");
-  return user;
+  if (error) {
+    console.error("Gagal memuat claimed_vouchers:", error.message);
+    return [];
+  }
+
+  // Flatten: gabungkan field klaim + field voucher jadi satu object rata,
+  // supaya frontend tidak perlu tahu struktur nested (claimedVoucher.voucher.code, dst)
+  return (data || []).map((cv: any) => ({
+    id: cv.id, // id baris claimed_vouchers (dipakai sebagai key & referensi klaim)
+    status: cv.status,
+    claimed_at: cv.claimed_at,
+    used_at: cv.used_at,
+    expired_at: cv.expired_at,
+    discount_applied: cv.discount_applied,
+    order_id: cv.order_id,
+    voucher_id: cv.voucher?.id,
+    code: cv.voucher?.code,
+    title: cv.voucher?.title,
+    description: cv.voucher?.description,
+    discount_type: cv.voucher?.discount_type,
+    discount_value: cv.voucher?.discount_value,
+    max_discount_amount: cv.voucher?.max_discount_amount,
+    min_purchase_amount: cv.voucher?.min_purchase_amount,
+    valid_from: cv.voucher?.valid_from,
+    valid_until: cv.voucher?.valid_until,
+  }));
 }
 
-// 1. READ: Mengambil profil user yang sedang login
+// 1. READ: Mengambil profil user yang sedang login (+ claimed_vouchers)
 export async function GET(request: Request) {
   try {
     const user = await verifyUser(request);
@@ -27,50 +79,38 @@ export async function GET(request: Request) {
       .single();
 
     // Jika profil belum ada di database, buatkan secara otomatis (Self-healing)
-    if (dbError && dbError.code === 'PGRST116') { // PGRST116 is code for 'No rows found'
+    if (dbError && dbError.code === "PGRST116") {
       const defaultProfile = {
         id: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || user.user_metadata?.name || "",
-        username: user.email?.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "") || `user_${user.id.substring(0, 5)}`,
+        username:
+          user.email?.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "") ||
+          `user_${user.id.substring(0, 5)}`,
         role: "customer",
       };
-      
+
       const { data: newProfile, error: insertError } = await supabaseAdmin
         .from("profiles")
         .insert(defaultProfile)
         .select()
         .single();
-      
+
       if (!insertError) profile = newProfile;
     } else if (dbError) {
       throw new Error(dbError.message);
     }
 
-    // --- Fetch claimed vouchers ---
-    const { data: claimedVouchers, error: claimedVouchersError } = await supabaseAdmin
-      .from("claimed_vouchers")
-      .select(`
-        *, // Select all from claimed_vouchers
-        vouchers ( // Select all from joined vouchers table
-          id, code, title, description, discount_type, discount_value, max_discount_amount, min_purchase_amount, valid_from, valid_until
-        )
-      `)
-      .eq("user_id", user.id)
-      .order("claimed_at", { ascending: false });
+    // Ambil daftar voucher yang sudah diklaim user, sertakan di response profil
+    const claimedVouchers = await getClaimedVouchersForUser(user.id);
 
-    if (claimedVouchersError) {
-      console.error("Error fetching claimed vouchers:", claimedVouchersError);
-      // Log the error but don't block the profile response
-    }
-
-    // Add claimed vouchers to the profile object
-    const responseProfile = {
-      ...profile,
-      claimed_vouchers: claimedVouchers || [],
-    };
-
-    return NextResponse.json({ success: true, profile: responseProfile });
+    return NextResponse.json({
+      success: true,
+      profile: {
+        ...profile,
+        claimed_vouchers: claimedVouchers,
+      },
+    });
   } catch (error: any) {
     const status = error.message.includes("Unauthorized") ? 401 : 500;
     return NextResponse.json({ success: false, error: error.message }, { status });
@@ -141,10 +181,10 @@ export async function PUT(request: Request) {
 
     if (updateError) throw new Error(updateError.message);
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Data berhasil diperbarui", 
-      profile: updatedProfile 
+    return NextResponse.json({
+      success: true,
+      message: "Data berhasil diperbarui",
+      profile: updatedProfile,
     });
   } catch (error: any) {
     const status = error.message.includes("Unauthorized") ? 401 : 500;
