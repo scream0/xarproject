@@ -105,7 +105,7 @@ export default function Home() {
           <FadeInSection delay={0.3}>
             <section style={{ padding: "4rem 0", background: "var(--surface)" }}>
               <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 2rem" }}>
-                <h2 style={{ fontSize: "2.2rem", fontWeight: 700, textAlign: "center", marginBottom: "2rem", color: "var(--text-primary)" }}>
+                <h2 style={{ fontSize: "2.2rem", fontWeight: "700", textAlign: "center", marginBottom: "2rem", color: "var(--text-primary)" }}>
                   Voucher Menarik Untukmu
                 </h2>
                 <div style={{ display: "flex", gap: "1rem", overflowX: "auto", paddingBottom: "1rem" }}>
