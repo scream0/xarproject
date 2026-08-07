@@ -62,7 +62,7 @@ export default function Home() {
     // This part requires user authentication, which isn't present on landing page
     // For now, I will just log. A real implementation would require a login flow.
     // Or this button on the landing page could redirect to login/register.
-    console.log("Attempting to claim voucher:", voucher.vouchers?.code || voucher.code);
+    console.log("Attempting to claim voucher:", voucher.code);
     alert("Silakan login untuk mengklaim voucher ini.");
   };
 
