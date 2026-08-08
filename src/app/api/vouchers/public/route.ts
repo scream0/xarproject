@@ -12,10 +12,9 @@ export async function GET(req: Request) {
       .from("vouchers")
       .select("*")
       .eq("is_active", true)
-      .eq("publicly_visible", true)
       .or(`valid_until.is.null,valid_until.gt.${new Date().toISOString()}`)
       .order("valid_until", { ascending: true })
-      .order("created_at", { ascending: false });
+      .order("id", { ascending: false });
 
     if (error) {
       console.error("Error fetching public vouchers:", error);

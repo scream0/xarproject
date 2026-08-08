@@ -24,10 +24,10 @@ async function getClaimedVouchersForUser(userId: string) {
 
   const voucherIds = claims.map((c) => c.voucher_id).filter(Boolean);
 
-  const { data: vouchers, error: voucherError } = await supabaseAdmin
-    .from("vouchers")
-    .select("id, code, title, type, discount_amount, min_purchase, max_discount, valid_until, is_active")
-    .in("id", voucherIds);
+const { data: vouchers, error: voucherError } = await supabaseAdmin
+  .from("vouchers")
+  .select("id, code, title, type, discount_amount, min_purchase, valid_until, is_active")
+  .in("id", voucherIds);
 
   if (voucherError) {
     console.error("Gagal memuat detail vouchers:", voucherError.message);
