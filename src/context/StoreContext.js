@@ -512,8 +512,8 @@ export function StoreProvider({ children }) {
               }
             : null,
           discountAmount: promoSavings,
-             appliedVoucherId,   // <-- tambahan
-        voucherClaimId,     // <-- tambahan
+             appliedVoucherId,   
+        voucherClaimId,     
         voucherDiscount, 
         }),
       });

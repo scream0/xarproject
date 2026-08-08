@@ -73,24 +73,28 @@ export default function ProfileSection() {
     }
   };
 
-  useEffect(() => {
-    const getSessionData = async () => {
-      const { data: { session } } = await auth.getSession();
+ useEffect(() => {
+  const getSessionData = async () => {
+    const { data: { session } } = await auth.getSession();
+    setCurrentSession(session);
+    setCurrentUser(session?.user ?? null);
+  };
+
+  getSessionData();
+
+  const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
+    if (event === "TOKEN_REFRESHED") {
       setCurrentSession(session);
-      setCurrentUser(session?.user ?? null);
-    };
+      return; // jangan trigger fetchProfile ulang cuma karena token refresh
+    }
+    setCurrentSession(session);
+    setCurrentUser(session?.user ?? null);
+  });
 
-    getSessionData();
-
-    const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
-      setCurrentSession(session);
-      setCurrentUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
+  return () => {
+    subscription?.unsubscribe();
+  };
+}, []);
 
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !currentSession) {
@@ -163,7 +167,7 @@ export default function ProfileSection() {
       console.error("Gagal memuat profil:", err);
       toast.error(profileConfig.toasts.fetchError);
     }
-  }, [currentUser, currentSession]); 
+  },  [currentUser?.id]); 
 
   useEffect(() => {
     fetchProfile();
