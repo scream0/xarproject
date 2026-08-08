@@ -6,22 +6,66 @@ import VoucherCard from "@/components/Voucher/VoucherCard";
 import toast from "react-hot-toast";
 import { auth } from "@/lib/supabaseClient";
 
-const MyVouchers = ({ 
-  availableVouchers = [], 
-  claimedVouchers = [], 
-  refreshProfile, 
+const TABS = [
+  { key: "all", label: "Semua" },
+  { key: "active", label: "Aktif" },
+  { key: "used", label: "Terpakai" },
+  { key: "expired", label: "Kadaluarsa" },
+];
+
+const statusTextMap = {
+  active: "Aktif",
+  used: "Digunakan",
+  expired: "Kadaluarsa",
+};
+
+const MyVouchers = ({
+  availableVouchers = [],
+  claimedVouchers = [],
+  refreshProfile,
   isCheckoutMode = false,
-  onSelectVoucher 
+  onSelectVoucher,
 }) => {
   const [claimingId, setClaimingId] = useState(null);
+  const [optimisticClaimed, setOptimisticClaimed] = useState(new Set());
+  const [activeTab, setActiveTab] = useState("all");
 
-  // Pencocokan ID voucher yang sudah diklaim secara aman (mendukung cv.voucher_id atau cv.vouchers?.id)
-// Mencocokkan berdasarkan voucher_id (integer) agar akurat mendeteksi klaim
   const claimedVoucherIds = useMemo(() => {
-    return new Set(
-      claimedVouchers.map((cv) => Number(cv.voucher_id || cv.vouchers?.id))
-    );
+    const ids = claimedVouchers.map((cv) => Number(cv.voucher_id || cv.vouchers?.id));
+    return new Set([...ids, ...optimisticClaimed]);
+  }, [claimedVouchers, optimisticClaimed]);
+
+  const sortedClaimedVouchers = useMemo(() => {
+    return [...claimedVouchers].sort((a, b) => {
+      const aExpiry = a.vouchers?.valid_until ? new Date(a.vouchers.valid_until) : null;
+      const bExpiry = b.vouchers?.valid_until ? new Date(b.vouchers.valid_until) : null;
+
+      if (a.status === "active" && b.status !== "active") return -1;
+      if (b.status === "active" && a.status !== "active") return 1;
+
+      if (aExpiry && bExpiry) return aExpiry - bExpiry;
+      return 0;
+    });
   }, [claimedVouchers]);
+
+  const filteredClaimedVouchers = useMemo(() => {
+    if (activeTab === "all") return sortedClaimedVouchers;
+    return sortedClaimedVouchers.filter((cv) => cv.status === activeTab);
+  }, [sortedClaimedVouchers, activeTab]);
+
+  const tabCounts = useMemo(() => {
+    return {
+      all: claimedVouchers.length,
+      active: claimedVouchers.filter((cv) => cv.status === "active").length,
+      used: claimedVouchers.filter((cv) => cv.status === "used").length,
+      expired: claimedVouchers.filter((cv) => cv.status === "expired").length,
+    };
+  }, [claimedVouchers]);
+
+  // Mode checkout hanya boleh nampilin voucher aktif — gak bisa pilih yang sudah dipakai/kadaluarsa
+  const displayVouchers = isCheckoutMode
+    ? sortedClaimedVouchers.filter((cv) => cv.status === "active")
+    : filteredClaimedVouchers;
 
   const handleClaimVoucher = async (voucherId) => {
     setClaimingId(voucherId);
@@ -48,7 +92,8 @@ const MyVouchers = ({
 
       if (res.ok && data.success) {
         toast.success(data.message || "Berhasil!", { id: toastId });
-        if (refreshProfile) refreshProfile(); 
+        setOptimisticClaimed((prev) => new Set(prev).add(Number(voucherId)));
+        if (refreshProfile) refreshProfile();
       } else {
         throw new Error(data.error || "Gagal mengklaim.");
       }
@@ -67,21 +112,17 @@ const MyVouchers = ({
           <div className={styles.availableVouchersList}>
             {availableVouchers.length > 0 ? (
               availableVouchers.map((voucher) => {
-                 const isClaimed = claimedVoucherIds.has(Number(voucher.id)); // ✅ fix: Number, bukan String
+                const isClaimed = claimedVoucherIds.has(Number(voucher.id));
                 const isClaiming = claimingId === voucher.id;
 
                 return (
-                  <div key={voucher.id} className={styles.voucherCardWrapper}>
-                    <VoucherCard voucher={voucher} />
-                    <button
-                      type="button"
-                      onClick={() => handleClaimVoucher(voucher.id)}
-                      disabled={isClaimed || isClaiming}
-                      className={`${styles.claimButton} ${isClaimed ? styles.claimedButton : ""}`}
-                    >
-                      {isClaiming ? "Mengklaim..." : isClaimed ? "Sudah Diklaim" : "Klaim"}
-                    </button>
-                  </div>
+                  <VoucherCard
+                    key={voucher.id}
+                    voucher={voucher}
+                    disabled={isClaimed || isClaiming}
+                    buttonText={isClaiming ? "Mengklaim..." : isClaimed ? "Sudah Diklaim" : "Klaim"}
+                    onActionClick={() => !isClaimed && handleClaimVoucher(voucher.id)}
+                  />
                 );
               })
             ) : (
@@ -93,32 +134,42 @@ const MyVouchers = ({
 
       <div className={styles.sectionGroup} style={{ marginTop: "32px" }}>
         <h2 className={styles.sectionTitle}>Voucher Saya</h2>
-        <div className={styles.claimedVouchersList}>
-          {claimedVouchers.length > 0 ? (
-            claimedVouchers.map((cv) => {
-              // Menyatukan data dari relasi object cv.vouchers agar terbaca oleh VoucherCard
-              const voucherData = cv.vouchers ? { ...cv.vouchers, status: cv.status } : cv;
 
-              return (
-                <div key={cv.id || cv.voucher_id} className={styles.voucherCardWrapper}>
-                  <VoucherCard 
-                    voucher={voucherData} 
-                    statusText={cv.status === "used" ? "Digunakan" : "Diklaim"} 
-                  />
-                  {isCheckoutMode && (
-                    <button 
-                      type="button" 
-                      className={styles.claimButton} 
-                      onClick={() => onSelectVoucher(cv)}
-                    >
-                      Pakai Voucher
-                    </button>
-                  )}
-                </div>
-              );
-            })
+        {!isCheckoutMode && (
+          <div className={styles.tabBar}>
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                className={`${styles.tabButton} ${activeTab === tab.key ? styles.tabButtonActive : ""}`}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+                {tabCounts[tab.key] > 0 && <span className={styles.tabCount}>{tabCounts[tab.key]}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className={styles.claimedVouchersList}>
+          {displayVouchers.length > 0 ? (
+            displayVouchers.map((cv) => (
+              <VoucherCard
+                key={cv.id || cv.voucher_id}
+                voucher={cv}
+                statusText={statusTextMap[cv.status] || "Diklaim"}
+                onActionClick={isCheckoutMode ? () => onSelectVoucher(cv) : undefined}
+                buttonText="Pakai Voucher"
+              />
+            ))
           ) : (
-            <p className={styles.emptyState}>Belum ada voucher diklaim.</p>
+            <p className={styles.emptyState}>
+              {isCheckoutMode
+                ? "Tidak ada voucher aktif yang bisa digunakan."
+                : activeTab === "all"
+                  ? "Belum ada voucher diklaim."
+                  : `Tidak ada voucher ${TABS.find((t) => t.key === activeTab)?.label.toLowerCase()}.`}
+            </p>
           )}
         </div>
       </div>

@@ -111,20 +111,19 @@ export default function CheckoutPage() {
   }, [router]);
 
   // Fetch voucher yang sudah diklaim oleh user dari API profile
-  const fetchUserClaimedVouchers = async (userId, token) => {
-    try {
-      const res = await fetch("/api/profile", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const result = await res.json();
-      if (res.ok && result.success && result.profile) {
-        setClaimedVouchers(result.profile.claimed_vouchers || []);
-      }
-    } catch (err) {
-      console.error("Gagal memuat voucher tersimpan:", err);
+const fetchUserClaimedVouchers = async (userId, token) => {
+  try {
+    const res = await fetch("/api/profile", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const result = await res.json();
+    if (res.ok && result.success && result.profile) {
+      setClaimedVouchers(result.profile.user_vouchers || []); // fix: user_vouchers, bukan claimed_vouchers
     }
-  };
-
+  } catch (err) {
+    console.error("Gagal memuat voucher tersimpan:", err);
+  }
+};
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyOverflowY = document.body.style.overflowY;
@@ -463,11 +462,24 @@ export default function CheckoutPage() {
   // ── Pilihan Voucher ──
   const subtotal = activePromo ? discountedCartTotal : cartTotal;
 
-  const handleSelectVoucherFromModal = (voucher) => {
-    setAppliedVoucher(voucher);
-    setShowVoucherModal(false);
-    toast.success(`Voucher ${voucher.code} berhasil diterapkan!`);
-  };
+const handleSelectVoucherFromModal = (claimedVoucherEntry) => {
+  const voucherDetail = claimedVoucherEntry.vouchers || claimedVoucherEntry;
+
+  // Validasi minimum belanja, ala Shopee/Tokped: voucher gak bisa dipakai kalau belum memenuhi syarat
+  if (voucherDetail.min_purchase && subtotal < voucherDetail.min_purchase) {
+    toast.error(
+      `Minimum belanja untuk voucher ini adalah ${rupiah(voucherDetail.min_purchase)}`
+    );
+    return;
+  }
+
+  setAppliedVoucher({
+    ...voucherDetail,
+    claimId: claimedVoucherEntry.id, // id row user_vouchers, dipakai nanti untuk tandai "used" setelah bayar
+  });
+  setShowVoucherModal(false);
+  toast.success(`Voucher ${voucherDetail.code} berhasil diterapkan!`);
+};
 
   const handleRemoveVoucher = () => {
     setAppliedVoucher(null);
@@ -499,20 +511,21 @@ export default function CheckoutPage() {
 
     const selectedCourierInfo = courierOptions.find((c) => c.key === selectedCourierKey);
 
-    localStorage.setItem(
-      "checkout_shipping",
-      JSON.stringify({
-        addressId: selectedAddress.id,
-        address: selectedAddress,
-        courierKey: selectedCourierKey,
-        courierName: selectedCourierInfo?.courierName || "",
-        courierService: selectedCourierInfo?.service || "",
-        courierEtd: selectedCourierInfo?.etd || "",
-        shippingCost,
-        appliedVoucherId: appliedVoucher?.id || null,
-        voucherDiscount,
-      }),
-    );
+localStorage.setItem(
+  "checkout_shipping",
+  JSON.stringify({
+    addressId: selectedAddress.id,
+    address: selectedAddress,
+    courierKey: selectedCourierKey,
+    courierName: selectedCourierInfo?.courierName || "",
+    courierService: selectedCourierInfo?.service || "",
+    courierEtd: selectedCourierInfo?.etd || "",
+    shippingCost,
+    appliedVoucherId: appliedVoucher?.id || null,       // id voucher (untuk referensi produk voucher)
+    appliedVoucherClaimId: appliedVoucher?.claimId || null, // id klaim user (untuk mark used_at)
+    voucherDiscount,
+  }),
+);
 
     await processPayment();
   };

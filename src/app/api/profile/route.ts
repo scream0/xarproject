@@ -9,46 +9,51 @@ export const dynamic = "force-dynamic";
  * lengkap dengan detail voucher-nya via join ke tabel vouchers.
  */
 async function getClaimedVouchersForUser(userId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data: claims, error: claimError } = await supabaseAdmin
     .from("user_vouchers")
-    .select(
-      `
-      id,
-      voucher_id,
-      claimed_at,
-      used_at,
-      order_id,
-      status,
-      vouchers:voucher_id (
-        id,
-        code,
-        title,
-        type,
-        discount_amount,
-        min_purchase,
-        max_discount,
-        valid_until,
-        is_active
-      )
-    `,
-    )
+    .select("id, voucher_id, used_at, order_id, created_at")
     .eq("user_id", userId)
-    .order("claimed_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Gagal memuat user_vouchers:", error.message);
+  if (claimError) {
+    console.error("Gagal memuat user_vouchers:", claimError.message);
     return [];
   }
 
-  return (data || []).map((cv: any) => ({
-    id: cv.id, // Berupa UUID (misal: d1cf2709-...)
-    voucher_id: cv.voucher_id, // Berupa Integer (misal: 1)
-    claimed_at: cv.claimed_at,
-    used_at: cv.used_at,
-    status: cv.status || "active",
-    order_id: cv.order_id,
-    vouchers: cv.vouchers || null,
-  }));
+  if (!claims || claims.length === 0) return [];
+
+  const voucherIds = claims.map((c) => c.voucher_id).filter(Boolean);
+
+  const { data: vouchers, error: voucherError } = await supabaseAdmin
+    .from("vouchers")
+    .select("id, code, title, type, discount_amount, min_purchase, max_discount, valid_until, is_active")
+    .in("id", voucherIds);
+
+  if (voucherError) {
+    console.error("Gagal memuat detail vouchers:", voucherError.message);
+  }
+
+  const voucherMap = new Map((vouchers || []).map((v) => [v.id, v]));
+
+  return claims.map((cv) => {
+    const voucherDetail = voucherMap.get(cv.voucher_id) || null;
+    const now = new Date();
+    const isExpired = voucherDetail?.valid_until ? new Date(voucherDetail.valid_until) < now : false;
+
+    let status = "active";
+    if (cv.used_at) status = "used";
+    else if (isExpired) status = "expired";
+
+    return {
+      id: cv.id,
+      voucher_id: cv.voucher_id,
+      claimed_at: cv.created_at,
+      used_at: cv.used_at,
+      status,
+      order_id: cv.order_id,
+      vouchers: voucherDetail,
+    };
+  });
 }
 // 1. READ: Mengambil profil user yang sedang login (+ claimed_vouchers)
 export async function GET(request: Request) {

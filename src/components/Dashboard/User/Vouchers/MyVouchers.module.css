@@ -77,7 +77,51 @@
   border-radius: 8px;
   grid-column: 1 / -1;
 }
+.tabBar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
 
+.tabButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.tabButton:hover {
+  background: var(--surface-secondary);
+}
+
+.tabButtonActive {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+}
+
+.tabCount {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.tabButton:not(.tabButtonActive) .tabCount {
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+}
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .myVouchersSection {

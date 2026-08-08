@@ -33,8 +33,12 @@ import {
   Clock,
   LogOut,
   ArrowLeft,
-  Ticket, // <-- Tambahan Ikon Voucher (Tiket Kupon)
+  Ticket, 
   Tag,
+    Percent,      
+  DollarSign,   
+  Copy,        
+  Check,
 } from "lucide-react";
 
 const iconMap = {
@@ -87,10 +91,14 @@ const iconMap = {
   exit: LogOut,
   "arrow-left": ArrowLeft,
   back: ArrowLeft,
-  ticket: Ticket,         // <-- Bisa dipanggil dengan name="ticket"
-  voucher: Ticket,        // <-- Bisa dipanggil dengan name="voucher"
-  tag: Tag,               // <-- Bisa dipanggil dengan name="tag"
+  ticket: Ticket,         
+  voucher: Ticket,        
+  tag: Tag,               
   coupon: Ticket,
+    percent: Percent,
+  "dollar-sign": DollarSign,
+  "copy": Copy,
+  "check": Check,
 };
 
 export function AppIcon({ name, className, size, strokeWidth = 2, ...props }) {

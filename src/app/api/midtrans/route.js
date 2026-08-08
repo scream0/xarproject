@@ -28,7 +28,8 @@ async function createOrderInSupabase(orderDetails) {
     status,
     paymentType,
     discountAmount,
-    appliedVoucherId
+    appliedVoucherId,
+    voucherClaimId,
   } = orderDetails;
 
   // 1. Prepare the main order payload
@@ -46,6 +47,7 @@ async function createOrderInSupabase(orderDetails) {
     customer_phone: customerPhone,
     shipping_address: shippingAddress,
     shipping_detail: shippingDetail,
+    voucher_claim_id: voucherClaimId || null,
     status_history: [
       {
         status: status || "pending",
@@ -115,7 +117,8 @@ export async function POST(request) {
       shippingAddress,
       shippingCost,
       shippingDetail,
-      appliedVoucherId, // ID Voucher dari client
+      appliedVoucherId,
+      voucherClaimId, 
       voucherDiscount: clientVoucherDiscount = 0, // Nominal diskon dari client
     } = body;
 
@@ -132,6 +135,7 @@ export async function POST(request) {
     let verifiedVoucherDiscount = 0;
     let validVoucherId = null;
     let actualShippingCost = Number(shippingCost) || 0;
+    let validVoucherClaimId = null;
 
     if (appliedVoucherId) {
       // Ambil data asli dari database berdasarkan ID Voucher
@@ -149,6 +153,25 @@ export async function POST(request) {
         // Cek syarat minimum belanja
         if (rawSubtotal >= Number(dbVoucher.min_purchase)) {
           validVoucherId = dbVoucher.id;
+
+           // ── Validasi tambahan: pastikan claim ini benar milik user & masih aktif ──
+          if (voucherClaimId && userId && userId !== "guest") {
+            const { data: claimRow, error: claimErr } = await supabaseAdmin
+              .from("user_vouchers")
+              .select("id, used_at")
+              .eq("id", voucherClaimId)
+              .eq("user_id", userId)
+              .eq("voucher_id", appliedVoucherId)
+              .single();
+
+            if (!claimErr && claimRow && !claimRow.used_at) {
+              validVoucherClaimId = claimRow.id;
+            }
+          }
+
+          // Voucher tetap divalidasi meski tanpa claim record (jaga backward compatibility)
+          validVoucherId = dbVoucher.id;
+
 
           if (dbVoucher.type === 'shipping') {
             // Jika tipe gratis ongkir, diskon dihitung maksimal sebesar ongkir asli
@@ -256,6 +279,7 @@ export async function POST(request) {
       status: "pending",
       paymentType: "Midtrans",
       appliedVoucherId: validVoucherId,
+      voucherClaimId: validVoucherClaimId,
     });
 
     return NextResponse.json({
