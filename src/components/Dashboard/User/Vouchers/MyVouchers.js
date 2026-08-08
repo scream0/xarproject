@@ -67,7 +67,7 @@ const MyVouchers = ({
           <div className={styles.availableVouchersList}>
             {availableVouchers.length > 0 ? (
               availableVouchers.map((voucher) => {
-                const isClaimed = claimedVoucherIds.has(String(voucher.id));
+                 const isClaimed = claimedVoucherIds.has(Number(voucher.id)); // ✅ fix: Number, bukan String
                 const isClaiming = claimingId === voucher.id;
 
                 return (
