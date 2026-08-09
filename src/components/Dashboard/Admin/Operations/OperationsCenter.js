@@ -403,9 +403,9 @@ export default function OperationsCenter() {
                         </div>
                       </div>
                     ) : (
-                      <>
+                      <div className={styles.inlineActions}>
                         <button onClick={() => { setShippingEditingId(orderId); setShippingDraft({ courierName: order.shippingDetail?.courier_name || "", serviceType: order.shippingDetail?.service_type || "", trackingNumber: order.shippingDetail?.tracking_number || "" }); }}>Set resi</button>
-                        <select value={order.status || "pending"} onChange={(e) => updateOrderStatus(orderId, e.target.value)} disabled={statusUpdatingId === orderId}>
+                        <select className={styles.roleSelect} value={order.status || "pending"} onChange={(e) => updateOrderStatus(orderId, e.target.value)} disabled={statusUpdatingId === orderId}>
                           <option value="pending">Pending</option>
                           <option value="paid">Paid</option>
                           <option value="processing">Processing</option>
@@ -414,7 +414,7 @@ export default function OperationsCenter() {
                           <option value="cancelled">Cancelled</option>
                         </select>
                         {statusUpdatingId === orderId && <span className={styles.warning}>Updating…</span>}
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -518,16 +518,33 @@ export default function OperationsCenter() {
       <section className={styles.promoSection}>
         <Panel title={config.panels.promo.title} action={config.panels.promo.action}>
           <div className={styles.formGrid}>
-            <input placeholder={config.forms.voucher.codePlaceholder} value={voucherForm.code} onChange={e => setVoucherForm({...voucherForm, code: e.target.value})} />
-            <input placeholder={config.forms.voucher.titlePlaceholder} value={voucherForm.title} onChange={e => setVoucherForm({...voucherForm, title: e.target.value})} />
-            <select value={voucherForm.type} onChange={e => setVoucherForm({...voucherForm, type: e.target.value})} className={styles.roleSelect}>
-              <option value="shipping">Gratis Ongkir</option>
-              <option value="percentage">Diskon %</option>
-              <option value="fixed">Diskon Rupiah</option>
-            </select>
-            <input type="number" placeholder={config.forms.voucher.discountPlaceholder} value={voucherForm.discount_amount} onChange={e => setVoucherForm({...voucherForm, discount_amount: e.target.value})} />
-            <input type="date" value={voucherForm.valid_until} onChange={e => setVoucherForm({...voucherForm, valid_until: e.target.value})} />
-            <button className={styles.saveButton} onClick={handleSaveVoucher}>{config.panels.promo.buttonText}</button>
+            <label>
+              {config.forms?.voucher?.codePlaceholder || "Kode Voucher"}
+              <input placeholder={config.forms.voucher.codePlaceholder} value={voucherForm.code} onChange={e => setVoucherForm({...voucherForm, code: e.target.value})} />
+            </label>
+            <label>
+              {config.forms?.voucher?.titlePlaceholder || "Judul Voucher"}
+              <input placeholder={config.forms.voucher.titlePlaceholder} value={voucherForm.title} onChange={e => setVoucherForm({...voucherForm, title: e.target.value})} />
+            </label>
+            <label>
+              Tipe Diskon
+              <select value={voucherForm.type} onChange={e => setVoucherForm({...voucherForm, type: e.target.value})} className={styles.roleSelect}>
+                <option value="shipping">Gratis Ongkir</option>
+                <option value="percentage">Diskon %</option>
+                <option value="fixed">Diskon Rupiah</option>
+              </select>
+            </label>
+            <label>
+              Jumlah Diskon
+              <input type="number" placeholder={config.forms.voucher.discountPlaceholder} value={voucherForm.discount_amount} onChange={e => setVoucherForm({...voucherForm, discount_amount: e.target.value})} />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              Berlaku Sampai
+              <input type="date" value={voucherForm.valid_until} onChange={e => setVoucherForm({...voucherForm, valid_until: e.target.value})} />
+            </label>
+            <div style={{ gridColumn: '1 / -1', marginTop: '4px' }}>
+              <button className={styles.saveButton} onClick={handleSaveVoucher}>{config.panels.promo.buttonText}</button>
+            </div>
           </div>
 
           <div className={styles.list} style={{ marginTop: '20px' }}>

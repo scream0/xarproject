@@ -19,12 +19,6 @@ import config from "@/data/ui/advancedAnalyticsConfig.json";
 
 const COLORS = ["#3b82f6", "#10b981", "#fbbf24", "#ef4444", "#8b5cf6"];
 
-const FALLBACK_VARIANTS = [
-  { name: "Extrait Noir (50ml)", sold: 34 },
-  { name: "Flowrawr Sweet (30ml)", sold: 28 },
-  { name: "AWRG Citrus (10ml)", sold: 19 },
-];
-
 const FALLBACK_STATUS = [{ name: "Selesai", value: 100 }];
 
 export default function AdvancedAnalytics() {
@@ -63,7 +57,6 @@ export default function AdvancedAnalytics() {
       const amount = getOrderAmount(order);
 
       if (d && !isNaN(d.getTime())) {
-        // Cek status secara fleksibel (jika field status kosong/berbeda, tetap dihitung)
         const status = (
           order.status ||
           order.transaction_status ||
@@ -281,29 +274,33 @@ export default function AdvancedAnalytics() {
           <h4 className={styles.cardTitle}>{config.sections.topVariants}</h4>
           <div className={styles.chartBox}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={variantData} layout="vertical">
+              <BarChart data={variantData} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                 <XAxis type="number" hide />
                 <YAxis
                   dataKey="name"
                   type="category"
-                  stroke="currentColor"
+                  stroke="var(--text-secondary)"
                   fontSize={11}
-                  width={120}
+                  width={130}
                   tickLine={false}
+                  axisLine={false}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "var(--surface-primary)",
                     borderColor: "var(--border-color)",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
                     color: "var(--text-primary)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                    padding: "10px 14px",
                   }}
+                  itemStyle={{ color: "var(--primary-accent, #fbbf24)", fontWeight: 600 }}
                   formatter={(value) => [
                     `${value} ${config.labels.unitsSold}`,
                     config.labels.soldTooltip,
                   ]}
                 />
-                <Bar dataKey="sold" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="sold" fill="var(--primary-accent, #fbbf24)" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -313,20 +310,22 @@ export default function AdvancedAnalytics() {
           <h4 className={styles.cardTitle}>{config.sections.orderStatus}</h4>
           <div className={styles.chartBox}>
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+              <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                 <Pie
                   data={activePieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={65}
+                  outerRadius={85}
+                  paddingAngle={6}
                   dataKey="value"
                 >
                   {activePieData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
+                      stroke="var(--surface-primary)"
+                      strokeWidth={2}
                     />
                   ))}
                 </Pie>
@@ -334,9 +333,12 @@ export default function AdvancedAnalytics() {
                   contentStyle={{
                     backgroundColor: "var(--surface-primary)",
                     borderColor: "var(--border-color)",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
                     color: "var(--text-primary)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                    padding: "10px 14px",
                   }}
+                  itemStyle={{ color: "var(--primary-accent, #fbbf24)", fontWeight: 600 }}
                   formatter={(value) => [
                     `${value} ${config.labels.ordersCount}`,
                     config.labels.jumlahTooltip,

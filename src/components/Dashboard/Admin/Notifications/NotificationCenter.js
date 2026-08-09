@@ -1,6 +1,7 @@
 "use client";
+
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { auth, supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./NotificationCenter.module.css";
 import config from "@/data/ui/notificationCenterConfig.json";
@@ -41,14 +42,19 @@ export default function NotificationCenter() {
     audience: "admin",
   });
 
-  const loadNotifications = useCallback(async (currentUser) => {
+  const getSupabaseToken = async () => {
+    const { data: { session } } = await auth.getSession();
+    return session?.access_token || null;
+  };
+
+  const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const token = currentUser
-        ? await currentUser.getIdToken()
-        : await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
       const res = await fetch("/api/notifications?scope=system", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal memuat notifikasi.");
@@ -62,11 +68,21 @@ export default function NotificationCenter() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) return;
-      await loadNotifications(currentUser);
+    const initAuthAndFetch = async () => {
+      await loadNotifications();
+    };
+
+    initAuthAndFetch();
+
+    const { data: { subscription } } = auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        await loadNotifications();
+      }
     });
-    return () => unsubscribe();
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, [loadNotifications]);
 
   useEffect(() => {
@@ -87,13 +103,12 @@ export default function NotificationCenter() {
 
   const markAllRead = async () => {
     try {
-      if (!auth.currentUser) {
+      const token = await getSupabaseToken();
+      if (!token) {
         toast.error("Sesi Anda telah berakhir. Silakan muat ulang.");
         return;
       }
-      const token = await auth.currentUser.getIdToken();
 
-      // Menggunakan endpoint bulk update yang baru
       const res = await fetch("/api/notifications", {
         method: "PUT",
         headers: {
@@ -121,11 +136,12 @@ export default function NotificationCenter() {
       return;
     }
     try {
-      if (!auth.currentUser) {
+      const token = await getSupabaseToken();
+      if (!token) {
         toast.error("Sesi Anda telah berakhir. Silakan muat ulang.");
         return;
       }
-      const token = await auth.currentUser.getIdToken();
+
       const res = await fetch(
         `/api/notifications?id=${notification.id}`,
         {
@@ -151,7 +167,7 @@ export default function NotificationCenter() {
     }
     try {
       setSubmitting(true);
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getSupabaseToken();
       const res = await fetch("/api/notifications", {
         method: "POST",
         headers: {
@@ -170,7 +186,7 @@ export default function NotificationCenter() {
         type: "system",
         audience: "admin",
       });
-      await loadNotifications(auth.currentUser);
+      await loadNotifications();
     } catch (err) {
       console.error("Gagal membuat notifikasi:", err);
       toast.error(err.message || "Gagal membuat notifikasi.");
@@ -400,4 +416,3 @@ export default function NotificationCenter() {
     </div>
   );
 }
-

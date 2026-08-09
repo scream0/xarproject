@@ -330,7 +330,17 @@ export default function LoginForm() {
           </button>
         </form>
 
-        <button
+       
+
+        <div className={styles.divider}>
+          <span>{form?.labels?.oauthDivider || "OR CONTINUE WITH"}</span>
+        </div>
+
+        <div className={styles.socialWrapper} style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+          <div id="googleButtonDiv"></div>
+        </div>
+         <div className={styles.divider}> </div>
+         <button
           type="button"
           className={styles.switchModeBtn}
           onClick={toggleRegisterMode}
@@ -341,14 +351,6 @@ export default function LoginForm() {
             ? form?.switchText?.signIn || "Already have an account? Sign In"
             : form?.switchText?.signUp || "Don't have an account? Sign Up"}
         </button>
-
-        <div className={styles.divider}>
-          <span>{form?.labels?.oauthDivider || "OR CONTINUE WITH"}</span>
-        </div>
-
-        <div className={styles.socialWrapper} style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-          <div id="googleButtonDiv"></div>
-        </div>
       </div>
     </div>
   );

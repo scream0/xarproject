@@ -2,35 +2,13 @@
 import { useState, useEffect } from "react";
 import { HeroParticles } from "@/components/UI/HeroParticles/HeroParticles";
 import { getPublicSettings } from "@/services/settingsService";
-import { isPromoActive } from "@/utils/promo";
 import styles from "./Hero.module.css";
 import heroData from "@/data/ui/heroConfig.json"; // Fallback default JSON
 
 export function Hero() {
   // 1. Definisikan state
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [promoSettings, setPromoSettings] = useState(null);
   const [resolvedHero, setResolvedHero] = useState(heroData);
-
-  // Format tanggal masa berlaku promo (end date)
-  const formatPromoEndDate = (dateStr) => {
-    if (!dateStr) return "";
-    const d = new Date(`${dateStr}T23:59:59`);
-    if (isNaN(d.getTime())) return "";
-    return d.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
-  // Scroll ke section produk saat banner promo diklik
-  const handlePromoClick = () => {
-    const productSection = document.getElementById("product");
-    if (productSection) {
-      productSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
 
   // 2. Efek untuk melacak mouse
   useEffect(() => {
@@ -41,13 +19,12 @@ export function Hero() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // 3. Muat settings publik (hero + promo) via service layer
+  // 3. Muat settings publik (hero) via service layer
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const data = await getPublicSettings({ force: true });
         if (!data) return;
-        setPromoSettings(data);
 
         // Gabungkan hero dari DB dengan default JSON (fallback field parsial)
         if (data?.hero) {
@@ -100,9 +77,25 @@ export function Hero() {
     if (section) observer.observe(section);
   }, []);
 
+  // Ambil URL gambar latar belakang dari resolvedHero (jika ada)
+  const heroBackgroundImage = resolvedHero?.image;
+
   return (
     <section id="home" className={styles.hero}>
-      <div className={styles.heroBackground}></div>
+      {/* Background dinamis dari gambar yang di-upload */}
+      <div
+        className={styles.heroBackground}
+        style={
+          heroBackgroundImage
+            ? {
+                backgroundImage: `url(${heroBackgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+              }
+            : undefined
+        }
+      ></div>
 
       <div
         className={styles.heroSpotlight}
@@ -119,30 +112,6 @@ export function Hero() {
       <div className={styles.heroParticlesContainer}>
         <HeroParticles />
       </div>
-
-      {isPromoActive(promoSettings) && (
-        <button
-          className={styles.promoBanner}
-          onClick={handlePromoClick}
-          aria-label="Lihat promo"
-        >
-          <span className={styles.promoGlow} aria-hidden="true" />
-          <span className={styles.promoBadge}>Exclusive</span>
-          <span className={styles.promoText}>
-            {promoSettings?.promoBannerText ||
-              "Diskon khusus untuk pelanggan setia"}
-          </span>
-          {promoSettings?.promoEndDate && (
-            <span className={styles.promoExpiry}>
-              Berlaku s/d{" "}
-              {formatPromoEndDate(promoSettings.promoEndDate)}
-            </span>
-          )}
-          <span className={styles.promoArrow} aria-hidden="true">
-            ↗
-          </span>
-        </button>
-      )}
 
       <main className={styles.content}>
         <div className={styles.contentGlow} aria-hidden="true" />
@@ -174,4 +143,3 @@ export function Hero() {
     </section>
   );
 }
-

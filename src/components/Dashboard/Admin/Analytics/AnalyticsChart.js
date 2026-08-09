@@ -1,4 +1,3 @@
-"use client";
 import { useEffect, useState, useCallback } from "react";
 import {
   AreaChart,
@@ -21,7 +20,7 @@ export default function AnalyticsChart() {
   const [timeframe, setTimeframe] = useState("weekly"); // "daily" | "weekly" | "yearly"
   const [loading, setLoading] = useState(true);
 
-  // Standarisasi pengambilan amount & date (disamakan dengan AdvancedAnalytics)
+  // Standarisasi pengambilan amount & date
   const getTransactionAmount = (tx) => {
     return Number(tx.price || tx.total || tx.total_price || tx.amount || 0);
   };
@@ -260,25 +259,28 @@ export default function AnalyticsChart() {
           </div>
         ) : chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#fbbf24" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--primary-accent, #fbbf24)" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="var(--primary-accent, #fbbf24)" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.05)"
+                stroke="var(--border-color)"
+                opacity={0.4}
               />
               <XAxis
                 dataKey="name"
-                stroke="#525252"
+                stroke="var(--text-secondary)"
                 fontSize={11}
                 tickLine={false}
+                axisLine={false}
+                dy={8}
               />
               <YAxis
-                stroke="#525252"
+                stroke="var(--text-secondary)"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -286,15 +288,16 @@ export default function AnalyticsChart() {
                   `${analyticsConfig.currencyPrefix}${value >= 1000 ? value / 1000 + "k" : value}`
                 }
               />
-              {/* Tooltip disesuaikan menggunakan CSS Variables seperti AdvancedAnalytics */}
               <Tooltip
                 contentStyle={{
                   backgroundColor: "var(--surface-primary)",
                   borderColor: "var(--border-color)",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   color: "var(--text-primary)",
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                  padding: "10px 14px",
                 }}
-                itemStyle={{ color: "#fbbf24" }}
+                itemStyle={{ color: "var(--primary-accent, #fbbf24)", fontWeight: 600 }}
                 formatter={(value) => [
                   `${analyticsConfig.currencyPrefix}${value.toLocaleString("id-ID")}`,
                   analyticsConfig.tooltipLabel,
@@ -303,24 +306,15 @@ export default function AnalyticsChart() {
               <Area
                 type="monotone"
                 dataKey="sales"
-                stroke="#fbbf24"
-                strokeWidth={3}
+                stroke="var(--primary-accent, #fbbf24)"
+                strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#colorSales)"
               />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-              color: "#666",
-              fontSize: "0.9rem",
-            }}
-          >
+          <div className={styles.emptyState}>
             Belum ada data transaksi dari database
           </div>
         )}
@@ -345,13 +339,11 @@ export default function AnalyticsChart() {
               {yearlySummary.length > 0 ? (
                 yearlySummary.map((row) => (
                   <tr key={row.year}>
-                    <td
-                      style={{ fontWeight: 600, color: "var(--text-primary)" }}
-                    >
+                    <td className={styles.yearCell}>
                       {row.year}
                     </td>
                     <td>{row.totalTransactions} pesanan</td>
-                    <td style={{ color: "#10b981", fontWeight: 600 }}>
+                    <td className={styles.revenueCell}>
                       {analyticsConfig.currencyPrefix}
                       {row.totalRevenue.toLocaleString("id-ID")}
                     </td>
@@ -364,10 +356,7 @@ export default function AnalyticsChart() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="5"
-                    style={{ textAlign: "center", color: "#666" }}
-                  >
+                  <td colSpan="5" className={styles.emptyTableCell}>
                     Belum ada data rincian tahunan
                   </td>
                 </tr>

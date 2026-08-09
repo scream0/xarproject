@@ -1,7 +1,7 @@
 {
   "brand": {
-    "name": "XAR",
-    "suffix": ".HQ",
+    "name": "MAKE ME",
+    "suffix": "KOOL",
     "badge": "OWNER PANEL"
   },
   "nav": [
@@ -48,8 +48,8 @@
     "CORE VAULT"
   ],
   "placeholders": {
-    "analytics": "[ ANALYTICS CORE DATASTREAM ]",
-    "settings": "[ SYSTEM CONFIGURATION ]"
+    "settings": "[ SYSTEM CONFIGURATION ]",
+    "analytics": "[ PERFORMANCE INSIGHTS & METRICS ]"
   },
   "loading": "LOADING EXECUTIVE SYSTEM...",
   "logoutText": "Sign Out Control",
@@ -238,4 +238,3 @@
     "logoutDialog": "Dialog konfirmasi logout admin"
   }
 }
-

@@ -1,9 +1,37 @@
 "use client";
 import { useState, useEffect } from "react";
 import styles from "./ReviewManager.module.css";
-import { auth as supabase } from "@/lib/supabaseClient";
+import { supabase, auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import reviewConfig from "@/data/ui/reviewManagerConfig.json";
+
+// Helper aman untuk mendeteksi berbagai struktur ekspor Supabase klien/auth
+const getSupabaseSession = async () => {
+  try {
+    if (supabase?.auth?.getSession) {
+      const res = await supabase.auth.getSession();
+      return res?.data?.session || null;
+    }
+    if (auth?.getSession) {
+      const res = await auth.getSession();
+      return res?.data?.session || null;
+    }
+    if (supabase?.getSession) {
+      const res = await supabase.getSession();
+      return res?.data?.session || null;
+    }
+    return null;
+  } catch (err) {
+    console.error("Gagal mengambil sesi:", err);
+    return null;
+  }
+};
+
+const getSupabaseAuthInstance = () => {
+  if (supabase?.auth) return supabase.auth;
+  if (auth?.onAuthStateChange) return auth;
+  return supabase;
+};
 
 export default function ReviewManager() {
   const [reviews, setReviews] = useState([]);
@@ -41,8 +69,7 @@ export default function ReviewManager() {
     let subscription = null;
 
     const initAuth = async () => {
-      // Ambil sesi awal Supabase
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSupabaseSession();
       
       if (session) {
         await fetchReviews(session);
@@ -50,29 +77,33 @@ export default function ReviewManager() {
         setLoading(false);
       }
 
-      // Dengarkan perubahan status auth Supabase
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) {
-          fetchReviews(session);
-        } else {
-          setReviews([]);
-          setLoading(false);
-        }
-      });
-      subscription = data.subscription;
+      const clientAuth = getSupabaseAuthInstance();
+      if (clientAuth?.onAuthStateChange) {
+        const { data } = clientAuth.onAuthStateChange((_event, session) => {
+          if (session) {
+            fetchReviews(session);
+          } else {
+            setReviews([]);
+            setLoading(false);
+          }
+        });
+        subscription = data?.subscription;
+      }
     };
 
     initAuth();
 
     return () => {
-      if (subscription) subscription.unsubscribe();
+      if (subscription?.unsubscribe) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
   const handleApprove = async (reviewId) => {
     setUpdatingId(reviewId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSupabaseSession();
       const token = session?.access_token;
       if (!token) throw new Error(reviewConfig.toasts.authRequired);
 
@@ -107,7 +138,7 @@ export default function ReviewManager() {
     }
     setUpdatingId(reviewId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSupabaseSession();
       const token = session?.access_token;
       if (!token) throw new Error(reviewConfig.toasts.authRequired);
 

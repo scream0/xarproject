@@ -10,16 +10,17 @@ export function HeroParticles() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // 1. Definisikan palet warna mewah
+    // 1. Palet warna tema Emerald & Lavender untuk semburan atom parfum mewah
     const colors = [
-      "rgba(192, 192, 192, 0.6)", // Silver
-      "rgba(229, 228, 226, 0.6)", // Platinum
-      "rgba(212, 175, 55, 0.5)", // Gold
-      "rgba(255, 255, 255, 0.8)", // White
+      "rgba(15, 118, 110, 0.55)",  // Emerald Green
+      "rgba(52, 211, 153, 0.5)",   // Light Emerald
+      "rgba(167, 139, 250, 0.55)", // Soft Lavender
+      "rgba(196, 181, 253, 0.45)", // Pale Lavender
+      "rgba(255, 255, 255, 0.6)",  // Kristal Putih Murni
     ];
 
     let particles: any[] = [];
-    const mouse = { x: -1000, y: -1000, radius: 150 };
+    const mouse = { x: -1000, y: -1000, radius: 180 };
 
     const resize = () => {
       if (canvas.parentElement) {
@@ -30,15 +31,19 @@ export function HeroParticles() {
     window.addEventListener("resize", resize);
     resize();
 
-    // 2. Inisialisasi partikel dengan warna acak
-    for (let i = 0; i < 100; i++) {
+    // 2. Inisialisasi partikel atom/molekul semprotan parfum (menyebar melingkar ke atas seperti mist)
+    for (let i = 0; i < 85; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        size: Math.random() * 1.5 + 0.5,
-        color: colors[Math.floor(Math.random() * colors.length)], // Warna acak per partikel
+        // Kecepatan menyebar ke atas dengan sedikit ayunan horizontal acak (efek semprotan mist/atomizer)
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: -(Math.random() * 1.2 + 0.4), 
+        radius: Math.random() * 2.8 + 0.8, // Ukuran bervariasi seperti partikel berat dan ringan
+        baseAlpha: Math.random() * 0.5 + 0.2,
+        pulseSpeed: Math.random() * 0.03 + 0.01,
+        pulseAngle: Math.random() * Math.PI,
+        color: colors[Math.floor(Math.random() * colors.length)],
       });
     }
 
@@ -47,11 +52,25 @@ export function HeroParticles() {
 
       particles.forEach((p) => {
         p.x += p.vx;
-        p.y += p.vy;
+        p.y += p.vy; // Atom naik ke atas
 
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        // Efek kedip/berkilau organiknya (seperti butir parfum yang memantulkan cahaya)
+        p.pulseAngle += p.pulseSpeed;
+        let currentAlpha = p.baseAlpha + Math.sin(p.pulseAngle) * 0.2;
+        currentAlpha = Math.max(0.1, Math.min(1, currentAlpha));
 
+        // Jika melewati batas atas layar, reset ke bagian bawah secara acak menyerupai semprotan baru
+        if (p.y < -20) {
+          p.y = canvas.height + 20;
+          p.x = Math.random() * canvas.width;
+          p.vx = (Math.random() - 0.5) * 0.4;
+        }
+
+        // Wrap horizontal agar tetap di dalam layar
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+
+        // Interaksi lembut dengan kursor mouse (partikel bergeser elegan saat kursor mendekat)
         let dx = mouse.x - p.x;
         let dy = mouse.y - p.y;
         let distance = Math.sqrt(dx * dx + dy * dy);
@@ -59,21 +78,23 @@ export function HeroParticles() {
         if (distance < mouse.radius) {
           let angle = Math.atan2(dy, dx);
           let force = (mouse.radius - distance) / mouse.radius;
-          p.x -= Math.cos(angle) * force * 5;
-          p.y -= Math.sin(angle) * force * 5;
+          p.x -= Math.cos(angle) * force * 3;
+          p.y -= Math.sin(angle) * force * 3;
         }
 
-        // 3. Terapkan warna dan glow spesifik per partikel
+        // 3. Render bentuk partikel bulat lembut menyerupai butiran atom/mist parfum mewah dengan efek glow
+        ctx.save();
+        ctx.globalAlpha = currentAlpha;
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color; // Glow menyesuaikan warna partikel
-        ctx.shadowBlur = 10;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8; // Memberikan efek kilau atom yang menyebar
 
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fill();
-
-        ctx.shadowBlur = 0;
+        ctx.restore();
       });
+
       requestAnimationFrame(animate);
     };
 

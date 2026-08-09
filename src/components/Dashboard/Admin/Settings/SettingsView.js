@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import styles from "./SettingsView.module.css";
@@ -20,6 +21,9 @@ const EMPTY = {
     midtransClientKey: "",
   },
   hero: {
+    image: "",
+    imageAlt: "",
+    imagePublicId: "",
     tagline: "",
     title: { main: "", highlight: "" },
     description: { prefix: "", italic: "", suffix: "" },
@@ -56,16 +60,6 @@ const EMPTY = {
     payment: { title: "", subtitle: "", methods: [""] },
     copyright: { text: "" },
   },
-  promo: {
-    promoBannerEnabled: false,
-    promoBannerText: "",
-    promoDiscountType: "percentage",
-    promoDiscountValue: 0,
-    promoStartDate: "",
-    promoEndDate: "",
-    promoCode: "",
-    promoDestination: "#product",
-  },
 };
 
 const TAB_KEYS = [
@@ -74,7 +68,6 @@ const TAB_KEYS = [
   "about",
   "contact",
   "footer",
-  "promo",
   "payment",
 ];
 
@@ -84,8 +77,14 @@ export default function SettingsView() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [activeTab, setActiveTab] = useState("store");
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  
+  // State untuk file gambar About & Hero
+  const [selectedAboutImageFile, setSelectedAboutImageFile] = useState(null);
+  const [aboutImagePreviewUrl, setAboutImagePreviewUrl] = useState("");
+
+  const [selectedHeroImageFile, setSelectedHeroImageFile] = useState(null);
+  const [heroImagePreviewUrl, setHeroImagePreviewUrl] = useState("");
+
   const [currentSession, setCurrentSession] = useState(null);
 
   const cfg = settingsConfig;
@@ -102,6 +101,9 @@ export default function SettingsView() {
       midtransClientKey: data?.midtransClientKey || "",
     },
     hero: {
+      image: data?.hero?.image || "",
+      imageAlt: data?.hero?.imageAlt || "",
+      imagePublicId: data?.hero?.imagePublicId || "",
       tagline: data?.hero?.tagline || "",
       title: {
         main: data?.hero?.title?.main || "",
@@ -186,16 +188,6 @@ export default function SettingsView() {
       },
       copyright: { text: data?.footer?.copyright?.text || "" },
     },
-    promo: {
-      promoBannerEnabled: Boolean(data?.promoBannerEnabled),
-      promoBannerText: data?.promoBannerText || "",
-      promoDiscountType: data?.promoDiscountType || "percentage",
-      promoDiscountValue: Number(data?.promoDiscountValue || 0),
-      promoStartDate: data?.promoStartDate || "",
-      promoEndDate: data?.promoEndDate || "",
-      promoCode: data?.promoCode || "",
-      promoDestination: data?.promoDestination || "#product",
-    },
   });
 
   useEffect(() => {
@@ -214,7 +206,8 @@ export default function SettingsView() {
 
         const data = await getAdminSettings(session);
         setSettings(mapSettingsToState(data));
-        setImagePreviewUrl(data?.about?.image || "");
+        setAboutImagePreviewUrl(data?.about?.image || "");
+        setHeroImagePreviewUrl(data?.hero?.image || "");
 
         if (typeof window !== "undefined" && data?.adminLocale) {
           const nextLocale = data.adminLocale === "en" ? "en" : "id";
@@ -239,7 +232,8 @@ export default function SettingsView() {
           try {
             const data = await getAdminSettings(session);
             setSettings(mapSettingsToState(data));
-            setImagePreviewUrl(data?.about?.image || "");
+            setAboutImagePreviewUrl(data?.about?.image || "");
+            setHeroImagePreviewUrl(data?.hero?.image || "");
           } catch (error) {
             console.error("Auth Change Fetch Error:", error.message);
           }
@@ -273,48 +267,74 @@ export default function SettingsView() {
       const payload = buildPayload();
       const user = currentSession.user;
 
-      // Unggah gambar section about jika ada file baru
-      if (selectedImageFile) {
+      // 1. Unggah gambar Hero jika ada file baru
+      if (selectedHeroImageFile) {
         setUploadingImage(true);
-        const formData = new FormData();
-        formData.append("file", selectedImageFile);
-        formData.append("userId", user.id);
-        formData.append("folder", "storefront");
-        formData.append(
-          "publicId",
-          `storefront/about-${user.id}`,
-        );
-        formData.append(
-          "oldPublicId",
-          settings.about.imagePublicId || "",
-        );
-        formData.append("oldUrl", settings.about.image || "");
+        const heroFormData = new FormData();
+        heroFormData.append("file", selectedHeroImageFile);
+        heroFormData.append("userId", user.id);
+        heroFormData.append("folder", "storefront");
+        heroFormData.append("publicId", `storefront/hero-${user.id}`);
+        heroFormData.append("oldPublicId", settings.hero.imagePublicId || "");
+        heroFormData.append("oldUrl", settings.hero.image || "");
 
-        const uploadRes = await fetch("/api/cloudinary", {
+        const heroUploadRes = await fetch("/api/cloudinary", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${currentSession.access_token}`,
           },
-          body: formData,
+          body: heroFormData,
         });
-        const uploadResult = await uploadRes.json();
+        const heroUploadResult = await heroUploadRes.json();
 
-        if (!uploadRes.ok) {
-          throw new Error(uploadResult.error || "Gagal mengunggah gambar.");
+        if (!heroUploadRes.ok) {
+          throw new Error(heroUploadResult.error || "Gagal mengunggah gambar Hero.");
         }
 
-        payload.about.image = uploadResult.secure_url;
-        payload.about.imagePublicId = uploadResult.public_id;
-        setImagePreviewUrl(uploadResult.secure_url);
-        setSelectedImageFile(null);
-        setUploadingImage(false);
+        payload.hero.image = heroUploadResult.secure_url;
+        payload.hero.imagePublicId = heroUploadResult.public_id;
+        setHeroImagePreviewUrl(heroUploadResult.secure_url);
+        setSelectedHeroImageFile(null);
       }
+
+      // 2. Unggah gambar About jika ada file baru
+      if (selectedAboutImageFile) {
+        setUploadingImage(true);
+        const aboutFormData = new FormData();
+        aboutFormData.append("file", selectedAboutImageFile);
+        aboutFormData.append("userId", user.id);
+        aboutFormData.append("folder", "storefront");
+        aboutFormData.append("publicId", `storefront/about-${user.id}`);
+        aboutFormData.append("oldPublicId", settings.about.imagePublicId || "");
+        aboutFormData.append("oldUrl", settings.about.image || "");
+
+        const aboutUploadRes = await fetch("/api/cloudinary", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${currentSession.access_token}`,
+          },
+          body: aboutFormData,
+        });
+        const aboutUploadResult = await aboutUploadRes.json();
+
+        if (!aboutUploadRes.ok) {
+          throw new Error(aboutUploadResult.error || "Gagal mengunggah gambar About.");
+        }
+
+        payload.about.image = aboutUploadResult.secure_url;
+        payload.about.imagePublicId = aboutUploadResult.public_id;
+        setAboutImagePreviewUrl(aboutUploadResult.secure_url);
+        setSelectedAboutImageFile(null);
+      }
+
+      setUploadingImage(false);
 
       await saveSettings(payload, currentSession);
 
       const fresh = await getAdminSettings(currentSession);
       setSettings(mapSettingsToState(fresh));
-      setImagePreviewUrl(fresh?.about?.image || "");
+      setAboutImagePreviewUrl(fresh?.about?.image || "");
+      setHeroImagePreviewUrl(fresh?.hero?.image || "");
 
       if (typeof window !== "undefined") {
         const nextLocale = fresh?.adminLocale === "en" ? "en" : "id";
@@ -351,6 +371,9 @@ export default function SettingsView() {
       midtransServerKey: strictValue(s.store.midtransServerKey),
       midtransClientKey: strictValue(s.store.midtransClientKey),
       hero: {
+        image: strictValue(s.hero.image),
+        imageAlt: strictValue(s.hero.imageAlt),
+        imagePublicId: strictValue(s.hero.imagePublicId),
         tagline: strictValue(s.hero.tagline),
         title: {
           main: strictValue(s.hero.title?.main),
@@ -431,14 +454,6 @@ export default function SettingsView() {
         },
         copyright: { text: strictValue(s.footer.copyright?.text) },
       },
-      promoBannerEnabled: Boolean(s.promo.promoBannerEnabled),
-      promoBannerText: strictValue(s.promo.promoBannerText),
-      promoDiscountType: s.promo.promoDiscountType || "percentage",
-      promoDiscountValue: Number(s.promo.promoDiscountValue || 0),
-      promoStartDate: strictValue(s.promo.promoStartDate),
-      promoEndDate: strictValue(s.promo.promoEndDate),
-      promoCode: strictValue(s.promo.promoCode),
-      promoDestination: strictValue(s.promo.promoDestination),
     };
   };
 
@@ -457,11 +472,18 @@ export default function SettingsView() {
     }));
   };
 
-  const handleImageSelect = (e) => {
+  const handleHeroImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setSelectedImageFile(file);
-    setImagePreviewUrl(URL.createObjectURL(file));
+    setSelectedHeroImageFile(file);
+    setHeroImagePreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleAboutImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedAboutImageFile(file);
+    setAboutImagePreviewUrl(URL.createObjectURL(file));
   };
 
   if (isFetching) {
@@ -477,6 +499,7 @@ export default function SettingsView() {
         {TAB_KEYS.map((key) => (
           <button
             key={key}
+            type="button"
             className={`${styles.tabBtn} ${
               activeTab === key ? styles.tabBtnActive : ""
             }`}
@@ -497,15 +520,21 @@ export default function SettingsView() {
         )}
 
         {activeTab === "hero" && (
-          <HeroTab settings={settings.hero} updateTab={updateTab} cfg={cfg} />
+          <HeroTab
+            settings={settings.hero}
+            updateTab={updateTab}
+            handleHeroImageSelect={handleHeroImageSelect}
+            heroImagePreviewUrl={heroImagePreviewUrl}
+            cfg={cfg}
+          />
         )}
 
         {activeTab === "about" && (
           <AboutTab
             settings={settings.about}
             updateTab={updateTab}
-            handleImageSelect={handleImageSelect}
-            imagePreviewUrl={imagePreviewUrl}
+            handleAboutImageSelect={handleAboutImageSelect}
+            aboutImagePreviewUrl={aboutImagePreviewUrl}
             cfg={cfg}
           />
         )}
@@ -524,10 +553,6 @@ export default function SettingsView() {
             updateTab={updateTab}
             cfg={cfg}
           />
-        )}
-
-        {activeTab === "promo" && (
-          <PromoTab settings={settings.promo} updateTab={updateTab} cfg={cfg} />
         )}
 
         {activeTab === "payment" && (
@@ -641,7 +666,7 @@ function StoreTab({ settings, handleInputChange, cfg }) {
 /* ============================================================
    TAB: HERO
    ============================================================ */
-function HeroTab({ settings, updateTab, cfg }) {
+function HeroTab({ settings, updateTab, handleHeroImageSelect, heroImagePreviewUrl, cfg }) {
   const s = settings;
   const set = (patch) => updateTab("hero", { ...s, ...patch });
 
@@ -650,6 +675,55 @@ function HeroTab({ settings, updateTab, cfg }) {
       <h4 className={styles.sectionTitle}>
         {cfg.sections?.hero || "Hero Section"}
       </h4>
+
+      {/* Bagian Upload Gambar Hero */}
+      <div className={styles.row2}>
+        <div className={styles.inputGroup}>
+          <label className={styles.fieldLabel}>Hero Gambar URL</label>
+          <input
+            className={styles.inputField}
+            value={s.image}
+            onChange={(e) => set({ image: e.target.value })}
+            placeholder="https://..."
+          />
+        </div>
+        <div className={styles.inputGroup}>
+          <label className={styles.fieldLabel}>Alt Gambar Hero</label>
+          <input
+            className={styles.inputField}
+            value={s.imageAlt}
+            onChange={(e) => set({ imageAlt: e.target.value })}
+            placeholder="Deskripsi gambar..."
+          />
+        </div>
+      </div>
+
+      <div className={styles.inputGroup}>
+        <label className={styles.fieldLabel}>
+          Unggah File Gambar Hero
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleHeroImageSelect}
+          className={styles.fileInput}
+        />
+        <small className={styles.fieldDesc}>
+          Unggah gambar atau ilustrasi utama untuk Hero Section landing page.
+        </small>
+      </div>
+
+      {(heroImagePreviewUrl || s.image) && (
+        <div className={styles.previewCard}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic blob & Cloudinary preview URLs require a plain <img>. */}
+          <img
+            src={heroImagePreviewUrl || s.image}
+            alt={s.imageAlt || "Hero Preview"}
+            className={styles.previewImage}
+          />
+        </div>
+      )}
+
       <div className={styles.inputGroup}>
         <label className={styles.fieldLabel}>Tagline</label>
         <input
@@ -781,7 +855,7 @@ function HeroTab({ settings, updateTab, cfg }) {
 /* ============================================================
    TAB: ABOUT
    ============================================================ */
-function AboutTab({ settings, updateTab, handleImageSelect, imagePreviewUrl, cfg }) {
+function AboutTab({ settings, updateTab, handleAboutImageSelect, aboutImagePreviewUrl, cfg }) {
   const s = settings;
   const set = (patch) => updateTab("about", { ...s, ...patch });
 
@@ -816,7 +890,7 @@ function AboutTab({ settings, updateTab, handleImageSelect, imagePreviewUrl, cfg
           <input
             type="file"
             accept="image/*"
-            onChange={handleImageSelect}
+            onChange={handleAboutImageSelect}
             className={styles.fileInput}
           />
           <small className={styles.fieldDesc}>
@@ -824,11 +898,11 @@ function AboutTab({ settings, updateTab, handleImageSelect, imagePreviewUrl, cfg
               "Unggah gambar untuk bagian About di landing page."}
           </small>
         </div>
-        {(imagePreviewUrl || s.image) && (
+        {(aboutImagePreviewUrl || s.image) && (
           <div className={styles.previewCard}>
             {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic blob & Cloudinary preview URLs require a plain <img>. */}
             <img
-              src={imagePreviewUrl || s.image}
+              src={aboutImagePreviewUrl || s.image}
               alt={s.imageAlt || "Preview"}
               className={styles.previewImage}
             />
@@ -1543,145 +1617,6 @@ function FooterTab({ settings, updateTab, cfg }) {
         </div>
       </div>
     </>
-  );
-}
-
-/* ============================================================
-   TAB: PROMO
-   ============================================================ */
-function PromoTab({ settings, updateTab, cfg }) {
-  const s = settings;
-  const set = (patch) => updateTab("promo", { ...s, ...patch });
-
-  return (
-    <div className={styles.formSection}>
-      <h4 className={styles.sectionTitle}>
-        {cfg.sections?.promo || "Banner Promo & Diskon"}
-      </h4>
-      <div className={styles.inputGroup}>
-        <label className={styles.fieldLabel}>Aktifkan Banner Promo</label>
-        <label className={styles.toggleRow}>
-          <input
-            type="checkbox"
-            checked={Boolean(s.promoBannerEnabled)}
-            onChange={(e) => set({ promoBannerEnabled: e.target.checked })}
-            className={styles.toggleInput}
-          />
-          <span className={styles.toggleLabel}>Tampilkan di landing page</span>
-        </label>
-      </div>
-      <div className={styles.inputGroup}>
-        <label className={styles.fieldLabel}>Teks Banner Promo</label>
-        <input
-          className={styles.inputField}
-          value={s.promoBannerText}
-          onChange={(e) => set({ promoBannerText: e.target.value })}
-          placeholder={cfg.placeholders?.promoBannerText || ""}
-        />
-      </div>
-      <div className={styles.inputGroup}>
-        <label className={styles.fieldLabel}>
-          {cfg.labels?.promoDestination || "Tujuan Klik Banner"}
-        </label>
-        <input
-          className={styles.inputField}
-          value={s.promoDestination}
-          onChange={(e) => set({ promoDestination: e.target.value })}
-          placeholder={cfg.placeholders?.promoDestination || "#product"}
-        />
-        <small className={styles.fieldDesc}>
-          {cfg.descriptions?.promoDestination || "Tujuan saat banner promo diklik."}
-        </small>
-      </div>
-
-      <h4 className={styles.sectionTitle}>
-        {cfg.sections?.discountRules || "Aturan Diskon"}
-      </h4>
-      <div className={styles.inputGroup}>
-        <label className={styles.fieldLabel}>
-          {cfg.labels?.promoDiscountType || "Tipe Diskon"}
-        </label>
-        <select
-          className={styles.selectField}
-          value={s.promoDiscountType}
-          onChange={(e) => set({ promoDiscountType: e.target.value })}
-        >
-          <option value="percentage">{cfg.options?.percentage || "Persentase (%)"}</option>
-          <option value="fixed">{cfg.options?.fixed || "Nominal (Rp)"}</option>
-        </select>
-        <small className={styles.fieldDesc}>
-          {cfg.descriptions?.promoDiscountType || "Pilih apakah diskon dihitung sebagai persentase (%) atau potongan nominal (Rp)."}
-        </small>
-      </div>
-      <div className={styles.inputGroup}>
-        <label className={styles.fieldLabel}>
-          {s.promoDiscountType === "percentage"
-            ? cfg.labels?.promoDiscountValuePercent || "Persentase Diskon (%)"
-            : cfg.labels?.promoDiscountValueFixed || "Nominal Diskon (Rp)"}
-        </label>
-        <input
-          type="number"
-          min="0"
-          className={styles.inputField}
-          value={s.promoDiscountValue}
-          onChange={(e) => set({ promoDiscountValue: Number(e.target.value) || 0 })}
-          placeholder={cfg.placeholders?.promoDiscountValue || "Contoh: 20 atau 50000"}
-        />
-        <small className={styles.fieldDesc}>
-          {cfg.descriptions?.promoDiscountValue || "Besar diskon yang akan otomatis diterapkan ke harga produk saat promo aktif."}
-        </small>
-      </div>
-      <div className={styles.inputGroup}>
-        <label className={styles.fieldLabel}>
-          {cfg.labels?.promoCode || "Kode Promo (opsional)"}
-        </label>
-        <input
-          className={styles.inputField}
-          value={s.promoCode}
-          onChange={(e) => set({ promoCode: e.target.value.toUpperCase() })}
-          placeholder={cfg.placeholders?.promoCode || "Contoh: XAR10"}
-        />
-        <small className={styles.fieldDesc}>
-          {cfg.descriptions?.promoCode || "Kode unik untuk kampanye (ditampilkan di banner, opsional)."}
-        </small>
-      </div>
-
-      <h4 className={styles.sectionTitle}>
-        {cfg.sections?.promoPeriod || "Masa Berlaku"}
-      </h4>
-      <div className={styles.row2}>
-        <div className={styles.inputGroup}>
-          <label className={styles.fieldLabel}>
-            {cfg.labels?.promoStartDate || "Tanggal Mulai"}
-          </label>
-          <input
-            type="date"
-            className={styles.inputField}
-            value={s.promoStartDate}
-            onChange={(e) => set({ promoStartDate: e.target.value })}
-            placeholder={cfg.placeholders?.promoStartDate || "YYYY-MM-DD"}
-          />
-          <small className={styles.fieldDesc}>
-            {cfg.descriptions?.promoStartDate || "Promo hanya aktif mulai tanggal ini (kosongkan jika langsung aktif)."}
-          </small>
-        </div>
-        <div className={styles.inputGroup}>
-          <label className={styles.fieldLabel}>
-            {cfg.labels?.promoEndDate || "Tanggal Berakhir"}
-          </label>
-          <input
-            type="date"
-            className={styles.inputField}
-            value={s.promoEndDate}
-            onChange={(e) => set({ promoEndDate: e.target.value })}
-            placeholder={cfg.placeholders?.promoEndDate || "YYYY-MM-DD"}
-          />
-          <small className={styles.fieldDesc}>
-            {cfg.descriptions?.promoEndDate || "Promo otomatis nonaktif setelah tanggal ini."}
-          </small>
-        </div>
-      </div>
-    </div>
   );
 }
 

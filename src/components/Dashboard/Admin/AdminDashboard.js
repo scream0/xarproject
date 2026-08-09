@@ -2,6 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  LayoutDashboard,
+  Package,
+  Star,
+  TrendingUp,
+  Bell,
+  Users,
+  Activity,
+  ShoppingCart,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  Sparkles
+} from "lucide-react";
 import styles from "./AdminDashboard.module.css";
 import { logoutUser } from "@/utils/authHelpers";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -23,6 +38,19 @@ import { AdminDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts
 
 const DEFAULT_TAB = "overview";
 const VALID_TABS = adminConfig.nav.map((item) => item.id);
+
+// Mapping ikon untuk setiap tab navigasi
+const NAV_ICONS = {
+  overview: LayoutDashboard,
+  products: Package,
+  reviews: Star,
+  analytics: TrendingUp,
+  notifications: Bell,
+  customers: Users,
+  operations: Activity,
+  orders: ShoppingCart,
+  settings: Settings,
+};
 
 function getGreetingName(currentUser) {
   return (
@@ -48,15 +76,12 @@ function getLatencyTone(latencyMs) {
   if (!latencyMs) {
     return "Checking";
   }
-
   if (latencyMs <= 180) {
     return "Excellent";
   }
-
   if (latencyMs <= 350) {
     return "Stable";
   }
-
   return "Needs attention";
 }
 
@@ -90,7 +115,6 @@ export default function AdminDashboard() {
     if (typeof window === "undefined") {
       return "id";
     }
-
     return window.localStorage.getItem("adminLocale") === "en" ? "en" : "id";
   });
   const [storeStatus, setStoreStatus] = useState({
@@ -136,11 +160,9 @@ export default function AdminDashboard() {
       if (sidebarRef.current?.contains(event.target)) {
         return;
       }
-
       if (mobileMenuButtonRef.current?.contains(event.target)) {
         return;
       }
-
       setIsMobileMenuOpen(false);
     };
 
@@ -157,7 +179,6 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const mainContentNode = mainContentRef.current;
-
     if (!mainContentNode) {
       return undefined;
     }
@@ -236,7 +257,6 @@ export default function AdminDashboard() {
       if (event.key !== "adminLocale") {
         return;
       }
-
       setAdminLocale(event.newValue === "en" ? "en" : "id");
     };
 
@@ -288,7 +308,6 @@ export default function AdminDashboard() {
         return (
           <>
             <OverviewStats />
-
             <section className={styles.workspaceArea}>
               <AnalyticsChart />
               <div className={styles.tableContainer}>
@@ -317,9 +336,6 @@ export default function AdminDashboard() {
         return (
           <section className={styles.workspaceArea}>
             <div className={styles.workspaceInner}>
-              <p className={styles.placeholderText}>
-                {adminConfig.placeholders.analytics}
-              </p>
               <AnalyticsChart />
               <AdvancedAnalytics />
             </div>
@@ -379,53 +395,16 @@ export default function AdminDashboard() {
   const statusText = storeStatus.hasError
     ? copy?.status?.offline || "Status monitor sedang offline sementara"
     : formatTemplate(
-        copy?.status?.pendingTemplate ||
-          "{count} pesanan baru menunggu diproses",
-        { count: storeStatus.newOrders },
+        copy?.status?.pendingTemplate || "{count} pesanan baru menunggu diproses",
+        { count: storeStatus.newOrders }
       );
   const latencyText = storeStatus.latencyMs
-    ? formatTemplate(
-        copy?.status?.latencyTemplate || "Latensi {value}ms",
-        { value: storeStatus.latencyMs },
-      )
+    ? formatTemplate(copy?.status?.latencyTemplate || "Latensi {value}ms", {
+        value: storeStatus.latencyMs,
+      })
     : copy?.status?.checking || "Memeriksa latensi...";
-  const activeTabLabel =
-    adminConfig.nav.find((item) => item.id === activeTab)?.label || "Overview";
-  const activeTabMeta = navMeta[activeTab] || "Operational snapshot";
-  const commandCards = [
-    {
-      label:
-        copy?.metrics?.pending?.label || "Pesanan tertunda",
-      value: String(storeStatus.newOrders),
-      caption:
-        copy?.metrics?.pending?.caption ||
-        "Perlu ditindak sekarang",
-      tone: storeStatus.newOrders > 0 ? "warn" : "ok",
-    },
-    {
-      label:
-        copy?.metrics?.response?.label || "Respon sistem",
-      value: storeStatus.latencyMs ? `${storeStatus.latencyMs}ms` : "-",
-      caption: getLatencyTone(storeStatus.latencyMs),
-      tone: storeStatus.latencyMs && storeStatus.latencyMs > 350 ? "warn" : "ok",
-    },
-    {
-      label:
-        copy?.metrics?.module?.label || "Modul aktif",
-      value: activeTabLabel,
-      caption: activeTabMeta,
-      tone: "info",
-    },
-  ];
-
-  const quickActions =
-    copy?.quickActions?.length > 0
-      ? copy.quickActions
-      : [
-          { id: "orders", label: "Buka Pesanan" },
-          { id: "products", label: "Kelola Inventori" },
-          { id: "customers", label: "Lihat Pelanggan" },
-        ];
+  const activeTabItem = adminConfig.nav.find((item) => item.id === activeTab);
+  const activeSectionTitle = activeTabItem?.label || "Overview";
 
   if (loading) {
     return <AdminDashboardSkeleton />;
@@ -479,9 +458,12 @@ export default function AdminDashboard() {
       )}
 
       <div
-        className={`${styles.mobileTopBar} ${isTopBarElevated ? styles.mobileTopBarElevated : ""}`}
+        className={`${styles.mobileTopBar} ${
+          isTopBarElevated ? styles.mobileTopBarElevated : ""
+        }`}
       >
         <div className={styles.brandLogo}>
+          <Sparkles size={18} style={{ color: "var(--primary-accent)" }} />
           {adminConfig.brand.name}
           <span>{adminConfig.brand.suffix}</span>
         </div>
@@ -498,43 +480,56 @@ export default function AdminDashboard() {
           }
           onClick={() => setIsMobileMenuOpen((previous) => !previous)}
         >
-          {isMobileMenuOpen ? "Close" : "Menu"}
+          {isMobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+          <span>{isMobileMenuOpen ? "Tutup" : "Menu"}</span>
         </button>
       </div>
 
       <aside
         id="admin-sidebar-drawer"
         ref={sidebarRef}
-        className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen : ""}`}
+        className={`${styles.sidebar} ${
+          isMobileMenuOpen ? styles.sidebarOpen : ""
+        }`}
       >
         <div className={styles.brandSection}>
           <div className={styles.brandLogo}>
+            <Sparkles size={18} style={{ color: "var(--primary-accent)" }} />
             {adminConfig.brand.name}
             <span>{adminConfig.brand.suffix}</span>
           </div>
           <div className={styles.brandBadge}>{adminConfig.brand.badge}</div>
           <div className={styles.brandCaption}>
-            {copy?.brandCaption || "Pusat kendali operasional toko"}
+            Halo, {getGreetingName(user)} 👋
           </div>
         </div>
 
         <nav className={styles.navContainer}>
           <ul className={styles.navigationList}>
-            {adminConfig.nav.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => handleTabChange(item.id)}
-                  className={`${styles.navItem} ${
-                    activeTab === item.id ? styles.navItemActive : ""
-                  }`}
-                  aria-current={activeTab === item.id ? "page" : undefined}
-                >
-                  <span className={styles.navItemText}>{item.label}</span>
-                  <span className={styles.navItemMeta}>{navMeta[item.id]}</span>
-                </button>
-              </li>
-            ))}
+            {adminConfig.nav.map((item) => {
+              const IconComponent = NAV_ICONS[item.id] || LayoutDashboard;
+              const isActive = activeTab === item.id;
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange(item.id)}
+                    className={`${styles.navItem} ${
+                      isActive ? styles.navItemActive : ""
+                    }`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <IconComponent className={styles.navIcon} />
+                    <div className={styles.navItemContent}>
+                      <span className={styles.navItemText}>{item.label}</span>
+                      <span className={styles.navItemMeta}>
+                        {navMeta[item.id]}
+                      </span>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
@@ -554,7 +549,8 @@ export default function AdminDashboard() {
             onClick={handleLogoutRequest}
             className={styles.logoutBtn}
           >
-            <span>{adminConfig.logoutText}</span>
+            <LogOut size={15} />
+            <span>{adminConfig.logoutText || "Keluar"}</span>
           </button>
         </div>
       </aside>
@@ -563,12 +559,10 @@ export default function AdminDashboard() {
         <header className={styles.header}>
           <div className={styles.headerInfo}>
             <h1 className={styles.welcomeTitle}>
-              {copy?.header?.titlePrefix || "Command Center • Halo"},{" "}
-              {getGreetingName(user)} <span className={styles.wave}>👋</span>
+              {activeSectionTitle}
             </h1>
             <p className={styles.headerSubtitle}>
-              {copy?.header?.subtitle ||
-                "Kelola operasional, pesanan, dan performa toko dari satu panel eksekutif."}
+              {navMeta[activeTab] || "Pusat kendali operasional toko"}
             </p>
           </div>
           <div className={styles.roleChip}>
@@ -576,62 +570,10 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        <div key={activeTab} className={`${styles.viewWrapper} ${styles.viewWrapperAnimated}`}>
-          <div className={styles.summaryPanel}>
-            <div className={styles.summaryLead}>
-              <p className={styles.summaryEyebrow}>
-                {copy?.summary?.eyebrow || "Pusat kontrol commerce"}
-              </p>
-              <h2 className={styles.summaryTitle}>
-                {copy?.summary?.title ||
-                  "Pantau performa, stok, dan aktivitas pelanggan dalam satu dashboard terpadu."}
-              </h2>
-              <p className={styles.summarySubtext}>{statusText} · {latencyText}</p>
-            </div>
-
-            <div className={styles.commandCards}>
-              {commandCards.map((card) => (
-                <article
-                  key={card.label}
-                  className={`${styles.commandCard} ${
-                    card.tone === "warn"
-                      ? styles.commandCardWarn
-                      : card.tone === "info"
-                        ? styles.commandCardInfo
-                        : styles.commandCardOk
-                  }`}
-                >
-                  <p className={styles.commandCardLabel}>{card.label}</p>
-                  <p className={styles.commandCardValue}>{card.value}</p>
-                  <p className={styles.commandCardCaption}>{card.caption}</p>
-                </article>
-              ))}
-            </div>
-
-            <div className={styles.quickActions}>
-              {quickActions.map((action) => (
-                <button
-                  key={action.id}
-                  type="button"
-                  className={styles.quickActionBtn}
-                  onClick={() => handleTabChange(action.id)}
-                >
-                  {action.label}
-                </button>
-              ))}
-            </div>
-
-            <div className={styles.summaryPills}>
-              {(copy?.summary?.pills || [
-                "Operasional realtime",
-                "Keputusan cepat",
-                "Pengalaman premium",
-              ]).map((pill) => (
-                <span key={pill} className={styles.summaryPill}>{pill}</span>
-              ))}
-            </div>
-          </div>
-
+        <div
+          key={activeTab}
+          className={`${styles.viewWrapper} ${styles.viewWrapperAnimated}`}
+        >
           {renderTabContent()}
         </div>
       </main>
@@ -642,7 +584,9 @@ export default function AdminDashboard() {
             className={styles.logoutDialog}
             role="dialog"
             aria-modal="true"
-            aria-label={adminConfig?.aria?.logoutDialog || "Dialog konfirmasi logout admin"}
+            aria-label={
+              adminConfig?.aria?.logoutDialog || "Dialog konfirmasi logout admin"
+            }
           >
             <h2 className={styles.dialogTitle}>
               {adminConfig?.logoutDialog?.title || "Keluar dari panel admin?"}

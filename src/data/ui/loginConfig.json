@@ -9,8 +9,8 @@
     "backLinkHref": "/"
   },
   "form": {
-    "title": "SIGN IN",
-    "buttonText": "SIGN IN",
+    "title": "WELCOME BACK",
+    "buttonText": "LOGIN",
     "emailPlaceholder": "EMAIL ADDRESS",
     "passwordPlaceholder": "PASSWORD",
     "otpPlaceholder": "Masukkan 6 digit OTP",

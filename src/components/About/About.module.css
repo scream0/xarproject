@@ -1,10 +1,10 @@
 /* ====================================================
-   ABOUT SECTION CSS (Luxury High-End Theme)
+   ABOUT SECTION CSS (Clean Look & Highly Readable)
    ==================================================== */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
@@ -26,50 +26,79 @@
 
 .about {
   padding: 8rem 7%;
-  background: linear-gradient(
-    135deg,
-    rgba(var(--surface-secondary-rgb), 0.38) 0%,
-    var(--background) 70%
-  );
+  background: var(--background);
   color: var(--text-primary);
   position: relative;
   overflow: hidden;
-  animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Transisi Seamless di Bagian ATAS */
+.about::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  background: linear-gradient(
+    to bottom,
+    var(--background) 0%,
+    transparent 100%
+  );
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Transisi Seamless di Bagian BAWAH */
+.about::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  background: linear-gradient(
+    to top,
+    var(--background) 0%,
+    transparent 100%
+  );
+  z-index: 5;
+  pointer-events: none;
 }
 
 .aboutContainer {
-  max-width: 1350px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
 .aboutRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5rem;
+  gap: 4.5rem;
   align-items: center;
 }
 
-/* --- B. Image Wrapper (Luxury Gold/Platinum Frame) --- */
+/* --- B. Image Wrapper (Clean Modern Frame) --- */
 .aboutImgWrapper {
   position: relative;
-  height: 560px;
+  height: 520px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 }
 
 .imgContainer {
   position: relative;
-  width: 88%;
-  height: 88%;
+  width: 90%;
+  height: 90%;
+  border-radius: 16px;
   overflow: hidden;
   z-index: 2;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
 }
 
-/* Shimmer effect di dalam container */
+/* Shimmer effect halus */
 .imgContainer::after {
   content: "";
   position: absolute;
@@ -80,11 +109,11 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.25),
+    rgba(255, 255, 255, 0.2),
     transparent
   );
   transform: skewX(-20deg);
-  animation: shimmer 8s infinite ease-in-out;
+  animation: shimmer 9s infinite ease-in-out;
   pointer-events: none;
   z-index: 3;
 }
@@ -93,17 +122,18 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Bingkai Mewah */
+/* Bingkai Minimalis Bersih */
 .imgFrame {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  border: 1px solid rgba(var(--primary-accent-rgb), 0.3);
+  border-radius: 18px;
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
   z-index: 1;
   pointer-events: none;
 }
@@ -111,126 +141,102 @@
 .imgFrame::before {
   content: "";
   position: absolute;
-  top: -18px;
-  left: -18px;
-  right: -18px;
-  bottom: -18px;
+  top: -14px;
+  left: -14px;
+  right: -14px;
+  bottom: -14px;
+  border-radius: 20px;
   border: 1px solid var(--border-color);
-  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.5s ease;
   z-index: -1;
 }
 
-/* Hover Effect */
 .aboutImgWrapper:hover .imgFrame::before {
-  top: -26px;
-  left: -26px;
-  right: -26px;
-  bottom: -26px;
-  border-color: rgba(var(--primary-accent-rgb), 0.5);
-}
-.aboutImgWrapper:hover .aboutImg {
-  transform: scale(1.04);
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  border-color: rgba(var(--primary-accent-rgb), 0.4);
 }
 
-/* --- C. Content Section (Luxury Highlight) --- */
+.aboutImgWrapper:hover .aboutImg {
+  transform: scale(1.03);
+}
+
+/* --- C. Content Section (Clean, Readable & Spacious) --- */
 .aboutContent {
   flex: 1.2;
   position: relative;
   z-index: 10;
-  padding: 2.2rem;
+  padding: 2.8rem 2.6rem;
   overflow: hidden;
-  transition: background 0.4s ease;
-  animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
   opacity: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(var(--surface-primary-rgb), 0.96) 0%,
-    rgba(var(--surface-secondary-rgb), 0.7) 100%
-  );
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  
+  /* Latar belakang bersih, solid, dan mudah dibaca (Clean Look) */
+  background: var(--hero-panel-bg);
+  border: 1px solid var(--hero-panel-border);
+  border-radius: 20px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 12px 30px rgba(22, 19, 17, 0.05);
+  box-shadow: 0 16px 40px var(--hero-panel-shadow);
 }
 
-/* Layer Spotlight interaktif */
-.aboutContent::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(
-    800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(var(--primary-accent-rgb), 0.08),
-    transparent 60%
-  );
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.aboutContent:hover::before {
-  opacity: 1;
-}
-
-/* Garis Aksen Emas/Platinum di sisi kiri */
+/* Garis Aksen Vertikal Kiri yang Elegan */
 .aboutContent::after {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 2px;
+  width: 3px;
   height: 100%;
-  background: linear-gradient(to bottom, var(--primary-accent), transparent);
+  background: var(--primary-accent);
 }
 
 .aboutTagline {
   color: var(--primary-accent);
   text-transform: uppercase;
-  letter-spacing: 0.35em;
-  font-size: 0.72rem;
-  font-weight: 600;
-  margin-bottom: 1.2rem;
+  letter-spacing: 0.3em;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
 }
 
 .aboutContent h3 {
   font-family: var(--font-serif);
-  font-size: clamp(1.95rem, 2.8vw, 2.5rem);
-  font-weight: 300;
-  line-height: 1.2;
-  margin-bottom: 1.25rem;
-  letter-spacing: 0.02em;
+  font-size: clamp(2rem, 2.6vw, 2.4rem);
+  font-weight: 400;
+  line-height: 1.25;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.01em;
   color: var(--text-primary);
 }
 
 .aboutLead {
   font-family: var(--font-sans);
-  font-size: 0.96rem;
-  font-weight: 400;
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 1.1rem;
-  line-height: 1.7;
+  margin-bottom: 1rem;
+  line-height: 1.75;
 }
 
 .aboutContent p {
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.75;
-  margin-bottom: 1.1rem;
-  font-weight: 300;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  margin-bottom: 1.2rem;
+  font-weight: 400;
 }
 
-/* Features */
+/* Features (Clean & Structured List) */
 .aboutFeatures {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.4rem;
   border-top: 1px solid var(--border-color);
-  padding-top: 1.6rem;
+  padding-top: 1.8rem;
+  margin-top: 1.5rem;
 }
 
 .featureItem {
@@ -241,51 +247,45 @@
 
 .featureNumber {
   font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   color: var(--primary-accent);
-  font-weight: 500;
-  opacity: 0.9;
+  font-weight: 600;
+  min-width: 24px;
 }
 
 .featureText h4 {
   font-family: var(--font-sans);
-  font-size: 1rem;
+  font-size: 0.98rem;
   color: var(--text-primary);
   font-weight: 600;
-  margin-bottom: 0.25rem;
-  letter-spacing: 0.5px;
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.3px;
 }
 
 .featureText p {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--text-secondary);
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 /* Responsive */
 @media (max-width: 991px) {
   .about {
-    padding: 5.5rem 5%;
+    padding: 5rem 5%;
   }
   .aboutRow {
     grid-template-columns: 1fr;
-    gap: 2.8rem;
+    gap: 2.5rem;
   }
   .aboutImgWrapper {
-    height: 360px;
-  }
-  .aboutContent h3 {
-    font-size: 1.9rem;
+    height: 340px;
   }
   .aboutContent {
-    padding: 1.35rem;
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
   }
-  .aboutTagline {
-    margin-bottom: 0.9rem;
-  }
-  .aboutFeatures {
-    gap: 1rem;
-    padding-top: 1.2rem;
+  .aboutContent h3 {
+    font-size: 1.8rem;
   }
 }

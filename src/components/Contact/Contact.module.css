@@ -1,5 +1,5 @@
 /* ====================================================
-   CONTACT CSS (Luxury High-End Theme)
+   CONTACT CSS (Clean Look & High Readability Theme)
    ==================================================== */
 .feather {
   width: 24px;
@@ -15,14 +15,17 @@
 
 .contact {
   padding: 8.5rem 7% 5.5rem;
-  background: linear-gradient(180deg, var(--background) 0%, rgba(var(--surface-secondary-rgb), 0.35) 100%);
+  background: var(--background);
   color: var(--text-primary);
+  position: relative;
 }
 
 .contactContainer {
   display: flex;
-  gap: 5rem;
+  gap: 4.5rem;
   align-items: flex-start;
+  max-width: 1280px;
+  margin: 0 auto;
 }
 
 /* --- Left Info Card --- */
@@ -30,7 +33,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3.5rem;
+  gap: 3rem;
 }
 
 .infoHeader h5 {
@@ -38,18 +41,18 @@
   text-transform: uppercase;
   letter-spacing: 0.3em;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.75rem;
 }
 
 .infoHeader h2 {
   font-family: var(--font-serif);
-  font-size: 2.45rem;
-  font-weight: 300;
+  font-size: clamp(2.1rem, 2.8vw, 2.5rem);
+  font-weight: 400;
   color: var(--text-primary);
-  line-height: 1.2;
+  line-height: 1.25;
   margin-bottom: 0.85rem;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .infoHeader h2 span {
@@ -60,29 +63,30 @@
 .infoDetailsList {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.2rem;
 }
 
 .infoItem {
   display: flex;
   align-items: flex-start;
   gap: 1.2rem;
-  padding: 1rem 1.1rem;
-  border-radius: 12px;
-  background: rgba(var(--surface-primary-rgb), 0.85);
-  border: 1px solid var(--border-color);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 1.2rem;
+  border-radius: 14px;
+  background: var(--hero-panel-bg);
+  border: 1px solid var(--hero-panel-border);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
 }
 
 .infoItem:hover {
   border-color: var(--primary-accent);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
 }
 
 .infoIcon {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 3.2rem;
+  height: 3.2rem;
   border-radius: 10px;
   background-color: var(--surface-secondary);
   border: 1px solid var(--border-color);
@@ -90,19 +94,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
   flex-shrink: 0;
 }
 
 .infoItem .infoIcon svg {
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
   stroke: var(--primary-accent);
 }
 
 .infoItem:hover .infoIcon {
   background-color: var(--primary-accent);
   border-color: var(--primary-accent);
-  transform: translateY(-2px);
 }
 
 .infoItem:hover .infoIcon svg {
@@ -111,72 +114,72 @@
 
 .infoText h4 {
   font-family: var(--font-sans);
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .infoText p {
   font-family: var(--font-sans);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--text-secondary);
-  font-weight: 300;
+  font-weight: 400;
 }
 
 /* --- Editorial Address Box --- */
 .addressBox {
   border-top: 1px solid var(--border-color);
-  padding-top: 2rem;
+  padding-top: 1.8rem;
 }
 
 .addressBox h4 {
   color: var(--text-primary);
   font-family: var(--font-serif);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 400;
-  margin-bottom: 0.75rem;
-  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
 }
 
 .addressBox p {
   color: var(--text-secondary);
-  line-height: 1.8;
-  font-size: 0.9rem;
-  font-weight: 300;
+  line-height: 1.75;
+  font-size: 0.88rem;
+  font-weight: 400;
 }
 
 .coordinates {
   font-family: monospace;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--primary-accent);
-  opacity: 0.7;
-  margin-top: 0.75rem;
+  opacity: 0.8;
+  margin-top: 0.6rem;
   display: block;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 /* --- Form Container --- */
 .contactFormWrapper {
   flex: 1.1;
-  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98) 0%, rgba(var(--surface-secondary-rgb), 0.72) 100%);
-  border: 1px solid var(--border-color);
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.05);
+  background: var(--hero-panel-bg);
+  border: 1px solid var(--hero-panel-border);
+  padding: 2.8rem;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px var(--hero-panel-shadow);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
 .contactForm h3 {
   font-family: var(--font-serif);
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 400;
   color: var(--text-primary);
   margin-bottom: 2rem;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   text-align: center;
 }
 
@@ -189,7 +192,7 @@
 .inputBox input,
 .inputBox textarea {
   width: 100%;
-  padding: 10px 0;
+  padding: 12px 0;
   font-size: 0.9rem;
   font-family: var(--font-sans);
   color: var(--text-primary);
@@ -197,26 +200,26 @@
   border-bottom: 1px solid var(--border-color);
   background: transparent;
   outline: none;
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
 }
 
 .inputBox textarea {
-  height: 100px;
+  height: 110px;
   resize: none;
 }
 
 /* Label Styling */
 .inputBox label {
   position: absolute;
-  top: 10px;
+  top: 12px;
   left: 0;
   font-family: var(--font-sans);
   font-size: 0.78rem;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s ease;
 }
 
 /* State Aktif (Floating Label) */
@@ -224,20 +227,16 @@
 .inputBox input:not(:placeholder-shown) ~ label,
 .inputBox textarea:focus ~ label,
 .inputBox textarea:not(:placeholder-shown) ~ label {
-  top: -22px;
+  top: -20px;
   font-size: 0.7rem;
   color: var(--primary-accent);
-  letter-spacing: 2px;
-  font-weight: 600;
+  letter-spacing: 1.5px;
+  font-weight: 700;
 }
 
 .inputBox input:hover,
 .inputBox textarea:hover {
   border-bottom-color: var(--text-secondary);
-}
-
-.inputBox:hover label {
-  color: var(--text-primary);
 }
 
 .inputBox input:focus,
@@ -249,36 +248,32 @@
 .btnSubmit {
   width: 100%;
   padding: 13px 18px;
-  background: linear-gradient(135deg, var(--primary-accent) 0%, color-mix(in srgb, var(--primary-accent) 78%, white 22%) 100%);
+  background: var(--primary-accent);
   color: var(--primary-accent-text);
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   font-family: var(--font-sans);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.78rem;
+  letter-spacing: 0.15em;
+  font-size: 0.76rem;
   cursor: pointer;
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.16);
+  box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb), 0.2);
 }
 
 .btnSubmit:hover {
-  background: transparent !important;
-  color: var(--primary-accent);
-  border-color: var(--primary-accent);
   transform: translateY(-2px);
-  letter-spacing: 0.22em;
-  box-shadow: 0 8px 20px rgba(var(--primary-accent-rgb), 0.2);
+  box-shadow: 0 6px 18px rgba(var(--primary-accent-rgb), 0.3);
 }
 
 .btnSubmit:active {
   transform: translateY(0);
 }
 
-/* Kilatan Cahaya Premium */
+/* Kilatan Cahaya Halus */
 .btnSubmit::after {
   content: "";
   position: absolute;
@@ -289,11 +284,11 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.25),
     transparent
   );
   transform: skewX(-20deg);
-  animation: lightSweep 5s infinite ease-in-out;
+  animation: lightSweep 6s infinite ease-in-out;
 }
 
 @keyframes lightSweep {
@@ -311,22 +306,20 @@
 /* --- Responsive Media Queries --- */
 @media (max-width: 991px) {
   .contact {
-    padding: 5.5rem 5%;
+    padding: 5rem 5%;
   }
   .contactContainer {
     flex-direction: column;
     gap: 2.5rem;
   }
   .contactFormWrapper {
-    padding: 1.6rem 1.2rem;
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
   }
   .infoHeader h2 {
-    font-size: 1.9rem;
+    font-size: 1.85rem;
   }
   .infoItem {
-    padding: 0.95rem 1rem;
-  }
-  .inputBox {
-    margin-bottom: 1.6rem;
+    padding: 1rem;
   }
 }
