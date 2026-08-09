@@ -25,6 +25,7 @@ const MyVouchers = ({
   refreshProfile,
   isCheckoutMode = false,
   onSelectVoucher,
+  appliedClaimIds = [], // <-- Diterima dari CheckoutPage
 }) => {
   const [claimingId, setClaimingId] = useState(null);
   const [optimisticClaimed, setOptimisticClaimed] = useState(new Set());
@@ -153,15 +154,21 @@ const MyVouchers = ({
 
         <div className={styles.claimedVouchersList}>
           {displayVouchers.length > 0 ? (
-            displayVouchers.map((cv) => (
-              <VoucherCard
-                key={cv.id || cv.voucher_id}
-                voucher={cv}
-                statusText={statusTextMap[cv.status] || "Diklaim"}
-                onActionClick={isCheckoutMode ? () => onSelectVoucher(cv) : undefined}
-                buttonText="Pakai Voucher"
-              />
-            ))
+            displayVouchers.map((cv) => {
+              const claimId = cv.id; // ID baris user_vouchers
+              const isApplied = appliedClaimIds.includes(claimId);
+
+              return (
+                <VoucherCard
+                  key={claimId || cv.voucher_id}
+                  voucher={cv}
+                  statusText={statusTextMap[cv.status] || "Diklaim"}
+                  disabled={isCheckoutMode && isApplied}
+                  onActionClick={isCheckoutMode && !isApplied ? () => onSelectVoucher(cv) : undefined}
+                  buttonText={isCheckoutMode && isApplied ? "Terpakai" : "Pakai Voucher"}
+                />
+              );
+            })
           ) : (
             <p className={styles.emptyState}>
               {isCheckoutMode
