@@ -48,6 +48,7 @@ async function createOrderInSupabase(orderDetails) {
     customer_phone: customerPhone,
     shipping_address: shippingAddress,
     shipping_detail: shippingDetail,
+    snap_token: transaction.token,
     voucher_claim_id: voucherClaimId || null,
     items: items || [], // Menyimpan item langsung ke kolom JSON `items` di tabel orders
     status_history: [

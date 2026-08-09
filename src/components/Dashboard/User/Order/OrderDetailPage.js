@@ -50,7 +50,6 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
     const qOrderId = searchParams.get("order_id") || searchParams.get("id");
     if (qOrderId) return qOrderId;
     
-    // Jika diakses melalui URL path langsung, ambil segmen terakhir jika berupa ID order
     const segments = pathname.split("/").filter(Boolean);
     const lastSegment = segments[segments.length - 1];
     if (lastSegment && lastSegment.startsWith("XAR-")) {
@@ -66,6 +65,23 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
+
+  // Load Midtrans Snap Script untuk fitur "Bayar Sekarang"
+  useEffect(() => {
+    const snapScriptUrl = process.env.NODE_ENV === "production"
+      ? "https://app.midtrans.com/snap/snap.js"
+      : "https://app.sandbox.midtrans.com/snap/snap.js";
+    
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
+
+    if (!document.getElementById("midtrans-snap-script")) {
+      const script = document.createElement("script");
+      script.id = "midtrans-snap-script";
+      script.src = snapScriptUrl;
+      script.setAttribute("data-client-key", clientKey || "");
+      document.body.appendChild(script);
+    }
+  }, []);
 
   useEffect(() => {
     let subscription = null;
@@ -210,6 +226,33 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
     window.open(`https://jet.co.id/track?hal=1&track_id=${shipping.tracking_number}`, "_blank", "noopener,noreferrer");
   };
 
+  // Fungsi melanjutkan pembayaran via Midtrans Snap
+  const handleContinuePayment = () => {
+    if (!order?.snap_token) {
+      toast.error("Token pembayaran tidak ditemukan. Silakan buat pesanan baru atau hubungi admin.");
+      return;
+    }
+
+    if (typeof window.snap === "undefined") {
+      toast.error("Modul pembayaran sedang dimuat, coba sebentar lagi.");
+      return;
+    }
+
+    window.snap.pay(order.snap_token, {
+      onSuccess: function (result) {
+        toast.success("Pembayaran Berhasil!");
+        window.location.href = `/orders?order_id=${result.order_id}&status_code=${result.status_code}&transaction_status=${result.transaction_status}`;
+      },
+      onPending: function (result) {
+        toast("Menunggu pembayaran Anda", { icon: "⏳" });
+        window.location.href = `/orders?order_id=${result.order_id}&status_code=${result.status_code}&transaction_status=${result.transaction_status}`;
+      },
+      onClose: function () {
+        toast("Popup pembayaran ditutup.", { icon: "ℹ️" });
+      },
+    });
+  };
+
   if (loading) {
     return (
       <div className={styles.pageShell}>
@@ -236,6 +279,7 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
   }
 
   const statusInfo = getStatusInfo(order.status);
+  const isPendingStatus = (order.status || "").toLowerCase() === "pending";
 
   return (
     <div className={styles.pageShell}>
@@ -256,6 +300,18 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
           >
             Kembali
           </button>
+          
+          {/* Tombol Bayar Sekarang muncul jika status pending dan ada snap_token */}
+          {isPendingStatus && order.snap_token && (
+            <button 
+              onClick={handleContinuePayment} 
+              className={styles.primaryBtn} 
+              style={{ backgroundColor: "#eab308", color: "#000", fontWeight: "600", border: "none" }}
+            >
+              Bayar Sekarang
+            </button>
+          )}
+
           <button onClick={handleCopyId} className={styles.secondaryBtn}>Salin ID</button>
           <button onClick={handleDownloadInvoice} className={styles.primaryBtn}>Unduh Invoice</button>
         </div>
