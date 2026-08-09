@@ -312,7 +312,7 @@
   letter-spacing: 0.16em;
   font-size: 0.78rem;
   cursor: pointer;
-  border-radius: 999px;
+  border-radius: 6px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
   position: relative;
   overflow: hidden;
@@ -359,7 +359,7 @@
 
 .ctaSecondary {
   padding: 12px 22px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.16em;

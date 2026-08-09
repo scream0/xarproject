@@ -252,7 +252,7 @@
   background: linear-gradient(135deg, var(--primary-accent) 0%, color-mix(in srgb, var(--primary-accent) 78%, white 22%) 100%);
   color: var(--primary-accent-text);
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 6px;
   font-family: var(--font-sans);
   font-weight: 600;
   text-transform: uppercase;

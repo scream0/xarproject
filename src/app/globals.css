@@ -6,30 +6,30 @@
   --font-serif: "Tenor Sans", sans-serif;
   --font-sans: "Lato", sans-serif;
 
-  /* Light Theme Palette (Clean Ivory & Warm Cream) */
+  /* Light Theme Palette (Clean Ivory & Emerald Green) */
   --background: #fcfaf6;
   --text-primary: #161311;
   --text-secondary: #766c62;
   --surface-primary: #fffdf9;
   --surface-secondary: #f8efe2;
   --border-color: #eadfcb;
-  --primary-accent: #c5a059;
+  --primary-accent: #07191e;
   --primary-accent-text: #ffffff;
   --danger-color: #b91c1c;
   --success-color: #15803d;
-  --text-tertiary: #9e9185; /* A softer gray for less emphasis */
-  --primary-accent-bg: rgba(var(--primary-accent-rgb), 0.1); /* Light tint of primary accent */
-  --success-bg: rgba(var(--success-color-rgb), 0.1); /* Light tint of success color */
-  --input-background: #ffffff; /* Typically white for light mode */
+  --text-tertiary: #9e9185;
+  --primary-accent-bg: rgba(var(--primary-accent-rgb), 0.1);
+  --success-bg: rgba(var(--success-color-rgb), 0.1);
+  --input-background: #ffffff;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 
-  /* RGB versions for rgba() */
+  /* RGB versions for rgba() — disesuaikan dengan primary-accent hijau di atas */
   --surface-primary-rgb: 255, 253, 249;
   --background-rgb: 252, 250, 246;
   --text-secondary-rgb: 118, 108, 98;
-  --primary-accent-rgb: 197, 160, 89;
+  --primary-accent-rgb: 11, 110, 79;
   --danger-color-rgb: 185, 28, 28;
   --success-color-rgb: 21, 128, 61;
 
@@ -47,14 +47,14 @@
 }
 
 [data-theme="dark"] {
-  /* Dark Theme Palette (Luxury Obsidian & Luminous Gold) */
+  /* Dark Theme Palette (Luxury Obsidian & Luminous Emerald) */
   --background: #0a0a0a;
   --text-primary: #f4f3ee;
   --text-secondary: #a3a099;
   --surface-primary: #141416;
   --surface-secondary: #1d1d20;
   --border-color: #2d2d33;
-  --primary-accent: #d4af37;
+  --primary-accent: #02f5a1;
   --primary-accent-text: #0a0a0a;
   --danger-color: #ef4444;
   --success-color: #10b981;
@@ -66,11 +66,11 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.15);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px -2px rgba(0, 0, 0, 0.25);
 
-  /* RGB versions for rgba() */
+  /* RGB versions for rgba() — disesuaikan dengan primary-accent hijau di atas */
   --surface-primary-rgb: 20, 20, 22;
   --background-rgb: 10, 10, 10;
   --text-secondary-rgb: 163, 160, 153;
-  --primary-accent-rgb: 212, 175, 55;
+  --primary-accent-rgb: 2, 245, 161;
   --danger-color-rgb: 239, 68, 68;
   --success-color-rgb: 16, 185, 129;
 
