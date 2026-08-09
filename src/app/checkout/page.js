@@ -7,7 +7,7 @@ import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 import { buildAddressId, normalizeAddress, resolveAddressRegion, resolveCityId } from "@/utils/address";
-import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers"; // <-- Import MyVouchers
+import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers";
 import styles from "./checkout.module.css";
 
 const ORIGIN_CITY_ID = "114"; // Jakarta
@@ -33,9 +33,6 @@ const rupiah = (n) =>
     maximumFractionDigits: 0,
   }).format(n || 0);
 
-// Voucher dikelompokkan jadi 2 kategori saja: "shipping" (gratis ongkir)
-// dan "discount" (semua tipe lain — percentage / fixed). Cuma boleh 1
-// voucher aktif per kategori, jadi total maksimal 2 voucher sekaligus.
 const getVoucherCategory = (voucher) =>
   voucher?.type === "shipping" ? "shipping" : "discount";
 
@@ -89,9 +86,8 @@ export default function CheckoutPage() {
 
   // State Voucher Milik User (Claimed Vouchers)
   const [claimedVouchers, setClaimedVouchers] = useState([]);
-  // Maksimal 2 voucher aktif sekaligus: 1 kategori "shipping" + 1 kategori "discount"
   const [appliedVouchers, setAppliedVouchers] = useState([]);
-  const [showVoucherModal, setShowVoucherModal] = useState(false); // Modal pilih voucher
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -118,20 +114,20 @@ export default function CheckoutPage() {
     };
   }, [router]);
 
-  // Fetch voucher yang sudah diklaim oleh user dari API profile
-const fetchUserClaimedVouchers = async (userId, token) => {
-  try {
-    const res = await fetch("/api/profile", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const result = await res.json();
-    if (res.ok && result.success && result.profile) {
-      setClaimedVouchers(result.profile.user_vouchers || []); // fix: user_vouchers, bukan claimed_vouchers
+  const fetchUserClaimedVouchers = async (userId, token) => {
+    try {
+      const res = await fetch("/api/profile", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await res.json();
+      if (res.ok && result.success && result.profile) {
+        setClaimedVouchers(result.profile.user_vouchers || []);
+      }
+    } catch (err) {
+      console.error("Gagal memuat voucher tersimpan:", err);
     }
-  } catch (err) {
-    console.error("Gagal memuat voucher tersimpan:", err);
-  }
-};
+  };
+
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyOverflowY = document.body.style.overflowY;
@@ -222,7 +218,6 @@ const fetchUserClaimedVouchers = async (userId, token) => {
     }
   }, [addresses, selectedAddressId]);
 
-  // ── Save new address ──
   const handleSaveAddress = async (e) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -269,7 +264,6 @@ const fetchUserClaimedVouchers = async (userId, token) => {
     }
   };
 
-  // ── Compute total weight from cart items ──
   const totalWeight = useMemo(() => {
     let w = 0;
     for (const item of cart.items || []) {
@@ -280,7 +274,6 @@ const fetchUserClaimedVouchers = async (userId, token) => {
     return w;
   }, [cart.items, products]);
 
-  // ── Fetch courier costs when address changes ──
   const selectedAddress = useMemo(
     () => addresses.find((a) => a.id === selectedAddressId),
     [addresses, selectedAddressId],
@@ -470,7 +463,6 @@ const fetchUserClaimedVouchers = async (userId, token) => {
   // ── Pilihan Voucher ──
   const subtotal = activePromo ? discountedCartTotal : cartTotal;
 
-  // Voucher yang sedang aktif per kategori (maksimal 1 masing-masing)
   const shippingVoucher = useMemo(
     () => appliedVouchers.find((v) => getVoucherCategory(v) === "shipping") || null,
     [appliedVouchers],
@@ -483,7 +475,6 @@ const fetchUserClaimedVouchers = async (userId, token) => {
   const handleSelectVoucherFromModal = (claimedVoucherEntry) => {
     const voucherDetail = claimedVoucherEntry.vouchers || claimedVoucherEntry;
 
-    // Validasi minimum belanja, ala Shopee/Tokped: voucher gak bisa dipakai kalau belum memenuhi syarat
     if (voucherDetail.min_purchase && subtotal < voucherDetail.min_purchase) {
       toast.error(
         `Minimum belanja untuk voucher ini adalah ${rupiah(voucherDetail.min_purchase)}`
@@ -514,7 +505,7 @@ const fetchUserClaimedVouchers = async (userId, token) => {
       ...prev,
       {
         ...voucherDetail,
-        claimId: claimedVoucherEntry.id, // id row user_vouchers, dipakai nanti untuk tandai "used" setelah bayar
+        claimId: claimedVoucherEntry.id,
       },
     ]);
     setShowVoucherModal(false);
@@ -526,13 +517,11 @@ const fetchUserClaimedVouchers = async (userId, token) => {
     toast.success("Voucher dibatalkan");
   };
 
-  // Diskon dari voucher gratis ongkir (dipotongkan dari shippingCost, tidak bisa minus)
   const shippingVoucherDiscount = useMemo(() => {
     if (!shippingVoucher) return 0;
     return Math.min(shippingCost, Number(shippingVoucher.discount_amount || 0));
   }, [shippingVoucher, shippingCost]);
 
-  // Diskon dari voucher potongan harga (percentage / fixed) terhadap subtotal
   const subtotalVoucherDiscount = useMemo(() => {
     if (!discountVoucher) return 0;
     if (discountVoucher.type === "percentage") {
@@ -541,8 +530,12 @@ const fetchUserClaimedVouchers = async (userId, token) => {
     return Number(discountVoucher.discount_amount || 0);
   }, [discountVoucher, subtotal]);
 
-  // Total gabungan (dipakai untuk tampilan ringkas, mis. di section "Voucher Toko")
   const totalVoucherDiscount = shippingVoucherDiscount + subtotalVoucherDiscount;
+
+  const finalShippingCost = Math.max(0, shippingCost - shippingVoucherDiscount);
+  const finalSubtotalDiscount = subtotalVoucherDiscount;
+
+  const grandTotal = Math.max(0, subtotal - finalSubtotalDiscount) + finalShippingCost;
 
   // ── Handle payment ──
   const handlePay = async () => {
@@ -557,40 +550,38 @@ const fetchUserClaimedVouchers = async (userId, token) => {
 
     const selectedCourierInfo = courierOptions.find((c) => c.key === selectedCourierKey);
 
-localStorage.setItem(
-  "checkout_shipping",
-  JSON.stringify({
-    addressId: selectedAddress.id,
-    address: selectedAddress,
-    courierKey: selectedCourierKey,
-    courierName: selectedCourierInfo?.courierName || "",
-    courierService: selectedCourierInfo?.service || "",
-    courierEtd: selectedCourierInfo?.etd || "",
-    shippingCost,
-    // Array voucher yang dipakai (maksimal 2: 1 shipping + 1 discount).
-    // Field lama (appliedVoucherId / appliedVoucherClaimId) sengaja TIDAK
-    // dipakai lagi karena sekarang bisa lebih dari 1 voucher — kalau ada
-    // halaman lain (mis. thank-you page) yang masih baca field lama itu,
-    // itu perlu disesuaikan supaya baca `appliedVouchers` di bawah ini.
-    appliedVouchers: appliedVouchers.map((v) => ({
-      voucherId: v.id,       // id voucher (referensi produk voucher)
-      claimId: v.claimId,    // id klaim user (untuk mark used_at)
-      type: v.type,
-      code: v.code,
-    })),
-    voucherDiscount: totalVoucherDiscount,
-    shippingVoucherDiscount,
-    subtotalVoucherDiscount,
-  }),
-);
+    // Kirim data lengkap termasuk voucher aktif ke localStorage agar dapat dibaca oleh StoreContext / processPayment
+    localStorage.setItem(
+      "checkout_shipping",
+      JSON.stringify({
+        addressId: selectedAddress.id,
+        address: selectedAddress,
+        courierKey: selectedCourierKey,
+        courierName: selectedCourierInfo?.courierName || "",
+        courierService: selectedCourierInfo?.service || "",
+        courierEtd: selectedCourierInfo?.etd || "",
+        shippingCost: finalShippingCost, // Kirim ongkir setelah dipotong gratis ongkir
+        // Kirim voucher utama (ambil salah satu dari appliedVouchers agar dibaca backend lama/baru)
+        appliedVoucherId: discountVoucher?.id || shippingVoucher?.id || null,
+        voucherClaimId: discountVoucher?.claimId || shippingVoucher?.claimId || null,
+        appliedVouchers: appliedVouchers.map((v) => ({
+          voucherId: v.id,
+          claimId: v.claimId,
+          type: v.type,
+          code: v.code,
+        })),
+        voucherDiscount: totalVoucherDiscount,
+        shippingVoucherDiscount,
+        subtotalVoucherDiscount,
+      }),
+    );
 
-    await processPayment();
+    // Panggil proses pembayaran dari StoreContext
+    await processPayment({
+      appliedVoucherId: discountVoucher?.id || shippingVoucher?.id || null,
+      voucherClaimId: discountVoucher?.claimId || shippingVoucher?.claimId || null,
+    });
   };
-
-  const finalShippingCost = Math.max(0, shippingCost - shippingVoucherDiscount);
-  const finalSubtotalDiscount = subtotalVoucherDiscount;
-
-  const grandTotal = Math.max(0, subtotal - finalSubtotalDiscount) + finalShippingCost;
 
   const selectedCourierInfo = useMemo(
     () => courierOptions.find((c) => c.key === selectedCourierKey),
