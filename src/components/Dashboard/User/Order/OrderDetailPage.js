@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { formatAddressDisplay } from "@/utils/address";
@@ -39,9 +39,26 @@ function resolveHistoryEvent(event, index) {
   };
 }
 
-export default function OrderDetailPage({ orderId }) {
+export default function OrderDetailPage({ orderId: propOrderId }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Fleksibel menangkap orderId dari: prop, query ?order_id=..., ?id=..., atau segment path terakhir
+  const resolvedOrderId = useMemo(() => {
+    if (propOrderId) return propOrderId;
+    const qOrderId = searchParams.get("order_id") || searchParams.get("id");
+    if (qOrderId) return qOrderId;
+    
+    // Jika diakses melalui URL path langsung, ambil segmen terakhir jika berupa ID order
+    const segments = pathname.split("/").filter(Boolean);
+    const lastSegment = segments[segments.length - 1];
+    if (lastSegment && lastSegment.startsWith("XAR-")) {
+      return lastSegment;
+    }
+    return null;
+  }, [propOrderId, searchParams, pathname]);
+
   const [order, setOrder] = useState(null);
   const [items, setItems] = useState([]);
   const [shipping, setShipping] = useState(null);
@@ -61,7 +78,6 @@ export default function OrderDetailPage({ orderId }) {
       }
       setUser(session.user);
 
-      // Listener perubahan sesi Supabase
       const { data: authListener } = auth.onAuthStateChange((_event, session) => {
         if (!session) {
           router.replace("/login");
@@ -80,7 +96,7 @@ export default function OrderDetailPage({ orderId }) {
   }, [router]);
 
   useEffect(() => {
-    if (!orderId) {
+    if (!resolvedOrderId) {
       setError("ID Pesanan tidak ditemukan di URL.");
       setLoading(false);
       return;
@@ -96,7 +112,7 @@ export default function OrderDetailPage({ orderId }) {
         const { data: { session } } = await auth.getSession();
         const token = session?.access_token;
 
-        const res = await fetch(`/api/user/orders/${orderId}?userId=${user.id || user.uid}`, {
+        const res = await fetch(`/api/user/orders/${resolvedOrderId}?userId=${user.id || user.uid}`, {
           cache: "no-store",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -121,10 +137,10 @@ export default function OrderDetailPage({ orderId }) {
         setItems(detailItems);
         setShipping(detailShipping);
         setHistory(detailHistory);
-      } catch (error) {
-        console.error("Failed to load order detail page", error);
-        setError(error.message || "Gagal memuat detail pesanan.");
-        toast.error(error.message || "Gagal memuat detail pesanan.");
+      } catch (err) {
+        console.error("Failed to load order detail page", err);
+        setError(err.message || "Gagal memuat detail pesanan.");
+        toast.error(err.message || "Gagal memuat detail pesanan.");
       } finally {
         if (isActive) {
           setLoading(false);
@@ -136,7 +152,7 @@ export default function OrderDetailPage({ orderId }) {
     return () => {
       isActive = false;
     };
-  }, [orderId, user]);
+  }, [resolvedOrderId, user]);
 
   const totalAmount = useMemo(() => {
     const raw = Number(order?.amount || order?.total_amount || order?.rawPrice || 0);
@@ -149,8 +165,8 @@ export default function OrderDetailPage({ orderId }) {
   }, [shipping]);
 
   const handleCopyId = async () => {
-    if (!orderId) return;
-    await navigator.clipboard.writeText(orderId);
+    if (!resolvedOrderId) return;
+    await navigator.clipboard.writeText(resolvedOrderId);
     toast.success("ID pesanan berhasil disalin.");
   };
 
@@ -181,7 +197,7 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Invoice-${orderId}.txt`;
+    link.download = `Invoice-${resolvedOrderId}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
