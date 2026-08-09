@@ -179,8 +179,6 @@
 }
 
 .btnLogin:hover:not(:disabled) {
-  background-color: transparent;
-  color: var(--primary-accent);
   border-color: var(--primary-accent);
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.2);

@@ -1,18 +1,27 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
+import styles from "./AccountOrdersPage.module.css";
 
 function OrderContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order_id");
   const transactionStatus = searchParams.get("transaction_status");
 
-  // Anda bisa menggunakan orderId atau transactionStatus di sini jika diperlukan,
-  // atau langsung merender OrdersSection Anda.
   return (
-    <div style={{ padding: "1.25rem", width: "100%", minHeight: "100vh" }}>
+    <div className={styles.container}>
+      <div className={styles.headerWrapper}>
+        <button
+          type="button"
+          onClick={() => router.push("/dashboard")}
+          className={styles.backButton}
+        >
+          ← Kembali ke Dashboard
+        </button>
+      </div>
       <OrdersSection />
     </div>
   );
@@ -20,7 +29,7 @@ function OrderContent() {
 
 export default function AccountOrdersPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center" }}>Memuat halaman pesanan...</div>}>
+    <Suspense fallback={<div className={styles.loadingFallback}>Memuat halaman pesanan...</div>}>
       <OrderContent />
     </Suspense>
   );
