@@ -30,6 +30,7 @@ async function createOrderInSupabase(orderDetails) {
     discountAmount,
     appliedVoucherId,
     voucherClaimId,
+    snapToken, // <-- Ditangkap dari parameter yang dikirim
   } = orderDetails;
 
   // 1. Prepare the main order payload including items array JSON
@@ -38,7 +39,7 @@ async function createOrderInSupabase(orderDetails) {
     user_id: userId === "guest" ? null : userId,
     status: status || "pending",
     amount: amount,
-    total_amount: amount, // Menyesuaikan jika tabel menggunakan total_amount
+    total_amount: amount,
     shipping_cost: shippingCost || 0,
     discount_amount: discountAmount || 0,
     tax_amount: 0,
@@ -48,9 +49,9 @@ async function createOrderInSupabase(orderDetails) {
     customer_phone: customerPhone,
     shipping_address: shippingAddress,
     shipping_detail: shippingDetail,
-    snap_token: transaction.token,
+    snap_token: snapToken || null, // <-- Menggunakan variabel snapToken yang benar
     voucher_claim_id: voucherClaimId || null,
-    items: items || [], // Menyimpan item langsung ke kolom JSON `items` di tabel orders
+    items: items || [],
     status_history: [
       {
         id: `${Date.now()}-system`,
@@ -85,7 +86,6 @@ async function createOrderInSupabase(orderDetails) {
 
     if (usageError) {
       console.error("Gagal mencatat voucher usage:", usageError.message);
-      // Tidak perlu menggagalkan order, cukup log errornya
     }
   }
 }
@@ -231,10 +231,10 @@ export async function POST(request) {
       },
     };
 
-    // 1. Create Midtrans Snap Token
+    // 1. Create Midtrans Snap Token TERLEBIH DAHULU
     const transaction = await snap.createTransaction(parameter);
 
-    // 2. Save the order record directly with JSON items to Supabase
+    // 2. Save the order record to Supabase, menyertakan snap_token dari transaction.token
     await createOrderInSupabase({
       userId: userId || "guest",
       orderId,
@@ -251,6 +251,7 @@ export async function POST(request) {
       paymentType: "Midtrans",
       appliedVoucherId: validVoucherId,
       voucherClaimId: validVoucherClaimId,
+      snapToken: transaction.token, // <-- Dikirim ke fungsi createOrderInSupabase
     });
 
     return NextResponse.json({
