@@ -578,8 +578,10 @@ export default function CheckoutPage() {
 
     // Panggil proses pembayaran dari StoreContext
     await processPayment({
-      appliedVoucherId: discountVoucher?.id || shippingVoucher?.id || null,
-      voucherClaimId: discountVoucher?.claimId || shippingVoucher?.claimId || null,
+      shippingVoucherId: shippingVoucher?.id || null,
+      shippingVoucherClaimId: shippingVoucher?.claimId || null,
+      discountVoucherId: discountVoucher?.id || null,
+      discountVoucherClaimId: discountVoucher?.claimId || null,
     });
   };
 

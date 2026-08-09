@@ -28,12 +28,10 @@ async function createOrderInSupabase(orderDetails) {
     status,
     paymentType,
     discountAmount,
-    appliedVoucherId,
-    voucherClaimId,
-    snapToken, // <-- Ditangkap dari parameter yang dikirim
+    appliedVouchersList, // List semua voucher yang valid dipakai
+    snapToken,
   } = orderDetails;
 
-  // 1. Prepare the main order payload including items array JSON
   const orderPayload = {
     id: orderId,
     user_id: userId === "guest" ? null : userId,
@@ -49,8 +47,7 @@ async function createOrderInSupabase(orderDetails) {
     customer_phone: customerPhone,
     shipping_address: shippingAddress,
     shipping_detail: shippingDetail,
-    snap_token: snapToken || null, // <-- Menggunakan variabel snapToken yang benar
-    voucher_claim_id: voucherClaimId || null,
+    snap_token: snapToken || null,
     items: items || [],
     status_history: [
       {
@@ -64,7 +61,6 @@ async function createOrderInSupabase(orderDetails) {
     ],
   };
 
-  // 2. Insert the main order record
   const { error: orderError } = await supabaseAdmin
     .from("orders")
     .insert(orderPayload);
@@ -74,18 +70,21 @@ async function createOrderInSupabase(orderDetails) {
     throw new Error(`Failed to create order record: ${orderError.message}`);
   }
 
-  // 3. Jika ada voucher yang dipakai, catat ke tabel voucher_usage
-  if (appliedVoucherId && userId && userId !== "guest") {
-    const { error: usageError } = await supabaseAdmin
-      .from("voucher_usage")
-      .insert({
-        user_id: userId,
-        voucher_id: appliedVoucherId,
-        order_id: orderId,
-      });
-
-    if (usageError) {
-      console.error("Gagal mencatat voucher usage:", usageError.message);
+  // Catat penggunaan semua voucher yang valid ke tabel voucher_usage & tandai used_at di user_vouchers
+  if (Array.isArray(appliedVouchersList) && userId && userId !== "guest") {
+    for (const v of appliedVouchersList) {
+      if (v.voucherId) {
+        await supabaseAdmin.from("voucher_usage").insert({
+          user_id: userId,
+          voucher_id: v.voucherId,
+          order_id: orderId,
+        });
+      }
+      if (v.claimId) {
+        await supabaseAdmin.from("user_vouchers")
+          .update({ used_at: new Date().toISOString() })
+          .eq("id", v.claimId);
+      }
     }
   }
 }
@@ -100,9 +99,10 @@ export async function POST(request) {
       shippingAddress,
       shippingCost,
       shippingDetail,
-      appliedVoucherId,
-      voucherClaimId, 
-      voucherDiscount: clientVoucherDiscount = 0,
+      shippingVoucherId,
+      shippingVoucherClaimId,
+      discountVoucherId,
+      discountVoucherClaimId,
     } = body;
 
     const orderId = body.orderId || uuidv4();
@@ -114,51 +114,82 @@ export async function POST(request) {
       );
     }
 
-    // ── VALIDASI VOUCHER DI SERVER (Security Check) ──
-    let verifiedVoucherDiscount = 0;
-    let validVoucherId = null;
+    const rawSubtotal = (items || []).reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
     let actualShippingCost = Number(shippingCost) || 0;
-    let validVoucherClaimId = null;
 
-    if (appliedVoucherId) {
-      const { data: dbVoucher, error: vErr } = await supabaseAdmin
+    let subtotalDiscountAmount = 0;
+    let shippingDiscountAmount = 0;
+    const validatedVouchers = [];
+
+    // ── 1. VALIDASI VOUCHER DISKON (Percentage / Fixed) ──
+    if (discountVoucherId) {
+      const { data: dVoucher, error: dErr } = await supabaseAdmin
         .from("vouchers")
         .select("*")
-        .eq("id", appliedVoucherId)
+        .eq("id", discountVoucherId)
         .eq("is_active", true)
         .single();
 
-      if (!vErr && dbVoucher) {
-        const rawSubtotal = (items || []).reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+      if (!dErr && dVoucher && rawSubtotal >= Number(dVoucher.min_purchase)) {
+        // Validasi klaim user jika ada claimId
+        let validClaimId = null;
+        if (discountVoucherClaimId && userId && userId !== "guest") {
+          const { data: claimRow } = await supabaseAdmin
+            .from("user_vouchers")
+            .select("id, used_at")
+            .eq("id", discountVoucherClaimId)
+            .eq("user_id", userId)
+            .eq("voucher_id", discountVoucherId)
+            .single();
 
-        if (rawSubtotal >= Number(dbVoucher.min_purchase)) {
-          validVoucherId = dbVoucher.id;
-
-          if (voucherClaimId && userId && userId !== "guest") {
-            const { data: claimRow, error: claimErr } = await supabaseAdmin
-              .from("user_vouchers")
-              .select("id, used_at")
-              .eq("id", voucherClaimId)
-              .eq("user_id", userId)
-              .eq("voucher_id", appliedVoucherId)
-              .single();
-
-            if (!claimErr && claimRow && !claimRow.used_at) {
-              validVoucherClaimId = claimRow.id;
-            }
-          }
-
-          if (dbVoucher.type === 'shipping') {
-            verifiedVoucherDiscount = Math.min(actualShippingCost, Number(dbVoucher.discount_amount || 0));
-            actualShippingCost = Math.max(0, actualShippingCost - verifiedVoucherDiscount);
-          } else if (dbVoucher.type === 'percentage') {
-            verifiedVoucherDiscount = (rawSubtotal * Number(dbVoucher.discount_amount || 0)) / 100;
-          } else {
-            verifiedVoucherDiscount = Number(dbVoucher.discount_amount || 0);
+          if (claimRow && !claimRow.used_at) {
+            validClaimId = claimRow.id;
           }
         }
+
+        if (dVoucher.type === 'percentage') {
+          subtotalDiscountAmount = (rawSubtotal * Number(dVoucher.discount_amount || 0)) / 100;
+        } else {
+          subtotalDiscountAmount = Number(dVoucher.discount_amount || 0);
+        }
+
+        validatedVouchers.push({ voucherId: dVoucher.id, claimId: validClaimId });
       }
     }
+
+    // ── 2. VALIDASI VOUCHER GRATIS ONGKIR (Shipping) ──
+    if (shippingVoucherId) {
+      const { data: sVoucher, error: sErr } = await supabaseAdmin
+        .from("vouchers")
+        .select("*")
+        .eq("id", shippingVoucherId)
+        .eq("is_active", true)
+        .single();
+
+      if (!sErr && sVoucher && rawSubtotal >= Number(sVoucher.min_purchase)) {
+        let validClaimId = null;
+        if (shippingVoucherClaimId && userId && userId !== "guest") {
+          const { data: claimRow } = await supabaseAdmin
+            .from("user_vouchers")
+            .select("id, used_at")
+            .eq("id", shippingVoucherClaimId)
+            .eq("user_id", userId)
+            .eq("voucher_id", shippingVoucherId)
+            .single();
+
+          if (claimRow && !claimRow.used_at) {
+            validClaimId = claimRow.id;
+          }
+        }
+
+        shippingDiscountAmount = Math.min(actualShippingCost, Number(sVoucher.discount_amount || 0));
+        actualShippingCost = Math.max(0, actualShippingCost - shippingDiscountAmount);
+
+        validatedVouchers.push({ voucherId: sVoucher.id, claimId: validClaimId });
+      }
+    }
+
+    const totalDiscountAmount = subtotalDiscountAmount + shippingDiscountAmount;
 
     let customerName = "Customer XAR Store";
     let customerEmail = "customer@xarstore.com";
@@ -167,11 +198,9 @@ export async function POST(request) {
     if (userId) {
       try {
         const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
-        if (error) throw error;
-        const user = data?.user;
-        if (user) {
-            customerEmail = user.email || customerEmail;
-            customerPhone = user.phone || customerPhone;
+        if (!error && data?.user) {
+            customerEmail = data.user.email || customerEmail;
+            customerPhone = data.user.phone || customerPhone;
         }
       } catch (err) {
         console.warn("Failed to fetch user data from Supabase for Midtrans:", err.message);
@@ -190,12 +219,12 @@ export async function POST(request) {
       name: `${item.name} (${item.size || "Standard"})`.substring(0, 50),
     }));
 
-    if (verifiedVoucherDiscount > 0) {
+    if (subtotalDiscountAmount > 0) {
       formattedItems.push({
         id: "VOUCHER-DISCOUNT",
-        price: -Math.round(verifiedVoucherDiscount),
+        price: -Math.round(subtotalDiscountAmount),
         quantity: 1,
-        name: "Diskon Voucher / Gratis Ongkir",
+        name: "Diskon Voucher Toko",
       });
     }
 
@@ -208,12 +237,15 @@ export async function POST(request) {
       });
     }
 
-    const computedGrossAmount = formattedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const computedGrossAmount = Math.max(
+      1000, 
+      rawSubtotal - subtotalDiscountAmount + actualShippingCost
+    );
 
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: Math.max(1000, computedGrossAmount),
+        gross_amount: computedGrossAmount,
       },
       item_details: formattedItems,
       customer_details: {
@@ -234,7 +266,7 @@ export async function POST(request) {
     // 1. Create Midtrans Snap Token TERLEBIH DAHULU
     const transaction = await snap.createTransaction(parameter);
 
-    // 2. Save the order record to Supabase, menyertakan snap_token dari transaction.token
+    // 2. Save the order record to Supabase
     await createOrderInSupabase({
       userId: userId || "guest",
       orderId,
@@ -242,16 +274,15 @@ export async function POST(request) {
       shippingAddress: shippingAddress || null,
       shippingDetail: shippingDetail || null,
       shippingCost: actualShippingCost,
-      discountAmount: verifiedVoucherDiscount,
-      amount: Math.max(1000, computedGrossAmount),
+      discountAmount: totalDiscountAmount,
+      amount: computedGrossAmount,
       customerName,
       customerEmail,
       customerPhone,
       status: "pending",
       paymentType: "Midtrans",
-      appliedVoucherId: validVoucherId,
-      voucherClaimId: validVoucherClaimId,
-      snapToken: transaction.token, // <-- Dikirim ke fungsi createOrderInSupabase
+      appliedVouchersList: validatedVouchers,
+      snapToken: transaction.token,
     });
 
     return NextResponse.json({
