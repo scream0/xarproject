@@ -1,4 +1,5 @@
 "use client";
+
 import {
   createContext,
   useContext,
@@ -420,7 +421,7 @@ export function StoreProvider({ children }) {
     [],
   );
 
-  const processPayment = async () => {
+  const processPayment = async (customParams = {}) => {
     if (!user) {
       toast.error("Silakan login untuk checkout!");
       router.push(
@@ -488,7 +489,11 @@ export function StoreProvider({ children }) {
       }
       setShippingCost(shippingCostAmount);
 
-      const finalAmount = amount + shippingCostAmount;
+      // Ambil ID voucher diskon dan gratis ongkir dari customParams atau localStorage
+      const shippingVoucherId = customParams.shippingVoucherId || shippingDetail?.appliedVouchers?.find(v => v.type === 'shipping')?.voucherId || null;
+      const shippingVoucherClaimId = customParams.shippingVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type === 'shipping')?.claimId || null;
+      const discountVoucherId = customParams.discountVoucherId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.voucherId || null;
+      const discountVoucherClaimId = customParams.discountVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.claimId || null;
 
       const response = await fetch("/api/midtrans", {
         method: "POST",
@@ -499,7 +504,7 @@ export function StoreProvider({ children }) {
         body: JSON.stringify({
           userId,
           orderId,
-          amount: finalAmount,
+          amount,
           items: cart.items,
           customerDetails: customer,
           shippingAddress: selectedShippingAddress,
@@ -512,6 +517,10 @@ export function StoreProvider({ children }) {
               }
             : null,
           discountAmount: promoSavings,
+          shippingVoucherId,
+          shippingVoucherClaimId,
+          discountVoucherId,
+          discountVoucherClaimId,
         }),
       });
 
@@ -550,12 +559,12 @@ export function StoreProvider({ children }) {
               console.error("Gagal memperbarui status order & stok:", err);
             }
 
-            router.push(`/dashboard`);
+            router.push(`/account/orders/${orderId}?order_id=${orderId}&status_code=${result.status_code}&transaction_status=${result.transaction_status}`);
           },
           onPending: (result) => {
             toast("Menunggu Pembayaran");
             router.push(
-              `/orders?order_id=${orderId}&status_code=201&transaction_status=pending`,
+              `/account/orders/${orderId}?order_id=${orderId}&status_code=201&transaction_status=pending`,
             );
           },
           onError: (result) => {
@@ -563,6 +572,7 @@ export function StoreProvider({ children }) {
           },
           onClose: () => {
             toast("Popup pembayaran ditutup.");
+            router.push(`/account/orders/${orderId}`);
           },
         });
       }
