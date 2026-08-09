@@ -11,7 +11,7 @@ const snap = new midtransClient.Snap({
 });
 
 /**
- * Creates an order record in Supabase, including associated order items.
+ * Creates an order record in Supabase, saving items directly into the `orders` table.
  */
 async function createOrderInSupabase(orderDetails) {
   const {
@@ -32,12 +32,13 @@ async function createOrderInSupabase(orderDetails) {
     voucherClaimId,
   } = orderDetails;
 
-  // 1. Prepare the main order payload
+  // 1. Prepare the main order payload including items array JSON
   const orderPayload = {
     id: orderId,
     user_id: userId === "guest" ? null : userId,
     status: status || "pending",
     amount: amount,
+    total_amount: amount, // Menyesuaikan jika tabel menggunakan total_amount
     shipping_cost: shippingCost || 0,
     discount_amount: discountAmount || 0,
     tax_amount: 0,
@@ -48,12 +49,15 @@ async function createOrderInSupabase(orderDetails) {
     shipping_address: shippingAddress,
     shipping_detail: shippingDetail,
     voucher_claim_id: voucherClaimId || null,
+    items: items || [], // Menyimpan item langsung ke kolom JSON `items` di tabel orders
     status_history: [
       {
-        status: status || "pending",
+        id: `${Date.now()}-system`,
+        status_to: status || "pending",
         notes: "Order created, waiting for payment.",
-        actor: "system",
-        timestamp: new Date().toISOString(),
+        changed_by: "system",
+        created_at: new Date().toISOString(),
+        status_from: null,
       },
     ],
   };
@@ -68,29 +72,7 @@ async function createOrderInSupabase(orderDetails) {
     throw new Error(`Failed to create order record: ${orderError.message}`);
   }
 
-  // 3. Prepare and insert order items
-  if (items && items.length > 0) {
-    const orderItemsPayload = items.map((item) => ({
-      order_id: orderId,
-      product_id: item.productId || item.id,
-      product_name: item.name,
-      variant_name: item.size || item.variant_name,
-      quantity: item.quantity,
-      price: item.price,
-    }));
-
-    const { error: itemsError } = await supabaseAdmin
-      .from("order_items")
-      .insert(orderItemsPayload);
-
-    if (itemsError) {
-      console.error("Supabase error creating order items:", itemsError.message);
-      await supabaseAdmin.from("orders").delete().eq("id", orderId);
-      throw new Error(`Failed to create order items: ${itemsError.message}`);
-    }
-  }
-
-  // 4. Jika ada voucher yang dipakai, catat ke tabel voucher_usage
+  // 3. Jika ada voucher yang dipakai, catat ke tabel voucher_usage
   if (appliedVoucherId && userId && userId !== "guest") {
     const { error: usageError } = await supabaseAdmin
       .from("voucher_usage")
@@ -119,7 +101,7 @@ export async function POST(request) {
       shippingDetail,
       appliedVoucherId,
       voucherClaimId, 
-      voucherDiscount: clientVoucherDiscount = 0, // Nominal diskon dari client
+      voucherDiscount: clientVoucherDiscount = 0,
     } = body;
 
     const orderId = body.orderId || uuidv4();
@@ -138,7 +120,6 @@ export async function POST(request) {
     let validVoucherClaimId = null;
 
     if (appliedVoucherId) {
-      // Ambil data asli dari database berdasarkan ID Voucher
       const { data: dbVoucher, error: vErr } = await supabaseAdmin
         .from("vouchers")
         .select("*")
@@ -147,14 +128,11 @@ export async function POST(request) {
         .single();
 
       if (!vErr && dbVoucher) {
-        // Hitung subtotal produk mentah terlebih dahulu untuk validasi
         const rawSubtotal = (items || []).reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
 
-        // Cek syarat minimum belanja
         if (rawSubtotal >= Number(dbVoucher.min_purchase)) {
           validVoucherId = dbVoucher.id;
 
-           // ── Validasi tambahan: pastikan claim ini benar milik user & masih aktif ──
           if (voucherClaimId && userId && userId !== "guest") {
             const { data: claimRow, error: claimErr } = await supabaseAdmin
               .from("user_vouchers")
@@ -169,12 +147,7 @@ export async function POST(request) {
             }
           }
 
-          // Voucher tetap divalidasi meski tanpa claim record (jaga backward compatibility)
-          validVoucherId = dbVoucher.id;
-
-
           if (dbVoucher.type === 'shipping') {
-            // Jika tipe gratis ongkir, diskon dihitung maksimal sebesar ongkir asli
             verifiedVoucherDiscount = Math.min(actualShippingCost, Number(dbVoucher.discount_amount || 0));
             actualShippingCost = Math.max(0, actualShippingCost - verifiedVoucherDiscount);
           } else if (dbVoucher.type === 'percentage') {
@@ -216,7 +189,6 @@ export async function POST(request) {
       name: `${item.name} (${item.size || "Standard"})`.substring(0, 50),
     }));
 
-    // Masukkan baris diskon voucher jika ada
     if (verifiedVoucherDiscount > 0) {
       formattedItems.push({
         id: "VOUCHER-DISCOUNT",
@@ -226,7 +198,6 @@ export async function POST(request) {
       });
     }
 
-    // Masukkan baris ongkos kirim setelah dipotong (jika ada)
     if (actualShippingCost > 0) {
       formattedItems.push({
         id: "SHIPPING-COST",
@@ -236,13 +207,12 @@ export async function POST(request) {
       });
     }
 
-    // Hitung ulang total gross amount secara akurat di server
     const computedGrossAmount = formattedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: Math.max(1000, computedGrossAmount), // Midtrans minimal Rp 1.000
+        gross_amount: Math.max(1000, computedGrossAmount),
       },
       item_details: formattedItems,
       customer_details: {
@@ -263,7 +233,7 @@ export async function POST(request) {
     // 1. Create Midtrans Snap Token
     const transaction = await snap.createTransaction(parameter);
 
-    // 2. Save the order record & voucher usage to Supabase
+    // 2. Save the order record directly with JSON items to Supabase
     await createOrderInSupabase({
       userId: userId || "guest",
       orderId,
