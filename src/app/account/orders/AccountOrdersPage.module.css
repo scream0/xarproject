@@ -1,0 +1,39 @@
+/* AccountOrdersPage.module.css */
+
+.container {
+  padding: 1.25rem;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.headerWrapper {
+  margin-bottom: 1.25rem;
+}
+
+.backButton {
+  background: transparent;
+  border: 1px solid var(--border-color, #ddd);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text-primary, inherit);
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.04));
+  border-color: var(--border-hover, #ccc);
+}
+
+.loadingFallback {
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #666);
+}
