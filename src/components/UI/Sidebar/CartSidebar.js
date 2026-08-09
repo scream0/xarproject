@@ -39,7 +39,7 @@ export function CartSidebar() {
 
   const productList = Array.isArray(products) ? products : products?.data || [];
 
-const handleCheckoutClick = async () => {
+  const handleCheckoutClick = async () => {
     if (!user) {
       if (typeof window !== "undefined") {
         localStorage.setItem("pending_cart", JSON.stringify(cart));
@@ -68,7 +68,6 @@ const handleCheckoutClick = async () => {
   // Free Shipping Progress Bar Logic
   const freeShippingThreshold =
     cartConfig.shipping.freeShippingThreshold || 500000;
-  const amountNeeded = freeShippingThreshold - cartTotal;
   const progressPercentage = Math.min(
     (cartTotal / freeShippingThreshold) * 100,
     100,
@@ -107,7 +106,6 @@ const handleCheckoutClick = async () => {
                 );
                 const isMaxReached = item.quantity >= maxStock;
 
-                // PERBAIKAN: Mengambil sumber gambar dengan prioritas: Varian -> Produk Asli database -> Item Cart -> Placeholder
                 const itemImageSrc =
                   variantInfo?.image_url ||
                   variantInfo?.imageUrl ||
@@ -213,18 +211,6 @@ const handleCheckoutClick = async () => {
 
             <footer className={styles.cartFooterWrapper}>
               <div className={styles.shippingProgress}>
-                {amountNeeded > 0 ? (
-                  <p>
-                    {cartConfig.shipping.message.replace(
-                      "{amount}",
-                      rupiah(amountNeeded),
-                    )}
-                  </p>
-                ) : (
-                  <p className={styles.shippingCongrats}>
-                    {cartConfig.shipping.congratsMessage}
-                  </p>
-                )}
                 <div className={styles.progressBar}>
                   <div
                     className={styles.progressFill}

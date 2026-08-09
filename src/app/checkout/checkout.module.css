@@ -756,7 +756,7 @@
   font-size: 0.85rem;
 }
 
-/* ============ PROMO SECTION ============ */
+/* ============ PROMO / VOUCHER SECTION ============ */
 .promoRow {
   display: flex;
   gap: 0.5rem;
@@ -802,6 +802,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.6rem;
   padding: 0.7rem 1rem;
   background: rgba(var(--success-color-rgb), 0.1);
   border: 1px solid rgba(var(--success-color-rgb), 0.3);
@@ -818,6 +819,38 @@
   font-size: 0.75rem;
   font-family: var(--font-sans);
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Fitur 2-voucher: 1 slot diskon + 1 slot gratis ongkir */
+.voucherSlotList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.voucherSlotCounter {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.voucherModalHint {
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(var(--primary-accent-rgb), 0.08);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.5;
 }
 
 /* ============ Right Column — Order Summary ============ */

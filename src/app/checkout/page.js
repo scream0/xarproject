@@ -11,6 +11,7 @@ import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers"; // <--
 import styles from "./checkout.module.css";
 
 const ORIGIN_CITY_ID = "114"; // Jakarta
+const MAX_APPLIED_VOUCHERS = 2;
 
 const emptyAddressForm = (displayName = "") => ({
   label: "Rumah",
@@ -31,6 +32,12 @@ const rupiah = (n) =>
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(n || 0);
+
+// Voucher dikelompokkan jadi 2 kategori saja: "shipping" (gratis ongkir)
+// dan "discount" (semua tipe lain — percentage / fixed). Cuma boleh 1
+// voucher aktif per kategori, jadi total maksimal 2 voucher sekaligus.
+const getVoucherCategory = (voucher) =>
+  voucher?.type === "shipping" ? "shipping" : "discount";
 
 const buildLocalCourierOptions = (weight = 0) => {
   const kg = Math.max(1, Math.ceil((Number(weight) || 0) / 1000));
@@ -82,7 +89,8 @@ export default function CheckoutPage() {
 
   // State Voucher Milik User (Claimed Vouchers)
   const [claimedVouchers, setClaimedVouchers] = useState([]);
-  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  // Maksimal 2 voucher aktif sekaligus: 1 kategori "shipping" + 1 kategori "discount"
+  const [appliedVouchers, setAppliedVouchers] = useState([]);
   const [showVoucherModal, setShowVoucherModal] = useState(false); // Modal pilih voucher
 
   useEffect(() => {
@@ -462,41 +470,79 @@ const fetchUserClaimedVouchers = async (userId, token) => {
   // ── Pilihan Voucher ──
   const subtotal = activePromo ? discountedCartTotal : cartTotal;
 
-const handleSelectVoucherFromModal = (claimedVoucherEntry) => {
-  const voucherDetail = claimedVoucherEntry.vouchers || claimedVoucherEntry;
+  // Voucher yang sedang aktif per kategori (maksimal 1 masing-masing)
+  const shippingVoucher = useMemo(
+    () => appliedVouchers.find((v) => getVoucherCategory(v) === "shipping") || null,
+    [appliedVouchers],
+  );
+  const discountVoucher = useMemo(
+    () => appliedVouchers.find((v) => getVoucherCategory(v) === "discount") || null,
+    [appliedVouchers],
+  );
 
-  // Validasi minimum belanja, ala Shopee/Tokped: voucher gak bisa dipakai kalau belum memenuhi syarat
-  if (voucherDetail.min_purchase && subtotal < voucherDetail.min_purchase) {
-    toast.error(
-      `Minimum belanja untuk voucher ini adalah ${rupiah(voucherDetail.min_purchase)}`
+  const handleSelectVoucherFromModal = (claimedVoucherEntry) => {
+    const voucherDetail = claimedVoucherEntry.vouchers || claimedVoucherEntry;
+
+    // Validasi minimum belanja, ala Shopee/Tokped: voucher gak bisa dipakai kalau belum memenuhi syarat
+    if (voucherDetail.min_purchase && subtotal < voucherDetail.min_purchase) {
+      toast.error(
+        `Minimum belanja untuk voucher ini adalah ${rupiah(voucherDetail.min_purchase)}`
+      );
+      return;
+    }
+
+    const category = getVoucherCategory(voucherDetail);
+    const alreadyHasSameCategory = appliedVouchers.some(
+      (v) => getVoucherCategory(v) === category,
     );
-    return;
-  }
 
-  setAppliedVoucher({
-    ...voucherDetail,
-    claimId: claimedVoucherEntry.id, // id row user_vouchers, dipakai nanti untuk tandai "used" setelah bayar
-  });
-  setShowVoucherModal(false);
-  toast.success(`Voucher ${voucherDetail.code} berhasil diterapkan!`);
-};
+    if (alreadyHasSameCategory) {
+      toast.error(
+        category === "shipping"
+          ? "Kamu sudah pakai 1 voucher gratis ongkir. Hapus dulu untuk menggantinya."
+          : "Kamu sudah pakai 1 voucher diskon. Hapus dulu untuk menggantinya.",
+      );
+      return;
+    }
 
-  const handleRemoveVoucher = () => {
-    setAppliedVoucher(null);
+    if (appliedVouchers.length >= MAX_APPLIED_VOUCHERS) {
+      toast.error(`Maksimal ${MAX_APPLIED_VOUCHERS} voucher bisa dipakai sekaligus`);
+      return;
+    }
+
+    setAppliedVouchers((prev) => [
+      ...prev,
+      {
+        ...voucherDetail,
+        claimId: claimedVoucherEntry.id, // id row user_vouchers, dipakai nanti untuk tandai "used" setelah bayar
+      },
+    ]);
+    setShowVoucherModal(false);
+    toast.success(`Voucher ${voucherDetail.code} berhasil diterapkan!`);
+  };
+
+  const handleRemoveVoucher = (claimId) => {
+    setAppliedVouchers((prev) => prev.filter((v) => v.claimId !== claimId));
     toast.success("Voucher dibatalkan");
   };
 
-  // Hitung besaran diskon voucher
-  const voucherDiscount = useMemo(() => {
-    if (!appliedVoucher) return 0;
-    if (appliedVoucher.type === 'shipping') {
-      return Math.min(shippingCost, Number(appliedVoucher.discount_amount || 0));
-    } else if (appliedVoucher.type === 'percentage') {
-      return (subtotal * Number(appliedVoucher.discount_amount || 0)) / 100;
-    } else {
-      return Number(appliedVoucher.discount_amount || 0);
+  // Diskon dari voucher gratis ongkir (dipotongkan dari shippingCost, tidak bisa minus)
+  const shippingVoucherDiscount = useMemo(() => {
+    if (!shippingVoucher) return 0;
+    return Math.min(shippingCost, Number(shippingVoucher.discount_amount || 0));
+  }, [shippingVoucher, shippingCost]);
+
+  // Diskon dari voucher potongan harga (percentage / fixed) terhadap subtotal
+  const subtotalVoucherDiscount = useMemo(() => {
+    if (!discountVoucher) return 0;
+    if (discountVoucher.type === "percentage") {
+      return (subtotal * Number(discountVoucher.discount_amount || 0)) / 100;
     }
-  }, [appliedVoucher, shippingCost, subtotal]);
+    return Number(discountVoucher.discount_amount || 0);
+  }, [discountVoucher, subtotal]);
+
+  // Total gabungan (dipakai untuk tampilan ringkas, mis. di section "Voucher Toko")
+  const totalVoucherDiscount = shippingVoucherDiscount + subtotalVoucherDiscount;
 
   // ── Handle payment ──
   const handlePay = async () => {
@@ -521,22 +567,28 @@ localStorage.setItem(
     courierService: selectedCourierInfo?.service || "",
     courierEtd: selectedCourierInfo?.etd || "",
     shippingCost,
-    appliedVoucherId: appliedVoucher?.id || null,       // id voucher (untuk referensi produk voucher)
-    appliedVoucherClaimId: appliedVoucher?.claimId || null, // id klaim user (untuk mark used_at)
-    voucherDiscount,
+    // Array voucher yang dipakai (maksimal 2: 1 shipping + 1 discount).
+    // Field lama (appliedVoucherId / appliedVoucherClaimId) sengaja TIDAK
+    // dipakai lagi karena sekarang bisa lebih dari 1 voucher — kalau ada
+    // halaman lain (mis. thank-you page) yang masih baca field lama itu,
+    // itu perlu disesuaikan supaya baca `appliedVouchers` di bawah ini.
+    appliedVouchers: appliedVouchers.map((v) => ({
+      voucherId: v.id,       // id voucher (referensi produk voucher)
+      claimId: v.claimId,    // id klaim user (untuk mark used_at)
+      type: v.type,
+      code: v.code,
+    })),
+    voucherDiscount: totalVoucherDiscount,
+    shippingVoucherDiscount,
+    subtotalVoucherDiscount,
   }),
 );
 
     await processPayment();
   };
 
-  const finalShippingCost = appliedVoucher?.type === 'shipping' 
-    ? Math.max(0, shippingCost - voucherDiscount) 
-    : shippingCost;
-
-  const finalSubtotalDiscount = appliedVoucher?.type !== 'shipping' 
-    ? voucherDiscount 
-    : 0;
+  const finalShippingCost = Math.max(0, shippingCost - shippingVoucherDiscount);
+  const finalSubtotalDiscount = subtotalVoucherDiscount;
 
   const grandTotal = Math.max(0, subtotal - finalSubtotalDiscount) + finalShippingCost;
 
@@ -747,26 +799,71 @@ localStorage.setItem(
                 <span className={styles.sectionStep}>3</span>
                 Voucher Toko
               </h2>
+              <span className={styles.voucherSlotCounter}>
+                {appliedVouchers.length}/{MAX_APPLIED_VOUCHERS} dipakai
+              </span>
             </div>
 
-            {appliedVoucher ? (
-              <div className={styles.promoApplied}>
-                <span>
-                  🎉 Voucher <strong>{appliedVoucher.code}</strong> ({appliedVoucher.title}) diterapkan
-                  {voucherDiscount > 0 && ` — Hemat ${rupiah(voucherDiscount)}`}
-                </span>
-                <button className={styles.promoRemoveBtn} onClick={handleRemoveVoucher}>
-                  Ganti / Hapus
+            <div className={styles.voucherSlotList}>
+              {/* Slot Diskon */}
+              {discountVoucher ? (
+                <div className={styles.promoApplied}>
+                  <span>
+                    🎉 Voucher <strong>{discountVoucher.code}</strong> ({discountVoucher.title})
+                    {subtotalVoucherDiscount > 0 && ` — Hemat ${rupiah(subtotalVoucherDiscount)}`}
+                  </span>
+                  <button
+                    className={styles.promoRemoveBtn}
+                    onClick={() => handleRemoveVoucher(discountVoucher.claimId)}
+                  >
+                    Hapus
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.promoApplyBtn}
+                  style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
+                  onClick={() => setShowVoucherModal(true)}
+                >
+                  + Pakai voucher diskon
                 </button>
-              </div>
-            ) : (
+              )}
+
+              {/* Slot Gratis Ongkir */}
+              {shippingVoucher ? (
+                <div className={styles.promoApplied}>
+                  <span>
+                    🚚 Voucher <strong>{shippingVoucher.code}</strong> ({shippingVoucher.title})
+                    {shippingVoucherDiscount > 0 && ` — Hemat ${rupiah(shippingVoucherDiscount)}`}
+                  </span>
+                  <button
+                    className={styles.promoRemoveBtn}
+                    onClick={() => handleRemoveVoucher(shippingVoucher.claimId)}
+                  >
+                    Hapus
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.promoApplyBtn}
+                  style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
+                  onClick={() => setShowVoucherModal(true)}
+                >
+                  + Pakai voucher gratis ongkir
+                </button>
+              )}
+            </div>
+
+            {(!discountVoucher || !shippingVoucher) && (
               <button
                 type="button"
-                className={styles.promoApplyBtn}
-                style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
+                className={styles.sectionAction}
+                style={{ marginTop: "10px" }}
                 onClick={() => setShowVoucherModal(true)}
               >
-                Pilih atau Masukkan Voucher Anda ({claimedVouchers.length} tersedia)
+                Lihat semua voucher saya ({claimedVouchers.length} tersedia)
               </button>
             )}
           </section>
@@ -805,10 +902,10 @@ localStorage.setItem(
             <span>{rupiah(subtotal)}</span>
           </div>
 
-          {appliedVoucher && voucherDiscount > 0 && (
+          {discountVoucher && subtotalVoucherDiscount > 0 && (
             <div className={`${styles.summaryLine} ${styles.summaryLineDiscount}`}>
-              <span>Diskon {appliedVoucher.type === 'shipping' ? 'Gratis Ongkir' : 'Voucher'}</span>
-              <span>-{rupiah(voucherDiscount)}</span>
+              <span>Diskon Voucher</span>
+              <span>-{rupiah(subtotalVoucherDiscount)}</span>
             </div>
           )}
 
@@ -816,7 +913,7 @@ localStorage.setItem(
             <span>Ongkos Kirim</span>
             <span className={styles.summaryLineShipping}>
               {selectedCourierInfo ? (
-                appliedVoucher?.type === 'shipping' && voucherDiscount > 0 ? (
+                shippingVoucher && shippingVoucherDiscount > 0 ? (
                   <span>
                     <span style={{ textDecoration: "line-through", color: "var(--text-secondary)", marginRight: "6px" }}>
                       {rupiah(shippingCost)}
@@ -862,11 +959,15 @@ localStorage.setItem(
               <h2 className={styles.modalTitle}>Pilih Voucher Saya</h2>
               <button className={styles.modalCloseBtn} onClick={() => setShowVoucherModal(false)}>&times;</button>
             </div>
+            <p className={styles.voucherModalHint}>
+              Bisa pakai maksimal {MAX_APPLIED_VOUCHERS} voucher: 1 voucher diskon + 1 voucher gratis ongkir.
+            </p>
             <div style={{ maxHeight: "70vh", overflowY: "auto", padding: "10px 0" }}>
               <MyVouchers
                 claimedVouchers={claimedVouchers}
                 isCheckoutMode={true}
                 onSelectVoucher={handleSelectVoucherFromModal}
+                appliedClaimIds={appliedVouchers.map((v) => v.claimId)}
               />
             </div>
           </div>

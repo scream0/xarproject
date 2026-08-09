@@ -423,9 +423,9 @@
     padding-left: 0.4rem !important;
   }
 
-  /* --- Mobile Auth Section inside Drawer --- */
+  /* --- Mobile Auth Section inside Drawer (Dipindahkan ke bawah menu navigasi biasa) --- */
   .mobileAuthSection {
-    margin-top: auto;
+    margin-top: 0.5rem; /* Sebelumnya menggunakan margin-top: auto (di paling bawah) */
     border-top: 1px solid var(--border-color);
     padding-top: 1.5rem;
     width: 100%;

@@ -127,7 +127,13 @@ export default function OperationsCenter() {
     loadAllData();
   }, []);
 
-  const updateOrderStatus = async (orderId, nextStatus) => {
+const updateOrderStatus = async (orderId, nextStatus) => {
+    // Validasi pengaman agar tidak error jika dipanggil tanpa parameter
+    if (!orderId || !nextStatus) {
+      console.warn("updateOrderStatus dipanggil dengan data kosong - orderId:", orderId, "status:", nextStatus);
+      return;
+    }
+
     try {
       setStatusUpdatingId(orderId);
       const token = await getSupabaseToken();
