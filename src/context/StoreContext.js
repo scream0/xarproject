@@ -389,7 +389,7 @@ export function StoreProvider({ children }) {
   };
 
   const [shippingCost, setShippingCost] = useState(0);
-  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(0);
 
   // Hitung ongkir via GET /api/ongkir (RajaOngkir starter).
   const calculateShippingCost = useCallback(
@@ -512,9 +512,6 @@ export function StoreProvider({ children }) {
               }
             : null,
           discountAmount: promoSavings,
-             appliedVoucherId,   
-        voucherClaimId,     
-        voucherDiscount, 
         }),
       });
 

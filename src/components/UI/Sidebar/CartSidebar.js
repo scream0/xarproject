@@ -29,6 +29,8 @@ export function CartSidebar() {
   } = useStore();
 
   const [isMounted, setIsMounted] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, cartId: null });
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -48,7 +50,6 @@ export function CartSidebar() {
       router.push("/login?callbackUrl=/checkout");
       return;
     }
-    // Redirect ke halaman checkout dedicated
     closeSidebar();
     router.push("/checkout");
   };
@@ -59,13 +60,21 @@ export function CartSidebar() {
     router.push(cartConfig?.emptyState?.buttonLink || "/");
   };
 
-  const handleRemoveItem = (cartId) => {
-    if (window.confirm("Hapus item ini dari keranjang?")) {
-      removeFromCart(cartId, "all");
-    }
+  const triggerRemove = (cartId) => {
+    setConfirmModal({ isOpen: true, cartId });
   };
 
-  // Free Shipping Progress Bar Logic
+  const confirmDelete = () => {
+    if (confirmModal.cartId) {
+      removeFromCart(confirmModal.cartId, "all");
+    }
+    setConfirmModal({ isOpen: false, cartId: null });
+  };
+
+  const cancelDelete = () => {
+    setConfirmModal({ isOpen: false, cartId: null });
+  };
+
   const freeShippingThreshold =
     cartConfig.shipping.freeShippingThreshold || 500000;
   const progressPercentage = Math.min(
@@ -125,7 +134,7 @@ export function CartSidebar() {
                         <h4 className={styles.cartItemName}>{item.name}</h4>
                         <button
                           className={styles.removeItemBtn}
-                          onClick={() => handleRemoveItem(item.cartId)}
+                          onClick={() => triggerRemove(item.cartId)}
                           title="Hapus Item"
                         >
                           <AppIcon name="trash-2" className={styles.svgIcon} />
@@ -175,7 +184,13 @@ export function CartSidebar() {
                         <div className={styles.cartQtyControl}>
                           <button
                             className={styles.cartQtyBtn}
-                            onClick={() => removeFromCart(item.cartId)}
+                            onClick={() => {
+                              if (item.quantity === 1) {
+                                triggerRemove(item.cartId);
+                              } else {
+                                removeFromCart(item.cartId);
+                              }
+                            }}
                           >
                             {cartConfig?.labels?.quantityMinus}
                           </button>
@@ -210,20 +225,6 @@ export function CartSidebar() {
             </div>
 
             <footer className={styles.cartFooterWrapper}>
-              <div className={styles.shippingProgress}>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: `${progressPercentage}%` }}
-                  ></div>
-                </div>
-              </div>
-              {activePromo && promoSavings > 0 && (
-                <div className={styles.promoSavingsRow}>
-                  <span>Promo {activePromo?.promoBannerText || "diskon"}</span>
-                  <strong>-{rupiah(promoSavings)}</strong>
-                </div>
-              )}
               <div className={styles.cartTotalRow}>
                 <h4>{cartConfig?.labels?.total}</h4>
                 <span className={styles.cartGrandTotal}>
@@ -254,6 +255,24 @@ export function CartSidebar() {
           </div>
         )}
       </aside>
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className={styles.confirmOverlay}>
+          <div className={styles.confirmModal}>
+            <h4>Hapus Item</h4>
+            <p>Apakah Anda yakin ingin menghapus item ini dari keranjang?</p>
+            <div className={styles.confirmActions}>
+              <button className={styles.btnCancel} onClick={cancelDelete}>
+                Batal
+              </button>
+              <button className={styles.btnConfirm} onClick={confirmDelete}>
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -310,58 +310,6 @@
   flex-shrink: 0;
 }
 
-.shippingProgress {
-  margin-bottom: 1.1rem;
-}
-
-.shippingProgress p {
-  font-family: var(--font-sans);
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  margin: 0 0 0.4rem 0;
-  text-align: center;
-  letter-spacing: 0.3px;
-}
-
-.shippingCongrats {
-  color: #10b981 !important;
-  font-weight: 600;
-}
-
-.progressBar {
-  width: 100%;
-  height: 5px;
-  background: var(--border-color);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  background-color: var(--primary-accent);
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-
-.promoSavingsRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.7rem;
-  padding: 0.5rem 0.7rem;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px dashed rgba(16, 185, 129, 0.3);
-  border-radius: 6px;
-  font-family: var(--font-sans);
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-.promoSavingsRow strong {
-  color: #10b981;
-  font-weight: 700;
-}
-
 .cartTotalRow {
   display: flex;
   justify-content: space-between;
@@ -413,4 +361,95 @@
   color: var(--text-secondary);
   cursor: not-allowed;
   box-shadow: none;
+}
+
+
+/* --- Custom Confirmation Modal --- */
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeInModal 0.25s ease;
+}
+
+.confirmModal {
+  background-color: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  font-family: var(--font-sans);
+}
+
+.confirmModal h4 {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.confirmModal p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+}
+
+.btnCancel,
+.btnConfirm {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btnCancel {
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.btnCancel:hover {
+  background-color: var(--border-color);
+}
+
+.btnConfirm {
+  background-color: var(--danger-color, #dc2626);
+  border: 1px solid var(--danger-color, #dc2626);
+  color: #ffffff;
+}
+
+.btnConfirm:hover {
+  filter: brightness(1.1);
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

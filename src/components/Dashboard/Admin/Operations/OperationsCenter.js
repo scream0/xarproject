@@ -18,7 +18,6 @@ export default function OperationsCenter() {
   const [returnRequests, setReturnRequests] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [rules, setRules] = useState([]);
-  const [procurement, setProcurement] = useState({ suppliers: [], orders: [] });
   const [reconciliation, setReconciliation] = useState({ pending: [], summary: {} });
   const [team, setTeam] = useState([]);
   
@@ -55,7 +54,6 @@ export default function OperationsCenter() {
           reviewsRes,
           teamRes,
           automationRes,
-          procurementRes,
           reconciliationRes,
           returnsRes,
           supportRes,
@@ -66,7 +64,6 @@ export default function OperationsCenter() {
           fetch("/api/reviews", { headers }),
           fetch("/api/team", { headers }),
           fetch("/api/automation", { headers }),
-          fetch("/api/procurement", { headers }),
           fetch("/api/reconciliation", { headers }),
           fetch("/api/returns", { headers }),
           fetch("/api/support", { headers }),
@@ -93,13 +90,6 @@ export default function OperationsCenter() {
         if (automationRes.ok) {
           const rulesData = await automationRes.json();
           setRules(rulesData.rules || []);
-        }
-        if (procurementRes.ok) {
-          const procurementData = await procurementRes.json();
-          setProcurement({
-            suppliers: procurementData.suppliers || [],
-            orders: procurementData.orders || [],
-          });
         }
         if (reconciliationRes.ok) {
           const reconciliationData = await reconciliationRes.json();
@@ -495,20 +485,6 @@ const updateOrderStatus = async (orderId, nextStatus) => {
       </section>
 
       <section className={styles.automationSection}>
-        <Panel title={config.panels.procurement.title} action={`${procurement.orders.filter((order) => order.status !== "received").length} open POs`}>
-          <div className={styles.list}>
-            {procurement.orders.slice(0, 4).map((order) => (
-              <div className={styles.row} key={order.id}>
-                <span><b>{order.item}</b><small>{procurement.suppliers.find((supplier) => supplier.id === order.supplierId)?.name || "Supplier"} · {order.quantity} units</small></span>
-                <strong className={order.status === "received" ? styles.ok : styles.warning}>{order.status}</strong>
-              </div>
-            ))}
-            {!procurement.orders.length && <p className={styles.empty}>{config.panels.procurement.empty}</p>}
-          </div>
-        </Panel>
-      </section>
-
-      <section className={styles.automationSection}>
         <Panel title={config.panels.automation.title} action={config.panels.automation.action}>
           {rules.map((rule) => (
             <div className={styles.rule} key={rule.id}>
@@ -562,14 +538,6 @@ const updateOrderStatus = async (orderId, nextStatus) => {
             ))}
             {!vouchers.length && <p className={styles.empty}>{config.panels.promo.empty}</p>}
           </div>
-        </Panel>
-        
-        <Panel title={config.panels.checklist.title} action={config.panels.checklist.action}>
-          <ul className={styles.checklist}>
-            {config.panels.checklist.items.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
         </Panel>
       </section>
 
