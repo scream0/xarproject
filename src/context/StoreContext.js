@@ -22,17 +22,36 @@ export function StoreProvider({ children }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [products, setProducts] = useState([]);
-
-  // STATE BARU UNTUK MODAL ALAMAT
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-
-  // STATE PROMO — settings promo dari /api/settings?public=true
   const [promoSettings, setPromoSettings] = useState(null);
-
   const [cart, setCart] = useState({ items: [] });
   const [isInitialized, setIsInitialized] = useState(false);
-
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
+  const [isCartSynced, setIsCartSynced] = useState(false);
+
+  // Helper to sync cart with the database
+  const syncCartWithDB = useCallback(async (cartToSync) => {
+    if (!currentSession) return; // Only sync if user is logged in
+    try {
+      const token = currentSession.access_token;
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ items: cartToSync.items }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to sync cart with database.');
+      }
+    } catch (error) {
+      console.error(error);
+      // Re-throw the error to be caught by the calling function for rollback
+      throw error;
+    }
+  }, [currentSession]);
+
 
   // Fetch promo settings (public) untuk diterapkan di seluruh app
   useEffect(() => {
@@ -70,7 +89,6 @@ export function StoreProvider({ children }) {
     }
   }, [cart, isInitialized]);
 
-  // Bungkus fetchProducts dengan useCallback agar dapat dipanggil ulang secara dinamis
   const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch("/api/products");
@@ -92,7 +110,6 @@ export function StoreProvider({ children }) {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Pantau status Auth Supabase secara dinamis
   useEffect(() => {
     let subscription = null;
 
@@ -106,6 +123,7 @@ export function StoreProvider({ children }) {
       } else {
         setUser(null);
         setCustomer({ name: "", email: "", phone: "" });
+        setIsCartSynced(false); // Reset sync status on logout
       }
 
       const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
@@ -117,6 +135,7 @@ export function StoreProvider({ children }) {
         } else {
           setUser(null);
           setCustomer({ name: "", email: "", phone: "" });
+          setIsCartSynced(false); // Reset sync status on logout
         }
       });
       subscription = authListener?.subscription;
@@ -181,13 +200,36 @@ export function StoreProvider({ children }) {
     }
 
     setUser(mergedUser);
+
+    // Sync cart after user is set
+    if (!isCartSynced) {
+        try {
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const res = await fetch('/api/cart', { headers });
+            if (res.ok) {
+                const remoteCart = await res.json();
+                const localCart = cart;
+
+                // Simple merge: remote cart wins if it has items.
+                const finalCart = remoteCart && remoteCart.items.length > 0 ? remoteCart : localCart;
+                setCart(finalCart);
+                setIsCartSynced(true);
+                // Sync back to DB in case local cart was chosen and had items
+                if (finalCart.items.length > 0) {
+                    await syncCartWithDB(finalCart);
+                }
+            }
+        } catch (error) {
+            console.error("Gagal menyinkronkan keranjang:", error);
+        }
+    }
   };
 
   const cartQuantity =
     cart?.items?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) ||
     0;
 
-  const addToCart = (product, customVariant = null, quantity = 1) => {
+  const addToCart = async (product, customVariant = null, quantity = 1) => {
     let variant = customVariant || (product.variants && product.variants[0]);
 
     if (!variant) {
@@ -217,6 +259,9 @@ export function StoreProvider({ children }) {
 
     let successMessage = "";
     let errorMessage = "";
+    
+    const previousCart = cart;
+    let newCart = cart;
 
     setCart((prev) => {
       const existingItem = prev.items.find(
@@ -226,12 +271,13 @@ export function StoreProvider({ children }) {
 
       if (currentQtyInCart + quantity > stock) {
         errorMessage = `Stok ${product.name} (${variant.size}) tidak cukup!`;
+        newCart = prev;
         return prev;
       }
 
       successMessage = `${product.name} (${variant.size}) ditambahkan!`;
       if (existingItem) {
-        return {
+        newCart = {
           ...prev,
           items: prev.items.map((item) =>
             item.cartId === uniqueCartId
@@ -243,8 +289,9 @@ export function StoreProvider({ children }) {
               : item,
           ),
         };
+        return newCart;
       } else {
-        return {
+        newCart = {
           ...prev,
           items: [
             ...prev.items,
@@ -265,6 +312,7 @@ export function StoreProvider({ children }) {
             },
           ],
         };
+        return newCart;
       }
     });
 
@@ -272,19 +320,30 @@ export function StoreProvider({ children }) {
       toast.error(errorMessage);
     } else if (successMessage) {
       toast.success(successMessage);
+      try {
+        await syncCartWithDB(newCart);
+      } catch (error) {
+        setCart(previousCart); // Rollback
+        toast.error("Gagal menyimpan keranjang. Silakan coba lagi.");
+      }
     }
   };
 
-  const removeFromCart = (cartId) => {
+  const removeFromCart = async (cartId) => {
+    const previousCart = cart;
     let actionMessage = "";
+    let newCart = cart;
 
     setCart((prev) => {
       const item = prev.items.find((i) => i.cartId === cartId);
-      if (!item) return prev;
+      if (!item) {
+        newCart = prev;
+        return prev;
+      };
 
       if (item.quantity > 1) {
         actionMessage = `Jumlah ${item.name} dikurangi`;
-        return {
+        newCart = {
           ...prev,
           items: prev.items.map((i) =>
             i.cartId === cartId
@@ -296,14 +355,35 @@ export function StoreProvider({ children }) {
               : i,
           ),
         };
+        return newCart;
       }
 
       actionMessage = `${item.name} dihapus dari keranjang`;
-      return { ...prev, items: prev.items.filter((i) => i.cartId !== cartId) };
+      newCart = { ...prev, items: prev.items.filter((i) => i.cartId !== cartId) };
+      return newCart;
     });
 
     if (actionMessage) {
       toast.success(actionMessage, { id: `cart-action-${cartId}` });
+      try {
+        await syncCartWithDB(newCart);
+      } catch (error) {
+        setCart(previousCart); // Rollback
+        toast.error("Gagal menyimpan keranjang. Silakan coba lagi.");
+      }
+    }
+  };
+
+  const clearCart = async () => {
+    const previousCart = cart;
+    const clearedCart = { items: [] };
+    setCart(clearedCart);
+    try {
+      await syncCartWithDB(clearedCart);
+      toast.success("Keranjang dibersihkan.");
+    } catch (error) {
+      setCart(previousCart);
+      toast.error("Gagal membersihkan keranjang. Silakan coba lagi.");
     }
   };
 
@@ -316,22 +396,30 @@ export function StoreProvider({ children }) {
     return product ? product.variants || [] : [];
   };
 
-  const updateCartItemVariant = (currentCartId, newSize) => {
+  const updateCartItemVariant = async (currentCartId, newSize) => {
+    const previousCart = cart;
     let updateMessage = "";
+    let newCart = cart;
 
     setCart((prevCart) => {
       const cartItem = prevCart.items.find(
         (item) => item.cartId === currentCartId,
       );
-      if (!cartItem) return prevCart;
+      if (!cartItem) {
+        newCart = prevCart;
+        return prevCart;
+      }
 
       const allVariants = getAvailableVariants(cartItem.id);
       const newVariantData = allVariants.find((v) => v.size === newSize);
-      if (!newVariantData) return prevCart;
+      if (!newVariantData) {
+        newCart = prevCart;
+        return prevCart;
+      }
 
       updateMessage = `Varian diubah ke ${newSize}`;
       const newCartId = `${cartItem.id}-${newSize}`;
-      return {
+      newCart = {
         ...prevCart,
         items: prevCart.items.map((item) =>
           item.cartId === currentCartId
@@ -345,10 +433,17 @@ export function StoreProvider({ children }) {
             : item,
         ),
       };
+      return newCart;
     });
 
     if (updateMessage) {
       toast.success(updateMessage);
+      try {
+        await syncCartWithDB(newCart);
+      } catch (error) {
+        setCart(previousCart); // Rollback
+        toast.error("Gagal mengubah varian. Silakan coba lagi.");
+      }
     }
   };
 
@@ -382,6 +477,8 @@ export function StoreProvider({ children }) {
       setCustomer({ name: "", email: "", phone: "" });
       setUser(null);
       setCurrentSession(null);
+      setCart({ items: [] }); // Clear cart on logout
+      setIsCartSynced(false);
       toast.success("Berhasil keluar!");
       router.push("/");
     } catch (error) {
@@ -489,11 +586,10 @@ export function StoreProvider({ children }) {
       }
       setShippingCost(shippingCostAmount);
 
-      // Ambil ID voucher diskon dan gratis ongkir dari customParams atau localStorage
       const shippingVoucherId = customParams.shippingVoucherId || shippingDetail?.appliedVouchers?.find(v => v.type === 'shipping')?.voucherId || null;
       const shippingVoucherClaimId = customParams.shippingVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type === 'shipping')?.claimId || null;
       const discountVoucherId = customParams.discountVoucherId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.voucherId || null;
-      const discountVoucherClaimId = customParams.discountVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.claimId || null;
+      const discountVoucherClaimId = custom-params.discountVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.claimId || null;
 
       const response = await fetch("/api/midtrans", {
         method: "POST",
@@ -541,7 +637,7 @@ export function StoreProvider({ children }) {
         window.snap.pay(data.token, {
           onSuccess: async (result) => {
             toast.success("Pembayaran Berhasil!");
-            setCart({ items: [] });
+            await clearCart();
 
             try {
               await fetch("/api/orders/update-status", {
@@ -633,7 +729,7 @@ export function StoreProvider({ children }) {
       toast.success("Alamat berhasil disimpan!");
       setIsAddressModalOpen(false);
 
-      processPayment();
+      await processPayment();
     } catch (error) {
       console.error("Error save address:", error);
       toast.error(error.message || "Gagal menyimpan alamat");
@@ -659,6 +755,7 @@ export function StoreProvider({ children }) {
         user,
         addToCart,
         removeFromCart,
+        clearCart,
         cartQuantity,
         cartTotal,
         customer,

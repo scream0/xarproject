@@ -1,93 +1,41 @@
-# Instruksi AI: Penyesuaian `suma.module.css` untuk Tema Gelap & Terang (Dark/Light Theme)
+🚀 TODO: Optimasi Latency & Penghapusan Skeleton Loading
+1. Optimasi Data Fetching di Server (Hilangkan Waterfalls)
 
-File ini berfungsi sebagai panduan dan konteks instruksi bagi Gemini atau AI assistant dalam memodifikasi dan merestrukturisasi file `suma.module.css` agar mendukung sistem tema ganda (Gelap & Terang) secara optimal dan konsisten.
+Alih-alih memuat data di client-side (yang memicu skeleton loading saat komponen dirender), pindahkan proses ambil data ke Server Components (RSC) atau jalankan secara paralel.
 
----
+    [ ] Gunakan Promise.all untuk Query Paralel: Jika mengambil beberapa data independen (misal: profil user, produk, dan keranjang), jalankan secara bersamaan agar waktu tunggu tidak berderet (waterfall).
 
-## 🎯 Tujuan Utama
-Mengubah atau memperbarui `suma.module.css` agar:
-1. Menggunakan **CSS Custom Properties (CSS Variables)** untuk semua warna (background, teks, border, aksen).
-2. Mendukung peralihan tema secara dinamis (baik via atribut `data-theme="dark/light"` maupun `@media (prefers-color-scheme)`).
-3. Mempertahankan modularitas CSS Modules (`composes`, scoped classes) tanpa merusak struktur komponen yang ada.
-4. Menambahkan transisi warna yang halus (*smooth transition*) untuk kenyamanan visual pengguna.
+    [ ] Manfaatkan React Server Components (RSC): Render data langsung di server pada Next.js App Router agar HTML datang ke browser dalam keadaan sudah berisi data (mengurangi round-trip client ke server).
 
----
+2. Implementasi Caching & Edge Strategy (Backend & Database)
 
-## 📋 Pedoman Implementasi Teknis
+Untuk memangkas waktu respons API dan Database hingga mendekati angka 0ms:
 
-### 1. Definisi Variabel Warna (`:root` & Selector Tema)
-Gunakan pendekatan berbasis atribut atau kelas pada root/wrapper, contoh:
-```css
-/* Default / Light Theme */
-:root, :global([data-theme="light"]) {
-  --suma-bg: #ffffff;
-  --suma-surface: #f8f9fa;
-  --suma-text-primary: #1a1a1a;
-  --suma-text-secondary: #666666;
-  --suma-border: #e2e8f0;
-  --suma-primary: #0070f3;
-  --suma-primary-hover: #0051a2;
-}
+    [ ] Aktifkan Next.js Data Cache: Tambahkan opsi cache pada fetch request di server:
+    JavaScript
 
-/* Dark Theme */
-:global([data-theme="dark"]) {
-  --suma-bg: #0f172a;
-  --suma-surface: #1e293b;
-  --suma-text-primary: #f8fafc;
-  --suma-text-secondary: #94a3b8;
-  --suma-border: #334155;
-  --suma-primary: #3b82f6;
-  --suma-primary-hover: #60a5fa;
-}
-```
+    // Contoh cache statis/dinamis dengan revalidate
+    fetch('/api/products', { next: { revalidate: 60 } });
 
-### 2. Penerapan pada Kelas di `suma.module.css`
-Pastikan semua properti warna menggunakan variabel yang telah didefinisikan:
-```css
-.container {
-  background-color: var(--suma-bg);
-  color: var(--suma-text-primary);
-  border-color: var(--suma-border);
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
+    [ ] Gunakan Supabase Connection Pooler: Pastikan koneksi ke database Supabase menggunakan Connection Pooler (port 6543) untuk menghindari cold start koneksi database.
 
-.card {
-  background-color: var(--suma-surface);
-  border: 1px solid var(--suma-border);
-  border-radius: 8px;
-  padding: 1.5rem;
-}
+    [ ] Indexing Database: Tambahkan Index pada kolom tabel Supabase yang sering dipakai untuk pencarian atau filter (user_id, order_id, status).
 
-.title {
-  color: var(--suma-text-primary);
-  font-weight: 600;
-}
+3. Terapkan Optimistic UI (Sensasi Latency 0ms untuk Aksi User)
 
-.subtitle {
-  color: var(--suma-text-secondary);
-}
+Jika skeleton loading dihapus pada saat aksi pengguna (seperti klik tombol beli, ubah jumlah keranjang, atau simpan alamat), ganti dengan Optimistic UI agar UI langsung berubah seketika sebelum respon server selesai.
 
-.button {
-  background-color: var(--suma-primary);
-  color: #ffffff;
-  border: none;
-  transition: background-color 0.2s ease;
-}
+    [ ] Update State Lokal Seketika: Ubah tampilan UI langsung saat tombol diklik tanpa menunggu respon fetch dari server selesai.
 
-.button:hover {
-  background-color: var(--suma-primary-hover);
-}
-```
+    [ ] Rollback jika Gagal: Berikan mekanisme rollback state lokal secara senyap via toast.error hanya jika request ke server benar-benar gagal.
 
----
+4. Optimasi Aset & Frontend Bundle
 
-## 🛠️ Instruksi Prompt untuk AI saat Menjalankan Perintah
-Ketika perintah **"Sesuaikan suma module.css untuk tema gelap terang"** dieksekusi, AI harus:
-1. **Menganalisis** struktur kode `suma.module.css` yang ada saat ini (jika ada) atau membuat struktur standar komponen UI.
-2. **Memetakan** seluruh warna hardcoded (seperti `#fff`, `#000`, `rgb(...)`) ke dalam **CSS Variables**.
-3. **Menyediakan** blok konfigurasi tema untuk Light mode dan Dark mode secara lengkap.
-4. **Menambahkan** transisi mulus (*smooth transition*) agar perpindahan tema tidak kaku.
-5. **Memastikan** kompatibilitas dengan CSS Modules (menggunakan `:global()` jika diperlukan untuk penanda atribut tema di root).
+    [ ] Gunakan next/image dengan priority: Untuk gambar utama di atas lipatan layar (above the fold), gunakan atribut priority agar gambar dimuat instan tanpa placeholder abu-abu.
 
----
-*Dokumen ini dibuat otomatis sebagai referensi prompt sistem untuk pengembangan antarmuka proyek.*
+    [ ] Kurangi Ukuran JavaScript Bundle: Hindari import library besar yang tidak perlu di komponen utama (gunakan dynamic import untuk komponen modal atau chart yang jarang dibuka langsung).
+
+    [ ] Prefetching Halaman: Pastikan Link Next.js menggunakan prefetch={true} (bawaan default) agar halaman tujuan sudah diunduh sebelum user mengekliknya.
+
+    [!NOTE]
+    Catatan UX: Menghapus skeleton loading hanya disarankan jika data sudah di-cache atau dirender melalui SSR (Server-Side Rendering). Jika data murni harus diambil dari API pihak ketiga yang lambat (seperti RajaOngkir atau Midtrans), pastikan ada indikator visual minimal (seperti tombol berputar/spinner kecil) agar user tahu sistem sedang bekerja.
