@@ -541,7 +541,11 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
                             onClick={() =>
                               !isVariantEmpty && setActiveVariantIdx(idx)
                             }
-                            className={`${styles.chip} ${activeVariantIdx === idx ? styles.activeChip : ""} ${isVariantEmpty ? styles.variantChipDisabled : ""}`}
+                            className={[
+                              styles.chip,
+                              activeVariantIdx === idx ? styles.activeChip : "",
+                              isVariantEmpty ? styles.variantChipDisabled : "",
+                            ].join(" ")}
                             disabled={isVariantEmpty}
                           >
                             {v.size || `Varian ${idx + 1}`}{" "}
