@@ -207,10 +207,6 @@
 
 /* Print mode untuk cetak PDF yang bersih */
 @media print {
-  body {
-    background: var(--surface-primary) !important;
-    color: var(--text-primary) !important;
-  }
   .chartContainer {
     background: var(--surface-primary) !important;
     border: none !important;

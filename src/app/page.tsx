@@ -4,11 +4,16 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar/Navbar";
 import { Hero } from "@/components/Hero/Hero";
 import { About } from "@/components/About/About";
-import { Product } from "@/components/Product/Product";
 import { Contact } from "@/components/Contact/Contact";
 import { Footer } from "@/components/Footer/Footer";
 import { Modal } from "@/components/UI/Modal/ProductModal";
 import { useStore } from "@/context/StoreContext";
+import dynamic from "next/dynamic";
+
+const Product = dynamic(() => import('@/components/Product/Product').then(mod => mod.Product), {
+  loading: () => <p>Loading products...</p>,
+  ssr: false
+});
 
 // Komponen Wrapper untuk animasi
 const FadeInSection = ({

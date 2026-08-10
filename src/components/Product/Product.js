@@ -227,7 +227,10 @@ function ProductCard({ item, onDetail, onAdd, rupiah, activePromo }) {
           ) : (
             <>
               <span
-                style={{ fontSize: "0.75rem", color: "#888", display: "block" }}
+                style={{ fontSize: "0.75rem",.
+                color: "#888",
+                display: "block"
+              }}
               >
                 {productData.card.pricePrefix}
               </span>
@@ -265,4 +268,3 @@ function ProductCard({ item, onDetail, onAdd, rupiah, activePromo }) {
     </div>
   );
 }
-

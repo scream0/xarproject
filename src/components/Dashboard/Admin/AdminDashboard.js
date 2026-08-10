@@ -21,10 +21,17 @@ import styles from "./AdminDashboard.module.css";
 import { logoutUser } from "@/utils/authHelpers";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
+import dynamic from "next/dynamic";
 import adminConfig from "@/data/ui/adminConfig.json";
 
-import AnalyticsChart from "@/components/Dashboard/Admin/Analytics/AnalyticsChart";
-import AdvancedAnalytics from "@/components/Dashboard/Admin/Analytics/AdvancedAnalytics";
+const AnalyticsChart = dynamic(() => import("@/components/Dashboard/Admin/Analytics/AnalyticsChart"), {
+  loading: () => <p>Loading chart...</p>,
+  ssr: false
+});
+const AdvancedAnalytics = dynamic(() => import("@/components/Dashboard/Admin/Analytics/AdvancedAnalytics"), {
+  loading: () => <p>Loading analytics...</p>,
+  ssr: false
+});
 import TransactionTable from "@/components/Dashboard/Admin/Overview/TransactionTable";
 import OverviewStats from "@/components/Dashboard/Admin/Overview/OverviewStats";
 import ProductManager from "@/components/Dashboard/Admin/Products/ProductManager";
