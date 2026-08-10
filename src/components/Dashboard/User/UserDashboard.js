@@ -26,7 +26,7 @@ function getGreetingName(userName) {
   return userName || userConfig.defaultCustomer;
 }
 
-export default function UserDashboard() {
+export default function UserDashboard({ initialProducts }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -164,7 +164,7 @@ export default function UserDashboard() {
 
         {/* Hapus key={activeTab} agar konten tidak ter-unmount ulang yang menyebabkan kedipan/refresh */}
         <div className={`${styles.viewWrapper} ${styles.viewWrapperAnimated}`}>
-          {activeTab === "shop" && <ShopPage />}
+          {activeTab === "shop" && <ShopPage initialProducts={initialProducts} />}
           {activeTab === "overview" && (
             <OverviewSection setActiveTab={handleTabChange} />
           )}

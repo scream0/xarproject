@@ -1,4 +1,4 @@
-"use client";
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar/Navbar";
@@ -8,12 +8,7 @@ import { Contact } from "@/components/Contact/Contact";
 import { Footer } from "@/components/Footer/Footer";
 import { Modal } from "@/components/UI/Modal/ProductModal";
 import { useStore } from "@/context/StoreContext";
-import dynamic from "next/dynamic";
-
-const Product = dynamic(() => import('@/components/Product/Product').then(mod => mod.Product), {
-  loading: () => <p>Loading products...</p>,
-  ssr: false
-});
+import Shop from '@/components/Dashboard/User/Shop/Shop';
 
 // Komponen Wrapper untuk animasi
 const FadeInSection = ({
@@ -33,10 +28,24 @@ const FadeInSection = ({
   </motion.div>
 );
 
-export default function Home() {
+export default async function Home() { // Make Home an async component for data fetching
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart, rupiah } = useStore();
+
+  // Server-side fetch for initial products
+  const fetchInitialProducts = async () => {
+    // Make sure to use the absolute URL for server-side fetches
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products`, { next: { revalidate: 3600 } }); // Added cache: 'no-store' for development, consider revalidate in production
+    if (!res.ok) {
+      console.error("Failed to fetch initial products:", res.status, res.statusText);
+      return [];
+    }
+    const result = await res.json();
+    return result.data || result.products || [];
+  };
+
+  const productsData = await fetchInitialProducts();
 
   const bukaDetail = (item: any) => {
     setSelectedProduct(item);
@@ -55,7 +64,7 @@ export default function Home() {
         </FadeInSection>
 
         <FadeInSection delay={0.3}>
-          <Product onBukaDetail={bukaDetail} />
+          <Shop onBukaDetail={bukaDetail} initialProducts={productsData} />
         </FadeInSection>
         <FadeInSection delay={0.3}>
           <Contact />

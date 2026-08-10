@@ -22,25 +22,55 @@ export async function GET(request) {
     const supabase = getSupabaseClient();
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("id");
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "created_at";
+    let sortOrder = searchParams.get("sortOrder") || "desc"; // Default to desc for created_at
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "12", 10);
 
+    let query = supabase.from("products").select("id, name, description, category, image_url, variants, price, total_sold, created_at", { count: "exact" });
+
+    // Filter by product ID if provided, otherwise apply general filters
     if (productId) {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", productId)
-        .single();
-
-      if (error) throw error;
-      return NextResponse.json({ success: true, data });
+      query = query.eq("id", productId).single();
     } else {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Apply search filter
+      if (search) {
+        query = query.or(
+          `name.ilike.%${search}%,description.ilike.%${search}%`,
+        );
+      }
 
-      if (error) throw error;
-      return NextResponse.json({ success: true, data: data || [] });
+      // Apply sort order
+      let orderColumn = sortBy;
+      let ascending = sortOrder === "asc";
+
+      if (sortBy === "price-low") {
+        orderColumn = "variants->0->price"; // Assumes price is in the first variant
+        ascending = true;
+      } else if (sortBy === "price-high") {
+        orderColumn = "variants->0->price";
+        ascending = false;
+      } else if (sortBy === "name") {
+        ascending = true; // Default name sort to ascending
+      } else {
+        // Default sort for 'default' or unknown sortBy
+        orderColumn = "created_at";
+        ascending = false;
+      }
+
+      query = query.order(orderColumn, { ascending: ascending });
+
+      // Apply pagination
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      query = query.range(from, to);
     }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+    return NextResponse.json({ success: true, data: data || [], total: count });
   } catch (error) {
     console.error("Gagal mengambil data produk dari Supabase:", error);
     return NextResponse.json(

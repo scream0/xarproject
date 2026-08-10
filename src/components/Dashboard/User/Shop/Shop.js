@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { useStore } from "@/context/StoreContext";
 import { getDiscountedPrice } from "@/utils/promo";
 import styles from "./Shop.module.css";
@@ -15,15 +16,17 @@ import shopConfig from "@/data/ui/shopConfig.json";
 
 const PRODUCTS_PER_PAGE = 12;
 
-export default function Shop() {
+export default function Shop({ initialProducts, initialTotalProducts }) {
   const { addToCart, products: contextProducts, activePromo, cartQuantity, setIsCartOpen } = useStore();
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(initialProducts || []);
   const [orderItemsMap, setOrderItemsMap] = useState({});
   const [allReviews, setAllReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialProducts);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
-  const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(initialTotalProducts || 0);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // Wishlist State (LocalStorage persistence)
   const [wishlist, setWishlist] = useState(() => {
@@ -69,147 +72,107 @@ export default function Shop() {
     );
   };
 
-  // Fetch Produk, Orders & Reviews secara terpisah
-  const fetchShopData = async () => {
-    try {
-      const productsRes = await fetch("/api/products", { cache: "no-store" });
-      const prodContentType = productsRes.headers.get("content-type");
-
-      if (!prodContentType || !prodContentType.includes("application/json")) {
-        throw new Error(
-          "Endpoint /api/products tidak mengembalikan JSON yang valid.",
-        );
+  const fetchShopData = useCallback(async (shouldFetchProducts = true, append = false) => {
+    if (shouldFetchProducts) {
+      if (!append) {
+        setLoading(true);
+      } else {
+        setIsFetchingMore(true);
       }
-
-      const productsResult = await productsRes.json();
-      if (!productsRes.ok)
-        throw new Error(productsResult.error || "Gagal memuat katalog produk");
-
-      const fetchedProducts =
-        productsResult.data || productsResult.products || productsResult || [];
-      setProducts(fetchedProducts);
-    } catch (err) {
-      console.error("Gagal memuat produk:", err.message);
-      toast.error(
-        shopConfig.toasts?.fetchError || "Gagal memuat katalog produk",
-      );
-    } finally {
-      setLoading(false);
     }
 
-    try {
-      const ordersRes = await fetch("/api/orders", { cache: "no-store" });
-      const orderContentType = ordersRes.headers.get("content-type");
+    const queryParams = new URLSearchParams();
+    if (searchQuery) queryParams.append("search", searchQuery);
+    queryParams.append("sortBy", sortBy);
+    queryParams.append("page", currentPage.toString());
+    queryParams.append("limit", PRODUCTS_PER_PAGE.toString());
 
-      if (
-        ordersRes.ok &&
-        orderContentType &&
-        orderContentType.includes("application/json")
-      ) {
-        const ordersResult = await ordersRes.json();
-        const transactions = Array.isArray(ordersResult)
-          ? ordersResult
-          : ordersResult.data || ordersResult.orders || [];
+    const fetches = [];
+    if (shouldFetchProducts) {
+        fetches.push(fetch(`/api/products?${queryParams.toString()}`, { cache: "default" }));
+    } else {
+        fetches.push(Promise.resolve(null));
+    }
+    fetches.push(fetch("/api/products/sales", { cache: "no-store" }));
+    fetches.push(fetch("/api/reviews?public=true", { cache: "no-store" }));
 
-        const soldCounts = {};
-        transactions.forEach((order) => {
-          const status = (order.status || "").toLowerCase();
-          if (
-            [
-              "success",
-              "completed",
-              "shipping",
-              "shipped",
-              "settlement",
-              "capture",
-              "paid",
-            ].includes(status)
-          ) {
-            const items = order.items || order.order_items || [];
-            items.forEach((item) => {
-              const pId = String(
-                item.id || item.productId || item.product_id || "",
-              );
-              const qty = Number(item.quantity || item.qty) || 1;
-              if (pId) {
-                soldCounts[pId] = (soldCounts[pId] || 0) + qty;
-              }
-            });
-          }
-        });
-        setOrderItemsMap(soldCounts);
-      }
-    } catch (err) {
-      console.warn("Catatan: Data orders belum tersedia.", err.message);
+    const [productsResult, salesResult, reviewsResult] = await Promise.allSettled(fetches);
+
+    // Process Products
+    if (productsResult.status === 'fulfilled' && productsResult.value) {
+        const res = productsResult.value;
+        const contentType = res.headers.get("content-type");
+        if (res.ok && contentType && contentType.includes("application/json")) {
+            const result = await res.json();
+            const fetchedProducts = result.data || result.products || result || [];
+            setProducts((prev) => (append ? [...prev, ...fetchedProducts] : fetchedProducts));
+            setTotalProducts(result.total || 0);
+        } else if (res) {
+            const errorText = await res.text();
+            console.error("Gagal memuat produk:", errorText);
+            toast.error(shopConfig.toasts?.fetchError || "Gagal memuat katalog produk");
+        }
+    } else if(productsResult.status === 'rejected') {
+        console.error("Gagal memuat produk:", productsResult.reason);
+        toast.error(shopConfig.toasts?.fetchError || "Gagal memuat katalog produk");
     }
 
-    // Fetch review yang sudah approved dari collection "reviews"
-    try {
-      const reviewsRes = await fetch("/api/reviews?public=true", {
-        cache: "no-store",
-      });
-      const reviewContentType = reviewsRes.headers.get("content-type");
-
-      if (
-        reviewsRes.ok &&
-        reviewContentType &&
-        reviewContentType.includes("application/json")
-      ) {
-        const reviewsResult = await reviewsRes.json();
-        setAllReviews(reviewsResult.reviews || []);
-      }
-    } catch (err) {
-      console.warn("Catatan: Data ulasan belum tersedia.", err.message);
+    // Process Sales Data
+    if (salesResult.status === 'fulfilled') {
+        const res = salesResult.value;
+        const contentType = res.headers.get("content-type");
+        if (res.ok && contentType && contentType.includes("application/json")) {
+            const result = await res.json();
+            setOrderItemsMap(result.sales || {});
+        } else {
+           console.warn("Catatan: Data penjualan belum tersedia, respons tidak valid.");
+        }
+    } else {
+        console.warn("Catatan: Data penjualan belum tersedia.", salesResult.reason.message);
     }
-  };
+
+    // Process Reviews
+    if (reviewsResult.status === 'fulfilled') {
+        const res = reviewsResult.value;
+        const contentType = res.headers.get("content-type");
+        if (res.ok && contentType && contentType.includes("application/json")) {
+            const result = await res.json();
+            setAllReviews(result.reviews || []);
+        } else {
+            console.warn("Catatan: Data ulasan belum tersedia, respons tidak valid.");
+        }
+    } else {
+        console.warn("Catatan: Data ulasan belum tersedia.", reviewsResult.reason.message);
+    }
+
+    setLoading(false);
+    setIsFetchingMore(false);
+  }, [searchQuery, sortBy, currentPage, toast, shopConfig.toasts?.fetchError]);
 
   useEffect(() => {
-    const syncTimer = window.setTimeout(() => {
-      fetchShopData();
-    }, 0);
-    const handleStorageChange = () => fetchShopData();
+    // When search or sort changes, reset page to 1
+    if (currentPage !== 1 && (searchQuery || sortBy !== "default")) {
+      setCurrentPage(1);
+    } else {
+      const shouldFetchProducts = !initialProducts || products.length === 0 || currentPage > 1;
+      fetchShopData(shouldFetchProducts, currentPage > 1);
+    }
+  }, [searchQuery, sortBy, currentPage, fetchShopData, initialProducts, products.length]);
+
+  // Handle product-stock-updated event
+  useEffect(() => {
+    const handleStorageChange = () => fetchShopData(true);
     window.addEventListener("product-stock-updated", handleStorageChange);
     return () => {
-      window.clearTimeout(syncTimer);
       window.removeEventListener("product-stock-updated", handleStorageChange);
     };
-  }, [contextProducts]);
+  }, [fetchShopData]);
 
-  const processedProducts = useMemo(() => {
-    let result = [...products];
+  const handleLoadMore = () => {
+    setCurrentPage((prevPage) => prevPage + 1);
+  };
 
-    if (searchQuery.trim() !== "") {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          (p.name || "").toLowerCase().includes(query) ||
-          (p.description || "").toLowerCase().includes(query),
-      );
-    }
-
-    switch (sortBy) {
-      case "price-low":
-        result.sort(
-          (a, b) =>
-            (a.variants?.[0]?.price || a.price || 0) -
-            (b.variants?.[0]?.price || b.price || 0),
-        );
-        break;
-      case "price-high":
-        result.sort(
-          (a, b) =>
-            (b.variants?.[0]?.price || b.price || 0) -
-            (a.variants?.[0]?.price || a.price || 0),
-        );
-        break;
-      case "name":
-        result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-        break;
-      default:
-        break;
-    }
-    return result;
-  }, [products, searchQuery, sortBy]);
+  const currentProducts = useMemo(() => products, [products]);
 
   const productReviewsMap = useMemo(() => {
     const map = {};
@@ -331,25 +294,37 @@ export default function Shop() {
       {/* Filter Tabs (Fungsional) */}
       <div className={styles.filterTabsWrapper}>
         <button
-          onClick={() => setSortBy("default")}
+          onClick={() => {
+            setSortBy("default");
+            setCurrentPage(1);
+          }}
           className={`${styles.filterTabBtn} ${sortBy === "default" ? styles.activeFilterTab : ""}`}
         >
           {shopConfig.filters?.sortDefault || "Terbaru"}
         </button>
         <button
-          onClick={() => setSortBy("price-low")}
+          onClick={() => {
+            setSortBy("price-low");
+            setCurrentPage(1);
+          }}
           className={`${styles.filterTabBtn} ${sortBy === "price-low" ? styles.activeFilterTab : ""}`}
         >
           {shopConfig.filters?.sortPriceLow || "Harga Terendah"}
         </button>
         <button
-          onClick={() => setSortBy("price-high")}
+          onClick={() => {
+            setSortBy("price-high");
+            setCurrentPage(1);
+          }}
           className={`${styles.filterTabBtn} ${sortBy === "price-high" ? styles.activeFilterTab : ""}`}
         >
           {shopConfig.filters?.sortPriceHigh || "Harga Tertinggi"}
         </button>
         <button
-          onClick={() => setSortBy("name")}
+          onClick={() => {
+            setSortBy("name");
+            setCurrentPage(1);
+          }}
           className={`${styles.filterTabBtn} ${sortBy === "name" ? styles.activeFilterTab : ""}`}
         >
           {shopConfig.filters?.sortName || "Nama"}
@@ -357,15 +332,15 @@ export default function Shop() {
       </div>
 
       {loading ? (
-        <ShopSkeleton count={8} />
-      ) : processedProducts.length === 0 ? (
+        <ShopSkeleton count={PRODUCTS_PER_PAGE} />
+      ) : currentProducts.length === 0 && !isFetchingMore ? (
         <div className={styles.stateContainer}>
           <p>{shopConfig.messages?.empty || "Produk tidak ditemukan."}</p>
         </div>
       ) : (
         <>
           <div className={styles.productGrid}>
-            {processedProducts.slice(0, visibleCount).map((product) => {
+            {currentProducts.map((product) => {
               const pId = String(product.id || product._id || "");
               const totalSold =
                 orderItemsMap[pId] || Number(product.total_sold || 0);
@@ -389,10 +364,12 @@ export default function Shop() {
                 >
                   <div className={styles.productCardImageWrapper}>
                     {product.image_url ? (
-                      <img
+                      <Image
                         src={product.image_url}
                         alt={product.name}
                         className={styles.productCardImg}
+                        width={300}
+                        height={300}
                       />
                     ) : (
                       <div className={styles.productCardPlaceholder}>
@@ -492,12 +469,11 @@ export default function Shop() {
               );
             })}
           </div>
-          {visibleCount < processedProducts.length && (
+          {currentProducts.length < totalProducts && (currentPage * PRODUCTS_PER_PAGE < totalProducts) && (`
             <div className={styles.paginationWrapper}>
               <button
-                onClick={() =>
-                  setVisibleCount((prev) => prev + PRODUCTS_PER_PAGE)
-                }
+                onClick={handleLoadMore}
+                disabled={isFetchingMore}
                 className={styles.loadMoreBtn}
               >
                 {shopConfig.buttons?.loadMore || "Muat Lebih Banyak"}
@@ -526,10 +502,12 @@ export default function Shop() {
             <div className={styles.modalGrid}>
               <div className={styles.modalImageWrapper}>
                 {selectedProduct.image_url ? (
-                  <img
+                  <Image
                     src={selectedProduct.image_url}
                     alt={selectedProduct.name}
                     className={styles.modalImg}
+                    width={500}
+                    height={500}
                   />
                 ) : (
                   <div className={styles.modalPlaceholderImg}>
@@ -602,10 +580,12 @@ export default function Shop() {
                           </div>
                           <p className={styles.reviewComment}>{rev.comment}</p>
                           {rev.photo && (
-                            <img
+                            <Image
                               src={rev.photo}
                               alt="Ulasan customer"
                               className={styles.reviewPhoto}
+                              width={100}
+                              height={100}
                             />
                           )}
                         </div>

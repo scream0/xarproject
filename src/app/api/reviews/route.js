@@ -124,7 +124,7 @@ export async function GET(request) {
 
   try {
     if (isPublicRequest) {
-      let query = supabaseAdmin.from("reviews").select("*").eq("approved", true);
+      let query = supabaseAdmin.from("reviews").select("id, product_id, user_name, rating, comment, photo, review_photo, created_at").eq("approved", true);
       if (productId) {
         query = query.eq("product_id", productId);
       }
@@ -155,7 +155,7 @@ export async function GET(request) {
       );
     }
 
-    const { data, error } = await supabaseAdmin.from("reviews").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabaseAdmin.from("reviews").select("id, product_id, user_name, rating, comment, photo, review_photo, created_at, approved, user_id, order_id, product_name, updated_at").order("created_at", { ascending: false });
     if (error) throw error;
     const reviews = (data || []).map((r) => ({
       id: r.id,
