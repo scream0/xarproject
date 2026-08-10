@@ -227,7 +227,7 @@ function ProductCard({ item, onDetail, onAdd, rupiah, activePromo }) {
           ) : (
             <>
               <span
-                style={{ fontSize: "0.75rem",.
+                style={{ fontSize: "0.75rem",
                 color: "#888",
                 display: "block"
               }}
