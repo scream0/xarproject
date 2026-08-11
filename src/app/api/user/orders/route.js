@@ -3,6 +3,14 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+async function verifyOwner(request, userId) {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) throw new Error("Unauthorized");
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) throw new Error("Unauthorized");
+  if (user.id !== userId) throw new Error("Forbidden");
+}
+
 function mapOrderRecord(order) {
   return {
     id: order.id,
@@ -43,6 +51,7 @@ export async function GET(request) {
         { status: 400 },
       );
     }
+    await verifyOwner(request, userId);
 
     let query = supabaseAdmin.from("orders").select("*").eq("user_id", userId);
     if (status) {
@@ -87,7 +96,7 @@ export async function GET(request) {
     console.error("Failed to load user orders:", error);
     return NextResponse.json(
       { success: false, error: error.message || "Internal Server Error" },
-      { status: 500 },
+      { status: ["Unauthorized", "Forbidden"].includes(error.message) ? 403 : 500 },
     );
   }
 }

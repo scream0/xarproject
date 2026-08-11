@@ -593,4 +593,115 @@
   .viewWrapper {
     padding-bottom: 2.5rem !important;
   }
-}
+  }
+
+  /* Navbar Atas Melayang (Floating/Overlay Navbar) */
+  .shopNavbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(var(--surface-primary-rgb, 255, 255, 255), 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+  /* Posisi Melayang di atas */
+  position: sticky;
+  top: 16px;
+  z-index: 100;
+  margin: 1rem;
+  }
+
+  :global([data-theme="dark"]) .shopNavbar {
+  background: rgba(var(--surface-primary-rgb, 20, 20, 22), 0.85);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .navbarSearchWrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  }
+
+  .searchIcon {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  stroke: var(--text-secondary);
+  pointer-events: none;
+  }
+
+  .searchInputNavbar {
+  width: 100%;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.55rem 0.85rem 0.55rem 38px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  outline: none;
+  }
+
+  .searchInputNavbar::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+  }
+
+  .searchInputNavbar:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+  }
+
+  .navbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  }
+
+  .chatIconBtnNavbar,
+  .cartIconBtnNavbar {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+  .chatIconBtnNavbar:hover,
+  .cartIconBtnNavbar:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+  }
+
+  .cartQuantityBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 9999px;
+  min-width: 16px;
+  text-align: center;
+  border: 1px solid var(--surface-primary);
+  }

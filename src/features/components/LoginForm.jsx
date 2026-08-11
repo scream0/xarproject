@@ -5,11 +5,12 @@ import styles from "./LoginForm.module.css";
 import { useStore } from "@/context/StoreContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { getSafeAuthRedirect } from "@/utils/authRedirect";
 
 export default function LoginForm() {
   const { setCustomer } = useStore();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = getSafeAuthRedirect(searchParams.get("callbackUrl"));
 
   const [formData, setFormData] = useState({
     name: "",
@@ -38,7 +39,7 @@ export default function LoginForm() {
         .eq("id", userId)
         .single();
 
-      if (!profileError && profile?.role === "admin") {
+      if (!profileError && ["admin", "superadmin"].includes(String(profile?.role).toLowerCase())) {
         window.location.replace("/dashboard");
       } else {
         window.location.replace(callbackUrl);
@@ -137,6 +138,11 @@ export default function LoginForm() {
         setIsLoading(false);
         return;
       }
+      if (formData.password.length < 12) {
+        setError("Password minimal 12 karakter.");
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const { data, error: signUpError } = await supabase.auth.signUp({
@@ -155,14 +161,13 @@ export default function LoginForm() {
           phone: "",
         });
 
-        setSuccessMessage("Registrasi berhasil! Silakan periksa email Anda jika verifikasi diperlukan.");
-        setTimeout(async () => {
-          if (data.user) {
-            await handlePostLoginRedirect(data.user.id);
-          } else {
-            window.location.replace(callbackUrl);
-          }
-        }, 2000);
+        if (!data.session) {
+          setSuccessMessage("Registrasi berhasil. Periksa email untuk memverifikasi akun, lalu masuk.");
+          setIsLoading(false);
+          return;
+        }
+        setSuccessMessage("Registrasi berhasil! Mengalihkan...");
+        await handlePostLoginRedirect(data.user.id);
       } catch (err) {
         setError(err.message || "Gagal membuat akun.");
         setIsLoading(false);

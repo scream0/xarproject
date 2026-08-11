@@ -301,12 +301,10 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
             Kembali
           </button>
           
-          {/* Tombol Bayar Sekarang muncul jika status pending dan ada snap_token */}
           {isPendingStatus && order.snap_token && (
-            <button 
-              onClick={handleContinuePayment} 
-              className={styles.primaryBtn} 
-              style={{ backgroundColor: "#eab308", color: "#000", fontWeight: "600", border: "none" }}
+            <button
+              onClick={handleContinuePayment}
+              className={`${styles.primaryBtn} ${styles.payBtn}`}
             >
               Bayar Sekarang
             </button>

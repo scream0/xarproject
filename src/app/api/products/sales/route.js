@@ -3,25 +3,26 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const dynamic = "force-dynamic";
 
-// This endpoint calculates the total number of sales for each product
-// and returns a map of { productId: total_sold }.
-// This is much more efficient than sending all orders to the client.
+// This endpoint returns the total number of sales for each product
+// as a map of { productId: total_sold }.
+//
+// Data comes from the "product_sales_summary" VIEW, which aggregates
+// the JSONB "items" column inside "orders" (see orders_complete_existing.sql).
+// This is a single, cheap query — the aggregation itself happens in
+// Postgres, not in Node.js.
 export async function GET() {
   try {
-    const { data: orders, error: ordersError } = await supabaseAdmin
-      .from('orders')
-      .select('status, order_items(product_id, quantity)')
-      .in('status', ['success', 'completed', 'shipping', 'shipped', 'settlement', 'capture', 'paid']);
+    const { data, error } = await supabaseAdmin
+      .from('product_sales_summary')
+      .select('product_id, total_sold');
 
-    if (ordersError) throw ordersError;
+    if (error) throw error;
 
     const salesMap = {};
-    orders.forEach(order => {
-      order.order_items.forEach(item => {
-        if (item.product_id) {
-          salesMap[item.product_id] = (salesMap[item.product_id] || 0) + item.quantity;
-        }
-      });
+    (data || []).forEach((row) => {
+      if (row.product_id) {
+        salesMap[row.product_id] = Number(row.total_sold) || 0;
+      }
     });
 
     return NextResponse.json({ success: true, sales: salesMap });

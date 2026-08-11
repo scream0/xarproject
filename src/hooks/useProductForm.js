@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { auth } from "@/lib/supabaseClient";
 
 // Konfigurasi bisa digabungkan nanti jika diperlukan
 import addConfig from "@/data/ui/addProductConfig.json";
@@ -144,12 +145,14 @@ export function useProductForm(initialProduct = null, onSuccess) {
 
     const data = new FormData();
     data.append("file", file);
-    data.append("userId", folderName); // Menggunakan userId sebagai nama folder
+    data.append("folder", "products");
+    data.append("publicId", `products/${folderName}`);
     if (oldPublicId) {
       data.append("oldPublicId", oldPublicId);
     }
 
-    const res = await fetch("/api/cloudinary", { method: "POST", body: data });
+    const { data: { session } } = await auth.getSession();
+    const res = await fetch("/api/cloudinary", { method: "POST", headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}, body: data });
     const result = await res.json();
 
     if (!res.ok) {
@@ -171,6 +174,7 @@ export function useProductForm(initialProduct = null, onSuccess) {
     setUploading(true);
 
     try {
+      const { data: { session } } = await auth.getSession();
       const productId = initialProduct?.id || Date.now();
 
       // 1. Upload main image
@@ -231,7 +235,7 @@ export function useProductForm(initialProduct = null, onSuccess) {
       // 4. Submit to products API
       const res = await fetch("/api/products", {
         method: isEditMode ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify(payload),
       });
       const result = await res.json();

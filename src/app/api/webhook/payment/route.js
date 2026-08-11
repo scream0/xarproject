@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { createPaymentWebhookHandler } from "./paymentWebhookRouteHandler";
 
@@ -6,6 +7,24 @@ export const dynamic = "force-dynamic";
 
 const MAX_AUDIT_SEGMENT_LENGTH = 80;
 const MAX_AUDIT_NOTE_LENGTH = 280;
+
+function verifyMidtransSignature(payload) {
+  const serverKey = process.env.MIDTRANS_SERVER_KEY;
+  const signature = String(payload?.signature_key || "");
+  const orderId = String(payload?.order_id || "");
+  const statusCode = String(payload?.status_code || "");
+  const grossAmount = String(payload?.gross_amount || "");
+  if (!serverKey || !signature || !orderId || !statusCode || !grossAmount) {
+    return false;
+  }
+  const expected = crypto
+    .createHash("sha512")
+    .update(`${orderId}${statusCode}${grossAmount}${serverKey}`)
+    .digest("hex");
+  const received = Buffer.from(signature, "utf8");
+  const comparison = Buffer.from(expected, "utf8");
+  return received.length === comparison.length && crypto.timingSafeEqual(received, comparison);
+}
 
 function sanitizeAuditValue(value, maxLength = MAX_AUDIT_SEGMENT_LENGTH) {
   const cleaned = String(value ?? "").replace(/\s+/g, " ").trim();
@@ -86,5 +105,13 @@ const paymentWebhookHandler = createPaymentWebhookHandler({
 });
 
 export async function POST(request) {
-  return paymentWebhookHandler(request);
+  const payload = await request.json().catch(() => null);
+  if (!verifyMidtransSignature(payload)) {
+    return NextResponse.json({ success: false, error: "Invalid payment webhook signature" }, { status: 401 });
+  }
+  return paymentWebhookHandler(new Request(request.url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  }));
 }

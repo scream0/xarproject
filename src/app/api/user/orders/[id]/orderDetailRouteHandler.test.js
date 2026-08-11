@@ -103,6 +103,48 @@ function createFakeDb(order) {
   };
 
   return {
+    from(name) {
+      let orderId = null;
+      const query = {
+        select() {
+          return query;
+        },
+        eq(_column, value) {
+          orderId = value;
+          return query;
+        },
+        async single() {
+          if (name !== "orders" || orderId !== order.id) {
+            return { data: null, error: new Error("not found") };
+          }
+          return {
+            data: {
+              ...deepClone(state.order),
+              user_id: state.order.userId,
+              created_at: state.order.createdAt,
+              status_history: Object.values(state.orderStatusHistory),
+            },
+            error: null,
+          };
+        },
+        then(resolve, reject) {
+          if (name !== "order_items") {
+            return Promise.resolve({ data: null, error: new Error("unexpected table") }).then(resolve, reject);
+          }
+          return Promise.resolve({
+            data: Object.values(state.orderItems).map((item) => ({
+              ...deepClone(item),
+              order_id: item.orderId,
+              product_id: item.productId,
+              product_name: "Product",
+              variant_name: null,
+            })),
+            error: null,
+          }).then(resolve, reject);
+        },
+      };
+      return query;
+    },
     collection(name) {
       if (name !== "orders") {
         throw new Error(`Unexpected collection: ${name}`);

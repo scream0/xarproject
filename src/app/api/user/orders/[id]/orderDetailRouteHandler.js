@@ -5,7 +5,7 @@ function createUserOrderDetailHandler({
 }) {
   return async function handleUserOrderDetail(request, { params } = {}) {
     try {
-      const orderId = params?.id;
+      const { id: orderId } = await params;
       const { searchParams } = new URL(request.url);
       const userId = searchParams.get("userId")?.trim();
 

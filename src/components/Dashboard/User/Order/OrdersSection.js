@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import styles from "./OrdersSection.module.css";
 import ordersConfig from "@/data/ui/ordersConfig.json";
-import { auth } from "@/lib/supabaseClient";
+import { auth, supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { useStore } from "@/context/StoreContext";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
@@ -152,6 +152,7 @@ export default function OrdersSection() {
   const [reviewTargetItem, setReviewTargetItem] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [reviewPhotoFile, setReviewPhotoFile] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const [returnModalOrder, setReturnModalOrder] = useState(null);
@@ -525,6 +526,19 @@ export default function OrdersSection() {
       const { data: { session } } = await auth.getSession();
       const token = session?.access_token;
       const userId = currentUser.id || currentUser.uid;
+
+      let reviewPhoto = null;
+      if (reviewPhotoFile) {
+        const uploadData = new FormData();
+        uploadData.append("file", reviewPhotoFile);
+        uploadData.append("userId", userId);
+        uploadData.append("folder", "reviews");
+        const { data: { session } } = await auth.getSession();
+        const uploadRes = await fetch("/api/cloudinary", { method: "POST", headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}, body: uploadData });
+        const uploadResult = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadResult.error || "Gagal mengunggah foto ulasan.");
+        reviewPhoto = uploadResult.secure_url;
+      }
 
       const res = await fetch("/api/reviews", {
         method: "POST",

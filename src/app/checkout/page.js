@@ -175,7 +175,12 @@ export default function CheckoutPage() {
     const loadAddresses = async () => {
       setAddressLoading(true);
       try {
-        const r = await fetch(`/api/users?userId=${currentUser.id}`);
+        const { data: { session } } = await supabase.auth.getSession();
+        const r = await fetch(`/api/users?userId=${currentUser.id}`, {
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {},
+        });
         const result = await r.json();
 
         if (result.exists && result.data?.addresses) {
@@ -228,6 +233,7 @@ export default function CheckoutPage() {
 
     setSavingAddress(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const newAddr = normalizeAddress({
         ...addressForm,
         cityId: resolveCityId(
@@ -242,7 +248,12 @@ export default function CheckoutPage() {
       const updated = [...addresses, newAddr];
       const res = await fetch("/api/users", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
         body: JSON.stringify({
           userId: currentUser.id,
           type: "addresses",

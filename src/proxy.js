@@ -40,8 +40,10 @@ export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
   // Belum login tapi coba akses dashboard
-  if (pathname.startsWith("/dashboard") && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if ((pathname.startsWith("/dashboard") || pathname.startsWith("/checkout") || pathname.startsWith("/account")) && !user) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Sudah login tapi coba buka login/register
@@ -56,5 +58,5 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/checkout", "/account/:path*", "/login", "/register"],
 };

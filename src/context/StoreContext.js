@@ -589,7 +589,7 @@ export function StoreProvider({ children }) {
       const shippingVoucherId = customParams.shippingVoucherId || shippingDetail?.appliedVouchers?.find(v => v.type === 'shipping')?.voucherId || null;
       const shippingVoucherClaimId = customParams.shippingVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type === 'shipping')?.claimId || null;
       const discountVoucherId = customParams.discountVoucherId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.voucherId || null;
-      const discountVoucherClaimId = custom-params.discountVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.claimId || null;
+      const discountVoucherClaimId = customParams.discountVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.claimId || null;
 
       const response = await fetch("/api/midtrans", {
         method: "POST",
@@ -639,21 +639,10 @@ export function StoreProvider({ children }) {
             toast.success("Pembayaran Berhasil!");
             await clearCart();
 
-            try {
-              await fetch("/api/orders/update-status", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify({ orderId, status: "success" }),
-              });
-
-              await fetchProducts();
-              window.dispatchEvent(new Event("product-stock-updated"));
-            } catch (err) {
-              console.error("Gagal memperbarui status order & stok:", err);
-            }
+            // Status pembayaran dan stok adalah tanggung jawab webhook Midtrans.
+            // Mengubahnya dari browser berisiko mengurangi stok dua kali.
+            await fetchProducts();
+            window.dispatchEvent(new Event("product-stock-updated"));
 
             router.push(`/account/orders/${orderId}?order_id=${orderId}&status_code=${result.status_code}&transaction_status=${result.transaction_status}`);
           },

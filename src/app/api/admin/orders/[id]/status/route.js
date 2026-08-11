@@ -31,10 +31,11 @@ async function verifyAdmin(request) {
   return user.id;
 }
 
-async function handleStatusUpdate(request, { params }) {
+async function handleStatusUpdate(request, context) {
   try {
     await verifyAdmin(request);
 
+    const { params } = await context;
     const orderId = params?.id;
     const body = await request.json().catch(() => ({}));
     const { status, newStatus, notes, changedBy } = body;

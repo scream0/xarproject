@@ -20,17 +20,13 @@ export async function verifyUser(request: Request) {
 export async function verifyAdmin(request: Request) {
   const user = await verifyUser(request);
 
-  if ((user as any).user_metadata?.role === "admin") {
-    return user;
-  }
-
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (error || !data || data.role !== "admin") {
+  if (error || !data || !["admin", "superadmin"].includes(String(data.role).toLowerCase())) {
     throw new Error("Forbidden: User is not an administrator");
   }
 

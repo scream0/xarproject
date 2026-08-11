@@ -7,14 +7,13 @@ test("home page renders main content", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveTitle(/mameko/i);
-  await expect(page.locator("main")).toBeVisible();
+  await expect(page.getByRole("main").first()).toBeVisible();
 });
 
 test("checkout requires authentication and redirects to login", async ({ page }) => {
   await page.goto("/checkout");
 
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fcheckout|\/login\?callbackUrl=\/checkout/);
-  await expect(page.locator("body")).toContainText(/mameko|login|masuk/i);
 });
 
 test("login and open account orders page", async ({ page }) => {

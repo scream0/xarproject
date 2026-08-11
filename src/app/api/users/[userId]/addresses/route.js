@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,12 @@ function mapAddressRow(row) {
 
 export async function GET(request, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     if (!userId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
+    const user = await verifyUser(request);
+    if (user.id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { data, error } = await supabaseAdmin
       .from("addresses")
@@ -49,10 +52,12 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     if (!userId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
+    const user = await verifyUser(request);
+    if (user.id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await request.json();
     const { recipientName, recipientPhone, street, city, cityId, province, postalCode, label, isPrimary } = body;

@@ -1,38 +1,42 @@
-1. Frontend — Rendering & Bundle
- Audit bundle size pakai next build (liat output "First Load JS") — cari dependency berat yang bisa di-lazy-load
- Pakai dynamic() import untuk komponen berat yang nggak perlu render langsung (modal, chart, editor, dll)
- Ganti komponen client ('use client') yang sebenernya nggak butuh interaktivitas jadi Server Component
- Cek penggunaan gambar — pastikan semua pakai next/image (auto lazy-load, resize, format webp/avif)
- Preload font pakai next/font biar nggak ada layout shift/render blocking
- Hapus library yang nggak kepake (npm ls, cek package.json)
- Aktifkan code splitting per route (default Next.js udah, tapi cek kalau ada import global yang bikin semua route ke-bundle bareng)
-2. Data Fetching
- Pindahin fetch yang bisa statis ke Static Generation (generateStaticParams, ISR pakai revalidate)
- Pakai Promise.all() untuk fetch paralel, jangan await berurutan kalau nggak saling bergantung
- Implementasi SWR / React Query di client biar ada caching + revalidate otomatis, ga fetch ulang tiap render
- Cek waterfall request di Network tab (DevTools) — request yang nunggu request lain padahal bisa paralel
- Pakai fetch dengan cache option yang tepat (force-cache, no-store, atau revalidate) sesuai kebutuhan data
-3. API Routes / Backend
- Batasin payload — select() field spesifik di query, jangan select('*')
- Tambah index database di kolom yang sering dipakai WHERE/JOIN
- Cache response API yang jarang berubah (pakai Cache-Control header atau Vercel KV/Redis)
- Ganti getUser() (network call) jadi getSession() (baca cookie lokal) kalau nggak butuh validasi super ketat
- Gabung beberapa endpoint kecil jadi satu kalau sering dipanggil bareng dari frontend yang sama
-4. Database
- Pastikan region database deket sama region hosting (Vercel/server)
- Review RLS policy Supabase — policy kompleks bikin query lambat
- Analisa query lambat lewat Supabase Dashboard → Query Performance
- Pertimbangkan connection pooling (Supabase Pooler / PgBouncer) kalau traffic tinggi
-5. Infra & Hosting
- Set region Vercel Function deket ke database & mayoritas user
- Pakai Edge Runtime untuk route ringan (skip cold start Node.js)
- Aktifkan CDN caching untuk asset statis (Vercel udah otomatis, tapi cek header cache-nya)
- Cek apakah pakai HTTP/2 atau HTTP/3 (biasanya otomatis di Vercel/Cloudflare)
-6. Third-party Scripts
- Audit semua script eksternal (analytics, chat widget, ads) — load pakai next/script dengan strategy lazyOnload atau afterInteractive
- Hapus tracking script yang duplikat/nggak kepake
-7. Monitoring & Testing
- Jalanin Lighthouse / PageSpeed Insights buat baseline skor
- Pasang Vercel Analytics atau Web Vitals tracking (LCP, FID/INP, CLS, TTFB)
- Setup Sentry/LogRocket buat lacak error & performance real-user
- Test dari lokasi geografis berbeda (pakai tools kayak WebPageTest) kalau user tersebar
+# Production Readiness TODO
+
+Status audit dimulai 11 Agustus 2026. Checklist ini akan diperbarui selama pekerjaan berlangsung.
+
+## Database & sinkronisasi
+
+- [x] Rekonsiliasi riwayat migration remote `0001`–`0006`.
+- [x] Terapkan migration sinkronisasi profil, Auth, dan `order_items`.
+- [x] Audit dan backfill `auth.users` ↔ `profiles` ↔ `users` (5/5/5, tanpa mismatch).
+- [x] Normalisasi 14 item order legacy ke `order_items` (tanpa orphan).
+- [x] Tambahkan indeks query utama order, notifikasi, profil, dan produk.
+- [x] Aktifkan RLS/policy pada tabel baru `users` dan `order_items`.
+- [ ] Audit RLS tabel legacy yang sudah ada sebelum migrasi ini (produk, order, voucher, support).
+
+## Keamanan autentikasi & API
+
+- [x] Lindungi callback URL login dari open redirect.
+- [x] Jangan percaya role admin dari metadata Auth.
+- [x] Lindungi halaman checkout/account dari server proxy.
+- [x] Amankan CRUD produk, alamat, pembatalan order, konfirmasi order, dan upload Cloudinary.
+- [x] Validasi signature webhook Midtrans.
+- [x] Validasi harga, varian, dan stok checkout pada server.
+- [ ] Audit seluruh API route untuk autentikasi, otorisasi pemilik data, dan validasi input.
+- [ ] Terapkan rate-limit pada endpoint sensitif (login/OTP/payment/webhook) bila infrastruktur tersedia.
+- [ ] Hapus secret hard-code dan pastikan konfigurasi production memakai environment variable.
+
+## Performa & reliability
+
+- [ ] Audit request berulang, query tanpa pagination, dan N+1 pada dashboard admin/user.
+- [x] Optimalkan indeks database untuk jalur user/admin yang paling sering dipakai.
+- [ ] Pastikan checkout idempotent dan stok tidak dapat terpotong dua kali.
+- [ ] Tambahkan error handling/observability yang aman untuk deployment.
+
+## Pengujian & deployment
+
+- [x] Unit/integration test order, webhook, dan auth redirect lulus.
+- [x] Production build lulus.
+- [x] E2E publik: beranda dan proteksi checkout lulus.
+- [ ] E2E autentikasi admin/user memakai akun uji non-produksi.
+- [ ] E2E pembayaran sandbox hingga webhook sukses.
+- [x] Upgrade Next.js ke `16.3.0` dan override dependency rentan; audit dependency produksi: 0 vulnerability.
+- [ ] Final deployment checklist dan environment production (butuh audit RLS legacy, akun E2E sandbox, dan verifikasi webhook Midtrans end-to-end).

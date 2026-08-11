@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import styles from "./TransactionTable.module.css";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewConfig.json";
+import { auth, supabase } from "@/lib/supabaseClient";
 
 const ORDERS_PER_PAGE = 15;
 
@@ -33,10 +34,12 @@ export default function TransactionTable() {
     }
   }, []);
 
+  const getAuthHeaders = async () => { const { data: { session } } = await auth.getSession(); return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}; };
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const ordersRes = await fetch("/api/orders");
+      const ordersRes = await fetch("/api/orders", { headers: await getAuthHeaders() });
       const ordersResult = await ordersRes.json();
 
       const transactions = (
@@ -70,7 +73,7 @@ export default function TransactionTable() {
 
       const res = await fetch("/api/orders", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify(payload),
       });
 

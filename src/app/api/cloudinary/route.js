@@ -1,5 +1,21 @@
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import { verifyAdmin, verifyUser } from "@/lib/apiAuth";
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ADMIN_FOLDERS = new Set(["products", "storefront"]);
+
+async function verifyUploadAccess(request, requestedUserId, folder) {
+  const user = await verifyUser(request);
+  if (requestedUserId) {
+    if (requestedUserId !== user.id) throw new Error("Forbidden");
+    return { user, isAdmin: false };
+  }
+  if (!ADMIN_FOLDERS.has(folder)) throw new Error("Forbidden");
+  await verifyAdmin(request);
+  return { user, isAdmin: true };
+}
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -48,8 +64,12 @@ export async function POST(request) {
     const userId = formData.get("userId");
     const oldPublicId = formData.get("oldPublicId");
     const oldUrl = formData.get("oldUrl");
-    const folder = formData.get("folder") || "avatars";
+    const requestedFolder = formData.get("folder");
     const explicitPublicId = formData.get("publicId") || null;
+    const folder = requestedFolder || (String(explicitPublicId || "").startsWith("storefront/") ? "storefront" : "avatars");
+    const normalizedFolder = String(folder).replace(/^\/+|\/+$/g, "");
+
+    await verifyUploadAccess(request, userId, normalizedFolder);
 
     if (!file) {
       return NextResponse.json(
@@ -61,8 +81,11 @@ export async function POST(request) {
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: "Invalid file" }, { status: 400 });
     }
+    if (!ALLOWED_IMAGE_TYPES.has(file.type) || file.size > MAX_IMAGE_BYTES) {
+      return NextResponse.json({ error: "Image must be JPG, PNG, or WebP and no larger than 5 MB" }, { status: 400 });
+    }
 
-    const newPublicId = explicitPublicId || (userId ? getAvatarPublicId(userId) : null);
+    const newPublicId = userId ? getAvatarPublicId(userId) : explicitPublicId;
     const resolvedOldPublicId =
       oldPublicId || (oldUrl ? extractPublicIdFromUrl(oldUrl) : null);
 
@@ -79,7 +102,7 @@ export async function POST(request) {
     const uploadResult = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder,
+          folder: normalizedFolder,
           ...(newPublicId ? { public_id: newPublicId } : {}),
           resource_type: "image",
           overwrite: true,
@@ -109,6 +132,12 @@ export async function POST(request) {
 export async function DELETE(request) {
   try {
     const { userId, publicId } = await request.json();
+    const user = await verifyUser(request);
+    if (userId && userId !== user.id) {
+      await verifyAdmin(request);
+    } else if (!userId) {
+      await verifyAdmin(request);
+    }
     const targetPublicId =
       publicId || (userId ? getAvatarPublicId(userId) : null);
 

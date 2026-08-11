@@ -127,10 +127,12 @@ export default function ProductManager() {
     if (!productToDelete) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeaders = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
       if (productToDelete.image_public_id) {
         await fetch("/api/cloudinary", {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({ publicId: productToDelete.image_public_id }),
         });
       }
@@ -139,7 +141,7 @@ export default function ProductManager() {
           if (v.imagePublicId) {
             await fetch("/api/cloudinary", {
               method: "DELETE",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...authHeaders },
               body: JSON.stringify({ publicId: v.imagePublicId }),
             });
           }

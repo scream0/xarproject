@@ -45,12 +45,19 @@
 
 .primaryBtn,
 .secondaryBtn,
-.trackBtn {
+.trackBtn,
+.payBtn {
   border: 0;
   border-radius: 999px;
   padding: 0.65rem 1rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.payBtn {
+  background-color: #eab308;
+  color: #000;
+  font-weight: 600;
 }
 
 .primaryBtn {

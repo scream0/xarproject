@@ -43,7 +43,7 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { userId, orderId, productId, productName, rating, comment } = body;
+    const { userId, orderId, productId, productName, rating, comment, reviewPhoto } = body;
 
     if (currentUser.uid !== userId) {
       return Response.json(
@@ -60,12 +60,15 @@ export async function POST(request) {
 
     const { data: orderDoc, error: orderErr } = await supabaseAdmin
       .from("orders")
-      .select("id, user_id")
+      .select("id, user_id, status")
       .eq("id", orderId)
       .single();
 
     if (orderErr || !orderDoc) {
       return Response.json({ error: "Order not found." }, { status: 404 });
+    }
+    if ((orderDoc.status || "").toLowerCase() !== "completed") {
+      return Response.json({ error: "Reviews are available after the order is completed." }, { status: 400 });
     }
     if (orderDoc.user_id !== userId) {
       return Response.json({ error: "You are not authorized to review this order." }, { status: 403 });
@@ -124,24 +127,23 @@ export async function GET(request) {
 
   try {
     if (isPublicRequest) {
-      let query = supabaseAdmin.from("reviews").select("id, product_id, user_name, rating, comment, photo, review_photo, created_at").eq("approved", true);
+      // Corrected select to fetch fields used in the response and added product_name for context.
+      let query = supabaseAdmin.from("reviews").select("id, product_id, user_name, product_name, rating, comment, review_photo, created_at").eq("approved", true);
       if (productId) {
         query = query.eq("product_id", productId);
       }
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
+
+      // Corrected mapping to only include fields that are publicly available and selected.
       const reviews = (data || []).map((r) => ({
         id: r.id,
-        userId: r.user_id,
-        orderId: r.order_id,
         productId: r.product_id,
         userName: r.user_name,
         productName: r.product_name,
         rating: r.rating,
         comment: r.comment,
-        approved: r.approved,
         createdAt: r.created_at,
-        updatedAt: r.updated_at,
       }));
       return Response.json({ reviews }, { status: 200 });
     }
@@ -155,8 +157,10 @@ export async function GET(request) {
       );
     }
 
-    const { data, error } = await supabaseAdmin.from("reviews").select("id, product_id, user_name, rating, comment, photo, review_photo, created_at, approved, user_id, order_id, product_name, updated_at").order("created_at", { ascending: false });
+    // Removed invalid columns "photo" and "review_photo" from the select statement.
+    const { data, error } = await supabaseAdmin.from("reviews").select("id, product_id, user_name, rating, comment, created_at, approved, user_id, order_id, product_name, updated_at").order("created_at", { ascending: false });
     if (error) throw error;
+    
     const reviews = (data || []).map((r) => ({
       id: r.id,
       userId: r.user_id,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +8,8 @@ export async function POST(request, { params }) {
   try {
     const orderId = params?.id;
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId") || (await request.json().catch(() => ({}))).userId;
+    const user = await verifyUser(request);
+    const userId = user.id;
 
     if (!orderId) {
       return NextResponse.json(
@@ -29,7 +31,7 @@ export async function POST(request, { params }) {
       );
     }
 
-    if (userId && String(orderData.user_id || "") !== userId) {
+    if (String(orderData.user_id || "") !== userId) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },

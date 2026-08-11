@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useStore } from "@/context/StoreContext";
 import { getDiscountedPrice } from "@/utils/promo";
 import styles from "./Shop.module.css";
 import toast from "react-hot-toast";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
+import { supabase } from "@/lib/supabaseClient";
 
 // Import Skeleton
 import { ShopSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
@@ -16,13 +17,12 @@ import shopConfig from "@/data/ui/shopConfig.json";
 
 const PRODUCTS_PER_PAGE = 12;
 
-export default function Shop({ initialProducts, initialTotalProducts }) {
+export default function Shop({ initialProducts = [], initialTotalProducts = 0, searchQuery = "", onBukaDetail }) {
   const { addToCart, products: contextProducts, activePromo, cartQuantity, setIsCartOpen } = useStore();
   const [products, setProducts] = useState(initialProducts || []);
   const [orderItemsMap, setOrderItemsMap] = useState({});
   const [allReviews, setAllReviews] = useState([]);
   const [loading, setLoading] = useState(!initialProducts);
-  const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(initialTotalProducts || 0);
@@ -40,10 +40,6 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
     }
     return [];
   });
-
-  // State untuk Modal Detail Produk
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [activeVariantIdx, setActiveVariantIdx] = useState(0);
 
   const toggleWishlist = (productId, e) => {
     e.stopPropagation();
@@ -159,6 +155,17 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
     }
   }, [searchQuery, sortBy, currentPage, fetchShopData, initialProducts, products.length]);
 
+  // Supabase Realtime keeps catalog stock, price and public review data in sync.
+  useEffect(() => {
+    const refreshCatalog = () => fetchShopData(true);
+    const channel = supabase
+      .channel("storefront-catalog")
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, refreshCatalog)
+      .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, refreshCatalog)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchShopData]);
+
   // Handle product-stock-updated event
   useEffect(() => {
     const handleStorageChange = () => fetchShopData(true);
@@ -173,42 +180,6 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
   };
 
   const currentProducts = useMemo(() => products, [products]);
-
-  const productReviewsMap = useMemo(() => {
-    const map = {};
-    allReviews.forEach((rev) => {
-      const pId = String(rev.productId || "");
-      if (!pId) return;
-
-      if (!map[pId]) map[pId] = [];
-      map[pId].push({
-        id: rev.id,
-        customer: rev.userName || "Pelanggan",
-        rating: Number(rev.rating || 5),
-        comment: rev.comment || "Produk sangat bagus dan berkualitas!",
-        photo: rev.photo || rev.review_photo || null,
-        date: rev.createdAt
-          ? new Date(
-              rev.createdAt.seconds
-                ? rev.createdAt.seconds * 1000
-                : rev.createdAt,
-            ).toLocaleDateString("id-ID")
-          : "Baru saja",
-      });
-    });
-    return map;
-  }, [allReviews]);
-
-  const productReviews = useMemo(() => {
-    if (!selectedProduct) return [];
-    const targetId = String(selectedProduct.id || selectedProduct._id || "");
-    const dynamicReviews = productReviewsMap[targetId] || [];
-
-    if (dynamicReviews.length === 0 && Array.isArray(selectedProduct.reviews)) {
-      return selectedProduct.reviews;
-    }
-    return dynamicReviews;
-  }, [selectedProduct, productReviewsMap]);
 
   const getVariantStock = (variant) =>
     Number(variant?.stock ?? variant?.stok ?? 0);
@@ -234,62 +205,11 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
     return idx !== -1 ? idx : 0;
   };
 
-  const handleAddToCart = (product, variantIndex = 0) => {
-    const variants = product.variants || [];
-    const targetIdx =
-      variantIndex >= 0 ? variantIndex : getFirstAvailableVariantIndex(product);
-    const variant = variants[targetIdx] || {
-      size: "Standard",
-      price: product.price || 0,
-      stock: 10,
-    };
-
-    if (getVariantStock(variant) <= 0) {
-      toast.error(`Stok ${product.name} (${variant.size}) sudah habis!`);
-      fetchShopData();
-      return;
-    }
-    addToCart(product, variant, 1);
-  };
-
   return (
     <div className={styles.shopContainer}>
-      {/* Navbar Atas Melayang */}
-      <div className={styles.shopNavbar}>
-        <div className={styles.navbarSearchWrapper}>
-          <AppIcon name="search" className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder={
-              shopConfig.filters?.searchPlaceholder || "Cari parfum..."
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInputNavbar}
-          />
-        </div>
-        <div className={styles.navbarActions}>
-          <button
-            className={styles.chatIconBtnNavbar}
-            onClick={() => toast.success("Membuka chat...")}
-            aria-label="Chat"
-          >
-            <AppIcon name="message-circle" className={styles.svgIcon} />
-          </button>
-          <button
-            className={styles.cartIconBtnNavbar}
-            onClick={() => setIsCartOpen(true)}
-            aria-label={shopConfig.aria?.cart || "Keranjang"}
-          >
-            <AppIcon name="shopping-cart" className={styles.svgIcon} />
-            {cartQuantity > 0 && (
-              <span className={styles.cartQuantityBadge}>
-                {cartQuantity}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
+
+
+      <h2 className={styles.productsHeader}>Produk Kami</h2>
 
       {/* Filter Tabs (Fungsional) */}
       <div className={styles.filterTabsWrapper}>
@@ -352,15 +272,14 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
               const outOfStock = isProductOutOfStock(product);
               const totalStockLeft = getProductTotalStock(product);
               const isWishlisted = wishlist.includes(pId);
+              const productReviews = allReviews.filter((review) => String(review.productId) === pId);
+              const averageRating = productReviews.length ? (productReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / productReviews.length).toFixed(1) : null;
 
               return (
                 <div
                   key={pId}
                   className={`${styles.productCard} ${outOfStock ? styles.outOfStock : ""}`}
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setActiveVariantIdx(getFirstAvailableVariantIndex(product));
-                  }}
+                  onClick={() => onBukaDetail(product)}
                 >
                   <div className={styles.productCardImageWrapper}>
                     {product.image_url ? (
@@ -408,11 +327,10 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
                         className={`${styles.cartIconBtn} ${outOfStock ? styles.cartIconBtnDisabled : ""}`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (!outOfStock)
-                            handleAddToCart(
-                              product,
-                              getFirstAvailableVariantIndex(product),
-                            );
+                          if (!outOfStock) {
+                            const variant = product.variants?.[getFirstAvailableVariantIndex(product)] || { size: "Standard", price: product.price || 0, stock: 10 };
+                            addToCart(product, variant, 1);
+                          }
                         }}
                         disabled={outOfStock}
                         aria-label={
@@ -446,6 +364,7 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
                         );
                       })()}
                     </div>
+                    <div className={styles.reviewSummary}>{averageRating ? `★ ${averageRating} (${productReviews.length})` : "Belum ada ulasan"}</div>
                     <div className={styles.cardFooterInfo}>
                       <span
                         className={
@@ -469,7 +388,7 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
               );
             })}
           </div>
-          {currentProducts.length < totalProducts && (currentPage * PRODUCTS_PER_PAGE < totalProducts) && (`
+          {currentProducts.length < totalProducts && (currentPage * PRODUCTS_PER_PAGE < totalProducts) && (
             <div className={styles.paginationWrapper}>
               <button
                 onClick={handleLoadMore}
@@ -481,176 +400,6 @@ export default function Shop({ initialProducts, initialTotalProducts }) {
             </div>
           )}
         </>
-      )}
-
-      {selectedProduct && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => setSelectedProduct(null)}
-        >
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className={styles.closeModalBtn}
-              onClick={() => setSelectedProduct(null)}
-              aria-label="Tutup"
-            >
-              <AppIcon name="x" />
-            </button>
-            <div className={styles.modalGrid}>
-              <div className={styles.modalImageWrapper}>
-                {selectedProduct.image_url ? (
-                  <Image
-                    src={selectedProduct.image_url}
-                    alt={selectedProduct.name}
-                    className={styles.modalImg}
-                    width={500}
-                    height={500}
-                  />
-                ) : (
-                  <div className={styles.modalPlaceholderImg}>
-                    {shopConfig.card?.placeholderImageText || "No Image"}
-                  </div>
-                )}
-              </div>
-              <div className={styles.modalDetails}>
-                <span className={styles.productCategory}>
-                  {selectedProduct.category ||
-                    shopConfig.card?.defaultCategory ||
-                    "Parfum"}
-                </span>
-                <h2 className={styles.modalTitle}>{selectedProduct.name}</h2>
-                <p className={styles.modalDesc}>
-                  {selectedProduct.description ||
-                    shopConfig.card?.defaultDescription ||
-                    "Deskripsi belum tersedia."}
-                </p>
-                {selectedProduct.variants?.length > 0 && (
-                  <div className={styles.variantBox}>
-                    <span className={styles.variantLabel}>
-                      {shopConfig.card?.variantLabel || "Pilih Varian"}
-                    </span>
-                    <div className={styles.variantChips}>
-                      {selectedProduct.variants.map((v, idx) => {
-                        const isVariantEmpty = getVariantStock(v) <= 0;
-                        return (
-                          <button
-                            key={idx}
-                            onClick={() =>
-                              !isVariantEmpty && setActiveVariantIdx(idx)
-                            }
-                            className={[
-                              styles.chip,
-                              activeVariantIdx === idx ? styles.activeChip : "",
-                              isVariantEmpty ? styles.variantChipDisabled : "",
-                            ].join(" ")}
-                            disabled={isVariantEmpty}
-                          >
-                            {v.size || `Varian ${idx + 1}`}{" "}
-                            {isVariantEmpty
-                              ? "(Habis)"
-                              : `(Sisa: ${getVariantStock(v)})`}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Bagian Ulasan & Foto Pelanggan */}
-                <div className={styles.reviewsSection}>
-                  <h4 className={styles.reviewsTitle}>
-                    {shopConfig.reviews?.title || "Ulasan & Foto Pelanggan"} (
-                    {productReviews.length})
-                  </h4>
-                  <div className={styles.reviewsList}>
-                    {productReviews.length === 0 ? (
-                      <p className={styles.emptyReviews}>
-                        {shopConfig.reviews?.empty ||
-                          "Belum ada ulasan untuk produk ini."}
-                      </p>
-                    ) : (
-                      productReviews.map((rev, rIdx) => (
-                        <div key={rIdx} className={styles.reviewItem}>
-                          <div className={styles.reviewHeader}>
-                            <span className={styles.reviewCustomer}>
-                              {rev.customer}
-                            </span>
-                            <span className={styles.reviewStars}>
-                              {"★".repeat(rev.rating)}
-                            </span>
-                          </div>
-                          <p className={styles.reviewComment}>{rev.comment}</p>
-                          {rev.photo && (
-                            <Image
-                              src={rev.photo}
-                              alt="Ulasan customer"
-                              className={styles.reviewPhoto}
-                              width={100}
-                              height={100}
-                            />
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className={styles.modalPriceAction}>
-                  {(() => {
-                    const rawPrice = Number(selectedProduct.variants?.[activeVariantIdx]?.price || selectedProduct.price || 0);
-                    const discounted = getDiscountedPrice(rawPrice, activePromo);
-                    return (
-                      <>
-                        <span>
-                          {discounted.hasDiscount && (
-                            <span className={styles.modalPriceOriginal}>
-                              {`Rp ${rawPrice.toLocaleString("id-ID")}`}
-                            </span>
-                          )}
-                          <span className={styles.modalPrice}>
-                            {`Rp ${Number(discounted.price).toLocaleString("id-ID")}`}
-                          </span>
-                          {discounted.hasDiscount && (
-                            <span className={styles.modalPriceBadge}>
-                              Hemat {`Rp ${Number(discounted.savings).toLocaleString("id-ID")}`}
-                            </span>
-                          )}
-                        </span>
-                      </>
-                    );
-                  })()}
-                  {(() => {
-                    const activeVariant =
-                      selectedProduct.variants?.[activeVariantIdx];
-                    const isSoldOut = getVariantStock(activeVariant) <= 0;
-                    return (
-                      <button
-                        onClick={() => {
-                          if (!isSoldOut) {
-                            handleAddToCart(selectedProduct, activeVariantIdx);
-                            setSelectedProduct(null);
-                          }
-                        }}
-                        disabled={isSoldOut}
-                        className={`${styles.buyBtn} ${isSoldOut ? styles.modalBuyBtnDisabled : ""}`}
-                      >
-                        <AppIcon name="shopping-cart" />
-                        <span>
-                          {isSoldOut
-                            ? shopConfig.buttons?.outOfStock || "Habis"
-                            : shopConfig.buttons?.addToCart || "Beli Sekarang"}
-                        </span>
-                      </button>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

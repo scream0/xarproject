@@ -3,6 +3,34 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+async function getRequestUser(request) {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) throw new Error("Unauthorized");
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) throw new Error("Unauthorized");
+  return user;
+}
+
+async function canManageUser(request, userId) {
+  const actor = await getRequestUser(request);
+  if (actor.id === userId) return actor;
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", actor.id)
+    .maybeSingle();
+  if (!["admin", "superadmin"].includes(String(profile?.role).toLowerCase())) {
+    throw new Error("Forbidden");
+  }
+  return actor;
+}
+
+function getErrorStatus(error) {
+  if (error?.message === "Unauthorized") return 401;
+  if (error?.message === "Forbidden") return 403;
+  return 500;
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -14,6 +42,8 @@ export async function GET(request) {
         { status: 400 },
       );
     }
+
+    await canManageUser(request, userId);
 
     const { data: userRecord, error } = await supabaseAdmin
       .from("profiles")
@@ -38,7 +68,7 @@ export async function GET(request) {
     console.error("Gagal mengambil data user:", error);
     return NextResponse.json(
       { error: error.message || "Terjadi kesalahan pada server" },
-      { status: 500 },
+      { status: getErrorStatus(error) },
     );
   }
 }
@@ -46,60 +76,33 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { uid, email, name, phone, role } = body;
+    const { uid, name, phone, role } = body;
 
     if (!uid) {
       return NextResponse.json({ error: "uid is required" }, { status: 400 });
     }
 
-    const { data: existingUser } = await supabaseAdmin
+    const actor = await canManageUser(request, uid);
+    const isAdmin = actor.id !== uid;
+    const newUserData = {
+      id: uid,
+      full_name: name || null,
+      phone: phone || null,
+      ...(isAdmin && role ? { role } : {}),
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select("*")
-      .eq("id", uid)
+      .upsert(newUserData, { onConflict: "id" })
+      .select()
       .single();
-
-    if (!existingUser) {
-      const newUserData = {
-        id: uid,
-        role: role || "customer",
-        created_at: new Date().toISOString(),
-      };
-
-      const { error: insertErr } = await supabaseAdmin.from("profiles").insert(newUserData);
-      if (insertErr) {
-        console.warn("Gagal insert profiles row:", insertErr.message);
-      }
-
-      await supabaseAdmin.auth.admin.updateUserById(uid, {
-        user_metadata: { full_name: name || "Valued Customer", phone: phone || "" },
-      }).catch(() => {});
-
-      return NextResponse.json({
-        success: true,
-        message: "User baru berhasil didaftarkan ke database",
-        data: newUserData,
-      });
-    } else {
-      const { error: updateErr } = await supabaseAdmin
-        .from("profiles")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", uid);
-
-      if (updateErr) {
-        console.warn("Gagal update profiles row:", updateErr.message);
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "Data user sudah ada, sinkronisasi berhasil",
-        data: existingUser,
-      });
-    }
+    if (error) throw error;
+    return NextResponse.json({ success: true, message: "Profil tersinkronisasi", data });
   } catch (error) {
     console.error("Gagal menyinkronkan user ke Supabase:", error);
     return NextResponse.json(
       { error: error.message || "Terjadi kesalahan pada server" },
-      { status: 500 },
+      { status: getErrorStatus(error) },
     );
   }
 }
@@ -115,6 +118,8 @@ export async function PUT(request) {
         { status: 400 },
       );
     }
+    const actor = await canManageUser(request, userId);
+    const isAdmin = actor.id !== userId;
 
     if (!type) {
       return NextResponse.json(
@@ -127,17 +132,10 @@ export async function PUT(request) {
     // 1. UPDATE PROFILE
     // ==========================================
     if (type === "profile") {
-      const cleanUsername = updateData.username?.trim();
-
-      if (!cleanUsername) {
-        return NextResponse.json(
-          { error: "Username tidak boleh kosong." },
-          { status: 400 },
-        );
-      }
+      const cleanUsername = updateData.username?.trim() || null;
 
       // Sinkron ke Auth Metadata Supabase
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
+      if (isAdmin || actor.id === userId) await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           username: cleanUsername,
           full_name: updateData.fullName || "",
@@ -150,7 +148,7 @@ export async function PUT(request) {
 
       // Payload ke tabel profiles database
       const profilePayload = {
-        username: cleanUsername,
+        ...(cleanUsername ? { username: cleanUsername } : {}),
         full_name: updateData.fullName || null,
         gender: updateData.gender || null,
         birth_date: updateData.birthDate || null,
@@ -220,6 +218,9 @@ export async function PUT(request) {
     // 3. UPDATE POINTS & SALDO
     // ==========================================
     if (type === "points") {
+      if (!isAdmin) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       const { points, balance } = updateData;
       const pointsPayload = { updated_at: new Date().toISOString() };
       if (typeof points === "number") pointsPayload.points = points;
@@ -252,7 +253,7 @@ export async function PUT(request) {
     console.error("Gagal memperbarui data user:", error);
     return NextResponse.json(
       { error: error.message || "Terjadi kesalahan pada server" },
-      { status: 500 },
+      { status: getErrorStatus(error) },
     );
   }
 }
@@ -276,6 +277,7 @@ export async function DELETE(request) {
       );
     }
 
+    await canManageUser(request, userId);
     await supabaseAdmin.from("profiles").delete().eq("id", userId);
     await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
 
@@ -287,7 +289,7 @@ export async function DELETE(request) {
     console.error("Gagal menghapus akun pengguna:", error);
     return NextResponse.json(
       { error: error.message || "Terjadi kesalahan pada server" },
-      { status: 500 },
+      { status: getErrorStatus(error) },
     );
   }
 }

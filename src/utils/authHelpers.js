@@ -8,7 +8,7 @@ async function setSessionCookie(accessToken) {
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accessToken }),
+    body: JSON.stringify({ token: accessToken }),
   });
 
   if (!response.ok) {

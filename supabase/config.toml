@@ -1,0 +1,45 @@
+# ID Proyek Supabase Anda (bisa dikosongkan jika menggunakan CLI lokal atau diisi Project Ref dari dashboard)
+project_id = "gwdvcfuzwchnfrhnhaek"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+# Konfigurasi connection pooling
+pooler = { enabled = false, port = 54329, pool_mode = "transaction", default_pool_size = 20, max_client_conn = 100 }
+
+[db.vector]
+enabled = false
+
+[studio]
+enabled = true
+port = 54323
+# IP address Supabase Studio akan mendengarkan
+bind_address = "127.0.0.1"
+
+[auth]
+enabled = true
+# URL utama aplikasi Anda untuk redirect callback auth
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://mameko.my.id"]
+jwt_expiry = 3600
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+
+[edge_functions]
+enabled = true
+verify_jwt = true
+
+[realtime]
+enabled = true
+# Mengatur tabel mana saja yang memancarkan event realtime (kosongkan jika mengontrolnya via dashboard)
+# tenant_id = "postgres"

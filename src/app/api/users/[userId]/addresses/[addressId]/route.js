@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,12 @@ function mapAddressRow(row) {
 
 export async function PUT(request, { params }) {
   try {
-    const { userId, addressId } = params;
+    const { userId, addressId } = await params;
     if (!userId || !addressId) {
       return NextResponse.json({ error: "User ID and Address ID are required" }, { status: 400 });
     }
+    const user = await verifyUser(request);
+    if (user.id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await request.json();
     const { recipientName, recipientPhone, street, city, cityId, province, postalCode, label, isPrimary } = body;
@@ -75,10 +78,12 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const { userId, addressId } = params;
+    const { userId, addressId } = await params;
     if (!userId || !addressId) {
       return NextResponse.json({ error: "User ID and Address ID are required" }, { status: 400 });
     }
+    const user = await verifyUser(request);
+    if (user.id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { error } = await supabaseAdmin
       .from("addresses")
@@ -97,10 +102,12 @@ export async function DELETE(request, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const { userId, addressId } = params;
+    const { userId, addressId } = await params;
     if (!userId || !addressId) {
       return NextResponse.json({ error: "User ID and Address ID are required" }, { status: 400 });
     }
+    const user = await verifyUser(request);
+    if (user.id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     await supabaseAdmin
       .from("addresses")

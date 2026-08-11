@@ -29,24 +29,15 @@ const FadeInSection = ({
   </motion.div>
 );
 
-export default async function Home() { // Make Home an async component for data fetching
+export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart, rupiah } = useStore();
 
-  // Server-side fetch for initial products
-  const fetchInitialProducts = async () => {
-    // Make sure to use the absolute URL for server-side fetches
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products`, { next: { revalidate: 3600 } }); // Added cache: 'no-store' for development, consider revalidate in production
-    if (!res.ok) {
-      console.error("Failed to fetch initial products:", res.status, res.statusText);
-      return [];
-    }
-    const result = await res.json();
-    return result.data || result.products || [];
-  };
-
-  const productsData = await fetchInitialProducts();
+  // Fetch produk sekarang ditangani sepenuhnya oleh Shop.js sendiri
+  // (lewat fetchShopData di useEffect, pakai path relatif /api/products).
+  // Client Component tidak boleh berupa async function, jadi data fetching
+  // server-side dipindahkan/dihapus dari sini.
 
   const bukaDetail = (item: any) => {
     setSelectedProduct(item);
@@ -65,7 +56,7 @@ export default async function Home() { // Make Home an async component for data 
         </FadeInSection>
 
         <FadeInSection delay={0.3}>
-          <Shop onBukaDetail={bukaDetail} initialProducts={productsData} />
+          <Shop onBukaDetail={bukaDetail} />
         </FadeInSection>
         <FadeInSection delay={0.3}>
           <Contact />

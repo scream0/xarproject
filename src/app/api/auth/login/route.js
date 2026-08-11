@@ -1,15 +1,22 @@
 // src/app/api/auth/login/route.js
 import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function POST(request) {
   try {
     const { token } = await request.json();
 
-    if (!token) {
+    if (typeof token !== "string" || !token.trim()) {
       return NextResponse.json(
         { error: "Token tidak ditemukan" },
         { status: 400 },
       );
+    }
+
+    // Never turn an arbitrary client value into an HttpOnly session cookie.
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: "Sesi tidak valid" }, { status: 401 });
     }
 
     // Buat respons sukses
@@ -22,7 +29,9 @@ export async function POST(request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24 * 5, // 5 hari
+      // Access tokens have their own expiry; this only mirrors the active
+      // session for legacy server endpoints.
+      maxAge: 60 * 60,
       sameSite: "lax",
     });
 

@@ -33,7 +33,8 @@ export default function UserDashboard({ initialProducts }) {
   const { user, userName, loading, error, retry } = useUserDashboardData();
   const [notificationCount, setNotificationCount] = useState(0);
 
-  const { isCartOpen, setIsCartOpen } = useStore();
+  const { isCartOpen, setIsCartOpen, cartQuantity } = useStore();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const currentTabParam = searchParams.get("tab");
   
@@ -151,6 +152,41 @@ export default function UserDashboard({ initialProducts }) {
 
       {/* Main Content */}
       <main className={styles.mainContent}>
+        {/* Navbar Atas Melayang */}
+        <div className={styles.shopNavbar}>
+          <div className={styles.navbarSearchWrapper}>
+            <AppIcon name="search" className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Cari parfum..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInputNavbar}
+            />
+          </div>
+          <div className={styles.navbarActions}>
+            <button
+              className={styles.chatIconBtnNavbar}
+              onClick={() => toast.success("Membuka chat...")}
+              aria-label="Chat"
+            >
+              <AppIcon name="message-circle" className={styles.svgIcon} />
+            </button>
+            <button
+              className={styles.cartIconBtnNavbar}
+              onClick={() => setIsCartOpen(true)}
+              aria-label="Keranjang"
+            >
+              <AppIcon name="shopping-cart" className={styles.svgIcon} />
+              {cartQuantity > 0 && (
+                <span className={styles.cartQuantityBadge}>
+                  {cartQuantity}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
         {error && (
           <div className={styles.errorBanner} role="alert">
             <div>
@@ -164,7 +200,7 @@ export default function UserDashboard({ initialProducts }) {
 
         {/* Hapus key={activeTab} agar konten tidak ter-unmount ulang yang menyebabkan kedipan/refresh */}
         <div className={`${styles.viewWrapper} ${styles.viewWrapperAnimated}`}>
-          {activeTab === "shop" && <ShopPage initialProducts={initialProducts} />}
+          {activeTab === "shop" && <ShopPage initialProducts={initialProducts} searchQuery={searchQuery} />}
           {activeTab === "overview" && (
             <OverviewSection setActiveTab={handleTabChange} />
           )}

@@ -1,6 +1,17 @@
 /* ====================================================
    SHOP SECTION CSS (Luxury High-End Theme)
    ==================================================== */
+.productsHeader {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 .shopContainer {
   max-width: 1280px;
   margin: 0 auto;
@@ -782,3 +793,4 @@
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(var(--primary-accent-rgb), 0.25);
 }
+.reviewSummary{margin:.5rem 0;color:var(--primary-accent);font-size:.76rem;font-weight:600}

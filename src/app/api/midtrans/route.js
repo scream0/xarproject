@@ -11,7 +11,7 @@ const snap = new midtransClient.Snap({
 });
 
 /**
- * Creates an order record in Supabase, saving items directly into the `orders` table.
+ * Creates an order and its normalized order_items rows in Supabase.
  */
 async function createOrderInSupabase(orderDetails) {
   const {
@@ -37,7 +37,6 @@ async function createOrderInSupabase(orderDetails) {
     user_id: userId === "guest" ? null : userId,
     status: status || "pending",
     amount: amount,
-    total_amount: amount,
     shipping_cost: shippingCost || 0,
     discount_amount: discountAmount || 0,
     tax_amount: 0,
@@ -47,8 +46,7 @@ async function createOrderInSupabase(orderDetails) {
     customer_phone: customerPhone,
     shipping_address: shippingAddress,
     shipping_detail: shippingDetail,
-    snap_token: snapToken || null,
-    items: items || [],
+    order_number: orderId,
     status_history: [
       {
         id: `${Date.now()}-system`,
@@ -68,6 +66,22 @@ async function createOrderInSupabase(orderDetails) {
   if (orderError) {
     console.error("Supabase error creating order:", orderError.message);
     throw new Error(`Failed to create order record: ${orderError.message}`);
+  }
+
+  const orderItems = (items || []).map((item) => ({
+    order_id: orderId,
+    product_id: item.productId || item.id,
+    product_name: item.name || "Produk",
+    variant_name: item.size || null,
+    quantity: Math.max(1, Number(item.quantity) || 1),
+    price: Number(item.price) || 0,
+  }));
+  if (orderItems.length) {
+    const { error: itemsError } = await supabaseAdmin.from("order_items").insert(orderItems);
+    if (itemsError) {
+      await supabaseAdmin.from("orders").delete().eq("id", orderId);
+      throw new Error(`Failed to create order items: ${itemsError.message}`);
+    }
   }
 
   // Catat penggunaan semua voucher yang valid ke tabel voucher_usage & tandai used_at di user_vouchers
@@ -105,16 +119,36 @@ export async function POST(request) {
       discountVoucherClaimId,
     } = body;
 
+    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+    const { data: { user: authenticatedUser }, error: authError } = token
+      ? await supabaseAdmin.auth.getUser(token)
+      : { data: { user: null }, error: new Error("Missing authorization") };
+    if (authError || !authenticatedUser || authenticatedUser.id !== userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const orderId = body.orderId || uuidv4();
 
-    if (!orderId || !amount) {
+    if (!orderId || !amount || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { success: false, error: "orderId and amount are required" },
         { status: 400 },
       );
     }
 
-    const rawSubtotal = (items || []).reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+    const resolvedItems = await Promise.all((items || []).map(async (item) => {
+      const productId = String(item?.productId || item?.id || "");
+      const quantity = Number(item?.quantity);
+      if (!productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) throw new Error("Item checkout tidak valid");
+      const { data: product, error } = await supabaseAdmin.from("products").select("id,name,variants,status").eq("id", productId).single();
+      if (error || !product || product.status !== "published") throw new Error("Produk checkout tidak tersedia");
+      const variant = (Array.isArray(product.variants) ? product.variants : []).find((candidate) => String(candidate?.size || "").toLowerCase() === String(item?.size || "").toLowerCase());
+      const price = Number(variant?.price);
+      const stock = Number(variant?.stock ?? variant?.stok ?? 0);
+      if (!variant || !Number.isFinite(price) || price < 0 || stock < quantity) throw new Error("Varian atau stok produk tidak tersedia");
+      return { id: product.id, productId: product.id, name: product.name, size: variant.size, quantity, price };
+    }));
+    const rawSubtotal = resolvedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     let actualShippingCost = Number(shippingCost) || 0;
 
     let subtotalDiscountAmount = 0;
@@ -212,7 +246,7 @@ export async function POST(request) {
     }
 
     // Format item details for Midtrans
-    const formattedItems = (items || []).map((item) => ({
+    const formattedItems = resolvedItems.map((item) => ({
       id: String(item.productId || item.id).substring(0, 50),
       price: Math.round(Number(item.price) || 0),
       quantity: Math.max(1, Number(item.quantity) || 1),
@@ -270,7 +304,7 @@ export async function POST(request) {
     await createOrderInSupabase({
       userId: userId || "guest",
       orderId,
-      items: items || [],
+      items: resolvedItems,
       shippingAddress: shippingAddress || null,
       shippingDetail: shippingDetail || null,
       shippingCost: actualShippingCost,

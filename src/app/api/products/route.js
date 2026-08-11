@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyAdmin } from "@/lib/apiAuth";
 
 // Helper untuk inisialisasi Supabase secara aman (mencegah crash di tingkat modul)
 function getSupabaseClient() {
@@ -28,7 +29,7 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "12", 10);
 
-    let query = supabase.from("products").select("id, name, description, category, image_url, variants, price, total_sold, created_at", { count: "exact" });
+    let query = supabase.from("products").select("id, name, description, category, image_url, variants, created_at", { count: "exact" });
 
     // Filter by product ID if provided, otherwise apply general filters
     if (productId) {
@@ -83,6 +84,7 @@ export async function GET(request) {
 // POST -> Menambahkan produk baru ke tabel products
 export async function POST(request) {
   try {
+    await verifyAdmin(request);
     const supabase = getSupabaseClient();
 
     let body;
@@ -159,6 +161,7 @@ export async function POST(request) {
 // PUT -> Memperbarui data produk dan variannya di tabel products
 export async function PUT(request) {
   try {
+    await verifyAdmin(request);
     const supabase = getSupabaseClient();
 
     let body;
@@ -234,6 +237,7 @@ export async function PUT(request) {
 // DELETE -> Menghapus produk dari tabel products berdasarkan ID
 export async function DELETE(request) {
   try {
+    await verifyAdmin(request);
     const supabase = getSupabaseClient();
     let productId;
 
