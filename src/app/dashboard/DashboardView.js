@@ -50,7 +50,7 @@ export default function DashboardView({ initialProducts }) {
       window.history.replaceState({}, document.title, cleanUrl);
     }
   }, []);
-
+  
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,6 +64,7 @@ export default function DashboardView({ initialProducts }) {
       setUser(currentUser);
 
       try {
+        // Ambil role user dari API /api/users
         const res = await fetch(`/api/users?userId=${currentUser.id}`);
         const result = await res.json();
 
@@ -83,7 +84,7 @@ export default function DashboardView({ initialProducts }) {
     };
 
     checkUser();
-
+    // Set up listener untuk perubahan status autentikasi
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         window.location.replace("/login");

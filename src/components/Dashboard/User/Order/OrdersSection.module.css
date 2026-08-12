@@ -157,7 +157,7 @@
   flex-shrink: 0;
   min-width: 90px;
   cursor: pointer;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -174,14 +174,14 @@
 
 .filterBtnActive {
   background: var(--primary-accent) !important;
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   border-color: var(--primary-accent) !important;
   box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.25);
   transform: translateY(-1px);
 }
 
 .filterBtnActive svg {
-  stroke: #ffffff !important;
+  stroke: var(--text-primary) !important;
 }
 
 .filterIconWrapper {
@@ -204,8 +204,8 @@
   position: absolute;
   top: -6px;
   right: -10px;
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--primary-accent);
+  background:var(--primary-accent);
+  color: var(--primary-accent-text);
   font-size: 0.6rem;
   font-weight: 800;
   padding: 1px 5px;
@@ -217,8 +217,8 @@
 }
 
 .filterBtnActive .filterCount {
-  background: #ffffff !important;
-  color: var(--primary-accent) !important;
+  background: var(--primary-accent) !important;
+  color: var(--primary-accent-text) !important;
   border-color: rgba(255, 255, 255, 0.8) !important;
 }
 
@@ -242,7 +242,7 @@
 .loadingText,
 .emptyText {
   font-family: var(--font-sans);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 0.9375rem;
   margin: 0;
 }

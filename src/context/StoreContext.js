@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/supabaseClient";
@@ -24,19 +25,19 @@ export function StoreProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [promoSettings, setPromoSettings] = useState(null);
-  const [cart, setCart] = useState(() => {
-    if (typeof window === "undefined") {
-      return { items: [] };
-    }
+  const [cart, setCart] = useState({ items: [] });
 
-    try {
-      const saved = localStorage.getItem("xar_cart");
-      return saved ? JSON.parse(saved) : { items: [] };
-    } catch (error) {
-      console.error("Gagal parsing cart:", error);
-      return { items: [] };
+// load cart dari localStorage SETELAH mount (client-only, post-hydration)
+useEffect(() => {
+  try {
+    const saved = localStorage.getItem("xar_cart");
+    if (saved) {
+      setCart(JSON.parse(saved));
     }
-  });
+  } catch (error) {
+    console.error("Gagal parsing cart:", error);
+  }
+}, []); // cuma jalan sekali saat mount
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [isCartSynced, setIsCartSynced] = useState(false);
 
@@ -108,82 +109,94 @@ export function StoreProvider({ children }) {
     fetchProducts();
   }, [fetchProducts]);
 
-  const handleUserData = useCallback(async (currentUser, token) => {
-    const userId = currentUser.id || currentUser.uid;
-    const defaultPhoto = currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || "";
+const handleUserData = useCallback(async (currentUser, token) => {
+  const userId = currentUser.id || currentUser.uid;
+  const defaultPhoto = currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || "";
 
-    let mergedUser = {
-      ...currentUser,
-      uid: userId,
-      photoURL: defaultPhoto,
-    };
+  let mergedUser = {
+    ...currentUser,
+    uid: userId,
+    photoURL: defaultPhoto,
+  };
 
-    setCustomer({
-      name:
-        currentUser.user_metadata?.full_name ||
-        currentUser.user_metadata?.name ||
-        currentUser.email?.split("@")[0] ||
-        "User",
-      email: currentUser.email || "",
-      phone: currentUser.phone || "",
-    });
+  setCustomer({
+    name:
+      currentUser.user_metadata?.full_name ||
+      currentUser.user_metadata?.name ||
+      currentUser.email?.split("@")[0] ||
+      "User",
+    email: currentUser.email || "",
+    phone: currentUser.phone || "",
+  });
 
+  try {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await fetch(`/api/users?userId=${userId}`, { headers });
+    const result = await res.json();
+    if (res.ok && result.exists && result.data) {
+      const dbData = result.data;
+      const photoFromDb = dbData.photo_url || defaultPhoto;
+
+      mergedUser = {
+        ...currentUser,
+        uid: userId,
+        ...dbData,
+        photoURL: photoFromDb,
+        photo_url: photoFromDb,
+      };
+
+      setCustomer({
+        name:
+          dbData.full_name ||
+          dbData.username ||
+          currentUser.user_metadata?.full_name ||
+          currentUser.email?.split("@")[0] ||
+          "User",
+        email: currentUser.email || "",
+        phone: dbData.phone || currentUser.phone || "",
+      });
+    }
+  } catch (err) {
+    console.error("Gagal memuat profil user untuk navbar:", err);
+  }
+
+  setUser(mergedUser);
+
+  // Sync cart after user is set
+  if (!isCartSynced) {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`/api/users?userId=${userId}`, { headers });
-      const result = await res.json();
-      if (res.ok && result.exists && result.data) {
-        const dbData = result.data;
-        const photoFromDb = dbData.photo_url || defaultPhoto;
+      const res = await fetch('/api/cart', { headers });
+      if (res.ok) {
+        const remoteCart = await res.json();
 
-        mergedUser = {
-          ...currentUser,
-          uid: userId,
-          ...dbData,
-          photoURL: photoFromDb,
-          photo_url: photoFromDb,
-        };
+        // ⬇️ pakai functional update, JANGAN baca `cart` dari closure
+        setCart((localCart) => {
+          const finalCart = remoteCart && remoteCart.items.length > 0 ? remoteCart : localCart;
 
-        setCustomer({
-          name:
-            dbData.full_name ||
-            dbData.username ||
-            currentUser.user_metadata?.full_name ||
-            currentUser.email?.split("@")[0] ||
-            "User",
-          email: currentUser.email || "",
-          phone: dbData.phone || currentUser.phone || "",
+          // sync ke DB kalau local cart yang menang & ada isinya
+          if (finalCart.items.length > 0) {
+            syncCartWithDB(finalCart).catch((error) => {
+              console.error("Gagal menyinkronkan keranjang setelah merge:", error);
+            });
+          }
+
+          return finalCart;
         });
+
+        setIsCartSynced(true);
       }
-    } catch (err) {
-      console.error("Gagal memuat profil user untuk navbar:", err);
+    } catch (error) {
+      console.error("Gagal menyinkronkan keranjang:", error);
     }
+  }
+}, [isCartSynced, syncCartWithDB]); // ⬅️ `cart` DIHAPUS dari dependency
 
-    setUser(mergedUser);
-
-    // Sync cart after user is set
-    if (!isCartSynced) {
-        try {
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const res = await fetch('/api/cart', { headers });
-            if (res.ok) {
-                const remoteCart = await res.json();
-                const localCart = cart;
-
-                // Simple merge: remote cart wins if it has items.
-                const finalCart = remoteCart && remoteCart.items.length > 0 ? remoteCart : localCart;
-                setCart(finalCart);
-                setIsCartSynced(true);
-                // Sync back to DB in case local cart was chosen and had items
-                if (finalCart.items.length > 0) {
-                    await syncCartWithDB(finalCart);
-                }
-            }
-        } catch (error) {
-            console.error("Gagal menyinkronkan keranjang:", error);
-        }
-    }
-  }, [cart, isCartSynced, syncCartWithDB]);
+  // ref untuk selalu pegang versi terbaru handleUserData tanpa jadi dependency effect
+  const handleUserDataRef = useRef(null);
+  useEffect(() => {
+    handleUserDataRef.current = handleUserData;
+  }, [handleUserData]);
 
   useEffect(() => {
     let subscription = null;
@@ -194,11 +207,11 @@ export function StoreProvider({ children }) {
       const currentUser = session?.user || null;
 
       if (currentUser) {
-        await handleUserData(currentUser, session?.access_token);
+        await handleUserDataRef.current(currentUser, session?.access_token);
       } else {
         setUser(null);
         setCustomer({ name: "", email: "", phone: "" });
-        setIsCartSynced(false); // Reset sync status on logout
+        setIsCartSynced(false);
       }
 
       const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
@@ -206,11 +219,11 @@ export function StoreProvider({ children }) {
         const currentUser = session?.user || null;
 
         if (currentUser) {
-          await handleUserData(currentUser, session?.access_token);
+          await handleUserDataRef.current(currentUser, session?.access_token);
         } else {
           setUser(null);
           setCustomer({ name: "", email: "", phone: "" });
-          setIsCartSynced(false); // Reset sync status on logout
+          setIsCartSynced(false);
         }
       });
       subscription = authListener?.subscription;
@@ -221,7 +234,7 @@ export function StoreProvider({ children }) {
     return () => {
       if (subscription) subscription.unsubscribe();
     };
-  }, [handleUserData]);
+  }, []); // ⬅️ dependency KOSONG — cuma jalan sekali saat mount
 
   const cartQuantity =
     cart?.items?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) ||

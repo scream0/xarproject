@@ -30,6 +30,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     // 2. Terapkan variable font ke html class
     <html lang="en" className={`${tenor.variable} ${lato.variable}`}>
+      <head>
+        {/* untuk live production ganti ke app.midtrans.com , sama client production */}
+        <Script
+          src="https://app.sandbox.midtrans.com/snap/snap.js" // Gunakan 'app.midtrans.com' untuk mode Production
+          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY} // GANTI DENGAN CLIENT KEY ANDA (Bukan Server Key!)
+          strategy="afterInteractive"
+        />
+      </head>
       <body className="font-lato antialiased">
         <ThemeProvider>
           <StoreProvider>
@@ -48,12 +56,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             />
           </StoreProvider>
         </ThemeProvider>
-        {/* untuk live production ganti ke app.midtrans.com , sama client production */}
-        <Script
-          src="https://app.sandbox.midtrans.com/snap/snap.js" // Gunakan 'app.midtrans.com' untuk mode Production
-          data-client-key="Mid-client-mxAh3ynr_EVMKYpi" // GANTI DENGAN CLIENT KEY ANDA (Bukan Server Key!)
-          strategy="beforeInteractive"
-        />
       </body>
     </html>
   );

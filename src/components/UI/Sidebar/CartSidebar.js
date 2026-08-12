@@ -30,10 +30,6 @@ export function CartSidebar() {
 
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, cartId: null });
 
-  const isMounted = typeof window !== "undefined";
-
-  if (!isMounted) return null;
-
   const closeSidebar = () => setIsCartOpen(false);
 
   const productList = Array.isArray(products) ? products : products?.data || [];

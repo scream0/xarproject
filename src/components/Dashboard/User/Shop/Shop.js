@@ -16,8 +16,9 @@ import { ShopSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import shopConfig from "@/data/ui/shopConfig.json";
 
 const PRODUCTS_PER_PAGE = 12;
+const EMPTY_PRODUCTS = [];
 
-export default function Shop({ initialProducts = [], initialTotalProducts = 0, searchQuery = "", onBukaDetail }) {
+export default function Shop({ initialProducts = EMPTY_PRODUCTS, initialTotalProducts = 0, searchQuery = "", onBukaDetail }) {
   const { addToCart, products: contextProducts, activePromo, cartQuantity, setIsCartOpen } = useStore();
   const [products, setProducts] = useState(initialProducts || []);
   const [orderItemsMap, setOrderItemsMap] = useState({});

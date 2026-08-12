@@ -20,6 +20,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   const {
     products,
@@ -65,7 +66,9 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const isMounted = typeof window !== "undefined";
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (cartQuantity > 0) {
@@ -204,7 +207,7 @@ export function Navbar() {
               name={config?.features?.cart?.icon}
               className={`${styles.svgIcon} ${animate ? styles.cartBounce : ""}`}
             />
-            {isMounted && cartQuantity > 0 && (
+            {isClient && cartQuantity > 0 && (
               <span className={styles.quantityBadge}>{cartQuantity}</span>
             )}
           </button>
