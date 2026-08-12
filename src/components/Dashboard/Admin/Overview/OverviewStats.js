@@ -4,6 +4,7 @@ import styles from "./OverviewStats.module.css";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewConfig.json";
 import { StatsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+import { calculateDashboardStats } from "@/utils/dashboardSummary";
 
 export default function OverviewStats() {
   const [stats, setStats] = useState({
@@ -17,58 +18,16 @@ export default function OverviewStats() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [productsRes, ordersRes] = await Promise.all([
-        fetch("/api/products"),
-        fetch("/api/orders"),
-      ]);
-      const productsResult = await productsRes.json();
+      const res = await fetch("/api/products?limit=200");
+      const productsResult = await res.json();
+      const products = (productsResult.data || productsResult.products || []).filter(Boolean);
+
+      const ordersRes = await fetch("/api/orders?limit=200");
       const ordersResult = await ordersRes.json();
+      const orders = (ordersResult.data || ordersResult.orders || []).filter(Boolean);
 
-      const products = (
-        productsResult.data ||
-        productsResult.products ||
-        []
-      ).filter(Boolean);
-
-      // filter(Boolean) membuang elemen null/undefined agar perhitungan
-      // statistik tidak pernah crash walau ada data yang rusak/kosong dari API
-      const transactions = (
-        ordersResult.data ||
-        ordersResult.orders ||
-        []
-      ).filter(Boolean);
-
-      const activeProductsCount = products.length;
-      const lowStockCount = products.reduce((count, product) => {
-        return (
-          count +
-          (product.variants?.filter((v) => Number(v.stock ?? v.stok ?? 0) <= 5)
-            .length || 0)
-        );
-      }, 0);
-
-      const totalRevenue = transactions.reduce((total, curr) => {
-        const status = (curr.status || "").toLowerCase();
-        if (
-          [
-            "success",
-            "processing",
-            "shipping",
-            "completed",
-            "settlement",
-          ].includes(status)
-        ) {
-          return total + Number(curr.amount || curr.price || 0);
-        }
-        return total;
-      }, 0);
-
-      setStats({
-        totalRevenue,
-        totalOrders: transactions.length,
-        activeProducts: activeProductsCount,
-        lowStockCount,
-      });
+      const summary = calculateDashboardStats({ products, orders });
+      setStats(summary);
     } catch (error) {
       console.error("Gagal mengambil data dashboard:", error);
       toast.error("Gagal memuat data dashboard");

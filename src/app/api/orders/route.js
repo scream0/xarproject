@@ -62,7 +62,7 @@ export async function GET(request) {
 
       const { data, error, count } = await supabaseAdmin
         .from("orders")
-        .select("*", { count: "exact" })
+        .select("id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,created_at,updated_at", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
       
@@ -88,7 +88,7 @@ export async function GET(request) {
     // 1. Fetch User's Primary Address
     const { data: primaryAddressData, error: addressError } = await supabaseAdmin
       .from("addresses")
-      .select("*")
+      .select("id,user_id,is_primary,label,recipient_name,recipient_phone,street,city,province,postal_code")
       .eq("user_id", userId)
       .order("is_primary", { ascending: false }) // primary first
       .limit(1)
@@ -101,7 +101,7 @@ export async function GET(request) {
     // 2. Fetch User's Orders
     const { data: ordersData, error: ordersError } = await supabaseAdmin
       .from("orders")
-      .select("*")
+      .select("id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,notes,created_at,updated_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 

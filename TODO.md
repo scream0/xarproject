@@ -42,6 +42,24 @@ Catatan update 12 Agustus 2026:
 
 Catatan performa: dashboard admin tidak menunjukkan pola request berulang/loop pada render; `OrdersManagement` menggunakan `fetch` paginated dan filter di server, sementara `OperationsCenter` memuat data operasional dalam satu batch sekaligus. Tidak ditemukan N+1 yang relevan pada path admin/user yang saat ini aktif.
 
+## Latency reduction / performance tuning
+
+- [ ] Audit waktu respon API utama: `/api/products`, `/api/orders`, `/api/admin/orders`, `/api/notifications`, `/api/profile`.
+- [ ] Batasi jumlah field yang di-select pada query Supabase agar payload lebih kecil dan query lebih cepat.
+- [ ] Tambahkan pagination / cursor pada endpoint dashboard admin dan daftar pesanan yang bisa tumbuh besar.
+- [ ] Gunakan server-side aggregation atau RPC untuk dashboard overview agar tidak menangkap data besar berulang kali.
+- [ ] Cache setting publik dan metadata toko (`store_config`, promo, hero, footer, contact) di layer server atau CDN untuk mengurangi hit DB.
+- [ ] Optimalkan render daftar produk: batasi re-render, gabungkan state, dan hindari fetch berulang pada mount.
+- [ ] Audit component yang memuat data besar di client (`OverviewStats`, `OrdersManagement`, `OperationsCenter`, `UserProfil`, `NotificationsSection`) untuk reduce hydration cost.
+- [ ] Hapus request duplikat/loop di client, terutama pada mount effect yang memanggil fetch berulang dengan dependencies tidak stabil.
+- [ ] Gunakan `React.memo` / `useMemo` / `useCallback` pada komponen berat yang menerima data besar atau dipanggil berulang.
+- [ ] Untuk data statis atau jarang berubah, pindahkan ke cache atau precompute di server dan hindari refetch setiap navigasi.
+- [ ] Audit bundle size dan chunk splitting untuk halaman dashboard/admin yang berat.
+- [ ] Pastikan semua gambar produk menggunakan ukuran dan format yang tepat agar tidak memakan bandwidth berlebih.
+- [ ] Validasi latency puncak di Supabase dengan query yang paling sering dipakai: produk, order, notifications, profile, dan reviewer.
+- [ ] Simpan baseline latency per endpoint sebelum/sesudah tuning untuk memantau efektivitas peningkatan.
+- [ ] Buat alert atau dashboard sederhana untuk p95 latency API dan page load untuk observability di production.
+
 ## Pengujian & deployment
 
 - [x] Unit/integration test order, webhook, dan auth redirect lulus.

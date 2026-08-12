@@ -49,11 +49,13 @@ export async function GET(request) {
     const page = Math.max(1, Number(searchParams.get("page") || 1));
     const limit = Math.max(1, Math.min(100, Number(searchParams.get("limit") || 20)));
     const offset = (page - 1) * limit;
+    const ORDER_LIST_SELECT =
+      "id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,created_at,updated_at";
 
     // Base query with count for pagination
     let query = supabaseAdmin
       .from("orders")
-      .select("*", { count: "exact" });
+      .select(ORDER_LIST_SELECT, { count: "exact" });
 
     // Apply filtering by status
     if (status) {
