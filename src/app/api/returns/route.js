@@ -10,12 +10,13 @@ async function identity(request) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !user) throw new Error("Authentication required.");
 
-  let isAdmin = user.user_metadata?.role === "admin";
-  if (!isAdmin) {
-    // Diperbarui dari tabel "users" ke tabel "profiles"
-    const { data: profile } = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role === "admin") isAdmin = true;
-  }
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const isAdmin = ["admin", "superadmin"].includes(String(profile?.role || "").toLowerCase());
   return { uid: user.id, admin: isAdmin };
 }
 
@@ -56,7 +57,7 @@ export async function POST(request) {
     const { data: order, error: orderErr } = await supabaseAdmin.from("orders").select("id, user_id, status").eq("id", orderId).single();
     if (orderErr || !order || order.user_id !== user.uid) return NextResponse.json({ error: "Order not found." }, { status: 404 });
     const orderStatus = (order.status || "").toLowerCase();
-    if (orderStatus !== "completed" && orderStatus !== "delivered") {
+    if (!["completed", "success", "settlement"].includes(orderStatus)) {
       return NextResponse.json({ error: "Returns can be requested after an order is completed." }, { status: 400 });
     }
 

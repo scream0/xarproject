@@ -32,7 +32,7 @@ export function SearchForm({
       {searchQuery.trim() !== "" && (
         <div className={styles.searchResults}>
           {filteredProdukItems?.length > 0 ? (
-            filteredProdukItems.map((item) => {
+            filteredProdukItems.map((item, index) => {
               // Menyesuaikan dengan skema database terpusat
               const availableVariants =
                 item.variants?.filter((v) => (v.stock ?? 0) > 0) || [];
@@ -50,7 +50,7 @@ export function SearchForm({
 
               return (
                 <div
-                  key={item?.id || Math.random()}
+                  key={item?.id || `${item?.name || "product"}-${index}`}
                   className={`${styles.searchResultItem} ${!isAvailable ? styles.disabled : ""}`}
                   onClick={() =>
                     isAvailable && onResultClick && onResultClick(item)

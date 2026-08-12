@@ -29,8 +29,14 @@ const FadeInSection = ({
   </motion.div>
 );
 
+type ProductLike = {
+  id?: string;
+  name?: string;
+  [key: string]: unknown;
+};
+
 export default function Home() {
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductLike | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart, rupiah } = useStore();
 
@@ -39,7 +45,7 @@ export default function Home() {
   // Client Component tidak boleh berupa async function, jadi data fetching
   // server-side dipindahkan/dihapus dari sini.
 
-  const bukaDetail = (item: any) => {
+  const bukaDetail = (item: ProductLike) => {
     setSelectedProduct(item);
     setIsModalOpen(true);
   };

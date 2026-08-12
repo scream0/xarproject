@@ -113,7 +113,9 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
 
   useEffect(() => {
     if (!resolvedOrderId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("ID Pesanan tidak ditemukan di URL.");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
@@ -194,7 +196,7 @@ INVOICE TRANSAKSI XAR
 =====================================
 ID Transaksi     : ${order.id}
 Nomor Pesanan    : ${order.order_number || "-"}
-Tanggal          : ${new Date(order.createdAt || order.created_at || Date.now()).toLocaleString("id-ID")}
+Tanggal          : ${new Date(order.createdAt || order.created_at || "1970-01-01").toLocaleString("id-ID")}
 Status           : ${getStatusInfo(order.status).label}
 -------------------------------------
 DETAIL PRODUK
@@ -321,7 +323,7 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
           <div className={styles.summaryGrid}>
             <div>
               <p className={styles.label}>Tanggal</p>
-              <strong>{new Date(order.createdAt || order.created_at || Date.now()).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</strong>
+              <strong>{new Date(order.createdAt || order.created_at || "1970-01-01").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</strong>
             </div>
             <div>
               <p className={styles.label}>Metode Pembayaran</p>

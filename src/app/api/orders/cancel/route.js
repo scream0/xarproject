@@ -14,12 +14,9 @@ async function verifyUser(request) {
     throw new Error("Unauthorized: Invalid Authorization header format.");
   }
 
-  const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
-  if (error) {
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) {
     throw new Error(`Authentication failed: ${error.message}`);
-  }
-  if (!user) {
-    throw new Error("Authentication failed: User not found.");
   }
   return user;
 }

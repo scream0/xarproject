@@ -3,6 +3,15 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+const ALLOWED_ORDER_STATUSES = new Set([
+  "pending",
+  "processing",
+  "completed",
+  "cancelled",
+  "settlement",
+  "success",
+]);
+
 // Helper for admin verification, adapted from the refactored settings route
 async function verifyAdmin(request) {
   const token = request.headers.get("authorization")?.split(" ")[1];
@@ -24,7 +33,8 @@ async function verifyAdmin(request) {
     .eq("id", user.id)
     .single();
 
-  if (dbError || !adminUser || adminUser.role !== "admin") {
+  const normalizedRole = String(adminUser?.role || "").toLowerCase();
+  if (dbError || !adminUser || !["admin", "superadmin"].includes(normalizedRole)) {
     console.error("DB error or role mismatch:", dbError?.message);
     throw new Error("Forbidden: User is not an admin");
   }
@@ -62,6 +72,13 @@ async function handleShippingUpdate(request, { params }) {
     }
 
     const trackingNumber = body.trackingNumber || body.tracking_number || null;
+    const requestedStatus = (body.status || body.newStatus || "").toLowerCase();
+    if (requestedStatus && !ALLOWED_ORDER_STATUSES.has(requestedStatus)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid order status" },
+        { status: 400 },
+      );
+    }
     
     // Merge address details into a single JSONB object
     const shippingAddress = body.shippingAddress || body.shipping_address || orderData.shipping_address || {};

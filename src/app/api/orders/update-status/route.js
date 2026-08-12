@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
+const ALLOWED_ORDER_STATUSES = new Set([
+  "pending",
+  "processing",
+  "completed",
+  "cancelled",
+  "settlement",
+  "success",
+]);
 
 async function verifyAdmin(request) {
     const authHeader = request.headers.get("Authorization");
@@ -9,15 +17,17 @@ async function verifyAdmin(request) {
     const token = authHeader.split("Bearer ")[1];
     if (!token) throw new Error("Unauthorized: Invalid token format");
     
-    const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
-    if (error) throw new Error(`Authentication failed: ${error.message}`);
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !user) throw new Error(`Authentication failed: ${error?.message || "Invalid token"}`);
 
     const { data: profile, error: dbError } = await supabaseAdmin
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-    if (dbError || profile?.role !== "admin") {
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const normalizedRole = String(profile?.role || "").toLowerCase();
+    if (dbError || !profile || !["admin", "superadmin"].includes(normalizedRole)) {
         throw new Error("Forbidden: Admin access required");
     }
     return user;
@@ -34,6 +44,9 @@ async function handleUpdateStatus(request) {
 
     if (!orderId || !targetStatus) {
       return NextResponse.json({ error: "orderId and status are required" }, { status: 400 });
+    }
+    if (!ALLOWED_ORDER_STATUSES.has(targetStatus)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
     // Fetch the order and its items to get the current status and item list
@@ -54,33 +67,21 @@ async function handleUpdateStatus(request) {
     const isSuccessStatus = ["success", "settlement", "processing"].includes(targetStatus);
     const wasAlreadySuccess = ["success", "settlement", "processing"].includes(currentStatus);
 
+    // If status moves to a success state for the first time, decrement stock atomically.
     if (isSuccessStatus && !wasAlreadySuccess) {
-      const items = orderData.items || [];
-      for (const item of items) {
-        const { data: product, error } = await supabaseAdmin
-          .from("products")
-          .select("id, variants")
-          .eq("id", item.product_id)
-          .single();
+      const itemsToDecrement = (orderData.items || []).map(item => ({
+        product_id: item.product_id,
+        variant_name: item.variant_name,
+        quantity: item.quantity,
+      }));
 
-        if (error || !product) continue;
-
-        let variantUpdated = false;
-        const updatedVariants = product.variants.map((v) => {
-          // Assuming variant is matched by name/size
-          if (v.size === item.variant_name) {
-            const currentStock = v.stock || 0;
-            v.stock = Math.max(0, currentStock - item.quantity);
-            variantUpdated = true;
-          }
-          return v;
+      if (itemsToDecrement.length > 0) {
+        const { error: decrementError } = await supabaseAdmin.rpc('decrement_stock', {
+          items_to_decrement: itemsToDecrement,
         });
 
-        if (variantUpdated) {
-          await supabaseAdmin
-            .from("products")
-            .update({ variants: updatedVariants })
-            .eq("id", product.id);
+        if (decrementError) {
+          console.error(`Atomic stock decrement failed for order ${orderId}:`, decrementError);
         }
       }
     }

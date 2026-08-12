@@ -33,7 +33,8 @@ async function verifyAdmin(request) {
     .eq("id", user.id)
     .single();
 
-  if (dbError || !adminUser || adminUser.role !== "admin") {
+  const normalizedRole = String(adminUser?.role || "").toLowerCase();
+  if (dbError || !adminUser || !["admin", "superadmin"].includes(normalizedRole)) {
     throw new Error("Forbidden: User is not an admin");
   }
 }

@@ -9,83 +9,52 @@ import editConfig from "@/data/ui/editProductConfig.json";
 export function useProductForm(initialProduct = null, onSuccess) {
   const isEditMode = Boolean(initialProduct);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "Parfum",
-    description: "",
-    weight: 250,
-    length: 0,
-    width: 0,
-    height: 0,
-    status: "published",
-    province: "",
-    city: "",
-    cityId: "",
-    stockLocation: "",
+  const getInitialFormData = () => ({
+    name: initialProduct?.name || "",
+    category: initialProduct?.category || "Parfum",
+    description: initialProduct?.description || "",
+    weight: Number(initialProduct?.weight) || 250,
+    length: Number(initialProduct?.length) || 0,
+    width: Number(initialProduct?.width) || 0,
+    height: Number(initialProduct?.height) || 0,
+    status: initialProduct?.status || "published",
+    province: initialProduct?.province || "",
+    city: initialProduct?.city || "",
+    cityId: initialProduct?.cityId || "",
+    stockLocation: initialProduct?.stockLocation || "",
   });
-  const [variants, setVariants] = useState([
-    {
-      size: "10ml",
-      price: "",
-      stock: 0,
-      sku: "",
-      imageFile: null,
-      imageUrl: "",
-      imagePublicId: "",
-    },
-  ]);
-  const [mainImage, setMainImage] = useState({
-    file: null,
-    previewUrl: "",
-    publicId: "",
-  });
-  const [isUploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    if (isEditMode && initialProduct) {
-      setFormData({
-        name: initialProduct.name || "",
-        category: initialProduct.category || "Parfum",
-        description: initialProduct.description || "",
-        weight: Number(initialProduct.weight) || 250,
-        length: Number(initialProduct.length) || 0,
-        width: Number(initialProduct.width) || 0,
-        height: Number(initialProduct.height) || 0,
-        status: initialProduct.status || "published",
-        province: initialProduct.province || "",
-        city: initialProduct.city || "",
-        cityId: initialProduct.cityId || "",
-        stockLocation: initialProduct.stockLocation || "",
-      });
-      setVariants(
-        initialProduct.variants?.map((v) => ({
-          size: v.size || "",
-          price: v.price || "",
-          stock: v.stock ?? 0,
-          sku: v.sku || "",
-          imageUrl: v.image_url || v.imageUrl || "",
-          imagePublicId: v.imagePublicId || "",
-          imageFile: null,
-        })) || [
-          {
-            size: "10ml",
-            price: "",
-            stock: 0,
-            sku: "",
-            imageFile: null,
-            imageUrl: "",
-            imagePublicId: "",
-          },
-        ],
-      );
-      setMainImage({
-        file: null,
-        previewUrl: initialProduct.image_url || initialProduct.imageUrl || "",
-        publicId:
-          initialProduct.image_public_id || initialProduct.imagePublicId || "",
-      });
-    }
-  }, [initialProduct, isEditMode]);
+  const getInitialVariants = () =>
+    initialProduct?.variants?.map((v) => ({
+      size: v.size || "",
+      price: v.price || "",
+      stock: v.stock ?? 0,
+      sku: v.sku || "",
+      imageUrl: v.image_url || v.imageUrl || "",
+      imagePublicId: v.imagePublicId || "",
+      imageFile: null,
+    })) || [
+      {
+        size: "10ml",
+        price: "",
+        stock: 0,
+        sku: "",
+        imageFile: null,
+        imageUrl: "",
+        imagePublicId: "",
+      },
+    ];
+
+  const getInitialMainImage = () => ({
+    file: null,
+    previewUrl: initialProduct?.image_url || initialProduct?.imageUrl || "",
+    publicId: initialProduct?.image_public_id || initialProduct?.imagePublicId || "",
+  });
+
+  const [formData, setFormData] = useState(getInitialFormData);
+  const [variants, setVariants] = useState(getInitialVariants);
+  const [mainImage, setMainImage] = useState(getInitialMainImage);
+  const [isUploading, setUploading] = useState(false);
 
   const handleFormChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

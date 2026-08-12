@@ -14,7 +14,6 @@ import { AppIcon } from "@/components/UI/Icon/AppIcon";
 export function Navbar() {
   const [activePanel, setActivePanel] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isMounted, setIsMounted] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -66,12 +65,11 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = typeof window !== "undefined";
 
   useEffect(() => {
     if (cartQuantity > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAnimate(true);
       const timer = setTimeout(() => setAnimate(false), 400);
       return () => clearTimeout(timer);

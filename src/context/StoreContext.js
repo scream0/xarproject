@@ -24,8 +24,19 @@ export function StoreProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [promoSettings, setPromoSettings] = useState(null);
-  const [cart, setCart] = useState({ items: [] });
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [cart, setCart] = useState(() => {
+    if (typeof window === "undefined") {
+      return { items: [] };
+    }
+
+    try {
+      const saved = localStorage.getItem("xar_cart");
+      return saved ? JSON.parse(saved) : { items: [] };
+    } catch (error) {
+      console.error("Gagal parsing cart:", error);
+      return { items: [] };
+    }
+  });
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [isCartSynced, setIsCartSynced] = useState(false);
 
@@ -71,23 +82,9 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("xar_cart");
-      if (saved) {
-        try {
-          setCart(JSON.parse(saved));
-        } catch (e) {
-          console.error("Gagal parsing cart:", e);
-        }
-      }
-      setIsInitialized(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isInitialized && typeof window !== "undefined") {
       localStorage.setItem("xar_cart", JSON.stringify(cart));
     }
-  }, [cart, isInitialized]);
+  }, [cart]);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -107,48 +104,11 @@ export function StoreProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProducts();
   }, [fetchProducts]);
 
-  useEffect(() => {
-    let subscription = null;
-
-    const initAuth = async () => {
-      const { data: { session } } = await auth.getSession();
-      setCurrentSession(session);
-      const currentUser = session?.user || null;
-
-      if (currentUser) {
-        await handleUserData(currentUser, session?.access_token);
-      } else {
-        setUser(null);
-        setCustomer({ name: "", email: "", phone: "" });
-        setIsCartSynced(false); // Reset sync status on logout
-      }
-
-      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
-        setCurrentSession(session);
-        const currentUser = session?.user || null;
-
-        if (currentUser) {
-          await handleUserData(currentUser, session?.access_token);
-        } else {
-          setUser(null);
-          setCustomer({ name: "", email: "", phone: "" });
-          setIsCartSynced(false); // Reset sync status on logout
-        }
-      });
-      subscription = authListener?.subscription;
-    };
-
-    initAuth();
-
-    return () => {
-      if (subscription) subscription.unsubscribe();
-    };
-  }, []);
-
-  const handleUserData = async (currentUser, token) => {
+  const handleUserData = useCallback(async (currentUser, token) => {
     const userId = currentUser.id || currentUser.uid;
     const defaultPhoto = currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || "";
 
@@ -223,7 +183,45 @@ export function StoreProvider({ children }) {
             console.error("Gagal menyinkronkan keranjang:", error);
         }
     }
-  };
+  }, [cart, isCartSynced, syncCartWithDB]);
+
+  useEffect(() => {
+    let subscription = null;
+
+    const initAuth = async () => {
+      const { data: { session } } = await auth.getSession();
+      setCurrentSession(session);
+      const currentUser = session?.user || null;
+
+      if (currentUser) {
+        await handleUserData(currentUser, session?.access_token);
+      } else {
+        setUser(null);
+        setCustomer({ name: "", email: "", phone: "" });
+        setIsCartSynced(false); // Reset sync status on logout
+      }
+
+      const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        setCurrentSession(session);
+        const currentUser = session?.user || null;
+
+        if (currentUser) {
+          await handleUserData(currentUser, session?.access_token);
+        } else {
+          setUser(null);
+          setCustomer({ name: "", email: "", phone: "" });
+          setIsCartSynced(false); // Reset sync status on logout
+        }
+      });
+      subscription = authListener?.subscription;
+    };
+
+    initAuth();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
+  }, [handleUserData]);
 
   const cartQuantity =
     cart?.items?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) ||

@@ -1,6 +1,18 @@
 "use client";
 import { useEffect, useRef } from "react";
 
+type Particle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  baseAlpha: number;
+  pulseSpeed: number;
+  pulseAngle: number;
+  color: string;
+};
+
 export function HeroParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -19,7 +31,7 @@ export function HeroParticles() {
       "rgba(255, 255, 255, 0.6)",  // Kristal Putih Murni
     ];
 
-    let particles: any[] = [];
+    const particles: Particle[] = [];
     const mouse = { x: -1000, y: -1000, radius: 180 };
 
     const resize = () => {
@@ -71,13 +83,13 @@ export function HeroParticles() {
         if (p.x > canvas.width) p.x = 0;
 
         // Interaksi lembut dengan kursor mouse (partikel bergeser elegan saat kursor mendekat)
-        let dx = mouse.x - p.x;
-        let dy = mouse.y - p.y;
-        let distance = Math.sqrt(dx * dx + dy * dy);
+        const dx = mouse.x - p.x;
+        const dy = mouse.y - p.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < mouse.radius) {
-          let angle = Math.atan2(dy, dx);
-          let force = (mouse.radius - distance) / mouse.radius;
+          const angle = Math.atan2(dy, dx);
+          const force = (mouse.radius - distance) / mouse.radius;
           p.x -= Math.cos(angle) * force * 3;
           p.y -= Math.sin(angle) * force * 3;
         }

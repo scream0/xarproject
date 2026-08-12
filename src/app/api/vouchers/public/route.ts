@@ -22,8 +22,9 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ success: true, vouchers });
-  } catch (error: any) {
-    console.error("Unhandled error fetching public vouchers:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Unhandled error fetching public vouchers:", message);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

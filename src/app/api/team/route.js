@@ -9,12 +9,13 @@ async function admin(request) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !user) throw new Error("Authentication required.");
 
-  let isAdmin = user.user_metadata?.role === "admin";
-  if (!isAdmin) {
-    // Diperbarui dari tabel "users" ke tabel "profiles"
-    const { data: profile } = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role === "admin") isAdmin = true;
-  }
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const isAdmin = ["admin", "superadmin"].includes(String(profile?.role || "").toLowerCase());
   if (!isAdmin) throw new Error("Admin access required.");
   return user;
 }
@@ -104,7 +105,7 @@ export async function PUT(request) {
       if (!["admin", "staff", "customer"].includes(role)) {
         return NextResponse.json({ error: "Invalid role." }, { status: 400 });
       }
-      if (userId === actor.id && role !== "admin") {
+      if (userId === actor.id && !["admin", "superadmin"].includes(String(role).toLowerCase())) {
         return NextResponse.json(
           { error: "You cannot remove your own admin access." },
           { status: 400 },

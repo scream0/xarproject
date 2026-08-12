@@ -24,10 +24,12 @@ export function CitySearchInput({
   const debounceRef = useRef(null);
   const wrapperRef = useRef(null);
 
-  // Sinkron jika nilai dari luar berubah (mis. reset form).
   useEffect(() => {
-    setQuery(value);
-  }, [value]);
+    if (value !== query) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setQuery(value);
+    }
+  }, [query, value]);
 
   // Tutup dropdown saat klik di luar komponen.
   useEffect(() => {

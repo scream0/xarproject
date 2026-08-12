@@ -5,13 +5,11 @@ import { verifyAdmin } from "@/lib/apiAuth";
 // Helper untuk inisialisasi Supabase secara aman (mencegah crash di tingkat modul)
 function getSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
-      "Supabase environment variables are missing or not loaded.",
+      "Supabase server environment variables are missing. SUPABASE_SERVICE_ROLE_KEY is required.",
     );
   }
   return createClient(supabaseUrl, supabaseKey);

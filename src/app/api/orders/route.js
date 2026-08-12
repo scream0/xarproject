@@ -3,6 +3,15 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+const ALLOWED_ORDER_STATUSES = new Set([
+  "pending",
+  "processing",
+  "completed",
+  "cancelled",
+  "settlement",
+  "success",
+]);
+
 // ========== AUTH HELPERS ==========
 
 async function verifyUser(request) {
@@ -29,7 +38,8 @@ async function verifyAdmin(request) {
         .eq("id", user.id)
         .single();
         
-    if (error || profile?.role !== "admin") {
+    const normalizedRole = String(profile?.role || "").toLowerCase();
+    if (error || !profile || !["admin", "superadmin"].includes(normalizedRole)) {
         throw new Error("Forbidden: Admin access required");
     }
     return user;
@@ -127,6 +137,9 @@ export async function PUT(request) {
     if (!orderId || !targetStatus) {
       return NextResponse.json({ error: "orderId and status are required" }, { status: 400 });
     }
+    if (!ALLOWED_ORDER_STATUSES.has(targetStatus)) {
+      return NextResponse.json({ error: "Invalid order status" }, { status: 400 });
+    }
 
     const { data: orderData, error: fetchError } = await supabaseAdmin
       .from("orders")
@@ -144,33 +157,23 @@ export async function PUT(request) {
     const isSuccessStatus = ["success", "settlement", "processing"].includes(normalizedTargetStatus);
     const wasAlreadySuccess = ["success", "settlement", "processing"].includes(currentStatus);
 
-    // If status is moving to a success state for the first time, decrement stock.
+    // If status is moving to a success state for the first time, decrement stock atomically.
     if (isSuccessStatus && !wasAlreadySuccess) {
-      const items = orderData.items || [];
-      for (const item of items) {
-        const { data: product, error } = await supabaseAdmin
-          .from("products")
-          .select("id, variants")
-          .eq("id", item.product_id)
-          .single();
+      const itemsToDecrement = (orderData.items || []).map(item => ({
+        product_id: item.product_id,
+        variant_name: item.variant_name,
+        quantity: item.quantity,
+      }));
 
-        if (error || !product) continue;
-
-        let variantUpdated = false;
-        const updatedVariants = product.variants.map((v) => {
-          if (v.size === item.variant_name) {
-            const currentStock = v.stock || 0;
-            v.stock = Math.max(0, currentStock - item.quantity);
-            variantUpdated = true;
-          }
-          return v;
+      if (itemsToDecrement.length > 0) {
+        const { error: decrementError } = await supabaseAdmin.rpc('decrement_stock', {
+          items_to_decrement: itemsToDecrement,
         });
 
-        if (variantUpdated) {
-          await supabaseAdmin
-            .from("products")
-            .update({ variants: updatedVariants })
-            .eq("id", product.id);
+        if (decrementError) {
+          // Log the error but don't fail the entire order update.
+          // Stock might be manually adjusted later.
+          console.error(`Atomic stock decrement failed for order ${orderId}:`, decrementError);
         }
       }
     }

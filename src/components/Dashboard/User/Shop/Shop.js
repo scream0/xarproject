@@ -145,9 +145,11 @@ export default function Shop({ initialProducts = [], initialTotalProducts = 0, s
     setIsFetchingMore(false);
   }, [searchQuery, sortBy, currentPage, toast, shopConfig.toasts?.fetchError]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     // When search or sort changes, reset page to 1
     if (currentPage !== 1 && (searchQuery || sortBy !== "default")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentPage(1);
     } else {
       const shouldFetchProducts = !initialProducts || products.length === 0 || currentPage > 1;

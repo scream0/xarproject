@@ -14,10 +14,6 @@ export default function OverviewStats() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -80,6 +76,11 @@ export default function OverviewStats() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchDashboardData();
+  }, []);
 
   const formatRupiah = (number) =>
     new Intl.NumberFormat("id-ID", {

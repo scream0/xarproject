@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/utils/rateLimit";
+
+const citiesRateLimiter = rateLimit({ limit: 30, windowMs: 60 * 1000 }); // 30 requests per minute
 
 export const dynamic = "force-dynamic";
 
 const RAJAONGKIR_BASE_URL =
   process.env.RAJAONGKIR_BASE_URL || "https://api.rajaongkir.com/starter";
-const API_KEY =
-  process.env.RAJAONGKIR_API_KEY || process.env.NEXT_PUBLIC_RAJAONGKIR_API_KEY;
+const API_KEY = process.env.RAJAONGKIR_API_KEY;
 
 // Cache in-memory sederhana: daftar kota jarang berubah (1 hari TTL)
 let citiesCache = { data: null, ts: 0 };
@@ -21,6 +23,11 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 jam
  * Respon: { success, count, cities: [{ city_id, city_name, province, postal_code, type }] }
  */
 export async function GET(request) {
+  const rateLimitResponse = await citiesRateLimiter(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+  
   try {
     const { searchParams } = new URL(request.url);
     const query = (searchParams.get("query") || "").toLowerCase();

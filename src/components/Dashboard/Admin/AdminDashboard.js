@@ -79,19 +79,6 @@ function getRoleLabel(role) {
   return "User";
 }
 
-function getLatencyTone(latencyMs) {
-  if (!latencyMs) {
-    return "Checking";
-  }
-  if (latencyMs <= 180) {
-    return "Excellent";
-  }
-  if (latencyMs <= 350) {
-    return "Stable";
-  }
-  return "Needs attention";
-}
-
 function formatTemplate(template, payload) {
   return String(template || "").replace(/\{(\w+)\}/g, (_, key) => {
     return Object.prototype.hasOwnProperty.call(payload, key)
@@ -136,7 +123,6 @@ export default function AdminDashboard() {
     reviews: "Customer feedback",
     analytics: "Performance insights",
     notifications: "Alerts & system updates",
-    customers: "Manage customers & roles",
     settings: "Storefront controls",
     operations: "Customers, promos & reports",
     orders: "Order pipeline & fulfillment",
@@ -356,19 +342,14 @@ export default function AdminDashboard() {
             </div>
           </section>
         );
-      case "customers":
-        return (
-          <section className={styles.workspaceArea}>
-            <div className={styles.workspaceInner}>
-              <UserManagement />
-            </div>
-          </section>
-        );
       case "operations":
         return (
           <section className={styles.workspaceArea}>
             <div className={styles.workspaceInner}>
               <OperationsCenter />
+              <div style={{ marginTop: "1.5rem" }}>
+                <UserManagement />
+              </div>
             </div>
           </section>
         );

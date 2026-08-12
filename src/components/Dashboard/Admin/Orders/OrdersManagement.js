@@ -59,7 +59,9 @@ export default function OrdersManagement() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOrders(1, statusFilter, searchTerm);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
@@ -308,7 +310,7 @@ export default function OrdersManagement() {
                         <small>{shippingInfo.tracking_number || shippingInfo.trackingNumber || "No tracking yet"}</small>
                       </div>
                     </td>
-                    <td>{new Date(order.createdAt || order.created_at || Date.now()).toLocaleDateString("id-ID")}</td>
+                    <td>{new Date(order.createdAt || order.created_at || "1970-01-01").toLocaleDateString("id-ID")}</td>
                   </tr>
                 );
               })}

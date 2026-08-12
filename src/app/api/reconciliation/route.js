@@ -20,7 +20,8 @@ async function verifyAdmin(request) {
     .eq("id", user.id)
     .single();
 
-  if (roleError || userRole?.role !== "admin") {
+  const normalizedRole = String(userRole?.role || "").toLowerCase();
+  if (roleError || !userRole || !["admin", "superadmin"].includes(normalizedRole)) {
     throw new Error("Admin access required.");
   }
 }
@@ -29,32 +30,34 @@ export async function GET(request) {
   try {
     await verifyAdmin(request);
 
-    const { data: orders, error } = await supabaseAdmin
+    // Fetch pending orders directly from the database
+    const { data: pending, error: pendingError } = await supabaseAdmin
       .from("orders")
-      .select("*");
+      .select("id, customer_name, amount, payment_type, created_at")
+      .in("status", ["pending", "challenge"]);
 
-    if (error) throw error;
+    if (pendingError) throw pendingError;
 
-    const pending = orders
-      .filter(o => ["pending", "challenge"].includes(o.status?.toLowerCase()))
-      .map(o => ({
+    // Fetch count of paid orders directly from the database
+    const { count: paidCount, error: paidError } = await supabaseAdmin
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["success", "settlement", "processing", "completed"]);
+
+    if (paidError) throw paidError;
+
+    return NextResponse.json({
+      pending: (pending || []).map(o => ({
         id: o.id,
         customer: o.customer_name || "Customer",
         amount: Number(o.amount || 0),
         paymentType: o.payment_type || "Midtrans",
         createdAt: o.created_at,
-      }));
-
-    const paidCount = orders.filter(o =>
-      ["success", "settlement", "processing", "completed"].includes(o.status?.toLowerCase())
-    ).length;
-
-    return NextResponse.json({
-      pending,
+      })),
       summary: {
-        pendingCount: pending.length,
-        pendingValue: pending.reduce((s, o) => s + o.amount, 0),
-        paidCount: paidCount,
+        pendingCount: pending?.length || 0,
+        pendingValue: (pending || []).reduce((s, o) => s + Number(o.amount || 0), 0),
+        paidCount: paidCount || 0,
       },
     });
   } catch (e) {

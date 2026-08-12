@@ -33,9 +33,10 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json({ success: true, vouchers: vouchersWithStats });
-  } catch (error: any) {
-    console.error("Get Available Vouchers Error:", error.message);
-    const status = error.message.includes("Unauthorized") ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message }, { status });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Get Available Vouchers Error:", message);
+    const status = message.includes("Unauthorized") ? 401 : 500;
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }

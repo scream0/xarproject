@@ -26,7 +26,9 @@ async function verifyAdmin(request: Request) {
 
   if (profileError)
     throw new Error("Server Error: Could not retrieve user profile");
-  if (!profile || profile.role !== "admin")
+
+  const normalizedRole = String(profile?.role || "").toLowerCase();
+  if (!profile || !["admin", "superadmin"].includes(normalizedRole))
     throw new Error("Forbidden: User is not an admin");
 
   return user;
@@ -38,7 +40,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    let query = supabaseAdmin.from("vouchers").select("*");
+    const query = supabaseAdmin.from("vouchers").select("*");
 
     if (id) {
       const { data, error } = await query.eq("id", id).single();
@@ -50,19 +52,20 @@ export async function GET(req: Request) {
       if (error) throw error;
       return NextResponse.json({ success: true, vouchers: data });
     }
-  } catch (error: any) {
-    console.error("GET Voucher Error:", error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("GET Voucher Error:", message);
     if (
-      error.message.includes("Unauthorized") ||
-      error.message.includes("Forbidden")
+      message.includes("Unauthorized") ||
+      message.includes("Forbidden")
     ) {
       return NextResponse.json(
-        { success: false, error: error.message },
-        { status: error.message.includes("Unauthorized") ? 401 : 403 },
+        { success: false, error: message },
+        { status: message.includes("Unauthorized") ? 401 : 403 },
       );
     }
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: message },
       { status: 500 },
     );
   }
@@ -108,18 +111,19 @@ export async function POST(req: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, message: "Voucher berhasil dibuat", voucher: data });
-  } catch (error: any) {
-    console.error("CREATE Voucher Error:", error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("DELETE Voucher Error:", message);
     if (
-      error.message.includes("Unauthorized") ||
-      error.message.includes("Forbidden")
+      message.includes("Unauthorized") ||
+      message.includes("Forbidden")
     ) {
       return NextResponse.json(
-        { success: false, error: error.message },
-        { status: error.message.includes("Unauthorized") ? 401 : 403 },
+        { success: false, error: message },
+        { status: message.includes("Unauthorized") ? 401 : 403 },
       );
     }
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -145,7 +149,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "ID voucher diperlukan untuk pembaruan" }, { status: 400 });
     }
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (code) updateData.code = code.toUpperCase();
     if (title !== undefined) updateData.title = title;
     if (type) updateData.type = type;
@@ -166,18 +170,19 @@ export async function PUT(req: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, message: "Voucher berhasil diperbarui", voucher: data });
-  } catch (error: any) {
-    console.error("UPDATE Voucher Error:", error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("UPDATE Voucher Error:", message);
     if (
-      error.message.includes("Unauthorized") ||
-      error.message.includes("Forbidden")
+      message.includes("Unauthorized") ||
+      message.includes("Forbidden")
     ) {
       return NextResponse.json(
-        { success: false, error: error.message },
-        { status: error.message.includes("Unauthorized") ? 401 : 403 },
+        { success: false, error: message },
+        { status: message.includes("Unauthorized") ? 401 : 403 },
       );
     }
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -200,17 +205,18 @@ export async function DELETE(req: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, message: "Voucher berhasil dihapus" });
-  } catch (error: any) {
-    console.error("DELETE Voucher Error:", error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("DELETE Voucher Error:", message);
     if (
-      error.message.includes("Unauthorized") ||
-      error.message.includes("Forbidden")
+      message.includes("Unauthorized") ||
+      message.includes("Forbidden")
     ) {
       return NextResponse.json(
-        { success: false, error: error.message },
-        { status: error.message.includes("Unauthorized") ? 401 : 403 },
+        { success: false, error: message },
+        { status: message.includes("Unauthorized") ? 401 : 403 },
       );
     }
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

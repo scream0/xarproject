@@ -28,12 +28,9 @@ export function CartSidebar() {
     discountedCartTotal,
   } = useStore();
 
-  const [isMounted, setIsMounted] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, cartId: null });
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = typeof window !== "undefined";
 
   if (!isMounted) return null;
 

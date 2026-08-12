@@ -60,11 +60,14 @@ export async function GET(request: Request) {
   try {
     const user = await verifyUser(request);
 
-    let { data: profile, error: dbError } = await supabaseAdmin
+    let profile: Record<string, unknown> | null = null;
+    const { data: fetchedProfile, error: dbError } = await supabaseAdmin
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
+
+    profile = fetchedProfile;
 
     // Jika profil belum ada di database, buatkan secara otomatis (Self-healing)
     if (dbError && dbError.code === "PGRST116") {
@@ -99,9 +102,10 @@ export async function GET(request: Request) {
         user_vouchers: claimedVouchers,
       },
     });
-  } catch (error: any) {
-    const status = error.message.includes("Unauthorized") ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message }, { status });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const status = message.includes("Unauthorized") ? 401 : 500;
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }
 
@@ -135,9 +139,10 @@ export async function POST(request: Request) {
     if (error) throw new Error(error.message);
 
     return NextResponse.json({ success: true, message: "Profil berhasil dibuat", profile });
-  } catch (error: any) {
-    const status = error.message.includes("Unauthorized") ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message }, { status });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const status = message.includes("Unauthorized") ? 401 : 500;
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }
 
@@ -146,7 +151,7 @@ export async function PUT(request: Request) {
   try {
     const user = await verifyUser(request);
     const body = await request.json();
-    const updatePayload: any = {};
+    const updatePayload: Record<string, unknown> = {};
 
     if (body.username !== undefined) updatePayload.username = body.username;
     if (body.full_name !== undefined) updatePayload.full_name = body.full_name;
@@ -174,9 +179,10 @@ export async function PUT(request: Request) {
       message: "Data berhasil diperbarui",
       profile: updatedProfile,
     });
-  } catch (error: any) {
-    const status = error.message.includes("Unauthorized") ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message }, { status });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const status = message.includes("Unauthorized") ? 401 : 500;
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }
 
@@ -198,8 +204,9 @@ export async function DELETE(request: Request) {
     }
 
     return NextResponse.json({ success: true, message: "Akun dan profil berhasil dihapus" });
-  } catch (error: any) {
-    const status = error.message.includes("Unauthorized") ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message }, { status });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const status = message.includes("Unauthorized") ? 401 : 500;
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }

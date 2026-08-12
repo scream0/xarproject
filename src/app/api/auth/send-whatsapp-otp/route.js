@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { rateLimit } from "@/utils/rateLimit";
+
+const otpRateLimiter = rateLimit({ limit: 3, windowMs: 60 * 1000 * 5 }); // 3 requests per 5 minutes
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
+  const rateLimitResponse = await otpRateLimiter(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const { phone } = await request.json();
     if (!phone) {

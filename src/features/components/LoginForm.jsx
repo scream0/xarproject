@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import loginConfig from "@/data/ui/loginConfig.json";
 import styles from "./LoginForm.module.css";
 import { useStore } from "@/context/StoreContext";
@@ -12,14 +12,32 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = getSafeAuthRedirect(searchParams.get("callbackUrl"));
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+  const [formData, setFormData] = useState(() => {
+    if (typeof window === "undefined") {
+      return {
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      };
+    }
+
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    return {
+      name: "",
+      email: savedEmail || "",
+      password: "",
+      confirmPassword: "",
+    };
   });
 
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return Boolean(localStorage.getItem("rememberedEmail"));
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +49,7 @@ export default function LoginForm() {
   const { form } = loginConfig || {};
 
   // Helper untuk mengecek role di database dan melakukan redirect yang sesuai
-  const handlePostLoginRedirect = async (userId) => {
+  const handlePostLoginRedirect = useCallback(async (userId) => {
     try {
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -48,12 +66,12 @@ export default function LoginForm() {
       console.error("Gagal memeriksa role:", err);
       window.location.replace(callbackUrl);
     }
-  };
+  }, [callbackUrl]);
 
   // ==========================================
   // GOOGLE CREDENTIAL RESPONSE HANDLER
   // ==========================================
-  const handleGoogleCredentialResponse = async (response) => {
+  const handleGoogleCredentialResponse = useCallback(async (response) => {
     setError("");
     setSuccessMessage("");
     setIsLoading(true);
@@ -79,15 +97,9 @@ export default function LoginForm() {
       setError(err.message || "Gagal masuk menggunakan Google.");
       setIsLoading(false);
     }
-  };
+  }, [handlePostLoginRedirect, setCustomer]);
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem("rememberedEmail");
-    if (savedEmail) {
-      setFormData((prev) => ({ ...prev, email: savedEmail }));
-      setRememberMe(true);
-    }
-
     const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (googleClientId) {
       const checkGoogleLoaded = setInterval(() => {
@@ -111,7 +123,7 @@ export default function LoginForm() {
 
       return () => clearInterval(checkGoogleLoaded);
     }
-  }, []);
+  }, [handleGoogleCredentialResponse]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -354,7 +366,7 @@ export default function LoginForm() {
         >
           {isRegister
             ? form?.switchText?.signIn || "Already have an account? Sign In"
-            : form?.switchText?.signUp || "Don't have an account? Sign Up"}
+            : form?.switchText?.signUp || "Don&apos;t have an account? Sign Up"}
         </button>
       </div>
     </div>

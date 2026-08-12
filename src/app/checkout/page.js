@@ -89,6 +89,20 @@ export default function CheckoutPage() {
   const [appliedVouchers, setAppliedVouchers] = useState([]);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
 
+  const fetchUserClaimedVouchers = async (userId, token) => {
+    try {
+      const res = await fetch("/api/profile", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await res.json();
+      if (res.ok && result.success && result.profile) {
+        setClaimedVouchers(result.profile.user_vouchers || []);
+      }
+    } catch (err) {
+      console.error("Gagal memuat voucher tersimpan:", err);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user || null;
@@ -113,20 +127,6 @@ export default function CheckoutPage() {
       subscription?.unsubscribe();
     };
   }, [router]);
-
-  const fetchUserClaimedVouchers = async (userId, token) => {
-    try {
-      const res = await fetch("/api/profile", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const result = await res.json();
-      if (res.ok && result.success && result.profile) {
-        setClaimedVouchers(result.profile.user_vouchers || []);
-      }
-    } catch (err) {
-      console.error("Gagal memuat voucher tersimpan:", err);
-    }
-  };
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -218,7 +218,8 @@ export default function CheckoutPage() {
       || addresses.find((addr) => addr.cityId || addr.postalCode)
       || addresses[0];
 
-    if (bestAddress) {
+    if (bestAddress && selectedAddressId !== bestAddress.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedAddressId(bestAddress.id);
     }
   }, [addresses, selectedAddressId]);

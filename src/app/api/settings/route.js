@@ -113,22 +113,20 @@ async function verifyAdmin(authHeader) {
 
   const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
   if (userError || !user) throw new Error(`Invalid token: ${userError?.message || 'User not found'}`);
-  
-  const uid = user.id;
 
-  if (user.user_metadata?.role === "admin") {
-    return user;
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error checking user role in DB:", error.message);
+    throw new Error("User is not an administrator.");
   }
 
-  try {
-    // Diperbarui dari tabel "users" ke tabel "profiles"
-    const { data, error } = await supabaseAdmin.from("profiles").select("role").eq("id", uid).single();
-    if (error) throw error;
-    if (data && data.role === "admin") {
-      return user;
-    }
-  } catch (dbError) {
-    console.error("Error checking user role in DB:", dbError.message);
+  if (data && ["admin", "superadmin"].includes(String(data.role).toLowerCase())) {
+    return user;
   }
 
   throw new Error("User is not an administrator.");
@@ -311,28 +309,12 @@ export async function PUT(request) {
       });
     }
 
-    let envFileContent = "";
-    const envPath = path.resolve(process.cwd(), ".env.local");
-    try {
-      envFileContent = await fs.readFile(envPath, "utf8");
-    } catch {}
-
-    if (newSettings.midtransServerKey && typeof newSettings.midtransServerKey === "string" && !newSettings.midtransServerKey.includes("•")) {
-      updateData.midtrans_server_key = newSettings.midtransServerKey;
-      envFileContent = updateEnvVariable(envFileContent, "MIDTRANS_SERVER_KEY", newSettings.midtransServerKey);
-    }
-    if (newSettings.midtransClientKey && typeof newSettings.midtransClientKey === "string" && !newSettings.midtransClientKey.includes("•")) {
-      updateData.midtrans_client_key = newSettings.midtransClientKey;
-      envFileContent = updateEnvVariable(envFileContent, "NEXT_PUBLIC_MIDTRANS_CLIENT_KEY", newSettings.midtransClientKey);
-    }
+    // Environment variables (like Midtrans keys) should be set in the deployment environment,
+    // not managed through the API. This section is intentionally left blank.
 
     if (Object.keys(updateData).length > 0) {
       const { error } = await supabaseAdmin.from("store_config").upsert({ id: "main", ...updateData }, { onConflict: 'id' });
       if (error) throw new Error(`Failed to update settings: ${error.message}`);
-    }
-
-    if (envFileContent) {
-      await fs.writeFile(envPath, envFileContent);
     }
 
     return new Response(JSON.stringify({ message: "Settings updated successfully." }), {

@@ -26,10 +26,6 @@
       "label": "Notifications"
     },
     {
-      "id": "customers",
-      "label": "Customers"
-    },
-    {
       "id": "settings",
       "label": "Settings"
     },

@@ -18,7 +18,16 @@ export function Particles() {
       "rgba(255, 255, 255, 0.4)", // White
     ];
 
-    let particles: any[] = [];
+    type Particle = {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      size: number;
+      color: string;
+    };
+
+    const particles: Particle[] = [];
     const mouse = { x: -1000, y: -1000, radius: 150 };
 
     const resize = () => {
@@ -51,13 +60,13 @@ export function Particles() {
         if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
 
-        let dx = mouse.x - p.x;
-        let dy = mouse.y - p.y;
-        let distance = Math.sqrt(dx * dx + dy * dy);
+        const dx = mouse.x - p.x;
+        const dy = mouse.y - p.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < mouse.radius) {
-          let angle = Math.atan2(dy, dx);
-          let force = (mouse.radius - distance) / mouse.radius;
+          const angle = Math.atan2(dy, dx);
+          const force = (mouse.radius - distance) / mouse.radius;
           p.x -= Math.cos(angle) * force * 5;
           p.y -= Math.sin(angle) * force * 5;
         }

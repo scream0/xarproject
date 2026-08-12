@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     if (error) {
       console.error("Supabase RPC Error detail:", error);
       let status = 400;
-      let errorMessage = error.message;
+      const errorMessage = error.message;
 
       if (error.code === "P0001") status = 404; // Voucher tidak ditemukan
       if (error.code === "P0002") status = 400; // Voucher tidak aktif
@@ -45,14 +45,15 @@ export async function POST(req: Request) {
       message: "Voucher berhasil diklaim!",
       claimedVoucher: data,
     });
-  } catch (error: any) {
-    console.error("API Claim Voucher Unhandled Error:", error.message || error);
-    
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("API Claim Voucher Unhandled Error:", message);
+
     // Otomatis tangkap error Unauthorized dari helper verifyUser
-    const status = error.message.includes("Unauthorized") ? 401 : 500;
-    
+    const status = message.includes("Unauthorized") ? 401 : 500;
+
     return NextResponse.json(
-      { success: false, error: error.message || "Internal Server Error" },
+      { success: false, error: message || "Internal Server Error" },
       { status }
     );
   }

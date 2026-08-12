@@ -11,30 +11,23 @@ export default function NotFound() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
     null,
   );
-  const [quote, setQuote] = useState("");
-
-  useEffect(() => {
-    // Ambil array quotes dari JSON, beri fallback jika kosong
+  const [quote, setQuote] = useState(() => {
+    if (typeof window === "undefined") return "Aroma tidak ditemukan.";
     const quotesArray = notFoundData?.quotes || ["Aroma tidak ditemukan."];
-    // Set kutipan acak hanya di client
-    // 1. Ambil index terakhir yang disimpan di browser
-    const lastIndex = sessionStorage.getItem("lastQuoteIndex");
-    let randomIndex;
+    const lastIndex = window.sessionStorage.getItem("lastQuoteIndex");
+    let randomIndex = 0;
 
-    // 2. Jika ada lebih dari 1 quote, pastikan yang terpilih tidak sama dengan sebelumnya
     if (quotesArray.length > 1) {
       do {
         randomIndex = Math.floor(Math.random() * quotesArray.length);
-      } while (lastIndex !== null && randomIndex === parseInt(lastIndex));
-    } else {
-      randomIndex = 0; // Fallback jika isi array cuma 1
+      } while (lastIndex !== null && randomIndex === Number.parseInt(lastIndex, 10));
     }
 
-    // 3. Simpan index baru ke sessionStorage untuk pengecekan di refresh berikutnya
-    sessionStorage.setItem("lastQuoteIndex", randomIndex.toString());
+    window.sessionStorage.setItem("lastQuoteIndex", randomIndex.toString());
+    return quotesArray[randomIndex];
+  });
 
-    // 4. Set quote yang sudah dijamin berbeda
-    setQuote(quotesArray[randomIndex]);
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX, y: e.clientY });
     };
@@ -66,7 +59,7 @@ export default function NotFound() {
         </h2>
 
         <p className={`${styles.errorQuote} ${styles.animate3}`}>
-          <em>"{quote}"</em>
+          <em>&quot;{quote}&quot;</em>
         </p>
 
         <p className={`${styles.errorDesc} ${styles.animate4}`}>

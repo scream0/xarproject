@@ -1,8 +1,19 @@
 // src/app/api/auth/login/route.js
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { rateLimit } from "@/utils/rateLimit";
+import { logServerError } from "@/utils/logger";
+
+// Create a rate limiter instance for the login route
+const loginRateLimiter = rateLimit({ limit: 5, windowMs: 60 * 1000 });
 
 export async function POST(request) {
+  // Apply rate limiting
+  const rateLimitResponse = await loginRateLimiter(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const { token } = await request.json();
 
@@ -37,7 +48,7 @@ export async function POST(request) {
 
     return response;
   } catch (error) {
-    console.error("API Auth Login Error:", error);
+    logServerError("API Auth Login Error", error, { route: "/api/auth/login" });
     return NextResponse.json(
       { error: "Gagal memproses sesi login" },
       { status: 500 },

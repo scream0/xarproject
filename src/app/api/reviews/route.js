@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
+const MAX_REVIEW_COMMENT_LENGTH = 1500;
 
 async function verifyUser(authHeader) {
   if (!authHeader) {
@@ -14,19 +15,26 @@ async function verifyUser(authHeader) {
   if (error || !user) {
     throw new Error(`Authentication failed: ${error?.message || "Invalid token"}`);
   }
-  return { uid: user.id, email: user.email, name: user.user_metadata?.full_name || user.user_metadata?.name || user.email };
+  return {
+    uid: user.id,
+    email: user.email,
+    name: user.user_metadata?.full_name || user.user_metadata?.name || user.email,
+    role: user.user_metadata?.role,
+  };
 }
 
 async function verifyAdmin(authHeader) {
   const user = await verifyUser(authHeader);
-  if (user.user_metadata?.role === "admin") {
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.uid)
+    .maybeSingle();
+
+  if (["admin", "superadmin"].includes(String(profile?.role || "").toLowerCase())) {
     return user;
   }
-  // Diperbarui dari tabel "users" ke tabel "profiles"
-  const { data: profile } = await supabaseAdmin.from("profiles").select("role").eq("id", user.uid).single();
-  if (profile?.role === "admin") {
-    return user;
-  }
+
   throw new Error("User is not an administrator.");
 }
 
@@ -43,7 +51,7 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { userId, orderId, productId, productName, rating, comment, reviewPhoto } = body;
+    const { userId, orderId, productId, productName, rating, comment } = body;
 
     if (currentUser.uid !== userId) {
       return Response.json(
@@ -56,6 +64,18 @@ export async function POST(request) {
         { error: "Missing required fields: orderId, productId, rating, comment." },
         { status: 400 },
       );
+    }
+    const numericRating = Number(rating);
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
+      return Response.json({ error: "Rating must be an integer between 1 and 5." }, { status: 400 });
+    }
+
+    const cleanComment = String(comment).trim();
+    if (!cleanComment) {
+      return Response.json({ error: "Comment is required." }, { status: 400 });
+    }
+    if (cleanComment.length > MAX_REVIEW_COMMENT_LENGTH) {
+      return Response.json({ error: `Comment must be ${MAX_REVIEW_COMMENT_LENGTH} characters or less.` }, { status: 400 });
     }
 
     const { data: orderDoc, error: orderErr } = await supabaseAdmin
@@ -72,6 +92,18 @@ export async function POST(request) {
     }
     if (orderDoc.user_id !== userId) {
       return Response.json({ error: "You are not authorized to review this order." }, { status: 403 });
+    }
+
+    const { data: orderItem, error: itemErr } = await supabaseAdmin
+      .from("order_items")
+      .select("id")
+      .eq("order_id", orderId)
+      .eq("product_id", productId)
+      .limit(1)
+      .maybeSingle();
+    if (itemErr) throw itemErr;
+    if (!orderItem) {
+      return Response.json({ error: "Product is not part of the specified order." }, { status: 400 });
     }
 
     const { data: existingReviews } = await supabaseAdmin
@@ -93,8 +125,8 @@ export async function POST(request) {
         product_id: productId,
         user_name: currentUser.name || "Pelanggan",
         product_name: productName || "Product",
-        rating: Number(rating),
-        comment,
+        rating: numericRating,
+        comment: cleanComment,
         approved: true,
       })
       .select("id")

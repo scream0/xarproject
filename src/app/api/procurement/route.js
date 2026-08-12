@@ -20,7 +20,8 @@ async function verifyAdmin(request) {
         .eq("id", user.id)
         .single();
         
-    if (dbError || profile?.role !== "admin") {
+    const normalizedRole = String(profile?.role || "").toLowerCase();
+    if (dbError || !profile || !["admin", "superadmin"].includes(normalizedRole)) {
         throw new Error("Forbidden: Admin access required");
     }
     return user;

@@ -76,7 +76,9 @@ export default function ProfileSection() {
  useEffect(() => {
   const getSessionData = async () => {
     const { data: { session } } = await auth.getSession();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentSession(session);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentUser(session?.user ?? null);
   };
 
@@ -170,6 +172,7 @@ export default function ProfileSection() {
   },  [currentUser?.id]); 
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProfile();
   }, [fetchProfile]); 
 

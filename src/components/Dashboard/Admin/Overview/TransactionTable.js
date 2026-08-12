@@ -26,14 +26,6 @@ export default function TransactionTable() {
 
   const observer = useRef();
 
-  useEffect(() => {
-    fetchOrders();
-    const storedViews = window.localStorage.getItem("xar-order-views");
-    if (storedViews) {
-      setSavedViews(JSON.parse(storedViews));
-    }
-  }, []);
-
   const getAuthHeaders = async () => { const { data: { session } } = await auth.getSession(); return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}; };
 
   const fetchOrders = async () => {
@@ -58,6 +50,16 @@ export default function TransactionTable() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchOrders();
+    const storedViews = window.localStorage.getItem("xar-order-views");
+    if (storedViews) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSavedViews(JSON.parse(storedViews));
+    }
+  }, []);
 
   const handleUpdateOrder = async (
     orderId,
@@ -139,9 +141,13 @@ export default function TransactionTable() {
     return statusMap[status] || styles.badgePending;
   };
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVisibleCount(ORDERS_PER_PAGE);
+  }, [statusFilter, searchTerm]);
+
   // Memoized filtered orders
   const filteredOrders = useMemo(() => {
-    setVisibleCount(ORDERS_PER_PAGE); // Reset visible count on filter change
     return allOrders
       .filter((order) => {
         if (statusFilter === "all") return true;
@@ -329,7 +335,7 @@ export default function TransactionTable() {
               </table>
             </div>
             {loading && hasMore && <p className={styles.loadingText}>Loading more orders...</p>}
-            {!hasMore && visibleOrders.length > 0 && <p className={styles.emptyText}>You've reached the end of the list.</p>}
+            {!hasMore && visibleOrders.length > 0 && <p className={styles.emptyText}>You have reached the end of the list.</p>}
           </>
         )}
       </div>

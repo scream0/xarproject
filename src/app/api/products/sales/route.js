@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyAdmin } from '@/lib/apiAuth';
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +11,10 @@ export const dynamic = "force-dynamic";
 // the JSONB "items" column inside "orders" (see orders_complete_existing.sql).
 // This is a single, cheap query — the aggregation itself happens in
 // Postgres, not in Node.js.
-export async function GET() {
+export async function GET(request) {
   try {
+    await verifyAdmin(request);
+
     const { data, error } = await supabaseAdmin
       .from('product_sales_summary')
       .select('product_id, total_sold');
@@ -28,9 +31,10 @@ export async function GET() {
     return NextResponse.json({ success: true, sales: salesMap });
   } catch (error) {
     console.error("GET /api/products/sales error:", error.message);
+    const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
     return NextResponse.json(
       { success: false, error: error.message },
-      { status: 500 },
+      { status: isAuthError ? 403 : 500 },
     );
   }
 }

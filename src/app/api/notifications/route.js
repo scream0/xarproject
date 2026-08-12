@@ -21,14 +21,13 @@ async function identity(request) {
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (dbError) {
-    // Non-fatal, user might not have a profile entry yet.
     console.warn(`Could not fetch profile for user ${user.id}: ${dbError.message}`);
   }
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = ["admin", "superadmin"].includes(String(profile?.role || "").toLowerCase());
   return { uid: user.id, admin: isAdmin };
 }
 

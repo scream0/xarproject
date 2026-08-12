@@ -142,6 +142,28 @@ export async function POST(request) {
       });
     }
 
+    // Enhanced validation for cart items
+    for (const item of items) {
+      if (
+        !item ||
+        typeof item !== 'object' ||
+        typeof item.productId !== 'string' ||
+        typeof item.quantity !== 'number' ||
+        !Number.isInteger(item.quantity) ||
+        item.quantity <= 0
+      ) {
+        return new NextResponse(
+          JSON.stringify({
+            error: 'Bad request: Each cart item must be an object with a string productId and a positive integer quantity.',
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from('carts')
       .upsert({ user_id: user.id, items: items }, { onConflict: 'user_id' });

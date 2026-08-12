@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/utils/rateLimit";
+
+const ongkirRateLimiter = rateLimit({ limit: 30, windowMs: 60 * 1000 }); // 30 requests per minute
 
 export const dynamic = "force-dynamic";
 
 const RAJAONGKIR_BASE_URL =
   process.env.RAJAONGKIR_BASE_URL || "https://api.rajaongkir.com/starter";
-const API_KEY =
-  process.env.RAJAONGKIR_API_KEY || process.env.NEXT_PUBLIC_RAJAONGKIR_API_KEY;
+const API_KEY = process.env.RAJAONGKIR_API_KEY;
 
 function buildFallbackCosts(weight) {
   const kg = Math.max(1, Math.ceil(weight / 1000));
@@ -75,6 +77,11 @@ function buildFallbackCosts(weight) {
  *   /api/ongkir?origin=501&destination=114&weight=1700&courier=jne
  */
 export async function GET(request) {
+  const rateLimitResponse = await ongkirRateLimiter(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+  
   try {
     const { searchParams } = new URL(request.url);
     const origin = searchParams.get("origin");

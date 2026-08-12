@@ -3,6 +3,15 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+const ALLOWED_ORDER_STATUSES = new Set([
+  "pending",
+  "processing",
+  "completed",
+  "cancelled",
+  "settlement",
+  "success",
+]);
+
 // Helper for admin verification
 async function verifyAdmin(request) {
   const token = request.headers.get("authorization")?.split(" ")[1];
@@ -24,7 +33,8 @@ async function verifyAdmin(request) {
     .eq("id", user.id)
     .single();
 
-  if (dbError || !adminUser || adminUser.role !== "admin") {
+  const normalizedRole = String(adminUser?.role || "").toLowerCase();
+  if (dbError || !adminUser || !["admin", "superadmin"].includes(normalizedRole)) {
     console.error("DB error or role mismatch:", dbError?.message);
     throw new Error("Forbidden: User is not an admin");
   }
@@ -44,6 +54,12 @@ async function handleStatusUpdate(request, context) {
     if (!orderId || !targetStatus) {
       return NextResponse.json(
         { success: false, error: "orderId and status are required" },
+        { status: 400 },
+      );
+    }
+    if (!ALLOWED_ORDER_STATUSES.has(targetStatus)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid order status" },
         { status: 400 },
       );
     }
