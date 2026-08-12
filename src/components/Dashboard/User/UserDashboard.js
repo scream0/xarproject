@@ -95,6 +95,15 @@ export default function UserDashboard({ initialProducts }) {
     router.push(`${pathname}?${nextParams.toString()}`, { scroll: false });
   };
 
+  const handleBukaDetail = (product) => {
+    if (!product || !product.id) {
+      toast.error("Produk tidak valid.");
+      return;
+    }
+    // Updated to reflect a likely product detail page route.
+    router.push(`/products/${product.id}`);
+  };
+
   if (loading) {
     return <UserDashboardSkeleton />;
   }
@@ -200,7 +209,7 @@ export default function UserDashboard({ initialProducts }) {
 
         {/* Hapus key={activeTab} agar konten tidak ter-unmount ulang yang menyebabkan kedipan/refresh */}
         <div className={`${styles.viewWrapper} ${styles.viewWrapperAnimated}`}>
-          {activeTab === "shop" && <ShopPage initialProducts={initialProducts} searchQuery={searchQuery} />}
+          {activeTab === "shop" && <ShopPage initialProducts={initialProducts} searchQuery={searchQuery} onBukaDetail={handleBukaDetail} />}
           {activeTab === "overview" && (
             <OverviewSection setActiveTab={handleTabChange} />
           )}

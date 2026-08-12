@@ -11,21 +11,25 @@ export default function NotFound() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
     null,
   );
-  const [quote, setQuote] = useState(() => {
-    if (typeof window === "undefined") return "Aroma tidak ditemukan.";
-    const quotesArray = notFoundData?.quotes || ["Aroma tidak ditemukan."];
-    const lastIndex = window.sessionStorage.getItem("lastQuoteIndex");
-    let randomIndex = 0;
+  const [quote, setQuote] = useState("Aroma tidak ditemukan.");
 
-    if (quotesArray.length > 1) {
+  useEffect(() => {
+    const quotesArray = notFoundData?.quotes || [];
+    if (quotesArray.length > 0) {
+      const lastIndex = window.sessionStorage.getItem("lastQuoteIndex");
+      let randomIndex;
       do {
         randomIndex = Math.floor(Math.random() * quotesArray.length);
-      } while (lastIndex !== null && randomIndex === Number.parseInt(lastIndex, 10));
-    }
+      } while (
+        quotesArray.length > 1 &&
+        lastIndex !== null &&
+        randomIndex === Number.parseInt(lastIndex, 10)
+      );
 
-    window.sessionStorage.setItem("lastQuoteIndex", randomIndex.toString());
-    return quotesArray[randomIndex];
-  });
+      window.sessionStorage.setItem("lastQuoteIndex", randomIndex.toString());
+      setQuote(quotesArray[randomIndex]);
+    }
+  }, []); // Empty dependency array ensures this runs only once on the client
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {

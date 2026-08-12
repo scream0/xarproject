@@ -308,7 +308,7 @@ const handleUserData = useCallback(async (currentUser, token) => {
             ...prev.items,
             {
               cartId: uniqueCartId,
-              id: product.id || product._id,
+              productId: product.id || product._id,
               name: product.name,
               size: variant.size,
               price: variant.price,
@@ -421,7 +421,7 @@ const handleUserData = useCallback(async (currentUser, token) => {
         return prevCart;
       }
 
-      const allVariants = getAvailableVariants(cartItem.id);
+      const allVariants = getAvailableVariants(cartItem.productId);
       const newVariantData = allVariants.find((v) => v.size === newSize);
       if (!newVariantData) {
         newCart = prevCart;
@@ -429,7 +429,7 @@ const handleUserData = useCallback(async (currentUser, token) => {
       }
 
       updateMessage = `Varian diubah ke ${newSize}`;
-      const newCartId = `${cartItem.id}-${newSize}`;
+      const newCartId = `${cartItem.productId}-${newSize}`;
       newCart = {
         ...prevCart,
         items: prevCart.items.map((item) =>
@@ -580,7 +580,7 @@ const handleUserData = useCallback(async (currentUser, token) => {
       let totalWeight = 0;
       for (const item of cart.items) {
         const product = products.find(
-          (p) => String(p.id || p._id) === String(item.id),
+          (p) => String(p.id || p._id) === String(item.productId),
         );
         const itemWeight = Number(product?.weight) || 250;
         totalWeight += itemWeight * (Number(item.quantity) || 1);

@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import styles from "./OverviewUser.module.css";
@@ -8,7 +9,6 @@ import { getDiscountedPrice } from "@/utils/promo";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewUserConfig.json";
 import { OverviewUserSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
-import { AppIcon } from "@/components/UI/Icon/AppIcon";
 
 // Mapping status agar kelas warna badge sinkron dengan OrdersSection
 const STATUS_INFO = {
@@ -34,13 +34,12 @@ function getStatusInfo(rawStatus) {
 export default function OverviewUser({ setActiveTab }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { products, setIsCartOpen, addToCart, activePromo, cartQuantity } = useStore();
+  const { products, addToCart, activePromo } = useStore();
 
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalSpent: 0,
     processingOrders: 0,
-    points: 0,
     balance: 0,
   });
   const [userProfile, setUserProfile] = useState({
@@ -92,7 +91,7 @@ export default function OverviewUser({ setActiveTab }) {
         const token = currentSession.access_token;
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Ambil data pesanan dari database
+        // Ambil data pesanan dari database secara sinkron
         const orderRes = await fetch(`/api/orders?userId=${userId}`, {
           headers,
         });
@@ -145,7 +144,7 @@ export default function OverviewUser({ setActiveTab }) {
           0,
         );
 
-        // Pesanan aktif/proses adalah pesanan yang belum selesai/completed
+        // Pesanan aktif/proses adalah pesanan yang belum selesai
         const processing = orderData.filter((o) =>
           [
             "pending",
@@ -156,8 +155,7 @@ export default function OverviewUser({ setActiveTab }) {
           ].includes((o.status || "").toLowerCase()),
         ).length;
 
-        // Ambil profil user untuk poin & saldo wallet
-        let userPoints = 0;
+        // Ambil saldo wallet user
         let userBalance = 0;
         try {
           const userRes = await fetch(`/api/users?userId=${userId}`, {
@@ -165,7 +163,6 @@ export default function OverviewUser({ setActiveTab }) {
           });
           const userResult = await userRes.json();
           if (userRes.ok && userResult.exists && userResult.data) {
-            userPoints = Number(userResult.data.points || 0);
             userBalance = Number(userResult.data.balance || 0);
 
             if (!fetchedFullName) {
@@ -176,7 +173,7 @@ export default function OverviewUser({ setActiveTab }) {
             }
           }
         } catch (e) {
-          console.error("Gagal mengambil poin/saldo user:", e);
+          console.error("Gagal mengambil saldo user:", e);
         }
 
         setUserProfile({
@@ -189,14 +186,13 @@ export default function OverviewUser({ setActiveTab }) {
           totalOrders: total,
           totalSpent: totalSpent,
           processingOrders: processing,
-          points: userPoints,
           balance: userBalance,
         });
 
-        // Urutkan pesanan dari yang terbaru berdasarkan tanggal
+        // Urutkan aktivitas pesanan dari yang terbaru secara presisi
         const sortedOrders = [...orderData].sort((a, b) => {
-          const dateA = new Date(a.createdAt || a.created_at || 0);
-          const dateB = new Date(b.createdAt || b.created_at || 0);
+          const dateA = new Date(a.createdAt || a.created_at || a.updated_at || 0);
+          const dateB = new Date(b.createdAt || b.created_at || b.updated_at || 0);
           return dateB - dateA;
         });
 
@@ -244,32 +240,7 @@ export default function OverviewUser({ setActiveTab }) {
 
   return (
     <div className={styles.overviewWorkspace}>
-      {/* Navbar Atas Melayang (Chat & Cart Tanpa Kolom Pencarian) */}
-      <div className={styles.shopNavbar} style={{ position: "relative", marginBottom: "1.5rem", justifyContent: "flex-end" }}>
-        <div className={styles.navbarActions}>
-          <button
-            className={styles.chatIconBtnNavbar}
-            onClick={() => toast.success("Membuka chat...")}
-            aria-label="Chat"
-          >
-            <AppIcon name="message-circle" className={styles.svgIcon} />
-          </button>
-          <button
-            className={styles.cartIconBtnNavbar}
-            onClick={() => setIsCartOpen(true)}
-            aria-label="Keranjang"
-          >
-            <AppIcon name="shopping-cart" className={styles.svgIcon} />
-            {cartQuantity > 0 && (
-              <span className={styles.cartQuantityBadge}>
-                {cartQuantity}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* 1. Metric Cards Grid */}
+      {/* 1. Metric Cards Grid (Tanpa Poin) */}
       <div className={styles.metricsGrid}>
         <div className={styles.metricCard}>
           <p className={styles.metricTitle}>
@@ -304,17 +275,6 @@ export default function OverviewUser({ setActiveTab }) {
             {overviewConfig.metrics.processingOrders.desc}
           </p>
         </div>
-        <div className={`${styles.metricCard} ${styles.metricCardAccent}`}>
-          <p className={styles.metricTitle}>
-            {overviewConfig.metrics.points.title}
-          </p>
-          <h3 className={styles.metricValue}>
-            {loading ? "..." : `${Number(stats.points).toLocaleString("id-ID")} pts`}
-          </h3>
-          <p className={styles.metricDesc}>
-            {overviewConfig.metrics.points.desc}
-          </p>
-        </div>
         <div className={`${styles.metricCard} ${styles.metricCardWallet}`}>
           <p className={styles.metricTitle}>
             {overviewConfig.metrics.balance.title}
@@ -328,46 +288,8 @@ export default function OverviewUser({ setActiveTab }) {
         </div>
       </div>
 
-      {/* 2. Welcome Banner & Recent Orders */}
-      <div className={styles.overviewGridTwo}>
-        <div className={styles.sectionCard}>
-          <div className={styles.welcomeBadge}>
-            {overviewConfig.welcomeBanner.badge}
-          </div>
-          <h3 className={styles.cardTitle}>
-            {overviewConfig.welcomeBanner.titlePrefix}{" "}
-            <span>
-              {userProfile.fullName.toUpperCase() ||
-                overviewConfig.welcomeBanner.defaultGuest}
-            </span>
-          </h3>
-          <p className={styles.cardDesc}>{overviewConfig.welcomeBanner.desc}</p>
-          <div className={styles.actionButtonGroup}>
-            <button
-              className={styles.btnPrimary}
-              onClick={() => handleNavigation("shop")}
-            >
-              {overviewConfig.welcomeBanner.buttons.catalog}
-            </button>
-            <button
-              className={styles.btnOutline}
-              onClick={() => handleNavigation("orders")}
-            >
-              {overviewConfig.welcomeBanner.buttons.orders}
-            </button>
-            <button
-              className={styles.btnOutline}
-              onClick={() => setIsCartOpen(true)}
-              style={{
-                borderColor: "rgba(var(--primary-accent-rgb), 0.4)",
-                color: "var(--primary-accent)",
-              }}
-            >
-              {overviewConfig.welcomeBanner.buttons.cart}
-            </button>
-          </div>
-        </div>
-
+      {/* 2. Recent Orders Section */}
+      <div className={styles.overviewGridTwo} style={{ gridTemplateColumns: "1fr" }}>
         <div className={styles.sectionCard}>
           <h3 className={styles.cardTitle}>
             {overviewConfig.recentOrders.title}
@@ -430,42 +352,6 @@ export default function OverviewUser({ setActiveTab }) {
                 {overviewConfig.recentOrders.empty}
               </p>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* 2b. Points & Balance Banner */}
-      <div className={`${styles.sectionCard} ${styles.pointsBannerCard}`}>
-        <div className={styles.pointsBannerContent}>
-          <div>
-            <span className={styles.welcomeBadge}>
-              {overviewConfig.pointsBanner.title}
-            </span>
-            <h3 className={styles.cardTitle}>
-              {overviewConfig.pointsBanner.desc}
-            </h3>
-            <p className={styles.pointsRulesTitle}>
-              {overviewConfig.pointsBanner.howTo}
-            </p>
-            <ul className={styles.pointsRulesList}>
-              {overviewConfig.pointsBanner.rules.map((rule, idx) => (
-                <li key={idx}>{rule}</li>
-              ))}
-            </ul>
-          </div>
-          <div className={styles.pointsBalanceBox}>
-            <div className={styles.pointsBalanceItem}>
-              <span>{overviewConfig.pointsBanner.pointsLabel}</span>
-              <strong>
-                {loading
-                  ? "..."
-                  : `${Number(stats.points).toLocaleString("id-ID")} pts`}
-              </strong>
-            </div>
-            <div className={styles.pointsBalanceItem}>
-              <span>{overviewConfig.pointsBanner.balanceLabel}</span>
-              <strong>{loading ? "..." : formatRupiah(stats.balance)}</strong>
-            </div>
           </div>
         </div>
       </div>

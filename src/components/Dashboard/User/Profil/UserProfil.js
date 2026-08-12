@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import styles from "./UserProfil.module.css";
 import profileConfig from "@/data/ui/userProfilConfig.json";
@@ -76,9 +77,7 @@ export default function ProfileSection() {
  useEffect(() => {
   const getSessionData = async () => {
     const { data: { session } } = await auth.getSession();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentSession(session);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentUser(session?.user ?? null);
   };
 
@@ -87,7 +86,7 @@ export default function ProfileSection() {
   const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
     if (event === "TOKEN_REFRESHED") {
       setCurrentSession(session);
-      return; // jangan trigger fetchProfile ulang cuma karena token refresh
+      return; 
     }
     setCurrentSession(session);
     setCurrentUser(session?.user ?? null);
@@ -169,10 +168,9 @@ export default function ProfileSection() {
       console.error("Gagal memuat profil:", err);
       toast.error(profileConfig.toasts.fetchError);
     }
-  },  [currentUser?.id]); 
+  }, [currentUser?.id, currentSession]); 
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProfile();
   }, [fetchProfile]); 
 
@@ -440,21 +438,6 @@ export default function ProfileSection() {
 
   return (
     <div className={styles.workspaceInner}>
-      {/* Navbar Atas Melayang */}
-      <div className={styles.shopNavbar}>
-        <div className={styles.navbarActions}>
-          <button className={styles.chatIconBtnNavbar} onClick={() => setActiveTab("support")} title="Pusat Bantuan" style={activeTab === "support" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}>
-            <AppIcon name="help-circle" className={styles.svgIcon} />
-          </button>
-          <button className={styles.chatIconBtnNavbar} onClick={() => setActiveTab("wishlist")} title="Wishlist Saya" style={activeTab === "wishlist" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}>
-            <AppIcon name="heart" className={styles.svgIcon} />
-          </button>
-          <button className={styles.cartIconBtnNavbar} onClick={() => setActiveTab("settings")} title="Pengaturan Akun" style={activeTab === "settings" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}>
-            <AppIcon name="settings" className={styles.svgIcon} />
-          </button>
-        </div>
-      </div>
-
       {/* Konten Tab Aktif */}
       <Suspense fallback={<OrdersSkeleton count={3} />}>
         {activeTab === "settings" ? (
@@ -492,7 +475,38 @@ export default function ProfileSection() {
           </div>
         ) : (
           <>
-            <ProfileHeader profile={profile} />
+            {/* Wrapper Header Profil yang menyatukan Tombol Navbar di Pojok Kanan Atas */}
+            <div style={{ position: "relative" }}>
+              <div style={{ position: "absolute", top: "1rem", right: "1rem", zIndex: 10, display: "flex", gap: "0.5rem" }}>
+                <button 
+                  className={styles.chatIconBtnNavbar} 
+                  onClick={() => setActiveTab("support")} 
+                  title="Pusat Bantuan" 
+                  style={activeTab === "support" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
+                >
+                  <AppIcon name="help-circle" className={styles.svgIcon} />
+                </button>
+                <button 
+                  className={styles.chatIconBtnNavbar} 
+                  onClick={() => setActiveTab("wishlist")} 
+                  title="Wishlist Saya" 
+                  style={activeTab === "wishlist" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
+                >
+                  <AppIcon name="heart" className={styles.svgIcon} />
+                </button>
+                <button 
+                  className={styles.cartIconBtnNavbar} 
+                  onClick={() => setActiveTab("settings")} 
+                  title="Pengaturan Akun" 
+                  style={activeTab === "settings" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
+                >
+                  <AppIcon name="settings" className={styles.svgIcon} />
+                </button>
+              </div>
+
+              <ProfileHeader profile={profile} />
+            </div>
+
             <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
               <OrdersSection />
             </div>

@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useStore } from "@/context/StoreContext";
@@ -38,7 +39,6 @@ export function Navbar() {
   const authItems = config?.authSection?.auth?.authenticated || [];
   const unauthItem = config?.authSection?.auth?.unauthenticated?.[0];
 
-  const navRef = useRef(null);
   const userMenuRef = useRef(null);
 
   useEffect(() => {
@@ -79,6 +79,40 @@ export function Navbar() {
     }
   }, [cartQuantity]);
 
+  // Handler navigasi cerdas yang mendukung anchor link (# / /#)
+  const handleNavClick = (e, href) => {
+    setActivePanel(null);
+
+    if (href?.includes("#")) {
+      e.preventDefault();
+
+      const hashIndex = href.indexOf("#");
+      const hashPart = href.substring(hashIndex + 1).toLowerCase();
+      const isHome = window.location.pathname === "/";
+
+      if (isHome) {
+        // Cari elemen berdasarkan ID atau selector alternatif
+        let targetElement = document.getElementById(hashPart) || document.querySelector(`#${hashPart}`);
+
+        if (!targetElement) {
+          const alternatives = [hashPart, "product", "products", "jelajah", "koleksi", "shop", "catalog"];
+          for (const alt of alternatives) {
+            targetElement = document.getElementById(alt) || document.querySelector(`.${alt}`);
+            if (targetElement) break;
+          }
+        }
+
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: "smooth" });
+          return;
+        }
+      }
+
+      // Jika sedang berada di halaman lain (misal: detail produk/dashboard), arahkan ke beranda beserta hash-nya
+      window.location.href = `/#${hashPart}`;
+    }
+  };
+
   const productList = Array.isArray(products) ? products : products?.data || [];
   const filtered = productList.filter((p) =>
     p?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -112,7 +146,7 @@ export function Navbar() {
             <Link
               key={index}
               href={item.href}
-              onClick={() => setActivePanel(null)}
+              onClick={(e) => handleNavClick(e, item.href)}
             >
               {item.label}
             </Link>

@@ -20,51 +20,63 @@ export async function GET(request) {
   try {
     const supabase = getSupabaseClient();
     const { searchParams } = new URL(request.url);
-    const productId = searchParams.get("id");
+    
+    // Bersihkan spasi atau karakter tersembunyi dengan .trim()
+    const rawId = searchParams.get("id");
+    const productId = rawId ? rawId.trim() : null;
+
     const search = searchParams.get("search") || "";
     const sortBy = searchParams.get("sortBy") || "created_at";
-    let sortOrder = searchParams.get("sortOrder") || "desc"; // Default to desc for created_at
+    let sortOrder = searchParams.get("sortOrder") || "desc";
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "12", 10);
 
-    let query = supabase.from("products").select("id, name, description, category, image_url, variants, created_at", { count: "exact" });
+    // 1. Jika ada parameter ID yang valid
+    if (productId && productId !== "undefined" && productId !== "null") {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, description, category, image_url, variants, created_at")
+        .eq("id", productId)
+        .maybeSingle();
 
-    // Filter by product ID if provided, otherwise apply general filters
-    if (productId) {
-      query = query.eq("id", productId).single();
-    } else {
-      // Apply search filter
-      if (search) {
-        query = query.or(
-          `name.ilike.%${search}%,description.ilike.%${search}%`,
+      if (error) throw error;
+
+      if (!data) {
+        return NextResponse.json(
+          { success: false, error: "Produk tidak ditemukan" },
+          { status: 404 }
         );
       }
 
-      // Apply sort order
-      let orderColumn = sortBy;
-      let ascending = sortOrder === "asc";
-
-      if (sortBy === "price-low") {
-        orderColumn = "variants->0->price"; // Assumes price is in the first variant
-        ascending = true;
-      } else if (sortBy === "price-high") {
-        orderColumn = "variants->0->price";
-        ascending = false;
-      } else if (sortBy === "name") {
-        ascending = true; // Default name sort to ascending
-      } else {
-        // Default sort for 'default' or unknown sortBy
-        orderColumn = "created_at";
-        ascending = false;
-      }
-
-      query = query.order(orderColumn, { ascending: ascending });
-
-      // Apply pagination
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
-      query = query.range(from, to);
+      return NextResponse.json({ success: true, data: data });
     }
+
+    // 2. Jika mengambil daftar produk (list) secara umum
+    let query = supabase.from("products").select("id, name, description, category, image_url, variants, created_at", { count: "exact" });
+
+    if (search) {
+      query = query.or(
+        `name.ilike.%${search}\%,description.ilike.\%${search}%`,
+      );
+    }
+
+    let orderColumn = sortBy;
+    let ascending = sortOrder === "asc";
+
+    if (sortBy === "price-low" || sortBy === "price-high") {
+      orderColumn = "created_at"; 
+    } else if (sortBy === "name") {
+      ascending = true;
+    } else {
+      orderColumn = "created_at";
+      ascending = false;
+    }
+
+    query = query.order(orderColumn, { ascending: ascending });
+
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    query = query.range(from, to);
 
     const { data, error, count } = await query;
 
@@ -78,7 +90,6 @@ export async function GET(request) {
     );
   }
 }
-
 // POST -> Menambahkan produk baru ke tabel products
 export async function POST(request) {
   try {
