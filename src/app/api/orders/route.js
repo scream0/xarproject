@@ -3,15 +3,6 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-const ALLOWED_ORDER_STATUSES = new Set([
-  "pending",
-  "processing",
-  "completed",
-  "cancelled",
-  "settlement",
-  "success",
-]);
-
 // ========== AUTH HELPERS ==========
 
 async function verifyUser(request) {
@@ -124,106 +115,10 @@ export async function GET(request) {
 }
 
 
-// ========== PUT HANDLER ==========
-// Updates an order's status and decrements stock on payment success.
-export async function PUT(request) {
-  try {
-    await verifyAdmin(request); // Updating orders is an admin action
-
-    const body = await request.json().catch(() => ({}));
-    const { orderId, status, newStatus, shippingReceiptNumber } = body;
-    const targetStatus = (newStatus || status || "").toLowerCase();
-
-    if (!orderId || !targetStatus) {
-      return NextResponse.json({ error: "orderId and status are required" }, { status: 400 });
-    }
-    if (!ALLOWED_ORDER_STATUSES.has(targetStatus)) {
-      return NextResponse.json({ error: "Invalid order status" }, { status: 400 });
-    }
-
-    const { data: orderData, error: fetchError } = await supabaseAdmin
-      .from("orders")
-      .select("status, items:order_items(*)")
-      .eq("id", orderId)
-      .single();
-
-    if (fetchError) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    const normalizedTargetStatus = targetStatus;
-    const currentStatus = (orderData.status || "").toLowerCase();
-
-    const isSuccessStatus = ["success", "settlement", "processing"].includes(normalizedTargetStatus);
-    const wasAlreadySuccess = ["success", "settlement", "processing"].includes(currentStatus);
-
-    // If status is moving to a success state for the first time, decrement stock atomically.
-    if (isSuccessStatus && !wasAlreadySuccess) {
-      const itemsToDecrement = (orderData.items || []).map(item => ({
-        product_id: item.product_id,
-        variant_name: item.variant_name,
-        quantity: item.quantity,
-      }));
-
-      if (itemsToDecrement.length > 0) {
-        const { error: decrementError } = await supabaseAdmin.rpc('decrement_stock', {
-          items_to_decrement: itemsToDecrement,
-        });
-
-        if (decrementError) {
-          // Log the error but don't fail the entire order update.
-          // Stock might be manually adjusted later.
-          console.error(`Atomic stock decrement failed for order ${orderId}:`, decrementError);
-        }
-      }
-    }
-    
-    // Update order status and history
-    const { data: currentOrder, error: getOrderError } = await supabaseAdmin
-        .from('orders')
-        .select('status_history')
-        .eq('id', orderId)
-        .single();
-    
-    if (getOrderError) throw getOrderError;
-
-    const historyEntry = {
-        status: normalizedTargetStatus,
-        notes: `Status updated by admin`,
-        actor: "admin",
-        timestamp: new Date().toISOString()
-    };
-    
-    const updatePayload = {
-        status: normalizedTargetStatus,
-        status_history: [...(currentOrder.status_history || []), historyEntry]
-    };
-
-    if (shippingReceiptNumber) {
-        updatePayload.shipping_receipt_number = shippingReceiptNumber;
-    }
-
-    const { data: updatedOrder, error: updateError } = await supabaseAdmin
-        .from("orders")
-        .update(updatePayload)
-        .eq("id", orderId)
-        .select()
-        .single();
-
-    if (updateError) throw updateError;
-
-    return NextResponse.json({
-      success: true,
-      message: `Order status updated to ${targetStatus}`,
-      order: updatedOrder
-    });
-
-  } catch (error) {
-    console.error("PUT /api/orders error:", error);
-    const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: isAuthError ? 403 : 500 },
-    );
-  }
-}
+// NOTE: PUT handler dihapus dari sini (2026-08-13).
+// Sebelumnya endpoint ini dipakai oleh komponen TransactionTable (tab Overview)
+// untuk update status pesanan, tapi komponen itu duplikat dari OrdersManagement
+// (tab Orders) dan sudah dihapus. Semua update status sekarang lewat:
+//   PUT /api/admin/orders/[id]/status
+// yang memakai helper bersama di @/lib/orderStatusHelper (termasuk logic
+// pengurangan stok yang sebelumnya cuma ada di endpoint ini).

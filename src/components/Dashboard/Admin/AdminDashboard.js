@@ -32,7 +32,6 @@ const AdvancedAnalytics = dynamic(() => import("@/components/Dashboard/Admin/Ana
   loading: () => <p>Loading analytics...</p>,
   ssr: false
 });
-import TransactionTable from "@/components/Dashboard/Admin/Overview/TransactionTable";
 import OverviewStats from "@/components/Dashboard/Admin/Overview/OverviewStats";
 import ProductManager from "@/components/Dashboard/Admin/Products/ProductManager";
 import ReviewManager from "@/components/Dashboard/Admin/Reviews/ReviewManager";
@@ -303,9 +302,6 @@ export default function AdminDashboard() {
             <OverviewStats />
             <section className={styles.workspaceArea}>
               <AnalyticsChart />
-              <div className={styles.tableContainer}>
-                <TransactionTable />
-              </div>
             </section>
           </>
         );

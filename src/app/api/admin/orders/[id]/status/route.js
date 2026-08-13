@@ -1,16 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { applyOrderStatusUpdate } from "@/lib/orderStatusHelper";
 
 export const dynamic = "force-dynamic";
-
-const ALLOWED_ORDER_STATUSES = new Set([
-  "pending",
-  "processing",
-  "completed",
-  "cancelled",
-  "settlement",
-  "success",
-]);
 
 // Helper for admin verification
 async function verifyAdmin(request) {
@@ -45,79 +37,24 @@ async function handleStatusUpdate(request, context) {
   try {
     await verifyAdmin(request);
 
-    const { params } = await context;
+    const params = await context.params;
     const orderId = params?.id;
     const body = await request.json().catch(() => ({}));
     const { status, newStatus, notes, changedBy } = body;
     const targetStatus = (newStatus || status || "").toLowerCase();
 
-    if (!orderId || !targetStatus) {
-      return NextResponse.json(
-        { success: false, error: "orderId and status are required" },
-        { status: 400 },
-      );
-    }
-    if (!ALLOWED_ORDER_STATUSES.has(targetStatus)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid order status" },
-        { status: 400 },
-      );
-    }
-
-    // 1. Fetch the current order to get existing status history
-    const { data: order, error: fetchError } = await supabaseAdmin
-      .from("orders")
-      .select("status_history")
-      .eq("id", orderId)
-      .single();
-
-    if (fetchError) {
-      console.error(`Error fetching order ${orderId}:`, fetchError.message);
-      return NextResponse.json(
-        { success: false, error: "Order not found" },
-        { status: 404 },
-      );
-    }
-
-    // 2. Create the new history entry
-    const historyEntry = {
-      status: targetStatus,
-      notes: notes || "",
-      actor: changedBy || "admin",
-      timestamp: new Date().toISOString(),
-    };
-
-    // 3. Prepare the update payload
-    const updatePayload = {
-      status: targetStatus,
-      status_history: [...(order.status_history || []), historyEntry],
-    };
-
-    // 4. Execute the update
-    const { data: updatedOrder, error: updateError } = await supabaseAdmin
-      .from("orders")
-      .update(updatePayload)
-      .eq("id", orderId)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error(`Error updating order ${orderId}:`, updateError.message);
-      // This might happen if `targetStatus` is not a valid enum value
-      if (updateError.message.includes("invalid input value for enum order_status")) {
-         return NextResponse.json(
-          { success: false, error: `Invalid order status: "${targetStatus}"` },
-          { status: 400 },
-        );
-      }
-      throw new Error(updateError.message);
-    }
+    const updatedOrder = await applyOrderStatusUpdate(supabaseAdmin, {
+      orderId,
+      targetStatus,
+      notes,
+      changedBy: changedBy || "admin",
+    });
 
     return NextResponse.json({ success: true, order: updatedOrder });
   } catch (error) {
     console.error("Failed to update order status:", error);
     const isAuthError = error.message.includes("Unauthorized") || error.message.includes("Forbidden");
-    const statusCode = isAuthError ? 403 : 500;
+    const statusCode = error.status || (isAuthError ? 403 : 500);
     return NextResponse.json(
       { success: false, error: error.message || "Internal Server Error" },
       { status: statusCode },

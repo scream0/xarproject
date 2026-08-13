@@ -4,8 +4,9 @@ import { verifyUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request, { params }) {
+export async function POST(request, context) {
   try {
+    const params = await context.params;
     const orderId = params?.id;
     const { searchParams } = new URL(request.url);
     const user = await verifyUser(request);

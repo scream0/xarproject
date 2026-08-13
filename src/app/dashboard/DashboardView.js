@@ -51,39 +51,45 @@ export default function DashboardView({ initialProducts }) {
     }
   }, []);
   
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentUser = session?.user;
+ useEffect(() => {
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = session?.user;
+    const accessToken = session?.access_token;
 
-      if (!currentUser) {
-        window.location.replace("/login");
-        return;
-      }
+    if (!currentUser || !accessToken) {
+      window.location.replace("/login");
+      return;
+    }
 
-      setUser(currentUser);
+    setUser(currentUser);
 
-      try {
-        // Ambil role user dari API /api/users
-        const res = await fetch(`/api/users?userId=${currentUser.id}`);
-        const result = await res.json();
+    try {
+      const res = await fetch(`/api/users?userId=${currentUser.id}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const result = await res.json();
 
-        if (res.ok && result.exists && result.data && result.data.role) {
-          const userRole = result.data.role;
-          setRole(userRole);
-          localStorage.setItem("userRole", userRole);
-        } else {
-          setRole(dashboardConfig.defaultRole);
-        }
-      } catch (error) {
-        console.error("Gagal ambil data role via API:", error);
+      if (res.ok && result.exists && result.data && result.data.role) {
+        const userRole = result.data.role;
+        setRole(userRole);
+        localStorage.setItem("userRole", userRole);
+      } else {
         setRole(dashboardConfig.defaultRole);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Gagal ambil data role via API:", error);
+      setRole(dashboardConfig.defaultRole);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    checkUser();
+  checkUser();
+
+  
     // Set up listener untuk perubahan status autentikasi
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {

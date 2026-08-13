@@ -132,10 +132,9 @@ export default function OverviewStats() {
         </div>
       </div>
 
-      {/* Tabel "Kelola & Konfirmasi Pesanan" sudah ditangani oleh
-          komponen TransactionTable (lebih lengkap: ada modal nomor resi
-          & alur status pending -> success -> processing -> shipping -> completed),
-          jadi tidak dirender dobel di sini. */}
+      {/* Tabel daftar & pengelolaan pesanan lengkap ada di tab "Orders"
+          (komponen OrdersManagement), jadi tidak dirender dobel di sini.
+          Tab ini hanya menampilkan ringkasan angka. */}
     </div>
   );
 }

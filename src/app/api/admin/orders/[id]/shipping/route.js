@@ -1,16 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { ALLOWED_ORDER_STATUSES, decrementStockIfNeeded } from "@/lib/orderStatusHelper";
 
 export const dynamic = "force-dynamic";
-
-const ALLOWED_ORDER_STATUSES = new Set([
-  "pending",
-  "processing",
-  "completed",
-  "cancelled",
-  "settlement",
-  "success",
-]);
 
 // Helper for admin verification, adapted from the refactored settings route
 async function verifyAdmin(request) {
@@ -42,10 +34,11 @@ async function verifyAdmin(request) {
 }
 
 
-async function handleShippingUpdate(request, { params }) {
+async function handleShippingUpdate(request, context) {
   try {
     await verifyAdmin(request);
 
+    const params = await context.params;
     const orderId = params?.id;
     const body = await request.json().catch(() => ({}));
 
@@ -59,7 +52,7 @@ async function handleShippingUpdate(request, { params }) {
     // 1. Fetch order data first
     const { data: orderData, error: fetchError } = await supabaseAdmin
       .from("orders")
-      .select("status, status_history, shipping_address")
+      .select("status, status_history, shipping_address, items:order_items(*)")
       .eq("id", orderId)
       .single();
 
@@ -116,6 +109,13 @@ async function handleShippingUpdate(request, { params }) {
     }
 
     if (statusToUpdate) {
+        await decrementStockIfNeeded(supabaseAdmin, {
+          orderId,
+          items: orderData.items,
+          currentStatus,
+          nextStatus: statusToUpdate,
+        });
+
         const historyEntry = {
             status: statusToUpdate,
             notes: notes,
