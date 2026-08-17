@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
 import { useTheme } from "@/context/ThemeContext";
 import { SearchForm } from "./SearchForm";
@@ -22,6 +23,7 @@ export function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [activeHash, setActiveHash] = useState("");
 
   const {
     products,
@@ -34,7 +36,8 @@ export function Navbar() {
     setIsCartOpen,
   } = useStore();
 
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isThemeReady } = useTheme();
+  const pathname = usePathname();
 
   const authItems = config?.authSection?.auth?.authenticated || [];
   const unauthItem = config?.authSection?.auth?.unauthenticated?.[0];
@@ -42,18 +45,29 @@ export function Navbar() {
   const userMenuRef = useRef(null);
 
   useEffect(() => {
-    document.body.style.overflow =
-      activePanel === "navbar" ? "hidden" : "unset";
+    const shouldLock =
+      activePanel === "navbar" || activePanel === "search" || isCartOpen;
+    document.body.style.overflow = shouldLock ? "hidden" : "unset";
 
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [activePanel]);
+  }, [activePanel, isCartOpen]);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    let rafId = null;
+    const handleScroll = () => {
+      if (rafId) return; // sudah ada frame pending, skip
+      rafId = requestAnimationFrame(() => {
+        setIsScrolled(window.scrollY > 50);
+        rafId = null;
+      });
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   useEffect(() => {
@@ -74,16 +88,36 @@ export function Navbar() {
     if (cartQuantity > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setAnimate(true);
-      const timer = setTimeout(() => setAnimate(false), 400);
+      const timer = setTimeout(() => setAnimate(false), 600);
       return () => clearTimeout(timer);
     }
   }, [cartQuantity]);
+
+  // Tutup dropdown/panel yang lagi terbuka pas user pencet Escape
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      if (isUserMenuOpen) setIsUserMenuOpen(false);
+      if (activePanel) setActivePanel(null);
+      if (isCartOpen) setIsCartOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isUserMenuOpen, activePanel, isCartOpen, setIsCartOpen]);
+
+  // Lacak hash aktif di URL (buat active link indicator pada anchor menu)
+  useEffect(() => {
+    const updateHash = () => setActiveHash(window.location.hash);
+    updateHash();
+    window.addEventListener("hashchange", updateHash);
+    return () => window.removeEventListener("hashchange", updateHash);
+  }, []);
 
 // Handler navigasi cerdas untuk Anchor Link / Hash (#)
   const handleNavClick = (e, href) => {
     setActivePanel(null);
 
-    if (href && (href.startsWith("#") || href.includes("#"))) {
+    if (href && href.includes("#")) {
       e.preventDefault();
 
       // Ambil bagian hash-nya saja (contoh: "product" dari "/#product" atau "#product")
@@ -98,6 +132,7 @@ export function Navbar() {
           targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
           // Perbarui URL hash di browser tanpa memuat ulang halaman
           window.history.pushState(null, "", `#${hashPart}`);
+          setActiveHash(`#${hashPart}`);
         } else {
           // Fallback jika elemen belum terpanggil
           window.location.hash = hashPart;
@@ -108,14 +143,36 @@ export function Navbar() {
       }
     }
   };
-  
+
+  // Cek apakah sebuah menu item sedang "aktif" (match pathname penuh, atau match hash)
+  const isLinkActive = (href) => {
+    if (!href) return false;
+    if (href.includes("#")) {
+      const hashPart = href.split("#")[1];
+      return activeHash === `#${hashPart}`;
+    }
+    return pathname === href;
+  };
+
   const productList = Array.isArray(products) ? products : products?.data || [];
-  const filtered = productList.filter((p) =>
-    p?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+
+  // Cuma dihitung ulang kalau produk/queries berubah, dan cuma kalau panel search
+  // sedang aktif — hindari filter jalan sia-sia tiap render (scroll, toggle theme, dll).
+  const filtered = useMemo(() => {
+    if (activePanel !== "search") return [];
+    return productList.filter((p) =>
+      p?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+  }, [productList, searchQuery, activePanel]);
 
   const togglePanel = (panelName) => {
-    setActivePanel(activePanel === panelName ? null : panelName);
+    setActivePanel((prev) => (prev === panelName ? null : panelName));
+    setIsCartOpen(false); // pastikan cart nggak numpuk sama panel lain
+  };
+
+  const handleToggleCart = () => {
+    setIsCartOpen((prev) => !prev);
+    setActivePanel(null); // pastikan panel lain nggak numpuk sama cart
   };
 
   const userAvatar = user?.photoURL || user?.photo_url;
@@ -143,6 +200,8 @@ export function Navbar() {
               key={index}
               href={item.href}
               onClick={(e) => handleNavClick(e, item.href)}
+              className={isLinkActive(item.href) ? styles.navLinkActive : ""}
+              aria-current={isLinkActive(item.href) ? "page" : undefined}
             >
               {item.label}
             </Link>
@@ -230,7 +289,7 @@ export function Navbar() {
 
           <button
             className={styles.cartButton}
-            onClick={() => setIsCartOpen(!isCartOpen)}
+            onClick={handleToggleCart}
             aria-label={config?.features?.cart?.ariaLabel}
           >
             <AppIcon
@@ -238,7 +297,14 @@ export function Navbar() {
               className={`${styles.svgIcon} ${animate ? styles.cartBounce : ""}`}
             />
             {isClient && cartQuantity > 0 && (
-              <span className={styles.quantityBadge}>{cartQuantity}</span>
+              <span
+                className={`${styles.quantityBadge} ${animate ? styles.quantityPulse : ""}`}
+              >
+                {cartQuantity}
+                {animate && (
+                  <span className={styles.pulseRing} aria-hidden="true" />
+                )}
+              </span>
             )}
           </button>
 
@@ -247,8 +313,11 @@ export function Navbar() {
             className={styles.themeToggleBtn}
             aria-label="Toggle Theme"
           >
+            {/* Tunggu isThemeReady (dari ThemeContext) sebelum tampilkan icon
+                yang sesuai tema asli user — sebelum itu, theme masih default
+                'dark' yang sama persis dengan yang dirender server. */}
             <AppIcon
-              name={theme === "dark" ? "sun" : "moon"}
+              name={!isThemeReady ? "sun" : theme === "dark" ? "sun" : "moon"}
               className={styles.svgIcon}
             />
           </button>

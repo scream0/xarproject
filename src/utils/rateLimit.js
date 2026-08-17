@@ -1,5 +1,5 @@
 // src/utils/rateLimit.js
-import LRUCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import { NextResponse } from 'next/server';
 
 const rateLimitCache = new LRUCache({

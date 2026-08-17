@@ -97,28 +97,33 @@ export function CartSidebar() {
           <>
             <div className={styles.cartItemsWrapper}>
               {cart.items.map((item) => {
+                // Safety net: fallback key kalau cartId dari data lama kosong
+                const safeKey =
+                  item.cartId || `${item.productId || item.id}-${item.size}`;
+
                 const originalProduct = productList.find(
-                  (p) => String(p.id) === String(item.id),
+                  (p) => String(p.id) === String(item.id || item.productId),
                 );
                 const variantInfo = originalProduct?.variants?.find(
-                  (v) => v.size === item.size,
+                  (v) => String(v.size || "").toLowerCase() === String(item.size || "").toLowerCase(),
                 );
                 const maxStock = Number(
-                  variantInfo?.stock ?? variantInfo?.stok ?? 10,
+                  variantInfo?.stock ?? variantInfo?.stok ?? item.stock ?? 10,
                 );
                 const isMaxReached = item.quantity >= maxStock;
 
+                const placeholderSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.5'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
+
                 const itemImageSrc =
+                  item.image ||
                   variantInfo?.image_url ||
                   variantInfo?.imageUrl ||
                   originalProduct?.image_url ||
                   originalProduct?.imageUrl ||
-                  item.image_url ||
-                  item.imageUrl ||
-                  "/assets/placeholder.jpg";
+                  placeholderSvg;
 
                 return (
-                  <div className={styles.cartItem} key={item.cartId}>
+                  <div className={styles.cartItem} key={safeKey}>
                     <div className={styles.cartItemImg}>
                       <img src={itemImageSrc} alt={item.name} />
                     </div>
@@ -142,7 +147,7 @@ export function CartSidebar() {
                             updateCartItemVariant(item.cartId, e.target.value)
                           }
                         >
-                          {getAvailableVariants(item.id).map((v) => {
+                          {getAvailableVariants(item.productId || item.id).map((v) => {
                             const vStock = Number(v.stock ?? v.stok ?? 0);
                             const isOutOfStock = vStock <= 0;
                             return (
@@ -176,14 +181,9 @@ export function CartSidebar() {
                         </span>
                         <div className={styles.cartQtyControl}>
                           <button
-                            className={styles.cartQtyBtn}
-                            onClick={() => {
-                              if (item.quantity === 1) {
-                                triggerRemove(item.cartId);
-                              } else {
-                                removeFromCart(item.cartId);
-                              }
-                            }}
+                            className={`${styles.cartQtyBtn} ${item.quantity === 1 ? styles.disabled : ""}`}
+                            disabled={item.quantity === 1 || isProcessing}
+                            onClick={() => removeFromCart(item.cartId)}
                           >
                             {cartConfig?.labels?.quantityMinus}
                           </button>
@@ -194,9 +194,15 @@ export function CartSidebar() {
                             className={`${styles.cartQtyBtn} ${isMaxReached ? styles.disabled : ""}`}
                             disabled={isMaxReached || isProcessing}
                             onClick={() => {
-                              if (originalProduct && !isMaxReached) {
+                              if (!isMaxReached) {
+                                const productTarget = originalProduct || {
+                                  id: item.productId || item.id,
+                                  name: item.name,
+                                  variants: [{ size: item.size, price: item.price, stock: maxStock }],
+                                };
+
                                 addToCart(
-                                  originalProduct,
+                                  productTarget,
                                   {
                                     size: item.size,
                                     price: item.price,

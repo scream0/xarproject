@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { HeroParticles } from "@/components/UI/HeroParticles/HeroParticles";
 import { getPublicSettings } from "@/services/settingsService";
 import styles from "./Hero.module.css";
@@ -7,24 +7,43 @@ import heroData from "@/data/ui/heroConfig.json"; // Fallback default JSON
 
 export function Hero() {
   // 1. Definisikan state
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [resolvedHero, setResolvedHero] = useState(heroData);
+  const [isDimmed, setIsDimmed] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(false);
 
-  // 2. Efek untuk melacak mouse
+  // Ref buat spotlight, supaya mousemove gak trigger re-render React
+  const spotlightRef = useRef(null);
+
+  // 2. Efek untuk melacak mouse (throttled via requestAnimationFrame, pakai CSS var)
   useEffect(() => {
+    let rafId = null;
+
     const handleMouseMove = (e) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
+      if (rafId) return; // sudah ada frame pending, skip
+      rafId = requestAnimationFrame(() => {
+        if (spotlightRef.current) {
+          spotlightRef.current.style.setProperty("--spotlight-x", `${e.clientX}px`);
+          spotlightRef.current.style.setProperty("--spotlight-y", `${e.clientY}px`);
+        }
+        rafId = null;
+      });
     };
+
     window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // 3. Muat settings publik (hero) via service layer
   useEffect(() => {
+    let isMounted = true;
+
     const loadSettings = async () => {
       try {
         const data = await getPublicSettings({ force: true });
-        if (!data) return;
+        if (!data || !isMounted) return;
 
         // Gabungkan hero dari DB dengan default JSON (fallback field parsial)
         if (data?.hero) {
@@ -59,32 +78,54 @@ export function Hero() {
     };
 
     loadSettings();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Contoh logika sederhana di komponen Hero.jsx
-  const [isDimmed, setIsDimmed] = useState(false);
-
+  // 4. Trigger reveal animation setelah mount (sedikit delay biar browser sempat paint dulu)
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (prefersReducedMotion) {
+      setIsRevealed(true); // langsung tampil tanpa animasi
+      return;
+    }
+
+    const timer = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setIsRevealed(true));
+    });
+    return () => cancelAnimationFrame(timer);
+  }, []);
+
+  // 5. Observer buat dimming background pas section berikutnya keliatan
+  useEffect(() => {
+    const section = document.querySelector(".content-section");
+    if (!section) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
-        // Jika section konten sudah terlihat, gelapkan background Hero
         setIsDimmed(entries[0].isIntersecting);
       },
       { threshold: 0.1 },
     );
 
-    const section = document.querySelector(".content-section");
-    if (section) observer.observe(section);
+    observer.observe(section);
+    return () => observer.disconnect();
   }, []);
 
   // Ambil URL gambar latar belakang dari resolvedHero (jika ada)
   const heroBackgroundImage = resolvedHero?.image;
+  const spotlightColor =
+    resolvedHero?.effects?.spotlightColor || "rgba(229, 228, 226, 0.1)";
 
   return (
     <section id="home" className={styles.hero}>
       {/* Background dinamis dari gambar yang di-upload */}
       <div
-        className={styles.heroBackground}
+        className={`${styles.heroBackground} ${isDimmed ? styles.dimmed : ""}`}
         style={
           heroBackgroundImage
             ? {
@@ -98,11 +139,12 @@ export function Hero() {
       ></div>
 
       <div
+        ref={spotlightRef}
         className={styles.heroSpotlight}
         style={{
           background: `radial-gradient(
-      600px circle at ${mousePos.x}px ${mousePos.y}px, 
-      ${heroData?.effects?.spotlightColor || "rgba(229, 228, 226, 0.1)"}, 
+      600px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+      ${spotlightColor},
       transparent 80%
     )`,
         }}
@@ -115,17 +157,31 @@ export function Hero() {
 
       <main className={styles.content}>
         <div className={styles.contentGlow} aria-hidden="true" />
-        <h5 className={styles.heroTagline}>{resolvedHero?.tagline}</h5>
-        <h1 className={styles.heroTitle}>
+        <h5
+          className={`${styles.heroTagline} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+          style={{ "--reveal-delay": "0ms" }}
+        >
+          {resolvedHero?.tagline}
+        </h5>
+        <h1
+          className={`${styles.heroTitle} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+          style={{ "--reveal-delay": "120ms" }}
+        >
           {resolvedHero?.title?.main} <br />
           <span>{resolvedHero?.title?.highlight}</span>
         </h1>
-        <p className={styles.heroDesc}>
+        <p
+          className={`${styles.heroDesc} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+          style={{ "--reveal-delay": "240ms" }}
+        >
           {resolvedHero?.description?.prefix}
           <em>{resolvedHero?.description?.italic}</em>
           {resolvedHero?.description?.suffix}
         </p>
-        <div className={styles.heroButtons}>
+        <div
+          className={`${styles.heroButtons} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+          style={{ "--reveal-delay": "360ms" }}
+        >
           <a
             href={resolvedHero?.buttons?.primary?.href}
             className={styles.ctaPrimary}

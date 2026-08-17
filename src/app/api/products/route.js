@@ -37,7 +37,7 @@ export async function GET(request) {
         .from("products")
         .select("id, name, description, category, image_url, variants, created_at")
         .eq("id", productId)
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 

@@ -28,9 +28,14 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    // 2. Terapkan variable font ke html class
-    <html lang="en" className={`${tenor.variable} ${lato.variable}`}>
+    // 2. Terapkan variable font, class "dark" default, dan suppressHydrationWarning
+    <html 
+      lang="en" 
+      className={`dark ${tenor.variable} ${lato.variable}`}
+      suppressHydrationWarning
+    >
       <head>
+        <meta name="color-scheme" content="dark" />
         {/* untuk live production ganti ke app.midtrans.com , sama client production */}
         <Script
           src="https://app.sandbox.midtrans.com/snap/snap.js" // Gunakan 'app.midtrans.com' untuk mode Production

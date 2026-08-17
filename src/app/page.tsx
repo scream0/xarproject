@@ -40,11 +40,6 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart, rupiah } = useStore();
 
-  // Fetch produk sekarang ditangani sepenuhnya oleh Shop.js sendiri
-  // (lewat fetchShopData di useEffect, pakai path relatif /api/products).
-  // Client Component tidak boleh berupa async function, jadi data fetching
-  // server-side dipindahkan/dihapus dari sini.
-
   const bukaDetail = (item: ProductLike) => {
     setSelectedProduct(item);
     setIsModalOpen(true);
@@ -62,7 +57,9 @@ export default function Home() {
         </FadeInSection>
 
         <FadeInSection delay={0.3}>
-          <Shop onBukaDetail={bukaDetail} />
+          <div id="product">
+            <Shop onBukaDetail={bukaDetail} />
+          </div>
         </FadeInSection>
         <FadeInSection delay={0.3}>
           <Contact />

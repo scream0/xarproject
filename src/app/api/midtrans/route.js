@@ -141,6 +141,9 @@ export async function POST(request) {
       const quantity = Number(item?.quantity);
       if (!productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) throw new Error("Item checkout tidak valid");
       const { data: product, error } = await supabaseAdmin.from("products").select("id,name,variants,status").eq("id", productId).single();
+      // 🔍 Tambahkan log ini sementara untuk debugging
+  console.log("DEBUG checkout item:", { productId, foundProduct: product, supabaseError: error?.message, statusValue: product?.status });
+
       if (error || !product || product.status !== "published") throw new Error("Produk checkout tidak tersedia");
       const variant = (Array.isArray(product.variants) ? product.variants : []).find((candidate) => String(candidate?.size || "").toLowerCase() === String(item?.size || "").toLowerCase());
       const price = Number(variant?.price);

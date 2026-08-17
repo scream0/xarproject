@@ -113,9 +113,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
 
   useEffect(() => {
     if (!resolvedOrderId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("ID Pesanan tidak ditemukan di URL.");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
@@ -228,10 +226,75 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
     window.open(`https://jet.co.id/track?hal=1&track_id=${shipping.tracking_number}`, "_blank", "noopener,noreferrer");
   };
 
-  // Fungsi melanjutkan pembayaran via Midtrans Snap
-  const handleContinuePayment = () => {
-    if (!order?.snap_token) {
-      toast.error("Token pembayaran tidak ditemukan. Silakan buat pesanan baru atau hubungi admin.");
+  // Sinkronisasi status pembayaran dengan database setelah aksi Midtrans
+  const syncPaymentStatus = async (result) => {
+    try {
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+
+      await fetch(`/api/user/orders/${resolvedOrderId}/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          transaction_status: result.transaction_status,
+          status_code: result.status_code,
+          order_id: result.order_id,
+        }),
+      });
+    } catch (err) {
+      console.error("Gagal sinkronisasi status pembayaran:", err);
+    } finally {
+      window.location.reload();
+    }
+  };
+
+  // Fungsi melanjutkan pembayaran via Midtrans Snap (Dilengkapi pembuatan token dinamis jika belum ada)
+ const handleContinuePayment = async () => {
+    let snapToken = order?.snap_token;
+
+    if (!snapToken) {
+      try {
+        toast.loading("Membuat token pembayaran...", { id: "snap-token-loader" });
+        const { data: { session } } = await auth.getSession();
+        const token = session?.access_token;
+
+        const res = await fetch(`/api/user/orders/${resolvedOrderId}/pay`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ userId: user?.id }),
+        });
+
+        // Cek apakah server mengembalikan JSON atau HTML error
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const rawText = await res.text();
+          throw new Error(`Server merespons error (Status ${res.status}). Pastikan file API sudah dibuat.`);
+        }
+
+        const data = await res.json();
+        toast.dismiss("snap-token-loader");
+
+        if (!res.ok) {
+          throw new Error(data.error || "Gagal menghasilkan token pembayaran.");
+        }
+
+        snapToken = data.snap_token;
+        setOrder((prev) => ({ ...prev, snap_token: snapToken }));
+      } catch (err) {
+        toast.dismiss("snap-token-loader");
+        toast.error(err.message || "Gagal memuat sistem pembayaran.");
+        return;
+      }
+    }
+
+    if (!snapToken) {
+      toast.error("Token pembayaran tidak ditemukan. Silakan hubungi admin.");
       return;
     }
 
@@ -240,14 +303,14 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
       return;
     }
 
-    window.snap.pay(order.snap_token, {
+    window.snap.pay(snapToken, {
       onSuccess: function (result) {
         toast.success("Pembayaran Berhasil!");
-        window.location.href = `/orders?order_id=${result.order_id}&status_code=${result.status_code}&transaction_status=${result.transaction_status}`;
+        syncPaymentStatus(result);
       },
       onPending: function (result) {
         toast("Menunggu pembayaran Anda", { icon: "⏳" });
-        window.location.href = `/orders?order_id=${result.order_id}&status_code=${result.status_code}&transaction_status=${result.transaction_status}`;
+        syncPaymentStatus(result);
       },
       onClose: function () {
         toast("Popup pembayaran ditutup.", { icon: "ℹ️" });
@@ -281,7 +344,7 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
   }
 
   const statusInfo = getStatusInfo(order.status);
-  const isPendingStatus = (order.status || "").toLowerCase() === "pending";
+  const isPendingStatus = ["pending", "unpaid"].includes((order.status || "").toLowerCase());
 
   return (
     <div className={styles.pageShell}>
@@ -303,7 +366,7 @@ TOTAL           : Rp ${totalAmount.toLocaleString("id-ID")}
             Kembali
           </button>
           
-          {isPendingStatus && order.snap_token && (
+          {isPendingStatus && (
             <button
               onClick={handleContinuePayment}
               className={`${styles.primaryBtn} ${styles.payBtn}`}

@@ -142,11 +142,15 @@ export async function POST(request) {
       });
     }
 
-    // Enhanced validation for cart items
+    // Enhanced validation for cart items (termasuk cartId, supaya data
+    // yang tersimpan selalu konsisten dan tidak memicu warning "key"
+    // di React saat dikembalikan ke client).
     for (const item of items) {
       if (
         !item ||
         typeof item !== 'object' ||
+        typeof item.cartId !== 'string' ||
+        item.cartId.trim() === '' ||
         typeof item.productId !== 'string' ||
         typeof item.quantity !== 'number' ||
         !Number.isInteger(item.quantity) ||
@@ -154,7 +158,7 @@ export async function POST(request) {
       ) {
         return new NextResponse(
           JSON.stringify({
-            error: 'Bad request: Each cart item must be an object with a string productId and a positive integer quantity.',
+            error: 'Bad request: Each cart item must include a valid cartId, a string productId, and a positive integer quantity.',
           }),
           {
             status: 400,

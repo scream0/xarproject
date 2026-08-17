@@ -16,6 +16,18 @@ import { buildAddressId, normalizeAddress } from "@/utils/address";
 
 const StoreContext = createContext();
 
+// Helper: pastikan setiap item cart punya cartId yang konsisten.
+// Diperlukan karena data lama di DB / localStorage mungkin belum
+// memiliki field cartId, yang menyebabkan warning "key" di React
+// dan salah-target saat removeFromCart / updateCartItemVariant.
+const normalizeCartItems = (items = []) =>
+  (items || []).map((item) => ({
+    ...item,
+    cartId:
+      item.cartId ||
+      `${String(item.productId || item.id).trim()}-${String(item.size).trim()}`,
+  }));
+
 export function StoreProvider({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -27,17 +39,19 @@ export function StoreProvider({ children }) {
   const [promoSettings, setPromoSettings] = useState(null);
   const [cart, setCart] = useState({ items: [] });
 
-// load cart dari localStorage SETELAH mount (client-only, post-hydration)
-useEffect(() => {
-  try {
-    const saved = localStorage.getItem("xar_cart");
-    if (saved) {
-      setCart(JSON.parse(saved));
+  // load cart dari localStorage SETELAH mount (client-only, post-hydration)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("xar_cart");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setCart({ ...parsed, items: normalizeCartItems(parsed.items) });
+      }
+    } catch (error) {
+      console.error("Gagal parsing cart:", error);
     }
-  } catch (error) {
-    console.error("Gagal parsing cart:", error);
-  }
-}, []); // cuma jalan sekali saat mount
+  }, []); // cuma jalan sekali saat mount
+
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [isCartSynced, setIsCartSynced] = useState(false);
 
@@ -169,10 +183,16 @@ const handleUserData = useCallback(async (currentUser, token) => {
       const res = await fetch('/api/cart', { headers });
       if (res.ok) {
         const remoteCart = await res.json();
+        const normalizedRemoteCart = remoteCart
+          ? { ...remoteCart, items: normalizeCartItems(remoteCart.items) }
+          : remoteCart;
 
         // ⬇️ pakai functional update, JANGAN baca `cart` dari closure
         setCart((localCart) => {
-          const finalCart = remoteCart && remoteCart.items.length > 0 ? remoteCart : localCart;
+          const finalCart =
+            normalizedRemoteCart && normalizedRemoteCart.items.length > 0
+              ? normalizedRemoteCart
+              : localCart;
 
           // sync ke DB kalau local cart yang menang & ada isinya
           if (finalCart.items.length > 0) {
@@ -340,7 +360,10 @@ const handleUserData = useCallback(async (currentUser, token) => {
     }
   };
 
-  const removeFromCart = async (cartId) => {
+  // mode: "decrement" (default, dipakai tombol -) mengurangi 1 quantity,
+  // atau "all" (dipakai ikon trash) yang selalu menghapus item sepenuhnya
+  // berapa pun quantity-nya.
+  const removeFromCart = async (cartId, mode = "decrement") => {
     const previousCart = cart;
     let actionMessage = "";
     let newCart = cart;
@@ -350,27 +373,27 @@ const handleUserData = useCallback(async (currentUser, token) => {
       if (!item) {
         newCart = prev;
         return prev;
-      };
+      }
 
-      if (item.quantity > 1) {
-        actionMessage = `Jumlah ${item.name} dikurangi`;
-        newCart = {
-          ...prev,
-          items: prev.items.map((i) =>
-            i.cartId === cartId
-              ? {
-                  ...i,
-                  quantity: i.quantity - 1,
-                  total: i.price * (i.quantity - 1),
-                }
-              : i,
-          ),
-        };
+      if (mode === "all" || item.quantity <= 1) {
+        actionMessage = `${item.name} dihapus dari keranjang`;
+        newCart = { ...prev, items: prev.items.filter((i) => i.cartId !== cartId) };
         return newCart;
       }
 
-      actionMessage = `${item.name} dihapus dari keranjang`;
-      newCart = { ...prev, items: prev.items.filter((i) => i.cartId !== cartId) };
+      actionMessage = `Jumlah ${item.name} dikurangi`;
+      newCart = {
+        ...prev,
+        items: prev.items.map((i) =>
+          i.cartId === cartId
+            ? {
+                ...i,
+                quantity: i.quantity - 1,
+                total: i.price * (i.quantity - 1),
+              }
+            : i,
+        ),
+      };
       return newCart;
     });
 
