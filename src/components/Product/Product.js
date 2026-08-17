@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useProductFilter } from "@/hooks/useProductFilter";
 import { useStore } from "@/context/StoreContext";
 import { getPublicSettings } from "@/services/settingsService";
@@ -34,10 +34,14 @@ function SlideWrapper({ children }) {
 
 export function Product({ onBukaDetail }) {
   const { products, addToCart, rupiah, activePromo } = useStore();
-  const [productSectionSettings, setProductSectionSettings] = useState(null);
   const [resolvedHeader, setResolvedHeader] = useState(productData?.header);
 
-  // Menyesuaikan struktur data produk terpusat dari API/Store (bisa array langsung atau terbungkus di .data/.produkItems)
+  // Swiper Navigation & Pagination Refs (Menghindari konflik selector global)
+  const prevRef = useRef(null);
+  const nextRef = useRef(null);
+  const paginationRef = useRef(null);
+
+  // Menyesuaikan struktur data produk terpusat dari API/Store
   const productList = Array.isArray(products)
     ? products
     : products?.data || products?.produkItems || [];
@@ -45,12 +49,14 @@ export function Product({ onBukaDetail }) {
   const { kategoriItems, currentCategory, setCurrentCategory, filteredItems } =
     useProductFilter(productList);
 
+  // Bug Fix 1: useEffect dengan Unmount Guard
   useEffect(() => {
+    let isMounted = true;
+
     const fetchSectionSettings = async () => {
       try {
         const data = await getPublicSettings({ force: true });
-        if (!data) return;
-        setProductSectionSettings(data);
+        if (!isMounted || !data) return;
 
         // Header section produk dari settings DB (fallback ke JSON)
         if (data?.product?.header) {
@@ -64,11 +70,17 @@ export function Product({ onBukaDetail }) {
           });
         }
       } catch (error) {
-        console.error("Failed to load product section settings", error);
+        if (isMounted) {
+          console.error("Failed to load product section settings", error);
+        }
       }
     };
 
     fetchSectionSettings();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleAddToCart = useCallback(
@@ -80,12 +92,24 @@ export function Product({ onBukaDetail }) {
     [onBukaDetail],
   );
 
-  // Loading State (Data Driven dari JSON)
+  // Design Enhancement: Skeleton Loading Cards pas !products
   if (!products) {
     return (
-      <div className={styles.productEmpty}>
-        {productData.messages?.loading || "Loading..."}
-      </div>
+      <section className={styles.product}>
+        <div className={styles.productHeader}>
+          <h5>{resolvedHeader?.tagline || "Loading..."}</h5>
+          <h2>Loading Produk...</h2>
+        </div>
+        <div className={styles.skeletonGrid}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} className={styles.skeletonCard}>
+              <div className={styles.skeletonImagePulse} />
+              <div className={styles.skeletonLinePulse} />
+              <div className={styles.skeletonLineShortPulse} />
+            </div>
+          ))}
+        </div>
+      </section>
     );
   }
 
@@ -109,6 +133,7 @@ export function Product({ onBukaDetail }) {
         </h2>
       </div>
 
+      {/* Design Enhancement: Filter Tabs dengan Pill Indicator */}
       <div className={styles.produkFilterTabs}>
         {kategoriItems.map((kat) => (
           <button
@@ -133,10 +158,24 @@ export function Product({ onBukaDetail }) {
         observer={true}
         observeParents={true}
         navigation={{
-          nextEl: ".swiper-button-next",
-          prevEl: ".swiper-button-prev",
+          prevEl: prevRef.current,
+          nextEl: nextRef.current,
         }}
-        pagination={{ el: ".swiper-pagination", clickable: true }}
+        pagination={{
+          el: paginationRef.current,
+          clickable: true,
+        }}
+        onBeforeInit={(swiper) => {
+          swiper.params.navigation.prevEl = prevRef.current;
+          swiper.params.navigation.nextEl = nextRef.current;
+          swiper.params.pagination.el = paginationRef.current;
+        }}
+        onInit={(swiper) => {
+          swiper.navigation.init();
+          swiper.navigation.update();
+          swiper.pagination.init();
+          swiper.pagination.update();
+        }}
         breakpoints={{
           768: { slidesPerView: 3 },
           1024: { slidesPerView: 3 },
@@ -157,10 +196,11 @@ export function Product({ onBukaDetail }) {
           </SwiperSlide>
         ))}
 
+        {/* Bug Fix 4: Swiper Controls pakai useRef instance */}
         <div className={sliderStyles.swiperControlsContainer}>
-          <div className="swiper-button-prev" />
-          <div className="swiper-pagination" />
-          <div className="swiper-button-next" />
+          <div ref={prevRef} className="swiper-button-prev" />
+          <div ref={paginationRef} className="swiper-pagination" />
+          <div ref={nextRef} className="swiper-button-next" />
         </div>
       </Swiper>
     </section>
@@ -173,24 +213,37 @@ function ProductCard({ item, onDetail, onAdd, rupiah, activePromo }) {
   const isSoldOut =
     item.variants && item.variants.length > 0 && availableVariants.length === 0;
 
+  // Bug Fix 2: Menggunakan nullish coalescing (??) agar harga 0 (gratis) tetap valid
   const price =
-    availableVariants[0]?.price || item.variants?.[0]?.price || item.price || 0;
+    availableVariants[0]?.price ?? item.variants?.[0]?.price ?? item.price ?? 0;
 
   // Hitung harga diskon jika promo aktif
   const discounted = getDiscountedPrice(price, activePromo);
 
   // LOGIKA GAMBAR KARTU PRODUK TERPUSAT:
-  const imageSrc =
+  const rawImageSrc =
     availableVariants[0]?.image_url ||
     availableVariants[0]?.imageUrl ||
     item.image_url ||
     item.imageUrl ||
     (item.image ? `/assets/produk/${item.image}` : "/assets/placeholder.jpg");
 
+  // Bug Fix 3: Image Error Fallback State
+  const [imageSrc, setImageSrc] = useState(rawImageSrc);
+
+  useEffect(() => {
+    setImageSrc(rawImageSrc);
+  }, [rawImageSrc]);
+
   const formatRupiah = (val) => {
     if (rupiah) return rupiah(val);
     return `Rp ${Number(val).toLocaleString("id-ID")}`;
   };
+
+  // Hitung persentase diskon untuk badge (opsional jika discounted.hasDiscount)
+  const discountPercentage = discounted.hasDiscount && price > 0
+    ? Math.round(((price - discounted.price) / price) * 100)
+    : 0;
 
   return (
     <div
@@ -201,9 +254,15 @@ function ProductCard({ item, onDetail, onAdd, rupiah, activePromo }) {
         onClick={() => !isSoldOut && onDetail(item)}
         style={{ cursor: isSoldOut ? "default" : "pointer" }}
       >
+        {/* Design Enhancement: Badge Diskon & Hover Zoom */}
+        {discounted.hasDiscount && discountPercentage > 0 && !isSoldOut && (
+          <span className={styles.discountBadge}>-{discountPercentage}%</span>
+        )}
+
         <img
           src={imageSrc}
           alt={item.name}
+          onError={() => setImageSrc("/assets/placeholder.jpg")}
           className={`${styles.productImage} ${
             isSoldOut ? styles.grayscale : ""
           }`}
@@ -227,10 +286,7 @@ function ProductCard({ item, onDetail, onAdd, rupiah, activePromo }) {
           ) : (
             <>
               <span
-                style={{ fontSize: "0.75rem",
-                color: "#888",
-                display: "block"
-              }}
+                style={{ fontSize: "0.75rem", color: "#888", display: "block" }}
               >
                 {productData.card.pricePrefix}
               </span>
@@ -256,7 +312,7 @@ function ProductCard({ item, onDetail, onAdd, rupiah, activePromo }) {
           className={styles.btnQuickAdd}
           onClick={() =>
             !isSoldOut &&
-            onAdd(item, availableVariants[0] || item.variants?.[0] || { price })
+            onAdd(item, availableVariants[0] ?? item.variants?.[0] ?? { price })
           }
           disabled={isSoldOut}
         >

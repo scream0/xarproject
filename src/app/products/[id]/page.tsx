@@ -105,8 +105,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   if (loading) {
     return (
       <div className={styles.pageContainer}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)' }}>
-          <div style={{ width: '20px', height: '20px', border: '2px solid var(--primary-accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
           <p>Memuat detail produk...</p>
         </div>
       </div>
@@ -120,10 +120,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   if (error) {
     return (
       <div className={styles.pageContainer}>
-        <div className={styles.contentWrapper} style={{ padding: '2rem', textAlign: 'center', maxWidth: '450px' }}>
-          <h3 style={{ color: 'var(--danger-color)', marginBottom: '0.5rem', fontFamily: 'var(--font-serif)' }}>Terjadi Kesalahan</h3>
-          <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', marginBottom: '1rem' }}>{error}</p>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>ID Produk: {id}</p>
+        <div className={styles.errorCard}>
+          <h3 className={styles.errorTitle}>Terjadi Kesalahan</h3>
+          <p className={styles.errorDesc}>{error}</p>
+          <p className={styles.errorId}>ID Produk: {id}</p>
           <button 
             type="button"
             onClick={() => router.back()}
@@ -142,16 +142,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   const handleSizeChange = (variant: Variant) => {
     const stock = variant.stock ?? variant.stok ?? 0;
-    if (stock <= 0) return; // Cegah pilih varian habis
+    if (stock <= 0) return;
     setCurrentSize(variant.size);
     setSelectedVariant(variant);
     setModalQty(1);
   };
 
-  // Delegasikan sepenuhnya ke addToCart milik StoreContext.
-  // addToCart sudah menampilkan toast sukses/gagal sendiri (react-hot-toast),
-  // jadi di sini cukup validasi stok lokal saja sebelum memanggilnya —
-  // tidak perlu toast tambahan supaya tidak dobel.
   const handleAddToCart = async () => {
     if (!selectedVariant || isSubmitting) return;
 
@@ -200,7 +196,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             onClick={() => router.back()}
             className={styles.backButton}
           >
-            <AppIcon name="arrow-left" className={styles.backIcon} />
+            {/* Properti size ditambahkan untuk menghindari error TypeScript */}
+            <AppIcon name="arrow-left" size={20} className={styles.backIcon} />
             <span>Kembali</span>
           </button>
         </div>
