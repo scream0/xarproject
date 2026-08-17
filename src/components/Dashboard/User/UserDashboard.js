@@ -26,11 +26,11 @@ function getGreetingName(userName) {
   return userName || userConfig.defaultCustomer;
 }
 
-export default function UserDashboard({ initialProducts }) {
+export default function UserDashboard({ user }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user, userName, loading, error, retry } = useUserDashboardData();
+  const { userName, loading, error, retry } = useUserDashboardData();
   const [notificationCount, setNotificationCount] = useState(0);
 
   const { isCartOpen, setIsCartOpen, cartQuantity } = useStore();
@@ -209,7 +209,7 @@ export default function UserDashboard({ initialProducts }) {
 
         {/* Hapus key={activeTab} agar konten tidak ter-unmount ulang yang menyebabkan kedipan/refresh */}
         <div className={`${styles.viewWrapper} ${styles.viewWrapperAnimated}`}>
-          {activeTab === "shop" && <ShopPage initialProducts={initialProducts} searchQuery={searchQuery} onBukaDetail={handleBukaDetail} />}
+          {activeTab === "shop" && <ShopPage searchQuery={searchQuery} onBukaDetail={handleBukaDetail} />}
           {activeTab === "overview" && (
             <OverviewSection setActiveTab={handleTabChange} />
           )}

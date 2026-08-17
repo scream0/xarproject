@@ -13,7 +13,7 @@ import UserDashboard from "@/components/Dashboard/User/UserDashboard";
 // Import Skeleton
 import { DashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
-export default function DashboardView({ initialProducts }) {
+export default function DashboardView() {
   const { user, role, loading } = useUserDashboardData();
 
   // Tangkap parameter redirect dari Midtrans (settlement / sukses)
@@ -56,7 +56,7 @@ export default function DashboardView({ initialProducts }) {
       {role === "admin" ? (
         <AdminDashboard user={user} />
       ) : (
-        <UserDashboard user={user} initialProducts={initialProducts} />
+        <UserDashboard user={user} />
       )}
     </>
   );

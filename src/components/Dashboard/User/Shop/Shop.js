@@ -18,15 +18,15 @@ import shopConfig from "@/data/ui/shopConfig.json";
 const PRODUCTS_PER_PAGE = 12;
 const EMPTY_PRODUCTS = [];
 
-export default function Shop({ initialProducts = EMPTY_PRODUCTS, initialTotalProducts = 0, searchQuery = "", onBukaDetail }) {
+export default function Shop({ searchQuery = "", onBukaDetail }) {
   const { addToCart, products: contextProducts, activePromo, cartQuantity, setIsCartOpen } = useStore();
-  const [products, setProducts] = useState(initialProducts || []);
+  const [products, setProducts] = useState([]);
   const [orderItemsMap, setOrderItemsMap] = useState({});
   const [allReviews, setAllReviews] = useState([]);
-  const [loading, setLoading] = useState(!initialProducts);
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(initialTotalProducts || 0);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // Wishlist State (LocalStorage persistence)
@@ -153,10 +153,10 @@ export default function Shop({ initialProducts = EMPTY_PRODUCTS, initialTotalPro
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentPage(1);
     } else {
-      const shouldFetchProducts = !initialProducts || products.length === 0 || currentPage > 1;
+      const shouldFetchProducts = products.length === 0 || currentPage > 1;
       fetchShopData(shouldFetchProducts, currentPage > 1);
     }
-  }, [searchQuery, sortBy, currentPage, fetchShopData, initialProducts, products.length]);
+  }, [searchQuery, sortBy, currentPage, fetchShopData, products.length]);
 
   // Supabase Realtime keeps catalog stock, price and public review data in sync.
   useEffect(() => {
