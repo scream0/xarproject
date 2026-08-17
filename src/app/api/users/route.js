@@ -43,24 +43,49 @@ export async function GET(request) {
       );
     }
 
-    await canManageUser(request, userId);
+    const actor = await canManageUser(request, userId);
+    const isSelfFetch = actor.id === userId;
 
-    const { data: userRecord, error } = await supabaseAdmin
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    let userRecord;
+    let authDataUser;
 
-    if (error || !userRecord) {
-      return NextResponse.json({ exists: false, data: null }, { status: 200 });
+    if (isSelfFetch) {
+      // User is fetching their own data, reuse the actor object from auth.
+      authDataUser = actor;
+      const { data, error } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      
+      if (error) {
+        // Still return exists: false if profile is not found, but not an error
+        return NextResponse.json({ exists: false, data: null }, { status: 200 });
+      }
+      userRecord = data;
+
+    } else {
+      // Admin is fetching another user's data, run queries in parallel.
+      const [profileResult, authResult] = await Promise.all([
+        supabaseAdmin.from("profiles").select("*").eq("id", userId).single(),
+        supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null }))
+      ]);
+
+      if (profileResult.error || !profileResult.data) {
+        return NextResponse.json({ exists: false, data: null }, { status: 200 });
+      }
+      userRecord = profileResult.data;
+      authDataUser = authResult.data?.user;
     }
 
-    const { data: authData } = await supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null }));
+    if (!userRecord) {
+        return NextResponse.json({ exists: false, data: null }, { status: 200 });
+    }
 
     const responseData = {
       ...userRecord,
-      email: authData?.user?.email || userRecord.email,
-      user_metadata: authData?.user?.user_metadata || {},
+      email: authDataUser?.email || userRecord.email,
+      user_metadata: authDataUser?.user_metadata || {},
     };
 
     return NextResponse.json({ exists: true, data: responseData }, { status: 200 });

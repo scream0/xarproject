@@ -56,6 +56,7 @@ function normalizeUserName(...candidates) {
 export function useUserDashboardData() {
   const [user, setUser] = useState(null);
   const [userName, setUserName] = useState("");
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retryKey, setRetryKey] = useState(0);
@@ -96,6 +97,7 @@ export function useUserDashboardData() {
 
           if (!isCancelled) {
             setUserName(resolvedName);
+            setRole(data.role || userConfig.defaultRole);
           }
         } else {
           const defaultName = normalizeUserName(
@@ -126,6 +128,7 @@ export function useUserDashboardData() {
 
           if (!isCancelled) {
             setUserName(defaultName);
+            setRole(userConfig.defaultRole);
           }
         }
       } catch (err) {
@@ -142,6 +145,7 @@ export function useUserDashboardData() {
               userConfig.defaultUser,
             ),
           );
+          setRole(userConfig.defaultRole);
         }
       } finally {
         if (!isCancelled) {
@@ -184,6 +188,7 @@ export function useUserDashboardData() {
   return {
     user,
     userName,
+    role,
     loading,
     error,
     retry: () => setRetryKey((current) => current + 1),

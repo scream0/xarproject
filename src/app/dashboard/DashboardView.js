@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
-import styles from "./Dashboard.module.css";
+import { useEffect } from "react";
 import toast from "react-hot-toast";
 
-// Import Konfigurasi JSON
-import dashboardConfig from "@/data/ui/dashboardPageConfig.json";
+// Import hooks
+import { useUserDashboardData } from "@/hooks/useUserDashboardData";
 
 // Import dua dashboard
 import AdminDashboard from "@/components/Dashboard/Admin/AdminDashboard";
@@ -16,9 +14,7 @@ import UserDashboard from "@/components/Dashboard/User/UserDashboard";
 import { DashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 export default function DashboardView({ initialProducts }) {
-  const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, role, loading } = useUserDashboardData();
 
   // Tangkap parameter redirect dari Midtrans (settlement / sukses)
   useEffect(() => {
@@ -50,61 +46,8 @@ export default function DashboardView({ initialProducts }) {
       window.history.replaceState({}, document.title, cleanUrl);
     }
   }, []);
-  
- useEffect(() => {
-  const checkUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const currentUser = session?.user;
-    const accessToken = session?.access_token;
 
-    if (!currentUser || !accessToken) {
-      window.location.replace("/login");
-      return;
-    }
-
-    setUser(currentUser);
-
-    try {
-      const res = await fetch(`/api/users?userId=${currentUser.id}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      const result = await res.json();
-
-      if (res.ok && result.exists && result.data && result.data.role) {
-        const userRole = result.data.role;
-        setRole(userRole);
-        localStorage.setItem("userRole", userRole);
-      } else {
-        setRole(dashboardConfig.defaultRole);
-      }
-    } catch (error) {
-      console.error("Gagal ambil data role via API:", error);
-      setRole(dashboardConfig.defaultRole);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  checkUser();
-
-  
-    // Set up listener untuk perubahan status autentikasi
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        window.location.replace("/login");
-      } else if (session) {
-        setUser(session.user);
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
-
-  if (loading || role === null) {
+  if (loading || !role) {
     return <DashboardSkeleton />;
   }
 
