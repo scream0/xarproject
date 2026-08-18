@@ -4,6 +4,7 @@ import { About } from "@/components/About/About";
 import { Footer } from "@/components/Footer/Footer";
 import dynamic from "next/dynamic";
 import { getInitialProducts, getSalesData, getPublicReviews } from "@/lib/productService";
+import type { InitialDataType } from '@/types/data';
 
 // Dynamically import client-side and below-the-fold components
 const HomePageClient = dynamic(() => import('./HomePageClient').then(mod => mod.HomePageClient), {
@@ -17,7 +18,7 @@ export default async function Home() {
   const salesData = await getSalesData();
   const reviewsData = await getPublicReviews();
 
-  const initialData = {
+  const initialData: InitialDataType = {
     products: productsData.products,
     totalProducts: productsData.total,
     salesMap: salesData,

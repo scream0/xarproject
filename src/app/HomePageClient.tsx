@@ -5,47 +5,10 @@ import dynamic from "next/dynamic";
 import { Modal } from "@/components/UI/Modal/ProductModal";
 import { useStore } from "@/context/StoreContext";
 import Shop from '@/components/Dashboard/User/Shop/Shop';
+import type { InitialDataType, Product } from '@/types/data'; // Import shared types
 
-// Type Definitions
-type ProductVariant = {
-  size: string;
-  price: number;
-  stock: number;
-};
-
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  image_url: string;
-  variants?: ProductVariant[]; // Variants can be optional
-  created_at: string;
-  total_sold?: number;
-  price?: number; // Price can be optional, especially if variants exist
-};
-
-type SalesMap = {
-  [productId: string]: number;
-};
-
-type Review = {
-  id: string;
-  product_id: string;
-  user_name: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-};
-
-type InitialDataType = {
-  products: Product[];
-  totalProducts: number;
-  salesMap: SalesMap;
-  reviews: Review[];
-};
-
-type ProductLike = Product & { // ProductLike extends Product
+// The `ProductLike` type can still be useful here for props that accept a product-like object.
+type ProductLike = Product & {
   [key: string]: unknown;
 };
 
