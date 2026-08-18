@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import type { SalesMap } from '@/types/data';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -25,7 +26,11 @@ export async function getInitialProducts() {
 
     return { products: data || [], total: count ?? 0 };
   } catch (error) {
-    console.error("[ProductService] " + error.message);
+    if (error instanceof Error) {
+      console.error("[ProductService] " + error.message);
+    } else {
+      console.error("[ProductService] An unknown error occurred");
+    }
     // Return a default state on failure
     return { products: [], total: 0 };
   }
@@ -35,7 +40,7 @@ export async function getInitialProducts() {
  * Fetches the total sales for each product.
  * Corresponds to the logic in /api/products/sales GET handler.
  */
-export async function getSalesData() {
+export async function getSalesData(): Promise<SalesMap> {
   try {
     const { data, error } = await supabaseAdmin
       .from('product_sales_summary')
@@ -43,7 +48,7 @@ export async function getSalesData() {
 
     if (error) throw error;
 
-    const salesMap = {};
+    const salesMap: SalesMap = {};
     (data || []).forEach((row) => {
       if (row.product_id) {
         salesMap[row.product_id] = Number(row.total_sold) || 0;
@@ -51,7 +56,11 @@ export async function getSalesData() {
     });
     return salesMap;
   } catch (error) {
-     console.error("[ProductService] Error fetching sales data: " + error.message);
+    if (error instanceof Error) {
+      console.error("[ProductService] Error fetching sales data: " + error.message);
+    } else {
+      console.error("[ProductService] An unknown error occurred while fetching sales data");
+    }
      return {};
   }
 }
@@ -74,7 +83,11 @@ export async function getPublicReviews() {
     // if the client side component is adapted slightly. Let's do that for efficiency.
     return data || [];
   } catch (error) {
-     console.error("[ProductService] Error fetching public reviews: " + error.message);
+    if (error instanceof Error) {
+      console.error("[ProductService] Error fetching public reviews: " + error.message);
+    } else {
+      console.error("[ProductService] An unknown error occurred while fetching public reviews");
+    }
      return [];
   }
 }
