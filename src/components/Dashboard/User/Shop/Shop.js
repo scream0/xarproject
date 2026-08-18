@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useStore } from "@/context/StoreContext";
 import { getDiscountedPrice } from "@/utils/promo";
 import styles from "./Shop.module.css";
-import toast from "react-hot-toast";
+
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -18,29 +18,32 @@ import shopConfig from "@/data/ui/shopConfig.json";
 const PRODUCTS_PER_PAGE = 12;
 const EMPTY_PRODUCTS = [];
 
-export default function Shop({ searchQuery = "", onBukaDetail }) {
-  const { addToCart, products: contextProducts, activePromo, cartQuantity, setIsCartOpen } = useStore();
-  const [products, setProducts] = useState([]);
-  const [orderItemsMap, setOrderItemsMap] = useState({});
-  const [allReviews, setAllReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function Shop({ searchQuery = "", onBukaDetail, initialData }) {
+  const { addToCart, activePromo } = useStore();
+
+  // If initialData is provided, use it for the initial state.
+  const [products, setProducts] = useState(initialData?.products || []);
+  const [orderItemsMap, setOrderItemsMap] = useState(initialData?.salesMap || {});
+  const [allReviews, setAllReviews] = useState(initialData?.reviews || []);
+  const [loading, setLoading] = useState(!initialData); // Not loading if data is passed
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(initialData?.totalProducts || 0);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // Wishlist State (LocalStorage persistence)
-  const [wishlist, setWishlist] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("shop_wishlist");
-        return saved ? JSON.parse(saved) : [];
-      } catch {
-        return [];
+  const [wishlist, setWishlist] = useState([]);
+
+  // Populate wishlist from localStorage on client-side after mount to avoid hydration mismatch
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("shop_wishlist");
+      if (saved) {
+        setWishlist(JSON.parse(saved));
       }
+    } catch {
+      // If parsing fails, do nothing, wishlist remains empty
     }
-    return [];
-  });
+  }, []);
 
   const toggleWishlist = (productId, e) => {
     e.stopPropagation();
@@ -61,12 +64,15 @@ export default function Shop({ searchQuery = "", onBukaDetail }) {
       }),
     );
 
-    toast.success(
-      isExist
-        ? shopConfig.toasts?.wishlistRemove || "Dihapus dari wishlist."
-        : shopConfig.toasts?.wishlistAdd ||
-            "Berhasil ditambahkan ke wishlist!",
-    );
+    // Dynamic import for toast to ensure it's client-side only
+    import("react-hot-toast").then(toast => {
+        toast.default.success(
+          isExist
+            ? shopConfig.toasts?.wishlistRemove || "Dihapus dari wishlist."
+            : shopConfig.toasts?.wishlistAdd ||
+                "Berhasil ditambahkan ke wishlist!",
+        );
+    });
   };
 
   const fetchShopData = useCallback(async (shouldFetchProducts = true, append = false) => {
@@ -107,11 +113,9 @@ export default function Shop({ searchQuery = "", onBukaDetail }) {
         } else if (res) {
             const errorText = await res.text();
             console.error("Gagal memuat produk:", errorText);
-            toast.error(shopConfig.toasts?.fetchError || "Gagal memuat katalog produk");
         }
     } else if(productsResult.status === 'rejected') {
         console.error("Gagal memuat produk:", productsResult.reason);
-        toast.error(shopConfig.toasts?.fetchError || "Gagal memuat katalog produk");
     }
 
     // Process Sales Data
@@ -144,29 +148,43 @@ export default function Shop({ searchQuery = "", onBukaDetail }) {
 
     setLoading(false);
     setIsFetchingMore(false);
-  }, [searchQuery, sortBy, currentPage, toast, shopConfig.toasts?.fetchError]);
+  }, [searchQuery, sortBy, currentPage, shopConfig.toasts?.fetchError]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // This effect now handles client-side data fetching ONLY when parameters change.
   useEffect(() => {
+    // Skip initial fetch if data is already provided by the server.
+    const isInitialLoad = initialData && currentPage === 1 && sortBy === 'default' && !searchQuery;
+    if (isInitialLoad) {
+      return; // Do nothing on the first render if we have server-provided data.
+    }
+
     // When search or sort changes, reset page to 1
     if (currentPage !== 1 && (searchQuery || sortBy !== "default")) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentPage(1);
     } else {
-      const shouldFetchProducts = products.length === 0 || currentPage > 1;
-      fetchShopData(shouldFetchProducts, currentPage > 1);
+      // Fetch all data if it's a subsequent load (pagination, filter change)
+      fetchShopData(true, currentPage > 1);
     }
-  }, [searchQuery, sortBy, currentPage, fetchShopData, products.length]);
+  }, [searchQuery, sortBy, currentPage, fetchShopData, initialData]);
 
-  // Supabase Realtime keeps catalog stock, price and public review data in sync.
+  // Supabase Realtime, deferred to prevent blocking initial render.
   useEffect(() => {
-    const refreshCatalog = () => fetchShopData(true);
-    const channel = supabase
-      .channel("storefront-catalog")
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, refreshCatalog)
-      .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, refreshCatalog)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    let channel;
+    const timer = setTimeout(() => {
+      const refreshCatalog = () => fetchShopData(true);
+      channel = supabase
+        .channel("storefront-catalog")
+        .on("postgres_changes", { event: "*", schema: "public", table: "products" }, refreshCatalog)
+        .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, refreshCatalog)
+        .subscribe();
+    }, 1000); // Delay of 1 second
+
+    return () => {
+      clearTimeout(timer);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [fetchShopData]);
 
   // Handle product-stock-updated event

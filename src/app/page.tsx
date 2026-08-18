@@ -1,84 +1,41 @@
-"use client";
-
-import { useState } from "react";
-import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar/Navbar";
 import { Hero } from "@/components/Hero/Hero";
 import { About } from "@/components/About/About";
-import { Contact } from "@/components/Contact/Contact";
 import { Footer } from "@/components/Footer/Footer";
-import { Modal } from "@/components/UI/Modal/ProductModal";
-import { useStore } from "@/context/StoreContext";
-import Shop from '@/components/Dashboard/User/Shop/Shop';
+import dynamic from "next/dynamic";
+import { getInitialProducts, getSalesData, getPublicReviews } from "@/lib/productService";
 
-// Komponen Wrapper untuk animasi
-const FadeInSection = ({
-  children,
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.2 }}
-    transition={{ duration: 0.6, delay, ease: "easeOut" }}
-  >
-    {children}
-  </motion.div>
-);
+// Dynamically import client-side and below-the-fold components
+const HomePageClient = dynamic(() => import('./HomePageClient').then(mod => mod.HomePageClient), {
+  loading: () => <p>Loading Products...</p> // Optional loading component
+});
 
-type ProductLike = {
-  id?: string;
-  name?: string;
-  [key: string]: unknown;
-};
+// This is now a React Server Component
+export default async function Home() {
+  // Fetch initial data on the server
+  const productsData = await getInitialProducts();
+  const salesData = await getSalesData();
+  const reviewsData = await getPublicReviews();
 
-export default function Home() {
-  const [selectedProduct, setSelectedProduct] = useState<ProductLike | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { addToCart, rupiah } = useStore();
-
-  const bukaDetail = (item: ProductLike) => {
-    setSelectedProduct(item);
-    setIsModalOpen(true);
+  const initialData = {
+    products: productsData.products,
+    totalProducts: productsData.total,
+    salesMap: salesData,
+    reviews: reviewsData,
   };
 
   return (
     <>
       <Navbar />
       <main>
-        <FadeInSection delay={0.1}>
-          <Hero />
-        </FadeInSection>
-        <FadeInSection delay={0.2}>
-          <About />
-        </FadeInSection>
+        <Hero />
+        <About />
 
-        <FadeInSection delay={0.3}>
-          <div id="product">
-            <Shop onBukaDetail={bukaDetail} />
-          </div>
-        </FadeInSection>
-        <FadeInSection delay={0.3}>
-          <Contact />
-        </FadeInSection>
+        {/* HomePageClient will handle the interactive parts */}
+        <HomePageClient initialData={initialData} />
+        
       </main>
-      <FadeInSection delay={0.1}>
-        <Footer />
-      </FadeInSection>
-
-      {/* Modal Detail Produk */}
-      {isModalOpen && selectedProduct && (
-        <Modal
-          isOpen={isModalOpen}
-          item={selectedProduct}
-          onClose={() => setIsModalOpen(false)}
-          onAddToCart={addToCart}
-          rupiah={rupiah}
-        />
-      )}
+      <Footer />
     </>
   );
 }
