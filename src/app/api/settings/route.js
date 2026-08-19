@@ -6,8 +6,8 @@ import path from "path";
 export const dynamic = "force-dynamic";
 
 const DEFAULT_SETTINGS = {
-  storeName: "XAR Perfume",
-  storeEmail: "contact@xar.com",
+  storeName: "MAMEKO Perfume",
+  storeEmail: "contact@mameko.my.id",
   currency: "IDR",
   adminLocale: "id",
   lowStockThreshold: 10,

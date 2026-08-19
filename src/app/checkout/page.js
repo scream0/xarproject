@@ -84,7 +84,7 @@ export default function CheckoutPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
 
-  // State Voucher Milik User (Claimed Vouchers)
+  // ── Voucher State ──
   const [claimedVouchers, setClaimedVouchers] = useState([]);
   const [appliedVouchers, setAppliedVouchers] = useState([]);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
@@ -128,6 +128,7 @@ export default function CheckoutPage() {
     };
   }, [router]);
 
+  // ── Scroll Lock Fix ──
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyOverflowY = document.body.style.overflowY;
@@ -219,7 +220,6 @@ export default function CheckoutPage() {
       || addresses[0];
 
     if (bestAddress && selectedAddressId !== bestAddress.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedAddressId(bestAddress.id);
     }
   }, [addresses, selectedAddressId]);
@@ -227,8 +227,8 @@ export default function CheckoutPage() {
   const handleSaveAddress = async (e) => {
     e.preventDefault();
     if (!currentUser) return;
-    if (!addressForm.province || !addressForm.city || !addressForm.street || !addressForm.recipientName) {
-      toast.error("Harap isi nama penerima, provinsi, kota/kabupaten, dan alamat lengkap");
+    if (!addressForm.province || !addressForm.city || !addressForm.street || !addressForm.recipientName || !addressForm.postalCode) {
+      toast.error("Harap lengkapi semua kolom: nama, telepon, alamat, provinsi, kota, dan kode pos.");
       return;
     }
 
@@ -305,7 +305,7 @@ export default function CheckoutPage() {
       return {
         tone: "warning",
         title: "Pilih alamat pengiriman",
-        detail: "Alamat yang lengkap akan membantu sistem menentukan wilayah pengiriman dengan lebih akurat.",
+        detail: "Alamat yang lengkap akan membantu sistem menentukan ongkir secara akurat.",
       };
     }
 
@@ -321,14 +321,14 @@ export default function CheckoutPage() {
       return {
         tone: "info",
         title: "Mendeteksi wilayah",
-        detail: "Kode pos sedang dipakai untuk memperkirakan area pengiriman sebelum ongkir ditampilkan.",
+        detail: "Kode pos sedang dipakai untuk memperkirakan tarif pengiriman.",
       };
     }
 
     return {
       tone: "warning",
       title: "Alamat belum lengkap",
-      detail: "Lengkapi kode pos dan kota agar sistem bisa memprediksi ongkos kirim dengan lebih tepat.",
+      detail: "Lengkapi kode pos dan kota agar sistem bisa menghitung ongkos kirim.",
     };
   }, [selectedAddress, selectedAddressRegion]);
 
@@ -399,29 +399,18 @@ export default function CheckoutPage() {
         setShippingMeta({
           kind: "estimated",
           message: usingFallbackDestination
-            ? "Wilayah tujuan belum terdeteksi penuh, jadi kami menampilkan opsi pengiriman estimasi lokal agar checkout tetap bisa dilanjutkan."
-            : fallbackMessage || "Tarif real-time belum tersedia, jadi kami menampilkan opsi estimasi lokal.",
+            ? "Wilayah tujuan belum terdeteksi penuh. Menampilkan opsi estimasi lokal."
+            : fallbackMessage || "Tarif real-time belum tersedia. Menampilkan opsi estimasi lokal.",
         });
         return;
       }
 
       uniqueCosts.sort((a, b) => {
-        if (a.estimated !== b.estimated) {
-          return a.estimated ? 1 : -1;
-        }
-
-        if (a.cost !== b.cost) {
-          return a.cost - b.cost;
-        }
-
+        if (a.estimated !== b.estimated) return a.estimated ? 1 : -1;
+        if (a.cost !== b.cost) return a.cost - b.cost;
         const etdA = Number(String(a.etd || "0").split("-")[0]) || 999;
         const etdB = Number(String(b.etd || "0").split("-")[0]) || 999;
-
-        if (etdA !== etdB) {
-          return etdA - etdB;
-        }
-
-        return a.courierName.localeCompare(b.courierName);
+        return etdA !== etdB ? etdA - etdB : a.courierName.localeCompare(b.courierName);
       });
 
       setCourierOptions(uniqueCosts);
@@ -432,8 +421,8 @@ export default function CheckoutPage() {
           message: fallbackMessage.includes("RajaOngkir")
             ? fallbackMessage
             : usingFallbackDestination
-              ? "Wilayah tujuan belum terdeteksi penuh, jadi kami menampilkan opsi pengiriman estimasi lokal agar checkout tetap bisa dilanjutkan."
-              : "RajaOngkir memang menyediakan pilihan kurir, tetapi tarif untuk wilayah ini belum dikembalikan. Kami menampilkan estimasi sementara untuk membantu checkout.",
+              ? "Wilayah tujuan belum terdeteksi penuh. Menampilkan estimasi pengiriman."
+              : "Tarif kurir disajikan dalam estimasi sementara.",
         });
       }
 
@@ -463,7 +452,6 @@ export default function CheckoutPage() {
     const timer = window.setTimeout(() => {
       void fetchCourierCosts();
     }, 0);
-
     return () => window.clearTimeout(timer);
   }, [fetchCourierCosts]);
 
@@ -488,9 +476,7 @@ export default function CheckoutPage() {
     const voucherDetail = claimedVoucherEntry.vouchers || claimedVoucherEntry;
 
     if (voucherDetail.min_purchase && subtotal < voucherDetail.min_purchase) {
-      toast.error(
-        `Minimum belanja untuk voucher ini adalah ${rupiah(voucherDetail.min_purchase)}`
-      );
+      toast.error(`Minimum belanja untuk voucher ini adalah ${rupiah(voucherDetail.min_purchase)}`);
       return;
     }
 
@@ -543,10 +529,8 @@ export default function CheckoutPage() {
   }, [discountVoucher, subtotal]);
 
   const totalVoucherDiscount = shippingVoucherDiscount + subtotalVoucherDiscount;
-
   const finalShippingCost = Math.max(0, shippingCost - shippingVoucherDiscount);
   const finalSubtotalDiscount = subtotalVoucherDiscount;
-
   const grandTotal = Math.max(0, subtotal - finalSubtotalDiscount) + finalShippingCost;
 
   // ── Handle payment ──
@@ -562,7 +546,6 @@ export default function CheckoutPage() {
 
     const selectedCourierInfo = courierOptions.find((c) => c.key === selectedCourierKey);
 
-    // Kirim data lengkap termasuk voucher aktif ke localStorage agar dapat dibaca oleh StoreContext / processPayment
     localStorage.setItem(
       "checkout_shipping",
       JSON.stringify({
@@ -572,8 +555,7 @@ export default function CheckoutPage() {
         courierName: selectedCourierInfo?.courierName || "",
         courierService: selectedCourierInfo?.service || "",
         courierEtd: selectedCourierInfo?.etd || "",
-        shippingCost: finalShippingCost, // Kirim ongkir setelah dipotong gratis ongkir
-        // Kirim voucher utama (ambil salah satu dari appliedVouchers agar dibaca backend lama/baru)
+        shippingCost: finalShippingCost,
         appliedVoucherId: discountVoucher?.id || shippingVoucher?.id || null,
         voucherClaimId: discountVoucher?.claimId || shippingVoucher?.claimId || null,
         appliedVouchers: appliedVouchers.map((v) => ({
@@ -588,7 +570,6 @@ export default function CheckoutPage() {
       }),
     );
 
-    // Panggil proses pembayaran dari StoreContext
     await processPayment({
       shippingVoucherId: shippingVoucher?.id || null,
       shippingVoucherClaimId: shippingVoucher?.claimId || null,
@@ -653,10 +634,12 @@ export default function CheckoutPage() {
       <div className={styles.checkoutLayout}>
         {/* ─── LEFT COLUMN ─── */}
         <div className={styles.leftColumn}>
+          
           {/* ====== 1. ALAMAT PENGIRIMAN ====== */}
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
+                <span className={styles.sectionStep}>1</span>
                 Alamat Pengiriman
               </h2>
               <button
@@ -671,51 +654,66 @@ export default function CheckoutPage() {
             </div>
 
             {addressLoading ? (
-                <p>Memuat alamat...</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Memuat alamat...</p>
             ) : addresses.length === 0 ? (
-                <p>Belum ada alamat tersimpan.</p>
+              <div style={{ padding: "16px 0", textAlign: "center" }}>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "10px" }}>
+                  Belum ada alamat tersimpan.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddressForm(emptyAddressForm(currentUser?.user_metadata?.name));
+                    setShowAddressModal(true);
+                  }}
+                  className={styles.sectionAction}
+                  style={{ display: "inline-block" }}
+                >
+                  + Tambah Alamat Sekarang
+                </button>
+              </div>
             ) : (
-                <div>
-                  {selectedAddressRegion?.cityId && (
-                    <div className={styles.addressStatusBanner}>
-                      <span className={styles.addressStatusDot}></span>
-                      <span>
-                        Wilayah terdeteksi: <strong>{selectedAddressRegion.city}</strong> · {selectedAddressRegion.province}
-                      </span>
-                    </div>
-                  )}
-                  <div className={styles.addressList}>
-                    {addresses.map((addr) => {
-                      const detectedRegion = resolveAddressRegion(addr.city, addr.province, addr.postalCode);
-                      const statusTone = detectedRegion?.cityId ? styles.addressPillSuccess : addr.postalCode ? styles.addressPillInfo : styles.addressPillNeutral;
-
-                      return (
-                        <div
-                          key={addr.id}
-                          className={`${styles.addressCard} ${
-                            selectedAddressId === addr.id ? styles.addressCardSelected : ""
-                          }`}
-                          onClick={() => setSelectedAddressId(addr.id)}
-                        >
-                          <div className={styles.addressContent}>
-                            <span className={styles.addressLabel}>
-                              {addr.label}
-                              {addr.isPrimary && <span className={styles.primaryBadge}>Utama</span>}
-                            </span>
-                            <p className={styles.addressName}>{addr.recipientName}</p>
-                            <p className={styles.addressPhone}>{addr.recipientPhone}</p>
-                            <p className={styles.addressFull}>
-                              {addr.street}, {addr.city}, {addr.province} {addr.postalCode}
-                            </p>
-                            <span className={`${styles.addressPill} ${statusTone}`}>
-                              {detectedRegion?.cityId ? "Wilayah terdeteksi" : addr.postalCode ? "Kode pos terdaftar" : "Lengkapi detail alamat"}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+              <div>
+                {selectedAddressRegion?.cityId && (
+                  <div className={styles.addressStatusBanner}>
+                    <span className={styles.addressStatusDot}></span>
+                    <span>
+                      Wilayah terdeteksi: <strong>{selectedAddressRegion.city}</strong> · {selectedAddressRegion.province}
+                    </span>
                   </div>
+                )}
+                <div className={styles.addressList}>
+                  {addresses.map((addr) => {
+                    const detectedRegion = resolveAddressRegion(addr.city, addr.province, addr.postalCode);
+                    const statusTone = detectedRegion?.cityId ? styles.addressPillSuccess : addr.postalCode ? styles.addressPillInfo : styles.addressPillNeutral;
+
+                    return (
+                      <div
+                        key={addr.id}
+                        className={`${styles.addressCard} ${
+                          selectedAddressId === addr.id ? styles.addressCardSelected : ""
+                        }`}
+                        onClick={() => setSelectedAddressId(addr.id)}
+                      >
+                        <div className={styles.addressContent}>
+                          <span className={styles.addressLabel}>
+                            {addr.label || "Alamat"}
+                            {addr.isPrimary && <span className={styles.primaryBadge}>Utama</span>}
+                          </span>
+                          <p className={styles.addressName}>{addr.recipientName}</p>
+                          <p className={styles.addressPhone}>{addr.recipientPhone}</p>
+                          <p className={styles.addressFull}>
+                            {addr.street}, {addr.city}, {addr.province} {addr.postalCode ? ` - ${addr.postalCode}` : ""}
+                          </p>
+                          <span className={`${styles.addressPill} ${statusTone}`}>
+                            {detectedRegion?.cityId ? "Wilayah terdeteksi" : addr.postalCode ? "Kode pos terdaftar" : "Lengkapi detail alamat"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
+              </div>
             )}
           </section>
 
@@ -750,6 +748,7 @@ export default function CheckoutPage() {
                     {shippingReadiness.tone === "success" && <span className={styles.shippingStatusBadge}>Tersedia</span>}
                   </div>
                 </div>
+
                 {courierLoading ? (
                   <div className={styles.courierLoading}>
                     <div className={styles.loadingSpinner} style={{ width: 24, height: 24, margin: "0 auto 0.5rem" }}></div>
@@ -797,7 +796,7 @@ export default function CheckoutPage() {
             )}
           </section>
 
-          {/* ====== 3. VOUCHER & PROMO (Voucher Saya) ====== */}
+          {/* ====== 3. VOUCHER & PROMO (SIMPLIFIED & USER FRIENDLY) ====== */}
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
@@ -805,70 +804,98 @@ export default function CheckoutPage() {
                 Voucher Toko
               </h2>
               <span className={styles.voucherSlotCounter}>
-                {appliedVouchers.length}/{MAX_APPLIED_VOUCHERS} dipakai
+                {appliedVouchers.length}/{MAX_APPLIED_VOUCHERS} Dipakai
               </span>
             </div>
 
-            <div className={styles.voucherSlotList}>
-              {/* Slot Diskon */}
-              {discountVoucher ? (
-                <div className={styles.promoApplied}>
-                  <span>
-                    🎉 Voucher <strong>{discountVoucher.code}</strong> ({discountVoucher.title})
-                    {subtotalVoucherDiscount > 0 && ` — Hemat ${rupiah(subtotalVoucherDiscount)}`}
-                  </span>
-                  <button
-                    className={styles.promoRemoveBtn}
-                    onClick={() => handleRemoveVoucher(discountVoucher.claimId)}
-                  >
-                    Hapus
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.promoApplyBtn}
-                  style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
-                  onClick={() => setShowVoucherModal(true)}
-                >
-                  + Pakai voucher diskon
-                </button>
-              )}
+            {/* List Voucher yang sedang diterapkan */}
+            {appliedVouchers.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+                {discountVoucher && (
+                  <div className={styles.promoApplied}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--primary-accent)", fontWeight: 700 }}>
+                        🏷️ Diskon Produk
+                      </span>
+                      <span>
+                        <strong>{discountVoucher.code}</strong> ({discountVoucher.title})
+                        {subtotalVoucherDiscount > 0 && ` • Hemat ${rupiah(subtotalVoucherDiscount)}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.promoRemoveBtn}
+                      onClick={() => handleRemoveVoucher(discountVoucher.claimId)}
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                )}
 
-              {/* Slot Gratis Ongkir */}
-              {shippingVoucher ? (
-                <div className={styles.promoApplied}>
-                  <span>
-                    🚚 Voucher <strong>{shippingVoucher.code}</strong> ({shippingVoucher.title})
-                    {shippingVoucherDiscount > 0 && ` — Hemat ${rupiah(shippingVoucherDiscount)}`}
-                  </span>
-                  <button
-                    className={styles.promoRemoveBtn}
-                    onClick={() => handleRemoveVoucher(shippingVoucher.claimId)}
-                  >
-                    Hapus
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.promoApplyBtn}
-                  style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
-                  onClick={() => setShowVoucherModal(true)}
-                >
-                  + Pakai voucher gratis ongkir
-                </button>
-              )}
-            </div>
+                {shippingVoucher && (
+                  <div className={styles.promoApplied}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--primary-accent)", fontWeight: 700 }}>
+                        🚚 Gratis Ongkir
+                      </span>
+                      <span>
+                        <strong>{shippingVoucher.code}</strong> ({shippingVoucher.title})
+                        {shippingVoucherDiscount > 0 && ` • Hemat ${rupiah(shippingVoucherDiscount)}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.promoRemoveBtn}
+                      onClick={() => handleRemoveVoucher(shippingVoucher.claimId)}
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
-            {(!discountVoucher || !shippingVoucher) && (
+            {/* Tombol Pemilih Voucher Terpadu */}
+            {appliedVouchers.length < MAX_APPLIED_VOUCHERS ? (
               <button
                 type="button"
-                className={styles.sectionAction}
-                style={{ marginTop: "10px" }}
                 onClick={() => setShowVoucherModal(true)}
+                style={{
+                  width: "100%",
+                  padding: "14px 16px",
+                  borderRadius: "10px",
+                  border: "1px dashed var(--primary-accent)",
+                  background: "rgba(var(--primary-accent-rgb), 0.04)",
+                  color: "var(--primary-accent)",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  transition: "all 0.2s ease",
+                }}
               >
-                Lihat semua voucher saya ({claimedVouchers.length} tersedia)
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>🎟️</span>
+                  <span>
+                    {appliedVouchers.length === 0
+                      ? "Pilih / Masukkan Voucher Toko"
+                      : "Tambah 1 Voucher Lagi (Diskon / Ongkir)"}
+                  </span>
+                </div>
+                <span style={{ fontSize: "0.75rem", background: "var(--surface-primary)", padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border-color)" }}>
+                  {claimedVouchers.length} voucher tersedia &gt;
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowVoucherModal(true)}
+                className={styles.sectionAction}
+                style={{ marginTop: "4px", fontSize: "0.8rem" }}
+              >
+                Ubah Voucher yang Dipilih
               </button>
             )}
           </section>
@@ -903,7 +930,7 @@ export default function CheckoutPage() {
           </div>
 
           <div className={styles.summaryLine}>
-            <span>Subtotal</span>
+            <span>Subtotal Produk</span>
             <span>{rupiah(subtotal)}</span>
           </div>
 
@@ -961,13 +988,16 @@ export default function CheckoutPage() {
         <div className={styles.modalOverlay} onClick={() => setShowVoucherModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
             <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Pilih Voucher Saya</h2>
+              <div>
+                <h2 className={styles.modalTitle}>Pilih Voucher Saya</h2>
+                <p style={{ margin: "2px 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                  Gunakan maks. 2 voucher (1 Diskon Belanja + 1 Gratis Ongkir).
+                </p>
+              </div>
               <button className={styles.modalCloseBtn} onClick={() => setShowVoucherModal(false)}>&times;</button>
             </div>
-            <p className={styles.voucherModalHint}>
-              Bisa pakai maksimal {MAX_APPLIED_VOUCHERS} voucher: 1 voucher diskon + 1 voucher gratis ongkir.
-            </p>
-            <div style={{ maxHeight: "70vh", overflowY: "auto", padding: "10px 0" }}>
+            
+            <div style={{ maxHeight: "65vh", overflowY: "auto", padding: "10px 0" }}>
               <MyVouchers
                 claimedVouchers={claimedVouchers}
                 isCheckoutMode={true}
@@ -979,39 +1009,63 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* ─── MODAL TAMBAH ALAMAT ─── */}
+      {/* ─── MODAL TAMBAH ALAMAT (DENGAN KODE POS & LABEL) ─── */}
       {showAddressModal && (
         <div className={styles.modalOverlay} onClick={() => setShowAddressModal(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px" }}>
             <div className={styles.modalHeader}>
               <div>
                 <h2 className={styles.modalTitle}>Tambah Alamat Baru</h2>
+                <p style={{ margin: "2px 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                  Isi data alamat dengan lengkap untuk mempermudah kurir.
+                </p>
               </div>
               <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>&times;</button>
             </div>
-            <form onSubmit={handleSaveAddress}>
+
+            <form onSubmit={handleSaveAddress} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "10px" }}>
+              {/* Label Alamat */}
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Nama Penerima</label>
+                <label className={styles.formLabel}>Label Alamat</label>
                 <input
                   type="text"
                   className={styles.formInput}
-                  value={addressForm.recipientName}
-                  onChange={(e) => setAddressForm({ ...addressForm, recipientName: e.target.value })}
+                  placeholder="Rumah / Kantor / Kos"
+                  value={addressForm.label}
+                  onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
                   required
                 />
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Nomor Telepon</label>
-                <input
-                  type="tel"
-                  className={styles.formInput}
-                  value={addressForm.recipientPhone}
-                  onChange={(e) => setAddressForm({ ...addressForm, recipientPhone: e.target.value })}
-                  required
-                />
+
+              {/* Nama Penerima & Telepon */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Nama Penerima</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    placeholder="Nama Lengkap"
+                    value={addressForm.recipientName}
+                    onChange={(e) => setAddressForm({ ...addressForm, recipientName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Nomor Telepon</label>
+                  <input
+                    type="tel"
+                    className={styles.formInput}
+                    placeholder="08123456789"
+                    value={addressForm.recipientPhone}
+                    onChange={(e) => setAddressForm({ ...addressForm, recipientPhone: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
+
+              {/* Provinsi & Kota Select */}
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Provinsi & Kota</label>
+                <label className={styles.formLabel}>Provinsi & Kota / Kabupaten</label>
                 <ProvinceCitySelect
                   value={{
                     province: addressForm.province,
@@ -1020,19 +1074,38 @@ export default function CheckoutPage() {
                     cityType: addressForm.cityType,
                   }}
                   postalCode={addressForm.postalCode}
-                  onChange={(value) => setAddressForm({ ...addressForm, ...value })}
+                  onChange={(value) => setAddressForm((prev) => ({ ...prev, ...value }))}
                 />
               </div>
+
+              {/* Kode Pos */}
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Alamat Lengkap</label>
+                <label className={styles.formLabel}>Kode Pos</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="Contoh: 12345"
+                  maxLength={5}
+                  value={addressForm.postalCode}
+                  onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value.replace(/\D/g, "") })}
+                  required
+                />
+              </div>
+
+              {/* Detail Alamat / Jalan */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Alamat Lengkap (Jalan, No. Rumah, RT/RW, Patokan)</label>
                 <textarea
                   className={styles.formTextarea}
+                  placeholder="Jl. Mawar No. 12 RT 01/RW 02 (pagar hitam samping pos)"
                   value={addressForm.street}
                   onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                  rows={3}
                   required
                 ></textarea>
               </div>
-              <div className={styles.modalFooter}>
+
+              <div className={styles.modalFooter} style={{ marginTop: "8px" }}>
                 <button type="button" className={styles.modalBtnCancel} onClick={() => setShowAddressModal(false)} disabled={savingAddress}>
                   Batal
                 </button>

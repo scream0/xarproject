@@ -163,10 +163,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-:global([data-theme="dark"]) .filterBtn {
-  background: rgba(255, 255, 255, 0.03);
-}
-
 .filterBtn:hover {
   background: var(--border-color);
   color: var(--text-primary);
@@ -174,15 +170,17 @@
 
 .filterBtnActive {
   background: var(--primary-accent) !important;
-  color: var(--text-primary) !important;
+  color: var(--primary-accent-text) !important;
   border-color: var(--primary-accent) !important;
-  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.25);
+  box-shadow: 0 6px 16px rgba(2, 245, 161, 0.25) !important;
   transform: translateY(-1px);
 }
 
 .filterBtnActive svg {
-  stroke: var(--text-primary) !important;
+  stroke: var(--primary-accent-text) !important;
+  fill: none !important;
 }
+
 
 .filterIconWrapper {
   position: relative;
@@ -204,7 +202,7 @@
   position: absolute;
   top: -6px;
   right: -10px;
-  background:var(--primary-accent);
+  background: var(--primary-accent);
   color: var(--primary-accent-text);
   font-size: 0.6rem;
   font-weight: 800;
@@ -218,8 +216,8 @@
 
 .filterBtnActive .filterCount {
   background: var(--primary-accent) !important;
-  color: var(--primary-accent-text) !important;
-  border-color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--primary-accent-text) !important; /* Diubah ke text aksen agar kontras & tidak hitam */
+  border-color: var(--primary-accent-text) !important;
 }
 
 /* --- ORDERS LIST & CARDS --- */

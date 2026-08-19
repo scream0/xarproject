@@ -35,10 +35,16 @@ import {
   ArrowLeft,
   Ticket, 
   Tag,
-    Percent,      
-  DollarSign,   
+  Percent,      
+  DollarSign,
   Copy,        
   Check,
+  Download,
+  ExternalLink,
+  FileText,
+  Calendar,
+  ShieldCheck,
+  Receipt,
 } from "lucide-react";
 
 const iconMap = {
@@ -99,6 +105,12 @@ const iconMap = {
   "dollar-sign": DollarSign,
   "copy": Copy,
   "check": Check,
+  "download": Download,
+  "external-link": ExternalLink,
+  "file-text": FileText,
+  "calendar": Calendar,
+  "shield-check": ShieldCheck,
+  "receipt": Receipt,
 };
 
 export function AppIcon({ name, className, size, strokeWidth = 2, ...props }) {

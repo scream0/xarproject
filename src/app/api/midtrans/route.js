@@ -144,11 +144,19 @@ export async function POST(request) {
       // 🔍 Tambahkan log ini sementara untuk debugging
   console.log("DEBUG checkout item:", { productId, foundProduct: product, supabaseError: error?.message, statusValue: product?.status });
 
-      if (error || !product || product.status !== "published") throw new Error("Produk checkout tidak tersedia");
+      const allowedStatuses = ["published", "Stok Menipis"];
+      if (error || !product || !allowedStatuses.includes(product.status)) {
+        const productName = product ? `${product.name} (${item.size})` : `ID ${productId}`;
+        throw new Error(`Produk "${productName}" tidak tersedia atau sudah habis.`);
+      }
+
       const variant = (Array.isArray(product.variants) ? product.variants : []).find((candidate) => String(candidate?.size || "").toLowerCase() === String(item?.size || "").toLowerCase());
       const price = Number(variant?.price);
       const stock = Number(variant?.stock ?? variant?.stok ?? 0);
-      if (!variant || !Number.isFinite(price) || price < 0 || stock < quantity) throw new Error("Varian atau stok produk tidak tersedia");
+      if (!variant || !Number.isFinite(price) || price < 0 || stock < quantity) {
+        const productName = `${product.name} (${variant.size})`;
+        throw new Error(`Varian atau stok untuk produk "${productName}" tidak tersedia.`);
+      }
       return { id: product.id, productId: product.id, name: product.name, size: variant.size, quantity, price };
     }));
     const rawSubtotal = resolvedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -279,6 +287,15 @@ export async function POST(request) {
       rawSubtotal - subtotalDiscountAmount + actualShippingCost
     );
 
+    const originHeader = request.headers.get("origin") || request.headers.get("referer");
+    let baseUrl = "http://localhost:3000";
+    if (originHeader) {
+      try {
+        const urlObj = new URL(originHeader);
+        baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+      } catch {}
+    }
+
     const parameter = {
       transaction_details: {
         order_id: orderId,
@@ -297,6 +314,11 @@ export async function POST(request) {
             postal_code: shippingAddress.postalCode || "",
             country_code: "IDN",
         } : undefined,
+      },
+      callbacks: {
+        finish: `${baseUrl}/account/orders/${orderId}?order_id=${orderId}`,
+        unfinish: `${baseUrl}/account/orders/${orderId}?order_id=${orderId}`,
+        error: `${baseUrl}/account/orders/${orderId}?order_id=${orderId}`,
       },
     };
 
@@ -328,7 +350,11 @@ export async function POST(request) {
       redirect_url: transaction.redirect_url,
     });
   } catch (error) {
-    console.error("Midtrans API Error:", error.message || error);
+    console.error("Midtrans API Error Catcher:", {
+      message: error.message,
+      stack: error.stack,
+      fullError: error
+    });
     return NextResponse.json(
       { success: false, error: error.message || "Failed to create Midtrans transaction" },
       { status: 500 },

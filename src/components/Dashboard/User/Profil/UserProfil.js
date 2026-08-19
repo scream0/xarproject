@@ -316,7 +316,6 @@ export default function ProfileSection() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm(profileConfig.prompts.deleteAccountConfirm)) return;
 
     const toastId = toast.loading(profileConfig.toasts.deleteAccountLoading);
     setDeletingAccount(true);
