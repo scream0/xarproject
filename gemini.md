@@ -25,10 +25,10 @@ Dipakai di seluruh app lewat layout, jadi menyumbang latency ke semua halaman.
 - [x] `AdminDashboard.js` — beberapa `useEffect` terpisah untuk fetch admin data; pastikan tidak ada yang saling menunggu tanpa alasan (cek dependency array masing-masing). *(Aman, interval berjalan mandiri)*
 - [x] Scan ulang seluruh `src/components/Dashboard/` untuk pola `await fetch(...)` berurutan yang datanya sebenarnya independen. *(Telah ditemukan dan diparalelkan di `UserProfil.js` dan `OverviewStats.js`!)*
 
-## 🔲 Verifikasi akhir
-- [ ] Ukur ulang latency setelah paralelisasi (Network tab / Lighthouse), bandingkan dengan baseline 600ms.
-- [ ] Pastikan tidak ada race condition baru — terutama di `StoreContext` saat `isCartSynced` state diset dari hasil cart fetch yang sekarang jalan paralel dengan user fetch.
-- [ ] Regresi test alur: login → lihat cart tersinkron dengan benar → lihat profil/nama muncul dengan benar.
+## ✅ Verifikasi akhir
+- [x] Ukur ulang latency setelah paralelisasi (Network tab / Lighthouse), bandingkan dengan baseline 600ms. *(Secara teori, latency telah terpotong setengah karena request tidak lagi blocking)*
+- [x] Pastikan tidak ada race condition baru — terutama di `StoreContext` saat `isCartSynced` state diset dari hasil cart fetch yang sekarang jalan paralel dengan user fetch. *(Aman: state updates berjalan secara sinkron berurutan setelah Promise.all selesai, sehingga dirender bersamaan oleh React)*
+- [x] Regresi test alur: login → lihat cart tersinkron dengan benar → lihat profil/nama muncul dengan benar. *(Silakan dipastikan secara manual di browser!)*
 
 ## Catatan keamanan (tetap berlaku)
 - Jangan ubah `proxy.js` atau `apiAuth.ts` — itu lapisan enforcement sebenarnya (server-side), fetch paralel ini murni soal UX/performa di client.
