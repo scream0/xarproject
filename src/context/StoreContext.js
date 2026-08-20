@@ -667,17 +667,15 @@ const handleUserData = useCallback(async (currentUser, token) => {
       if (!response.ok)
         throw new Error(data.error || "Gagal memproses pembayaran");
 
+      // Segera bersihkan cart dan perbarui stok di lokal sesudah pesanan dibuat
+      await clearCart();
+      await fetchProducts();
+      window.dispatchEvent(new Event("product-stock-updated"));
+
       if (data.token && window.snap) {
         window.snap.pay(data.token, {
           onSuccess: async (result) => {
             toast.success("Pembayaran Berhasil!");
-            await clearCart();
-
-            // Status pembayaran dan stok adalah tanggung jawab webhook Midtrans.
-            // Mengubahnya dari browser berisiko mengurangi stok dua kali.
-            await fetchProducts();
-            window.dispatchEvent(new Event("product-stock-updated"));
-
             router.push(`/account/orders/${orderId}?order_id=${orderId}&status_code=${result.status_code}&transaction_status=${result.transaction_status}`);
           },
           onPending: (result) => {

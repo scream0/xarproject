@@ -104,6 +104,7 @@ const DEFAULT_SETTINGS = {
   promoEndDate: "",
   promoCode: "",
   promoDestination: "#product",
+  activeCouriers: ["jne", "jnt", "pos"],
 };
 
 async function verifyAdmin(authHeader) {
@@ -162,6 +163,7 @@ async function ensureSettingsDoc() {
       promo_discount_value: DEFAULT_SETTINGS.promoDiscountValue,
       promo_code: DEFAULT_SETTINGS.promoCode,
       promo_destination: DEFAULT_SETTINGS.promoDestination,
+      active_couriers: DEFAULT_SETTINGS.activeCouriers,
     };
     const { error: insertError } = await supabaseAdmin.from("store_config").insert(insertPayload);
     if (insertError) throw new Error(`Failed to create default settings: ${insertError.message}`);
@@ -186,6 +188,7 @@ async function ensureSettingsDoc() {
     promoEndDate: data.promo_end_date !== undefined ? data.promo_end_date : data.promoEndDate,
     promoCode: data.promo_code !== undefined ? data.promo_code : data.promoCode,
     promoDestination: data.promo_destination !== undefined ? data.promo_destination : data.promoDestination,
+    activeCouriers: data.active_couriers !== undefined ? data.active_couriers : data.activeCouriers,
     hero: data.hero,
     about: data.about,
     product: data.product,
@@ -278,6 +281,14 @@ export async function PUT(request) {
     if (newSettings.promoEndDate !== undefined) updateData.promo_end_date = newSettings.promoEndDate;
     if (newSettings.promoCode !== undefined) updateData.promo_code = String(newSettings.promoCode || "").toUpperCase();
     if (newSettings.promoDestination !== undefined) updateData.promo_destination = newSettings.promoDestination;
+    if (newSettings.activeCouriers !== undefined) updateData.active_couriers = newSettings.activeCouriers;
+
+    if (newSettings.midtransServerKey !== undefined && !newSettings.midtransServerKey.startsWith("••••")) {
+      updateData.midtrans_server_key = newSettings.midtransServerKey;
+    }
+    if (newSettings.midtransClientKey !== undefined && !newSettings.midtransClientKey.startsWith("••••")) {
+      updateData.midtrans_client_key = newSettings.midtransClientKey;
+    }
 
     if (newSettings.hero) updateData.hero = sanitizeData({ ...(current.hero || {}), ...newSettings.hero });
     if (newSettings.about) {

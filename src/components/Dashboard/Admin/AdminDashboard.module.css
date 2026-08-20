@@ -757,24 +757,87 @@
     display: flex;
   }
 
+  .hamburgerBtn {
+    display: none;
+  }
+
   .sidebar {
-    transform: translateX(-100%);
-    top: 70px;
-    height: calc(100vh - 70px);
+    transform: none;
+    top: auto;
+    bottom: 0;
+    left: 0;
     width: 100%;
-    max-width: 280px;
-    box-shadow: 20px 0 40px rgba(0, 0, 0, 0.15);
+    max-width: 100%;
+    height: 70px;
+    flex-direction: row;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+    z-index: 1002;
+    background: rgba(var(--surface-primary-rgb), 0.98);
   }
 
   .sidebarOpen {
-    transform: translateX(0);
+    transform: none;
+  }
+  
+  .brandSection, .sidebarFooter {
+    display: none;
+  }
+  
+  .navContainer {
+    flex: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .navigationList {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    align-items: center;
+    gap: 0;
+  }
+
+  .navItem {
+    flex-direction: column;
+    padding: 0.5rem;
+    gap: 0.25rem;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  .navItem::before {
+    display: none;
+  }
+
+  .navIcon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .navItemContent {
+    align-items: center;
+  }
+
+  .navItemText {
+    font-size: 0.6rem;
+  }
+
+  .navItemMeta {
+    display: none;
   }
 
   .mainContent {
     margin-left: 0;
     width: 100%;
-    height: calc(100vh - 70px);
+    height: calc(100vh - 140px); /* 70px top, 70px bottom */
     margin-top: 70px;
+    margin-bottom: 70px;
   }
 
   .header {

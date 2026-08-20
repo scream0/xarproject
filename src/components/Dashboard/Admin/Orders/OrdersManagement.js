@@ -72,14 +72,27 @@ export default function OrdersManagement() {
     setPage(1);
   };
 
-  const openOrderDetails = (order) => {
-    setActiveOrder(order);
-    const shippingInfo = order.shippingDetail || order.shipping_details?.[0] || {};
-    setShippingDraft({
-      courierName: shippingInfo.courier_name || shippingInfo.courierName || "",
-      serviceType: shippingInfo.service_type || shippingInfo.serviceType || "",
-      trackingNumber: shippingInfo.tracking_number || shippingInfo.trackingNumber || "",
-    });
+  const openOrderDetails = async (order) => {
+    try {
+      const orderId = order.id || order.orderId;
+      const token = await getSupabaseToken();
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const data = await res.json();
+      
+      const activeData = (res.ok && data.order) ? data.order : order;
+      setActiveOrder(activeData);
+      
+      const shippingInfo = activeData.shipping_detail || activeData.shippingDetail || activeData.shipping_details?.[0] || {};
+      setShippingDraft({
+        courierName: shippingInfo.courier_name || shippingInfo.courierName || activeData.courier_name || activeData.courier || "",
+        serviceType: shippingInfo.service_type || shippingInfo.serviceType || activeData.courier_service || "",
+        trackingNumber: shippingInfo.tracking_number || shippingInfo.trackingNumber || "",
+      });
+    } catch (e) {
+      setActiveOrder(order);
+    }
   };
 
   const saveShipping = async (order) => {
@@ -105,7 +118,7 @@ export default function OrdersManagement() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan informasi pengiriman");
-      setOrders((items) => items.map((item) => (item.id === orderId || item.orderId === orderId ? { ...item, status: "shipped", shippingDetail: { ...(item.shippingDetail || {}), courier_name: shippingDraft.courierName || null, service_type: shippingDraft.serviceType || null, tracking_number: shippingDraft.trackingNumber || null } } : item)));
+      setOrders((items) => items.map((item) => (item.id === orderId || item.orderId === orderId ? { ...item, status: "shipped", shipping_detail: { ...(item.shipping_detail || item.shippingDetail || {}), courier_name: shippingDraft.courierName || null, service_type: shippingDraft.serviceType || null, tracking_number: shippingDraft.trackingNumber || null } } : item)));
       toast.success("Informasi pengiriman berhasil disimpan.");
     } catch (error) {
       console.error(error);
@@ -197,78 +210,78 @@ export default function OrdersManagement() {
     <section className={styles.wrapper}>
       <div className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Order management</p>
-          <h2 className={styles.title}>Track every order, status, and shipment in one place.</h2>
+          <p className={styles.eyebrow}>Manajemen Pesanan</p>
+          <h2 className={styles.title}>Lacak setiap pesanan, status, dan pengiriman di satu tempat.</h2>
         </div>
         <div className={styles.controls}>
           <form onSubmit={handleSearch} className={styles.searchForm}>
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search order ID or customer"
+              placeholder="Cari ID pesanan atau pelanggan"
               aria-label="Search orders"
             />
-            <button type="submit">Search</button>
+            <button type="submit">Cari</button>
           </form>
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={styles.filterSelect}>
-            <option value="all">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="all">Semua status</option>
+            <option value="pending">Menunggu</option>
+            <option value="paid">Dibayar</option>
+            <option value="processing">Diproses</option>
+            <option value="shipped">Dikirim</option>
+            <option value="delivered">Selesai</option>
+            <option value="cancelled">Dibatalkan</option>
           </select>
           <button className={styles.refreshButton} onClick={() => loadOrders(page, statusFilter, searchTerm)}>
-            Refresh
+            Segarkan
           </button>
         </div>
       </div>
 
       <div className={styles.summaryBar}>
-        <span>{pagination.totalOrders} orders</span>
-        <span>Page {pagination.currentPage} of {pagination.totalPages}</span>
+        <span>{pagination.totalOrders} pesanan</span>
+        <span>Halaman {pagination.currentPage} dari {pagination.totalPages}</span>
       </div>
 
       <div className={styles.bulkBar}>
         <label className={styles.bulkLabel}>
           <input type="checkbox" checked={selectedOrders.length > 0 && selectedOrders.length === orders.length} onChange={() => setSelectedOrders(selectedOrders.length === orders.length ? [] : orders.map((order) => order.id || order.orderId))} />
-          Select all
+          Pilih semua
         </label>
         <select value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value)} className={styles.filterSelect}>
-          <option value="processing">Processing</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="processing">Diproses</option>
+          <option value="shipped">Dikirim</option>
+          <option value="delivered">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
         </select>
         <button className={styles.refreshButton} onClick={applyBulkStatus} disabled={!selectedOrders.length || bulkUpdating}>
-          {bulkUpdating ? "Updating..." : "Apply bulk status"}
+          {bulkUpdating ? "Memperbarui..." : "Terapkan status massal"}
         </button>
-        <button className={styles.secondaryButton} onClick={openPrintView} disabled={!selectedOrders.length}>Print packing slip</button>
+        <button className={styles.secondaryButton} onClick={openPrintView} disabled={!selectedOrders.length}>Cetak slip pengiriman</button>
       </div>
 
       {loading ? (
-        <p className={styles.empty}>Loading orders…</p>
+        <p className={styles.empty}>Memuat pesanan…</p>
       ) : orders.length === 0 ? (
-        <p className={styles.empty}>No orders match the current filter.</p>
+        <p className={styles.empty}>Tidak ada pesanan yang sesuai filter.</p>
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
               <tr>
                 <th><input type="checkbox" checked={selectedOrders.length > 0 && selectedOrders.length === orders.length} onChange={() => setSelectedOrders(selectedOrders.length === orders.length ? [] : orders.map((order) => order.id || order.orderId))} /></th>
-                <th>Order</th>
-                <th>Customer</th>
+                <th>Pesanan</th>
+                <th>Pelanggan</th>
                 <th>Total</th>
                 <th>Status</th>
-                <th>Shipping</th>
-                <th>Created</th>
+                <th>Pengiriman</th>
+                <th>Dibuat</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((order) => {
                 const orderId = order.id || order.orderId;
-                const shippingInfo = order.shippingDetail || order.shipping_details?.[0] || {};
+                const shippingInfo = order.shipping_detail || order.shippingDetail || order.shipping_details?.[0] || {};
                 return (
                   <tr key={orderId}>
                     <td>
@@ -284,8 +297,8 @@ export default function OrdersManagement() {
                     </td>
                     <td>
                       <div className={styles.orderCell}>
-                        <strong>{order.customerName || order.shipping_address?.recipientName || "Customer"}</strong>
-                        <small>{order.customerEmail || "No email recorded"}</small>
+                        <strong>{order.customerName || order.shipping_address?.recipientName || "Pelanggan"}</strong>
+                        <small>{order.customerEmail || "Tidak ada email"}</small>
                       </div>
                     </td>
                     <td>{money(orderValue(order))}</td>
@@ -296,18 +309,18 @@ export default function OrdersManagement() {
                         onChange={(event) => updateStatus(orderId, event.target.value)}
                         disabled={updatingId === orderId || bulkUpdating}
                       >
-                        <option value="pending">Pending</option>
-                        <option value="paid">Paid</option>
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="pending">Menunggu</option>
+                        <option value="paid">Dibayar</option>
+                        <option value="processing">Diproses</option>
+                        <option value="shipped">Dikirim</option>
+                        <option value="delivered">Selesai</option>
+                        <option value="cancelled">Dibatalkan</option>
                       </select>
                     </td>
                     <td>
                       <div className={styles.orderCell}>
-                        <strong>{shippingInfo.courier_name || shippingInfo.courierName || "—"}</strong>
-                        <small>{shippingInfo.tracking_number || shippingInfo.trackingNumber || "No tracking yet"}</small>
+                        <strong>{shippingInfo.courier_name || shippingInfo.courierName || order.courier_name || order.courier || "—"}</strong>
+                        <small>{shippingInfo.tracking_number || shippingInfo.trackingNumber || "Belum ada resi"}</small>
                       </div>
                     </td>
                     <td>{new Date(order.createdAt || order.created_at || "1970-01-01").toLocaleDateString("id-ID")}</td>
@@ -321,11 +334,11 @@ export default function OrdersManagement() {
 
       <div className={styles.pagination}>
         <button disabled={page <= 1} onClick={() => { const nextPage = page - 1; setPage(nextPage); loadOrders(nextPage, statusFilter, searchTerm); }}>
-          Previous
+          Sebelumnya
         </button>
-        <span>Page {page}</span>
+        <span>Halaman {page}</span>
         <button disabled={page >= pagination.totalPages} onClick={() => { const nextPage = page + 1; setPage(nextPage); loadOrders(nextPage, statusFilter, searchTerm); }}>
-          Next
+          Selanjutnya
         </button>
       </div>
 
@@ -334,21 +347,21 @@ export default function OrdersManagement() {
           <div className={styles.drawer} onClick={(event) => event.stopPropagation()}>
             <div className={styles.drawerHeader}>
               <div>
-                <p className={styles.eyebrow}>Print preview</p>
-                <h3>Packing slip & invoice</h3>
+                <p className={styles.eyebrow}>Pratinjau cetak</p>
+                <h3>Slip pengiriman & faktur</h3>
               </div>
-              <button className={styles.closeButton} onClick={() => setPrintOrders([])}>Close</button>
+              <button className={styles.closeButton} onClick={() => setPrintOrders([])}>Tutup</button>
             </div>
             <div className={styles.printPreview}>
               {printOrders.map((order) => {
                 const orderId = order.id || order.orderId;
-                const shippingInfo = order.shippingDetail || order.shipping_details?.[0] || {};
+                const shippingInfo = order.shipping_detail || order.shippingDetail || order.shipping_details?.[0] || {};
                 return (
                   <div key={orderId} className={styles.printCard}>
                     <div className={styles.printHeader}>
                       <div>
                         <strong>{order.orderId || order.order_number || orderId}</strong>
-                        <p>{order.customerName || "Customer"}</p>
+                        <p>{order.customerName || "Pelanggan"}</p>
                       </div>
                       <div className={styles.printMeta}>
                         <span>{money(orderValue(order))}</span>
@@ -356,15 +369,15 @@ export default function OrdersManagement() {
                       </div>
                     </div>
                     <div className={styles.printBody}>
-                      <p><b>Recipient:</b> {order.customerName || "Customer"}</p>
-                      <p><b>Courier:</b> {shippingInfo.courier_name || shippingInfo.courierName || "—"}</p>
-                      <p><b>Tracking:</b> {shippingInfo.tracking_number || shippingInfo.trackingNumber || "No tracking yet"}</p>
-                      <p><b>Address:</b> {order.shipping_address?.address || order.shippingAddress?.address || "Address not provided"}</p>
+                      <p><b>Penerima:</b> {order.customerName || "Pelanggan"}</p>
+                      <p><b>Kurir:</b> {shippingInfo.courier_name || shippingInfo.courierName || order.courier_name || order.courier || "—"}</p>
+                      <p><b>Resi:</b> {shippingInfo.tracking_number || shippingInfo.trackingNumber || "Belum ada resi"}</p>
+                      <p><b>Alamat:</b> {order.shipping_address?.address || order.shippingAddress?.address || "Alamat tidak tersedia"}</p>
                     </div>
                     <div className={styles.printItems}>
                       {(order.items || []).map((item, index) => (
                         <div key={`${item.name}-${index}`} className={styles.itemRow}>
-                          <span>{item.name || item.product_name || "Product"}</span>
+                          <span>{item.name || item.product_name || "Produk"}</span>
                           <strong>{item.quantity || item.qty || 1} × {money(item.price || 0)}</strong>
                         </div>
                       ))}
@@ -374,7 +387,7 @@ export default function OrdersManagement() {
               })}
             </div>
             <div className={styles.drawerActions}>
-              <button className={styles.refreshButton} onClick={() => window.print()}>Print</button>
+              <button className={styles.refreshButton} onClick={() => window.print()}>Cetak</button>
             </div>
           </div>
         </div>
@@ -385,44 +398,47 @@ export default function OrdersManagement() {
           <div className={styles.drawer} onClick={(event) => event.stopPropagation()}>
             <div className={styles.drawerHeader}>
               <div>
-                <p className={styles.eyebrow}>Order details</p>
+                <p className={styles.eyebrow}>Detail pesanan</p>
                 <h3>{activeOrder.orderId || activeOrder.order_number || activeOrder.id}</h3>
               </div>
-              <button className={styles.closeButton} onClick={() => setActiveOrder(null)}>Close</button>
+              <button className={styles.closeButton} onClick={() => setActiveOrder(null)}>Tutup</button>
             </div>
             <div className={styles.drawerGrid}>
               <div className={styles.drawerCard}>
-                <h4>Customer</h4>
-                <p>{activeOrder.customerName || "Customer"}</p>
-                <p>{activeOrder.customerEmail || "No email recorded"}</p>
+                <h4>Pelanggan</h4>
+                <p>{activeOrder.customerName || "Pelanggan"}</p>
+                <p>{activeOrder.customerEmail || "Tidak ada email"}</p>
+                {activeOrder.shipping_address?.address && (
+                  <p style={{ marginTop: '8px', fontSize: '0.875rem' }}>{activeOrder.shipping_address.address}</p>
+                )}
               </div>
               <div className={styles.drawerCard}>
-                <h4>Amount</h4>
+                <h4>Jumlah</h4>
                 <p>{money(orderValue(activeOrder))}</p>
                 <p>Status: {activeOrder.status || "pending"}</p>
               </div>
             </div>
             <div className={styles.drawerCard}>
-              <h4>Shipping info</h4>
+              <h4>Info pengiriman</h4>
               <div className={styles.shippingFields}>
-                <input value={shippingDraft.courierName} onChange={(event) => setShippingDraft((draft) => ({ ...draft, courierName: event.target.value }))} placeholder="Courier" />
-                <input value={shippingDraft.serviceType} onChange={(event) => setShippingDraft((draft) => ({ ...draft, serviceType: event.target.value }))} placeholder="Service" />
-                <input value={shippingDraft.trackingNumber} onChange={(event) => setShippingDraft((draft) => ({ ...draft, trackingNumber: event.target.value }))} placeholder="Tracking number" />
+                <input value={shippingDraft.courierName} onChange={(event) => setShippingDraft((draft) => ({ ...draft, courierName: event.target.value }))} placeholder="Kurir" />
+                <input value={shippingDraft.serviceType} onChange={(event) => setShippingDraft((draft) => ({ ...draft, serviceType: event.target.value }))} placeholder="Layanan" />
+                <input value={shippingDraft.trackingNumber} onChange={(event) => setShippingDraft((draft) => ({ ...draft, trackingNumber: event.target.value }))} placeholder="Nomor resi" />
               </div>
               <div className={styles.drawerActions}>
-                <button className={styles.refreshButton} onClick={() => saveShipping(activeOrder)}>Save shipping</button>
-                <button className={styles.secondaryButton} onClick={() => updateStatus(activeOrder.id || activeOrder.orderId, "shipped")}>Mark shipped</button>
+                <button className={styles.refreshButton} onClick={() => saveShipping(activeOrder)}>Simpan pengiriman</button>
+                <button className={styles.secondaryButton} onClick={() => updateStatus(activeOrder.id || activeOrder.orderId, "shipped")}>Tandai dikirim</button>
               </div>
             </div>
             <div className={styles.drawerCard}>
-              <h4>Items</h4>
+              <h4>Barang</h4>
               {(activeOrder.items || []).map((item, index) => (
                 <div key={`${item.name}-${index}`} className={styles.itemRow}>
-                  <span>{item.name || item.product_name || "Product"}</span>
+                  <span>{item.name || item.product_name || "Produk"}</span>
                   <strong>{item.quantity || item.qty || 1} × {money(item.price || 0)}</strong>
                 </div>
               ))}
-              {!activeOrder.items?.length && <p>No item list available.</p>}
+              {!activeOrder.items?.length && <p>Tidak ada daftar barang.</p>}
             </div>
           </div>
         </div>

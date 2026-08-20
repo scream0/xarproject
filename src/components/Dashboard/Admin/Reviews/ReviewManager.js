@@ -217,7 +217,29 @@ export default function ReviewManager() {
                   <td>{review.productName}</td>
                   <td>{review.userName}</td>
                   <td>{"⭐".repeat(review.rating)}</td>
-                  <td className={styles.commentCell}>{review.comment}</td>
+                  <td className={styles.commentCell}>
+                    <p>{review.comment}</p>
+                    {review.reviewPhoto && (
+                      <div style={{ marginTop: "6px" }}>
+                        <a
+                          href={review.reviewPhoto}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            fontSize: "0.75rem",
+                            color: "var(--primary-accent)",
+                            textDecoration: "underline",
+                            fontWeight: 600,
+                          }}
+                        >
+                          📷 Lihat Foto Produk
+                        </a>
+                      </div>
+                    )}
+                  </td>
                   <td>
                     <span
                       className={

@@ -4,12 +4,16 @@ import { verifyAdmin, verifyUser } from "@/lib/apiAuth";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const ADMIN_FOLDERS = new Set(["products", "storefront"]);
+const USER_FOLDERS = new Set(["avatars", "reviews"]);
+const ADMIN_FOLDERS = new Set(["products", "storefront", "banners", "general"]);
 
 async function verifyUploadAccess(request, requestedUserId, folder) {
   const user = await verifyUser(request);
   if (requestedUserId) {
     if (requestedUserId !== user.id) throw new Error("Forbidden");
+    if (!USER_FOLDERS.has(folder) && !ADMIN_FOLDERS.has(folder)) {
+      await verifyAdmin(request);
+    }
     return { user, isAdmin: false };
   }
   if (!ADMIN_FOLDERS.has(folder)) throw new Error("Forbidden");
@@ -54,9 +58,7 @@ async function safeDestroy(publicId) {
   }
 }
 
-// POST -> dipakai untuk UPLOAD avatar baru maupun UPDATE (ganti) avatar.
-// Kirim formData: file, userId, dan (opsional) oldPublicId / oldUrl
-// kalau user sebelumnya sudah pernah upload dengan skema public_id lain.
+// POST -> dipakai untuk UPLOAD avatar baru, foto review, maupun asset admin.
 export async function POST(request) {
   try {
     const formData = await request.formData();
@@ -85,14 +87,18 @@ export async function POST(request) {
       return NextResponse.json({ error: "Image must be JPG, PNG, or WebP and no larger than 5 MB" }, { status: 400 });
     }
 
-    const newPublicId = userId ? getAvatarPublicId(userId) : explicitPublicId;
+    let newPublicId = explicitPublicId;
+    if (normalizedFolder === "reviews") {
+      newPublicId = explicitPublicId || `reviews/review_${userId || "user"}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    } else if (userId && normalizedFolder === "avatars") {
+      newPublicId = getAvatarPublicId(userId);
+    }
+
     const resolvedOldPublicId =
       oldPublicId || (oldUrl ? extractPublicIdFromUrl(oldUrl) : null);
 
-    // Hapus file lama dulu KALAU public_id-nya beda dari skema baru
-    // (misal data lama pakai public_id acak/timestamp). Kalau sama
-    // persis, tidak perlu destroy karena upload baru akan overwrite.
-    if (resolvedOldPublicId && resolvedOldPublicId !== newPublicId) {
+    // Hapus file lama dulu KALAU public_id-nya beda dari skema baru (khusus avatar)
+    if (resolvedOldPublicId && resolvedOldPublicId !== newPublicId && normalizedFolder === "avatars") {
       await safeDestroy(resolvedOldPublicId);
     }
 
@@ -105,7 +111,7 @@ export async function POST(request) {
           folder: normalizedFolder,
           ...(newPublicId ? { public_id: newPublicId } : {}),
           resource_type: "image",
-          overwrite: true,
+          overwrite: normalizedFolder === "avatars",
           invalidate: true,
         },
         (error, result) => {

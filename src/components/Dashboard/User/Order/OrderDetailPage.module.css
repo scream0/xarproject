@@ -831,6 +831,431 @@
 }
 
 /* ==========================================================================
+   REVIEW BUTTON STYLES
+   ========================================================================== */
+.reviewBtn {
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: 1px solid var(--primary-accent);
+  box-shadow: 0 2px 6px rgba(var(--primary-accent-rgb), 0.2);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.reviewBtn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.reviewBtnDisabled {
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: not-allowed;
+  opacity: 0.6;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* ==========================================================================
+   MODAL STYLING
+   ========================================================================== */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.modalContent {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-sizing: border-box;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.modalTitle {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.modalCloseBtn {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  color: var(--text-secondary);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.modalCloseBtn:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.modalProductCard {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+
+.modalProductIconWrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-accent);
+  flex-shrink: 0;
+}
+
+.modalProductName {
+  font-size: 0.925rem;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.modalFieldLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+/* Star Rating Group */
+.starRatingGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.6rem 0.85rem;
+  flex-wrap: wrap;
+}
+
+.starBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.starBtn:hover {
+  transform: scale(1.15);
+  color: #eab308;
+}
+
+.starBtnActive {
+  color: #eab308 !important;
+}
+
+.starBtnActive svg {
+  fill: #eab308;
+  stroke: #eab308;
+}
+
+.ratingTextLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-left: 0.5rem;
+}
+
+.formInput,
+.formTextarea {
+  font-family: var(--font-sans);
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+  outline: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+  border-color: var(--primary-accent);
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+/* Photo Upload Dropzone */
+.photoUploadDropzone {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-secondary);
+  border: 2px dashed var(--border-color);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.photoUploadDropzone:hover {
+  border-color: var(--primary-accent);
+  background: rgba(var(--primary-accent-rgb), 0.04);
+}
+
+.fileInputHidden {
+  display: none;
+}
+
+.dropzoneIconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-accent);
+  flex-shrink: 0;
+}
+
+.dropzoneTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropzoneMainText {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dropzoneSubText {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Photo Preview Wrapper */
+.photoPreviewWrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+}
+
+.photoPreviewThumb {
+  width: 58px;
+  height: 58px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid var(--border-color);
+  flex-shrink: 0;
+  background: var(--surface-primary);
+}
+
+.previewImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photoPreviewMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.photoFileName {
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.photoFileSize {
+  font-size: 0.725rem;
+  color: var(--text-secondary);
+}
+
+.removePhotoBtn {
+  background: transparent;
+  border: none;
+  color: var(--danger-color, #ef4444);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 2px 0;
+  width: fit-content;
+  transition: opacity 0.2s ease;
+}
+
+.removePhotoBtn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Modal Action Group */
+.modalActionGroup {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.modalCancelActionBtn {
+  flex: 1;
+  font-family: var(--font-sans);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.8rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.modalCancelActionBtn:hover {
+  background: var(--border-color);
+}
+
+.modalCloseActionBtn {
+  flex: 2;
+  font-family: var(--font-sans);
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: 1px solid var(--primary-accent);
+  padding: 0.8rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb), 0.25);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.modalCloseActionBtn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.modalCloseActionBtn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.btnSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  display: inline-block;
+}
+
+/* ==========================================================================
    RESPONSIVE DESIGN (TABLET & MOBILE)
    ========================================================================== */
 @media (max-width: 860px) {

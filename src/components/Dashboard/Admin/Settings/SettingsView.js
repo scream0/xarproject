@@ -20,6 +20,9 @@ const EMPTY = {
     midtransServerKey: "",
     midtransClientKey: "",
   },
+  couriers: {
+    activeCouriers: ["jne", "jnt", "pos"],
+  },
   hero: {
     image: "",
     imageAlt: "",
@@ -69,6 +72,7 @@ const TAB_KEYS = [
   "contact",
   "footer",
   "payment",
+  "couriers",
 ];
 
 export default function SettingsView() {
@@ -99,6 +103,9 @@ export default function SettingsView() {
       lowStockThreshold: Number(data?.lowStockThreshold ?? 10),
       midtransServerKey: data?.midtransServerKey || "",
       midtransClientKey: data?.midtransClientKey || "",
+    },
+    couriers: {
+      activeCouriers: data?.activeCouriers || ["jne", "jnt", "pos"],
     },
     hero: {
       image: data?.hero?.image || "",
@@ -370,6 +377,7 @@ export default function SettingsView() {
       lowStockThreshold: Number(s.store.lowStockThreshold) || 10,
       midtransServerKey: strictValue(s.store.midtransServerKey),
       midtransClientKey: strictValue(s.store.midtransClientKey),
+      activeCouriers: s.couriers.activeCouriers || ["jne", "jnt", "pos"],
       hero: {
         image: strictValue(s.hero.image),
         imageAlt: strictValue(s.hero.imageAlt),
@@ -560,6 +568,18 @@ export default function SettingsView() {
             settings={settings.store}
             handleInputChange={handleInputChange}
             cfg={cfg}
+          />
+        )}
+
+        {activeTab === "couriers" && (
+          <CouriersTab
+            settings={settings.couriers}
+            updateCouriers={(newCouriers) =>
+              setSettings((prev) => ({
+                ...prev,
+                couriers: { ...prev.couriers, activeCouriers: newCouriers },
+              }))
+            }
           />
         )}
 
@@ -1660,5 +1680,56 @@ function PaymentTab({ settings, handleInputChange, cfg }) {
         />
       </div>
     </div>
+  );
+}
+
+/* ============================================================
+   TAB: COURIERS
+   ============================================================ */
+function CouriersTab({ settings, updateCouriers }) {
+  const activeCouriers = settings.activeCouriers || [];
+
+  const handleToggle = (courierCode) => {
+    let nextCouriers = [...activeCouriers];
+    if (nextCouriers.includes(courierCode)) {
+      nextCouriers = nextCouriers.filter((c) => c !== courierCode);
+    } else {
+      nextCouriers.push(courierCode);
+    }
+    updateCouriers(nextCouriers);
+  };
+
+  const couriersList = [
+    { code: "jne", label: "JNE" },
+    { code: "jnt", label: "J&T Express" },
+    { code: "pos", label: "POS Indonesia" },
+  ];
+
+  return (
+    <>
+      <div className={styles.formSection}>
+        <h4 className={styles.sectionTitle}>Pilihan Kurir Pengiriman</h4>
+        <p style={{ color: "#666", fontSize: "14px", marginBottom: "1rem" }}>
+          Pilih kurir yang ingin Anda aktifkan untuk pelanggan saat checkout.
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {couriersList.map((c) => {
+            const isActive = activeCouriers.includes(c.code);
+            return (
+              <label key={c.code} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={() => handleToggle(c.code)}
+                  style={{ width: "20px", height: "20px" }}
+                />
+                <span style={{ fontSize: "16px", fontWeight: "500" }}>{c.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    </>
   );
 }

@@ -6,21 +6,25 @@ import toast from "react-hot-toast";
 import { formatAddressDisplay } from "@/utils/address";
 import styles from "./OrderDetailPage.module.css";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
+import ordersConfig from "@/data/ui/ordersConfig.json";
 
 const STATUS_INFO = {
   pending: { label: "Menunggu Pembayaran", badgeClass: "statusPending", icon: "clock" },
   unpaid: { label: "Menunggu Pembayaran", badgeClass: "statusPending", icon: "clock" },
-  success: { label: "Pembayaran Berhasil", badgeClass: "statusSuccess", icon: "check" },
-  paid: { label: "Pembayaran Diterima", badgeClass: "statusSuccess", icon: "check" },
-  settlement: { label: "Pembayaran Diterima", badgeClass: "statusSuccess", icon: "check" },
-  capture: { label: "Pembayaran Diterima", badgeClass: "statusSuccess", icon: "check" },
-  processing: { label: "Sedang Diracik", badgeClass: "statusProcessing", icon: "package" },
+  success: { label: "Sedang Dikemas", badgeClass: "statusProcessing", icon: "package" },
+  paid: { label: "Sedang Dikemas", badgeClass: "statusProcessing", icon: "package" },
+  settlement: { label: "Sedang Dikemas", badgeClass: "statusProcessing", icon: "package" },
+  capture: { label: "Sedang Dikemas", badgeClass: "statusProcessing", icon: "package" },
+  processing: { label: "Sedang Dikemas", badgeClass: "statusProcessing", icon: "package" },
   shipping: { label: "Dalam Pengiriman", badgeClass: "statusShipping", icon: "truck" },
   shipped: { label: "Dalam Pengiriman", badgeClass: "statusShipping", icon: "truck" },
   delivered: { label: "Pesanan Selesai", badgeClass: "statusCompleted", icon: "shield-check" },
   completed: { label: "Pesanan Selesai", badgeClass: "statusCompleted", icon: "shield-check" },
   cancelled: { label: "Dibatalkan", badgeClass: "statusCancelled", icon: "x" },
-  return_requested: { label: "Pengajuan Return", badgeClass: "statusWarning", icon: "returns" },
+  canceled: { label: "Dibatalkan", badgeClass: "statusCancelled", icon: "x" },
+  return_requested: { label: "Pengajuan Return", badgeClass: "statusWarning", icon: "rotate-ccw" },
+  returning: { label: "Barang Dikirim Balik", badgeClass: "statusShipping", icon: "truck" },
+  returned: { label: "Return Selesai", badgeClass: "statusCompleted", icon: "shield-check" },
 };
 
 function getStatusInfo(rawStatus) {
@@ -77,6 +81,15 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
   const [copied, setCopied] = useState(false);
   const [copiedResi, setCopiedResi] = useState(false);
 
+  // Review Modal States
+  const [reviewModalOrder, setReviewModalOrder] = useState(null);
+  const [reviewTargetItem, setReviewTargetItem] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [reviewPhotoFile, setReviewPhotoFile] = useState(null);
+  const [reviewPhotoPreview, setReviewPhotoPreview] = useState(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   // Load Midtrans Snap Script
   useEffect(() => {
     const snapScriptUrl = process.env.NODE_ENV === "production"
@@ -124,6 +137,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
 
   useEffect(() => {
     if (!resolvedOrderId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("ID Pesanan tidak ditemukan di URL.");
       setLoading(false);
       return;
@@ -151,7 +165,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
           const text = await res.text();
           result = text ? JSON.parse(text) : {};
         } else {
-          const rawText = await res.text();
+          await res.text();
           if (!res.ok) {
             throw new Error(
               res.status === 404
@@ -233,6 +247,31 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
     }
     return formatAddressDisplay ? formatAddressDisplay(addr) : String(addr);
   }, [shipping, order]);
+
+  const orderDateText = useMemo(() => {
+    const rawDate = order?.created_at || order?.createdAt;
+    if (!rawDate) return "Hari ini";
+    try {
+      return new Date(rawDate).toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return "Hari ini";
+    }
+  }, [order]);
+
+  const orderTimeText = useMemo(() => {
+    const rawDate = order?.created_at || order?.createdAt;
+    if (!rawDate) return "Baru saja";
+    try {
+      return new Date(rawDate).toLocaleString("id-ID");
+    } catch {
+      return "Baru saja";
+    }
+  }, [order]);
 
   const handleCopyId = async () => {
     const idToCopy = order?.order_number || resolvedOrderId;
@@ -400,6 +439,143 @@ Terima kasih telah berbelanja di XAR Perfumery.`;
     }
   };
 
+  const openReviewModal = (orderToReview, item) => {
+    setReviewModalOrder(orderToReview);
+    setReviewTargetItem(item);
+    setRating(5);
+    setComment("");
+    setReviewPhotoFile(null);
+    setReviewPhotoPreview(null);
+  };
+
+  const closeReviewModal = () => {
+    if (reviewPhotoPreview) {
+      URL.revokeObjectURL(reviewPhotoPreview);
+    }
+    setReviewModalOrder(null);
+    setReviewTargetItem(null);
+    setRating(5);
+    setComment("");
+    setReviewPhotoFile(null);
+    setReviewPhotoPreview(null);
+  };
+
+  const handleReviewPhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Format foto harus JPG, PNG, atau WebP.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran foto maksimal 5 MB.");
+      return;
+    }
+
+    setReviewPhotoFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setReviewPhotoPreview(previewUrl);
+  };
+
+  const handleRemoveReviewPhoto = () => {
+    if (reviewPhotoPreview) {
+      URL.revokeObjectURL(reviewPhotoPreview);
+    }
+    setReviewPhotoFile(null);
+    setReviewPhotoPreview(null);
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewModalOrder || !reviewTargetItem || !user || isSubmittingReview) {
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    const toastId = toast.loading("Mengirim ulasan Anda...");
+
+    try {
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+      const userId = user.id || user.uid;
+
+      let reviewPhoto = null;
+      if (reviewPhotoFile) {
+        toast.loading("Mengunggah foto produk ke Cloudinary...", { id: toastId });
+        const uploadData = new FormData();
+        uploadData.append("file", reviewPhotoFile);
+        uploadData.append("userId", userId);
+        uploadData.append("folder", "reviews");
+        
+        const uploadRes = await fetch("/api/cloudinary", {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: uploadData,
+        });
+        const uploadResult = await uploadRes.json();
+        if (!uploadRes.ok) {
+          throw new Error(uploadResult.error || "Gagal mengunggah foto ulasan.");
+        }
+        reviewPhoto = uploadResult.secure_url;
+      }
+
+      toast.loading("Menyimpan ulasan...", { id: toastId });
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({
+          userId,
+          orderId: reviewModalOrder.id,
+          productId: reviewTargetItem.product_id || reviewTargetItem.productId || reviewTargetItem.id || reviewModalOrder.id,
+          productName: reviewTargetItem.product_name || reviewTargetItem.name || reviewModalOrder.name,
+          rating,
+          comment,
+          reviewPhoto,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Gagal mengirim ulasan.");
+      }
+
+      toast.success("Terima kasih! Ulasan Anda berhasil dikirim.", { id: toastId });
+
+      const targetItemId = String(reviewTargetItem.product_id || reviewTargetItem.productId || reviewTargetItem.id || "");
+
+      setOrder((prev) => {
+        const updatedReviewedIds = [...(prev.reviewedItemIds || []), targetItemId];
+        return {
+          ...prev,
+          reviewedItemIds: updatedReviewedIds,
+          hasBeenReviewed: true,
+        };
+      });
+
+      closeReviewModal();
+    } catch (err) {
+      console.error("Gagal mengirim ulasan:", err);
+      toast.error(err.message, { id: toastId });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const isItemReviewed = (ord, item) => {
+    const itemId = String(item.product_id || item.productId || item.id || "");
+    if (ord.reviewedItemIds && ord.reviewedItemIds.length > 0) {
+      return ord.reviewedItemIds.includes(itemId);
+    }
+    return ord.hasBeenReviewed;
+  };
+
   if (loading) {
     return (
       <div className={styles.pageContainer}>
@@ -457,7 +633,7 @@ Terima kasih telah berbelanja di XAR Perfumery.`;
               </button>
             </div>
             <p className={styles.customerMeta}>
-              Pemesan: <strong>{order.customer_name || "Pelanggan XAR"}</strong> {order.customer_phone ? `(${order.customer_phone})` : ""}
+              Pemesan: <strong>{order.customer_name || "Pelanggan XAR"}</strong>
             </p>
           </div>
 
@@ -471,11 +647,6 @@ Terima kasih telah berbelanja di XAR Perfumery.`;
         </div>
 
         <div className={styles.heroActions}>
-          <button onClick={handleBackToOrders} className={styles.secondaryBtn}>
-            <AppIcon name="arrow-left" size={16} />
-            <span>Kembali</span>
-          </button>
-
           {isPendingStatus && (
             <button onClick={handleContinuePayment} className={styles.payBtn}>
               <AppIcon name="creditcard" size={16} />
@@ -505,12 +676,7 @@ Terima kasih telah berbelanja di XAR Perfumery.`;
             <div className={styles.summaryRow}>
               <span className={styles.summaryLabel}>Tanggal Pemesanan</span>
               <span className={styles.summaryValue}>
-                {new Date(order.created_at || order.createdAt || Date.now()).toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {orderDateText}
               </span>
             </div>
 
@@ -629,6 +795,19 @@ Terima kasih telah berbelanja di XAR Perfumery.`;
 
                     <div className={styles.itemPriceCol}>
                       <strong className={styles.itemTotalPrice}>Rp {itemTotal.toLocaleString("id-ID")}</strong>
+                      
+                      {["delivered", "completed"].includes((order.status || "").toLowerCase()) && (
+                        <div style={{ marginTop: "0.75rem", display: "flex", justifyContent: "flex-end" }}>
+                          <button
+                            onClick={() => !isItemReviewed(order, item) && openReviewModal(order, item)}
+                            disabled={isItemReviewed(order, item)}
+                            className={isItemReviewed(order, item) ? styles.reviewBtnDisabled : styles.reviewBtn}
+                          >
+                            <AppIcon name={isItemReviewed(order, item) ? "check-circle" : "star"} size={14} />
+                            {isItemReviewed(order, item) ? `Diulas` : `Ulas Produk`}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -679,7 +858,7 @@ Terima kasih telah berbelanja di XAR Perfumery.`;
                   <h4 className={styles.timelineStatusTitle}>{statusInfo.label}</h4>
                   <p className={styles.timelineNote}>Pesanan tercatat di dalam sistem XAR.</p>
                   <span className={styles.timelineTime}>
-                    {new Date(order.created_at || order.createdAt || Date.now()).toLocaleString("id-ID")}
+                    {orderTimeText}
                   </span>
                 </div>
               </div>
@@ -687,7 +866,165 @@ Terima kasih telah berbelanja di XAR Perfumery.`;
           </div>
         </section>
       </div>
+
+      {/* --- MODAL ULASAN PRODUK DENGAN UPLOAD GAMBAR CLOUDINARY --- */}
+      {reviewModalOrder && reviewTargetItem && (
+        <div
+          className={styles.modalOverlay}
+          onClick={closeReviewModal}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>
+                {ordersConfig.labels.reviewTitle}
+              </h3>
+              <button
+                onClick={closeReviewModal}
+                className={styles.modalCloseBtn}
+                type="button"
+              >
+                <AppIcon name="x" size={18} strokeWidth={2} />
+              </button>
+            </div>
+
+            <form onSubmit={handleReviewSubmit} className={styles.modalBody}>
+              <div className={styles.modalProductCard}>
+                <div className={styles.modalProductIconWrap}>
+                  <AppIcon name="package" size={20} />
+                </div>
+                <div>
+                  <span className={styles.modalFieldLabel}>
+                    {ordersConfig.labels.product}
+                  </span>
+                  <strong className={styles.modalProductName}>{reviewTargetItem.product_name || reviewTargetItem.name || reviewModalOrder.name}</strong>
+                </div>
+              </div>
+
+              <div>
+                <label className={styles.modalFieldLabel}>
+                  {ordersConfig.labels.ratingLabel}
+                </label>
+                <div className={styles.starRatingGroup}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      className={`${styles.starBtn} ${rating >= star ? styles.starBtnActive : ""}`}
+                      title={`${star} Bintang`}
+                    >
+                      <AppIcon name="star" size={24} strokeWidth={rating >= star ? 2.5 : 1.5} />
+                    </button>
+                  ))}
+                  <span className={styles.ratingTextLabel}>
+                    {ordersConfig.ratingOptions.find((o) => o.value === rating)?.label || `${rating} / 5`}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className={styles.modalFieldLabel}>
+                  {ordersConfig.labels.commentLabel}
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder={ordersConfig.labels.commentPlaceholder}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className={styles.formTextarea}
+                />
+              </div>
+
+              <div>
+                <label className={styles.modalFieldLabel}>
+                  {ordersConfig.labels.uploadPhoto}
+                </label>
+                
+                {reviewPhotoPreview ? (
+                  <div className={styles.photoPreviewWrapper}>
+                    <div className={styles.photoPreviewThumb}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={reviewPhotoPreview}
+                        alt="Preview foto ulasan"
+                        className={styles.previewImg}
+                      />
+                    </div>
+                    <div className={styles.photoPreviewMeta}>
+                      <span className={styles.photoFileName}>{reviewPhotoFile?.name || "foto-ulasan.jpg"}</span>
+                      <span className={styles.photoFileSize}>
+                        {reviewPhotoFile ? `${(reviewPhotoFile.size / 1024).toFixed(1)} KB` : ""}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveReviewPhoto}
+                        className={styles.removePhotoBtn}
+                      >
+                        <AppIcon name="trash" size={13} />
+                        <span>Hapus Foto</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className={styles.photoUploadDropzone}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleReviewPhotoChange}
+                      className={styles.fileInputHidden}
+                    />
+                    <div className={styles.dropzoneIconCircle}>
+                      <AppIcon name="camera" size={22} />
+                    </div>
+                    <div className={styles.dropzoneTextGroup}>
+                      <span className={styles.dropzoneMainText}>
+                        Pilih foto produk atau seret ke sini
+                      </span>
+                      <span className={styles.dropzoneSubText}>
+                        Format JPG, PNG, WebP (Maksimal 5 MB)
+                      </span>
+                    </div>
+                  </label>
+                )}
+              </div>
+
+              <div className={styles.modalActionGroup}>
+                <button
+                  type="button"
+                  onClick={closeReviewModal}
+                  className={styles.modalCancelActionBtn}
+                  disabled={isSubmittingReview}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className={styles.modalCloseActionBtn}
+                  disabled={isSubmittingReview}
+                >
+                  {isSubmittingReview ? (
+                    <>
+                      <span className={styles.btnSpinner} />
+                      <span>{ordersConfig.labels.submittingReview}</span>
+                    </>
+                  ) : (
+                    <>
+                      <AppIcon name="send" size={15} />
+                      <span>{ordersConfig.labels.submitReview}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
-  </div>
+    </div>
   );
 }

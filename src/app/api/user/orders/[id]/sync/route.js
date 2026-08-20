@@ -40,7 +40,7 @@ export async function POST(request, context) {
     let nextStatus = order.status;
     const txStatus = String(transaction_status || "").toLowerCase();
 
-    if (txStatus === "settlement" || txStatus === "capture") {
+    if (["settlement", "capture", "success", "paid"].includes(txStatus)) {
       nextStatus = "paid";
     } else if (txStatus === "pending") {
       nextStatus = "pending";

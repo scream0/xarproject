@@ -13,6 +13,9 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
 
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
   useEffect(() => {
     if (!item) return;
 
@@ -40,6 +43,18 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
       setSelectedVariant(null);
     }
   }, [item, currentSize]);
+
+  useEffect(() => {
+    if (!item?.id) return;
+    setLoadingReviews(true);
+    fetch(`/api/reviews?productId=${item.id}&public=true`)
+      .then((res) => res.json())
+      .then((data) => {
+        setReviews(data.reviews || []);
+      })
+      .catch((err) => console.error("Failed to fetch reviews", err))
+      .finally(() => setLoadingReviews(false));
+  }, [item?.id]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -226,6 +241,59 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
                   : "Stok Habis"}
               </button>
             </div>
+
+            {/* --- REVIEWS SECTION --- */}
+            <div className={styles.reviewsSection}>
+              <h4 className={styles.reviewsTitle}>Ulasan Pembeli</h4>
+              {loadingReviews ? (
+                <p className={styles.noReviews}>Memuat ulasan...</p>
+              ) : reviews.length > 0 ? (
+                <div className={styles.reviewList}>
+                  {reviews.map((rev) => (
+                    <div key={rev.id} className={styles.reviewItem}>
+                      <div className={styles.reviewHeader}>
+                        <span className={styles.reviewUser}>
+                          {rev.userName || "Pelanggan"}
+                        </span>
+                        <span className={styles.reviewDate}>
+                          {new Date(rev.createdAt).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <div className={styles.reviewStars}>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <AppIcon
+                            key={i}
+                            name="star"
+                            size={12}
+                            strokeWidth={i < rev.rating ? 2.5 : 1}
+                            style={{
+                              fill: i < rev.rating ? "#fbbf24" : "none",
+                              color: i < rev.rating ? "#fbbf24" : "#9ca3af",
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <p className={styles.reviewComment}>{rev.comment}</p>
+                      {rev.reviewPhoto && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={rev.reviewPhoto}
+                          alt="Review"
+                          className={styles.reviewImage}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.noReviews}>Belum ada ulasan untuk produk ini.</p>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

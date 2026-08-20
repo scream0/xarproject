@@ -13,9 +13,11 @@ import ProfileSection from "@/components/Dashboard/User/Profil/UserProfil";
 import ShopPage from "@/components/Dashboard/User/Shop/Shop";
 import NotificationsSection from "@/components/Dashboard/User/Notifications/NotificationsSection";
 import { CartSidebar } from "@/components/UI/Sidebar/CartSidebar";
+import { Modal as ProductModal } from "@/components/UI/Modal/ProductModal";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import { UserDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import UserChatModal from "@/components/Dashboard/User/Chat/UserChatModal";
 
 const DEFAULT_TAB = "shop";
 const ALLOWED_TABS = ["shop", "overview", "notifications", "profile"];
@@ -33,8 +35,11 @@ export default function UserDashboard({ user }) {
   const { userName, loading, error, retry } = useUserDashboardData();
   const [notificationCount, setNotificationCount] = useState(0);
 
-  const { isCartOpen, setIsCartOpen, cartQuantity } = useStore();
+  const { isCartOpen, setIsCartOpen, cartQuantity, addToCart, rupiah } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const currentTabParam = searchParams.get("tab");
   
@@ -100,8 +105,8 @@ export default function UserDashboard({ user }) {
       toast.error("Produk tidak valid.");
       return;
     }
-    // Updated to reflect a likely product detail page route.
-    router.push(`/products/${product.id}`);
+    setSelectedProduct(product);
+    setIsProductModalOpen(true);
   };
 
   if (loading) {
@@ -176,7 +181,7 @@ export default function UserDashboard({ user }) {
           <div className={styles.navbarActions}>
             <button
               className={styles.chatIconBtnNavbar}
-              onClick={() => toast.success("Membuka chat...")}
+              onClick={() => setIsChatOpen(true)}
               aria-label="Chat"
             >
               <AppIcon name="message-circle" className={styles.svgIcon} />
@@ -248,7 +253,28 @@ export default function UserDashboard({ user }) {
         })}
       </nav>
 
+      {/* Modals & Overlays */}
+      <UserChatModal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        user={user}
+      />
+      
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+      {/* Modal Detail Produk */}
+      {isProductModalOpen && selectedProduct && (
+        <ProductModal
+          isOpen={isProductModalOpen}
+          item={selectedProduct}
+          onClose={() => {
+            setIsProductModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onAddToCart={addToCart}
+          rupiah={rupiah}
+        />
+      )}
     </div>
   );
 }

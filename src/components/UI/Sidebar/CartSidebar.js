@@ -245,12 +245,7 @@ export function CartSidebar() {
               <AppIcon name={cartConfig?.icons?.emptyCart} className={styles.svgIcon} />
             </div>
             <p>{cartConfig?.emptyState?.message}</p>
-            <button
-              onClick={handleExploreClick}
-              className={styles.btnContinueShopping}
-            >
-              {cartConfig?.emptyState?.buttonText}
-            </button>
+
           </div>
         )}
       </aside>

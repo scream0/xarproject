@@ -88,6 +88,9 @@ export default function CheckoutPage() {
   const [claimedVouchers, setClaimedVouchers] = useState([]);
   const [appliedVouchers, setAppliedVouchers] = useState([]);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
+  
+  // ── Store Settings ──
+  const [activeCouriers, setActiveCouriers] = useState(["jne", "jnt", "pos"]);
 
   const fetchUserClaimedVouchers = async (userId, token) => {
     try {
@@ -114,6 +117,16 @@ export default function CheckoutPage() {
         fetchUserClaimedVouchers(user.id, session.access_token);
       }
     });
+
+    // Fetch store settings for couriers
+    fetch("/api/settings?public=true")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.activeCouriers) {
+          setActiveCouriers(data.activeCouriers);
+        }
+      })
+      .catch((err) => console.error("Failed to load settings:", err));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user || null;
@@ -349,12 +362,12 @@ export default function CheckoutPage() {
     setShippingCost(0);
     setShippingMeta({ kind: "", message: "" });
 
-    const localFallbackOptions = buildLocalCourierOptions(totalWeight);
+    const localFallbackOptions = buildLocalCourierOptions(totalWeight).filter(c => activeCouriers.includes(c.courier));
 
     try {
-      const couriers = ["jne", "tiki", "pos", "jnt", "sicepat", "anteraja"];
+      const couriersToFetch = activeCouriers.length > 0 ? activeCouriers : ["jne", "jnt", "pos"];
       const results = await Promise.allSettled(
-        couriers.map((c) =>
+        couriersToFetch.map((c) =>
           fetch(
             `/api/ongkir?origin=${ORIGIN_CITY_ID}&destination=${destinationCityId}&weight=${totalWeight}&courier=${c}`,
           ).then((r) => r.json()),
@@ -372,6 +385,7 @@ export default function CheckoutPage() {
 
           const costs = result.value.costs || [];
           for (const courier of costs) {
+            if (activeCouriers.length > 0 && !activeCouriers.includes(courier.courier)) continue;
             for (const svc of courier.services || []) {
               allCosts.push({
                 courier: courier.courier,
@@ -446,7 +460,7 @@ export default function CheckoutPage() {
     } finally {
       setCourierLoading(false);
     }
-  }, [selectedAddress, totalWeight]);
+  }, [selectedAddress, totalWeight, activeCouriers]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

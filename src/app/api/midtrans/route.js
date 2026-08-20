@@ -136,29 +136,49 @@ export async function POST(request) {
       );
     }
 
-    const resolvedItems = await Promise.all((items || []).map(async (item) => {
+    const productIds = [...new Set((items || []).map((item) => String(item?.productId || item?.id || "")))];
+    const { data: productsData, error: productsError } = await supabaseAdmin.from("products").select("id,name,variants,status").in("id", productIds);
+    if (productsError) throw new Error("Gagal mengambil data produk.");
+
+    const productsMap = {};
+    for (const p of productsData) productsMap[p.id] = p;
+    const productsToUpdate = {};
+
+    const resolvedItems = (items || []).map((item) => {
       const productId = String(item?.productId || item?.id || "");
       const quantity = Number(item?.quantity);
       if (!productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) throw new Error("Item checkout tidak valid");
-      const { data: product, error } = await supabaseAdmin.from("products").select("id,name,variants,status").eq("id", productId).single();
-      // 🔍 Tambahkan log ini sementara untuk debugging
-  console.log("DEBUG checkout item:", { productId, foundProduct: product, supabaseError: error?.message, statusValue: product?.status });
 
+      const product = productsMap[productId];
       const allowedStatuses = ["published", "Stok Menipis"];
-      if (error || !product || !allowedStatuses.includes(product.status)) {
+      if (!product || !allowedStatuses.includes(product.status)) {
         const productName = product ? `${product.name} (${item.size})` : `ID ${productId}`;
         throw new Error(`Produk "${productName}" tidak tersedia atau sudah habis.`);
       }
 
-      const variant = (Array.isArray(product.variants) ? product.variants : []).find((candidate) => String(candidate?.size || "").toLowerCase() === String(item?.size || "").toLowerCase());
+      const variantIndex = (Array.isArray(product.variants) ? product.variants : []).findIndex(
+        (candidate) => String(candidate?.size || "").toLowerCase() === String(item?.size || "").toLowerCase()
+      );
+      if (variantIndex === -1) {
+        throw new Error(`Varian tidak tersedia untuk produk "${product.name}".`);
+      }
+
+      const variant = product.variants[variantIndex];
       const price = Number(variant?.price);
       const stock = Number(variant?.stock ?? variant?.stok ?? 0);
-      if (!variant || !Number.isFinite(price) || price < 0 || stock < quantity) {
-        const productName = `${product.name} (${variant.size})`;
-        throw new Error(`Varian atau stok untuk produk "${productName}" tidak tersedia.`);
+      
+      if (!Number.isFinite(price) || price < 0 || stock < quantity) {
+        throw new Error(`Stok untuk "${product.name} (${variant.size})" tidak mencukupi (sisa: ${stock}).`);
       }
+
+      // Kurangi stok di memory (reserve)
+      product.variants[variantIndex].stock = stock - quantity;
+      
+      // Simpan referensi product yang berubah untuk di-update nanti ke database
+      productsToUpdate[productId] = product;
+
       return { id: product.id, productId: product.id, name: product.name, size: variant.size, quantity, price };
-    }));
+    });
     const rawSubtotal = resolvedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     let actualShippingCost = Number(shippingCost) || 0;
 
@@ -343,6 +363,14 @@ export async function POST(request) {
       appliedVouchersList: validatedVouchers,
       snapToken: transaction.token,
     });
+
+    // 3. Update stock in products table to reserve the stock
+    for (const productId of Object.keys(productsToUpdate)) {
+      const product = productsToUpdate[productId];
+      await supabaseAdmin.from("products").update({
+        variants: product.variants
+      }).eq("id", productId);
+    }
 
     return NextResponse.json({
       success: true,

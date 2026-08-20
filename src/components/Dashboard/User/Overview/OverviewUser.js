@@ -144,14 +144,14 @@ export default function OverviewUser({ setActiveTab }) {
           0,
         );
 
-        // Pesanan aktif/proses adalah pesanan yang belum selesai
+        // Pesanan aktif/proses adalah pesanan yang sudah dibayar dan sedang dikemas
         const processing = orderData.filter((o) =>
           [
-            "pending",
+            "paid",
             "success",
             "processing",
-            "shipping",
             "settlement",
+            "capture"
           ].includes((o.status || "").toLowerCase()),
         ).length;
 
@@ -338,7 +338,14 @@ export default function OverviewUser({ setActiveTab }) {
                         {statusInfo.label}
                       </span>
                       <button
-                        onClick={() => handleNavigation("orders")}
+                        onClick={() => {
+                          const orderId = order.id || order.orderId;
+                          if (orderId) {
+                            router.push(`/account/orders/${orderId}`);
+                          } else {
+                            router.push("/account/orders");
+                          }
+                        }}
                         className={styles.detailsLink}
                       >
                         {overviewConfig.recentOrders.detailBtn}

@@ -9,11 +9,11 @@ const RAJAONGKIR_BASE_URL =
   process.env.RAJAONGKIR_BASE_URL || "https://api.rajaongkir.com/starter";
 const API_KEY = process.env.RAJAONGKIR_API_KEY;
 
-function buildFallbackCosts(weight) {
+function buildFallbackCosts(weight, requestedCourier) {
   const kg = Math.max(1, Math.ceil(weight / 1000));
   const base = Math.max(12000, 8000 + kg * 3500);
 
-  return [
+  const allFallbacks = [
     {
       courier: "jne",
       courierName: "JNE",
@@ -61,6 +61,11 @@ function buildFallbackCosts(weight) {
       ],
     },
   ];
+
+  if (requestedCourier && requestedCourier !== "all") {
+    return allFallbacks.filter(c => c.courier === requestedCourier);
+  }
+  return allFallbacks;
 }
 
 /**
@@ -114,7 +119,7 @@ export async function GET(request) {
         success: true,
         fallback: true,
         warning: "API key RajaOngkir belum aktif, menggunakan tarif estimasi lokal.",
-        costs: buildFallbackCosts(weightNumber),
+        costs: buildFallbackCosts(weightNumber, courier),
       });
     }
 
@@ -143,7 +148,7 @@ export async function GET(request) {
         success: true,
         fallback: true,
         warning: "RajaOngkir sedang tidak tersedia, menggunakan tarif estimasi lokal.",
-        costs: buildFallbackCosts(weightNumber),
+        costs: buildFallbackCosts(weightNumber, courier),
       });
     }
 
@@ -153,7 +158,7 @@ export async function GET(request) {
         success: true,
         fallback: true,
         warning: "Tidak ada tarif yang dikembalikan, menggunakan estimasi lokal.",
-        costs: buildFallbackCosts(weightNumber),
+        costs: buildFallbackCosts(weightNumber, courier),
       });
     }
 

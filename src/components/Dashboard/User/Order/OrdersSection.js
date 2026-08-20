@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import styles from "./OrdersSection.module.css";
 import ordersConfig from "@/data/ui/ordersConfig.json";
-import { auth, supabase } from "@/lib/supabaseClient";
+import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { useStore } from "@/context/StoreContext";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
@@ -18,12 +18,28 @@ const STATUS_INFO = {
     label: "Menunggu Pembayaran",
     badgeClass: "statusPending",
   },
+  unpaid: {
+    label: "Menunggu Pembayaran",
+    badgeClass: "statusPending",
+  },
+  paid: {
+    label: "Sedang Dikemas",
+    badgeClass: "statusProcessing",
+  },
   success: {
-    label: "Pembayaran Diterima",
-    badgeClass: "statusSuccess",
+    label: "Sedang Dikemas",
+    badgeClass: "statusProcessing",
+  },
+  settlement: {
+    label: "Sedang Dikemas",
+    badgeClass: "statusProcessing",
+  },
+  capture: {
+    label: "Sedang Dikemas",
+    badgeClass: "statusProcessing",
   },
   processing: {
-    label: "Sedang Diracik / Dikemas",
+    label: "Sedang Dikemas",
     badgeClass: "statusProcessing",
   },
   shipping: {
@@ -34,25 +50,25 @@ const STATUS_INFO = {
     label: "Dalam Pengiriman",
     badgeClass: "statusShipping",
   },
+  delivered: {
+    label: "Pesanan Selesai",
+    badgeClass: "statusCompleted",
+  },
   completed: {
     label: "Pesanan Selesai",
     badgeClass: "statusCompleted",
   },
   cancelled: {
     label: "Dibatalkan",
-    badgeClass: "statusPending",
+    badgeClass: "statusCancelled",
   },
-  settlement: {
-    label: "Pembayaran Diterima",
-    badgeClass: "statusSuccess",
-  },
-  capture: {
-    label: "Pembayaran Diterima",
-    badgeClass: "statusSuccess",
+  canceled: {
+    label: "Dibatalkan",
+    badgeClass: "statusCancelled",
   },
   return_requested: {
     label: "Pengajuan Return",
-    badgeClass: "statusPending",
+    badgeClass: "statusReturn",
   },
   returning: {
     label: "Barang Dikirim Balik",
@@ -80,7 +96,7 @@ function formatOrderDoc(item, primaryAddress) {
   let displayName = item.product_name || item.name || "Extrait de Parfum";
   if (item.items && Array.isArray(item.items) && item.items.length > 0) {
     const firstItem = item.items[0];
-    displayName = `${firstItem.name} (${firstItem.size})`;
+    displayName = `${firstItem.product_name || firstItem.name || "Produk"} (${firstItem.variant_name || firstItem.size || "Standard"})`;
     if (item.items.length > 1) {
       displayName += ` +${item.items.length - 1} produk lainnya`;
     }
@@ -108,11 +124,12 @@ function formatOrderDoc(item, primaryAddress) {
     statusHistory: Array.isArray(item.statusHistory) ? item.statusHistory : [],
     concentration:
       item.concentration ||
-      (item.items?.[0] ? `Varian: ${item.items[0].size}` : "30% Bibit (50 ml)"),
+      (item.items?.[0] ? `Varian: ${item.items[0].variant_name || item.items[0].size || "Standard"}` : "30% Bibit (50 ml)"),
     notes: item.notes || "-",
     price: `Rp ${rawAmount.toLocaleString("id-ID")}`,
     rawPrice: rawAmount,
     status: rawStatus,
+    snap_token: item.snap_token || item.snapToken || null,
     date:
       item.createdAt || item.created_at
         ? new Date(
@@ -138,7 +155,6 @@ export default function OrdersSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userPrimaryAddress, setUserPrimaryAddress] = useState("Belum diatur");
   const { addToCart } = useStore();
   const router = useRouter();
   
@@ -147,12 +163,14 @@ export default function OrdersSection() {
   
   const [isCancelling, setIsCancelling] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isPayingId, setIsPayingId] = useState(null);
 
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
   const [reviewTargetItem, setReviewTargetItem] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [reviewPhotoFile, setReviewPhotoFile] = useState(null);
+  const [reviewPhotoPreview, setReviewPhotoPreview] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const [returnModalOrder, setReturnModalOrder] = useState(null);
@@ -191,7 +209,9 @@ export default function OrdersSection() {
   }, []);
 
   useEffect(() => {
-    const snapScriptUrl = "https://app.sandbox.midtrans.com/snap/snap.js";
+    const snapScriptUrl = process.env.NODE_ENV === "production"
+      ? "https://app.midtrans.com/snap/snap.js"
+      : "https://app.sandbox.midtrans.com/snap/snap.js";
     const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
 
     if (!document.getElementById("midtrans-snap-script")) {
@@ -229,7 +249,6 @@ export default function OrdersSection() {
         if (!isActive) return;
 
         const primaryAddress = result.primaryAddress || "Belum diatur";
-        setUserPrimaryAddress(primaryAddress);
 
         const formatted = (result.orders || []).map((order) =>
           formatOrderDoc(order, primaryAddress),
@@ -243,7 +262,6 @@ export default function OrdersSection() {
         if (isActive) {
           toast.error("Gagal memuat data pesanan.");
           setOrders([]);
-          setUserPrimaryAddress("Belum diatur");
         }
       } finally {
         if (isActive) {
@@ -264,13 +282,13 @@ export default function OrdersSection() {
 
     if (filter !== "all" && filter !== "return") {
       if (filter === "pending") {
-        result = result.filter((o) => o.status === "pending");
+        result = result.filter((o) => ["pending", "unpaid"].includes(o.status));
       } else if (filter === "processing") {
-        result = result.filter((o) => ["success", "processing", "settlement", "capture"].includes(o.status));
+        result = result.filter((o) => ["paid", "success", "processing", "settlement", "capture"].includes(o.status));
       } else if (filter === "shipping") {
         result = result.filter((o) => ["shipping", "shipped"].includes(o.status));
       } else if (filter === "history") {
-        result = result.filter((o) => ["completed", "cancelled"].includes(o.status));
+        result = result.filter((o) => ["completed", "delivered", "cancelled", "canceled"].includes(o.status));
       }
     }
 
@@ -289,10 +307,10 @@ export default function OrdersSection() {
 
   const orderStats = useMemo(() => {
     const total = orders.length;
-    const pending = orders.filter((o) => o.status === "pending").length;
-    const processing = orders.filter((o) => ["success", "processing", "settlement", "capture"].includes(o.status)).length;
+    const pending = orders.filter((o) => ["pending", "unpaid"].includes(o.status)).length;
+    const processing = orders.filter((o) => ["paid", "success", "processing", "settlement", "capture"].includes(o.status)).length;
     const shipping = orders.filter((o) => ["shipping", "shipped"].includes(o.status)).length;
-    const history = orders.filter((o) => ["completed", "cancelled"].includes(o.status)).length;
+    const history = orders.filter((o) => ["completed", "delivered", "cancelled", "canceled"].includes(o.status)).length;
     const returnCount = orders.filter((o) => ["return_requested", "returning", "returned"].includes(o.status)).length;
 
     return { total, pending, processing, shipping, history, return: returnCount };
@@ -309,6 +327,94 @@ export default function OrdersSection() {
     ],
     [orderStats],
   );
+
+  const handlePayOrder = async (order) => {
+    if (isPayingId) return;
+    setIsPayingId(order.id);
+    let snapToken = order.snap_token;
+
+    if (!snapToken) {
+      toast.loading("Menghubungkan sistem pembayaran...", { id: "snap-pay-loader" });
+      try {
+        const { data: { session } } = await auth.getSession();
+        const token = session?.access_token;
+        const userId = currentUser?.id || currentUser?.uid;
+
+        const res = await fetch(`/api/user/orders/${order.id}/pay`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ userId }),
+        });
+
+        const data = await res.json();
+        toast.dismiss("snap-pay-loader");
+
+        if (!res.ok) {
+          throw new Error(data.error || "Gagal menghasilkan token pembayaran.");
+        }
+
+        snapToken = data.snap_token;
+      } catch (err) {
+        toast.dismiss("snap-pay-loader");
+        toast.error(err.message || "Gagal memuat sistem pembayaran.");
+        setIsPayingId(null);
+        return;
+      }
+    }
+
+    setIsPayingId(null);
+
+    if (!snapToken) {
+      toast.error("Token pembayaran tidak ditemukan. Silakan buka detail pesanan.");
+      return;
+    }
+
+    if (typeof window.snap === "undefined") {
+      toast.error("Modul pembayaran sedang dimuat, coba sesaat lagi.");
+      return;
+    }
+
+    window.snap.pay(snapToken, {
+      onSuccess: async function (result) {
+        toast.success("Pembayaran Berhasil! Pesanan sekarang sedang dikemas.");
+        try {
+          const { data: { session } } = await auth.getSession();
+          const token = session?.access_token;
+          await fetch(`/api/user/orders/${order.id}/sync`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({
+              transaction_status: result.transaction_status || "settlement",
+              status_code: result.status_code,
+              order_id: result.order_id,
+            }),
+          });
+        } catch (e) {
+          console.error("Sync payment error:", e);
+        }
+        
+        // Mutasi status lokal agar badge dan daftar langsung berpindah ke Sedang Dikemas
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === order.id ? { ...o, status: "paid" } : o
+          )
+        );
+        setFilter("processing");
+      },
+      onPending: function () {
+        toast("Menunggu pembayaran Anda diselesaikan.", { icon: "⏳" });
+      },
+      onClose: function () {
+        toast("Popup pembayaran ditutup.", { icon: "ℹ️" });
+      },
+    });
+  };
 
   const handleReOrder = async (order) => {
     const toastId = toast.loading("Memeriksa ketersediaan stok produk...");
@@ -507,6 +613,48 @@ export default function OrdersSection() {
     setReviewTargetItem(item);
     setRating(5);
     setComment("");
+    setReviewPhotoFile(null);
+    setReviewPhotoPreview(null);
+  };
+
+  const closeReviewModal = () => {
+    if (reviewPhotoPreview) {
+      URL.revokeObjectURL(reviewPhotoPreview);
+    }
+    setReviewModalOrder(null);
+    setReviewTargetItem(null);
+    setRating(5);
+    setComment("");
+    setReviewPhotoFile(null);
+    setReviewPhotoPreview(null);
+  };
+
+  const handleReviewPhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Format foto harus JPG, PNG, atau WebP.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran foto maksimal 5 MB.");
+      return;
+    }
+
+    setReviewPhotoFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setReviewPhotoPreview(previewUrl);
+  };
+
+  const handleRemoveReviewPhoto = () => {
+    if (reviewPhotoPreview) {
+      URL.revokeObjectURL(reviewPhotoPreview);
+    }
+    setReviewPhotoFile(null);
+    setReviewPhotoPreview(null);
   };
 
   const handleReviewSubmit = async (e) => {
@@ -530,17 +678,25 @@ export default function OrdersSection() {
 
       let reviewPhoto = null;
       if (reviewPhotoFile) {
+        toast.loading("Mengunggah foto produk ke Cloudinary...", { id: toastId });
         const uploadData = new FormData();
         uploadData.append("file", reviewPhotoFile);
         uploadData.append("userId", userId);
         uploadData.append("folder", "reviews");
-        const { data: { session } } = await auth.getSession();
-        const uploadRes = await fetch("/api/cloudinary", { method: "POST", headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}, body: uploadData });
+        
+        const uploadRes = await fetch("/api/cloudinary", {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: uploadData,
+        });
         const uploadResult = await uploadRes.json();
-        if (!uploadRes.ok) throw new Error(uploadResult.error || "Gagal mengunggah foto ulasan.");
+        if (!uploadRes.ok) {
+          throw new Error(uploadResult.error || "Gagal mengunggah foto ulasan.");
+        }
         reviewPhoto = uploadResult.secure_url;
       }
 
+      toast.loading("Menyimpan ulasan...", { id: toastId });
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: {
@@ -551,12 +707,14 @@ export default function OrdersSection() {
           userId,
           orderId: reviewModalOrder.id,
           productId:
-            reviewTargetItem.id ||
+            reviewTargetItem.product_id ||
             reviewTargetItem.productId ||
+            reviewTargetItem.id ||
             reviewModalOrder.id,
-          productName: reviewTargetItem.name || reviewModalOrder.name,
+          productName: reviewTargetItem.product_name || reviewTargetItem.name || reviewModalOrder.name,
           rating,
           comment,
+          reviewPhoto,
         }),
       });
 
@@ -570,7 +728,7 @@ export default function OrdersSection() {
         id: toastId,
       });
 
-      const targetItemId = String(reviewTargetItem.id || reviewTargetItem.productId || "");
+      const targetItemId = String(reviewTargetItem.product_id || reviewTargetItem.productId || reviewTargetItem.id || "");
 
       setOrders((prev) =>
         prev.map((o) => {
@@ -586,10 +744,7 @@ export default function OrdersSection() {
         })
       );
 
-      setReviewModalOrder(null);
-      setReviewTargetItem(null);
-      setComment("");
-      setRating(5);
+      closeReviewModal();
     } catch (error) {
       console.error("Gagal mengirim ulasan:", error);
       toast.error(error.message, { id: toastId });
@@ -599,7 +754,7 @@ export default function OrdersSection() {
   };
 
   const isItemReviewed = (order, item) => {
-    const itemId = String(item.id || item.productId || "");
+    const itemId = String(item.product_id || item.productId || item.id || "");
     if (order.reviewedItemIds && order.reviewedItemIds.length > 0) {
       return order.reviewedItemIds.includes(itemId);
     }
@@ -772,8 +927,8 @@ export default function OrdersSection() {
                               }
                             >
                               {reviewed
-                                ? `✓ ${item.name} sudah diulas`
-                                : `Ulas ${item.name}`}
+                                ? `✓ ${item.product_name || item.name} sudah diulas`
+                                : `Ulas ${item.product_name || item.name}`}
                             </button>
                           );
                         })}
@@ -791,13 +946,23 @@ export default function OrdersSection() {
                         {ordersConfig.buttons.details}
                       </button>
                       {isPending && (
-                        <button
-                          onClick={() => handleCancelOrder(order)}
-                          disabled={isCancelling}
-                          className={styles.cancelBtn}
-                        >
-                          Batalkan
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handlePayOrder(order)}
+                            disabled={isPayingId === order.id}
+                            className={styles.payBtn}
+                          >
+                            <AppIcon name="creditcard" size={14} />
+                            <span>{isPayingId === order.id ? "Memuat..." : "Bayar Sekarang"}</span>
+                          </button>
+                          <button
+                            onClick={() => handleCancelOrder(order)}
+                            disabled={isCancelling}
+                            className={styles.cancelBtn}
+                          >
+                            Batalkan
+                          </button>
+                        </>
                       )}
                       {isDelivered && !isFinished && (
                         <button
@@ -831,14 +996,11 @@ export default function OrdersSection() {
         </div>
       )}
 
-      {/* --- MODAL ULASAN PRODUK --- */}
+      {/* --- MODAL ULASAN PRODUK DENGAN UPLOAD GAMBAR CLOUDINARY --- */}
       {reviewModalOrder && reviewTargetItem && (
         <div
           className={styles.modalOverlay}
-          onClick={() => {
-            setReviewModalOrder(null);
-            setReviewTargetItem(null);
-          }}
+          onClick={closeReviewModal}
         >
           <div
             className={styles.modalContent}
@@ -849,43 +1011,53 @@ export default function OrdersSection() {
                 {ordersConfig.labels.reviewTitle}
               </h3>
               <button
-                onClick={() => {
-                  setReviewModalOrder(null);
-                  setReviewTargetItem(null);
-                }}
+                onClick={closeReviewModal}
                 className={styles.modalCloseBtn}
+                type="button"
               >
                 <AppIcon name="x" size={18} strokeWidth={2} />
               </button>
             </div>
 
             <form onSubmit={handleReviewSubmit} className={styles.modalBody}>
-              <div>
-                <span className={styles.modalFieldLabel}>
-                  {ordersConfig.labels.product}
-                </span>
-                <strong>{reviewTargetItem.name}</strong>
+              <div className={styles.modalProductCard}>
+                <div className={styles.modalProductIconWrap}>
+                  <AppIcon name="package" size={20} />
+                </div>
+                <div>
+                  <span className={styles.modalFieldLabel}>
+                    {ordersConfig.labels.product}
+                  </span>
+                  <strong className={styles.modalProductName}>{reviewTargetItem.product_name || reviewTargetItem.name}</strong>
+                </div>
               </div>
+
               <div>
-                <span className={styles.modalFieldLabel}>
+                <label className={styles.modalFieldLabel}>
                   {ordersConfig.labels.ratingLabel}
-                </span>
-                <select
-                  value={rating}
-                  onChange={(e) => setRating(Number(e.target.value))}
-                  className={styles.formInput}
-                >
-                  {ordersConfig.ratingOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
+                </label>
+                <div className={styles.starRatingGroup}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      className={`${styles.starBtn} ${rating >= star ? styles.starBtnActive : ""}`}
+                      title={`${star} Bintang`}
+                    >
+                      <AppIcon name="star" size={24} strokeWidth={rating >= star ? 2.5 : 1.5} />
+                    </button>
                   ))}
-                </select>
+                  <span className={styles.ratingTextLabel}>
+                    {ordersConfig.ratingOptions.find((o) => o.value === rating)?.label || `${rating} / 5`}
+                  </span>
+                </div>
               </div>
+
               <div>
-                <span className={styles.modalFieldLabel}>
+                <label className={styles.modalFieldLabel}>
                   {ordersConfig.labels.commentLabel}
-                </span>
+                </label>
                 <textarea
                   rows={3}
                   required
@@ -895,15 +1067,87 @@ export default function OrdersSection() {
                   className={styles.formTextarea}
                 />
               </div>
-              <button
-                type="submit"
-                className={styles.modalCloseActionBtn}
-                disabled={isSubmittingReview}
-              >
-                {isSubmittingReview
-                  ? ordersConfig.labels.submittingReview
-                  : ordersConfig.labels.submitReview}
-              </button>
+
+              <div>
+                <label className={styles.modalFieldLabel}>
+                  {ordersConfig.labels.uploadPhoto}
+                </label>
+                
+                {reviewPhotoPreview ? (
+                  <div className={styles.photoPreviewWrapper}>
+                    <div className={styles.photoPreviewThumb}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={reviewPhotoPreview}
+                        alt="Preview foto ulasan"
+                        className={styles.previewImg}
+                      />
+                    </div>
+                    <div className={styles.photoPreviewMeta}>
+                      <span className={styles.photoFileName}>{reviewPhotoFile?.name || "foto-ulasan.jpg"}</span>
+                      <span className={styles.photoFileSize}>
+                        {reviewPhotoFile ? `${(reviewPhotoFile.size / 1024).toFixed(1)} KB` : ""}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveReviewPhoto}
+                        className={styles.removePhotoBtn}
+                      >
+                        <AppIcon name="trash" size={13} />
+                        <span>Hapus Foto</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className={styles.photoUploadDropzone}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleReviewPhotoChange}
+                      className={styles.fileInputHidden}
+                    />
+                    <div className={styles.dropzoneIconCircle}>
+                      <AppIcon name="camera" size={22} />
+                    </div>
+                    <div className={styles.dropzoneTextGroup}>
+                      <span className={styles.dropzoneMainText}>
+                        Pilih foto produk atau seret ke sini
+                      </span>
+                      <span className={styles.dropzoneSubText}>
+                        Format JPG, PNG, WebP (Maksimal 5 MB)
+                      </span>
+                    </div>
+                  </label>
+                )}
+              </div>
+
+              <div className={styles.modalActionGroup}>
+                <button
+                  type="button"
+                  onClick={closeReviewModal}
+                  className={styles.modalCancelActionBtn}
+                  disabled={isSubmittingReview}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className={styles.modalCloseActionBtn}
+                  disabled={isSubmittingReview}
+                >
+                  {isSubmittingReview ? (
+                    <>
+                      <span className={styles.btnSpinner} />
+                      <span>{ordersConfig.labels.submittingReview}</span>
+                    </>
+                  ) : (
+                    <>
+                      <AppIcon name="send" size={15} />
+                      <span>{ordersConfig.labels.submitReview}</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
           </div>
         </div>

@@ -69,6 +69,8 @@ export default function AdvancedAnalytics() {
           "success",
           "pending",
           "processing",
+          "shipped",
+          "shipping",
           "",
         ].includes(status);
 
@@ -141,6 +143,19 @@ export default function AdvancedAnalytics() {
     const variantMap = {};
 
     orders.forEach((order) => {
+      const status = (order.status || order.transaction_status || "pending").toLowerCase();
+      const isValidStatus = [
+        "paid",
+        "settlement",
+        "completed",
+        "success",
+        "processing",
+        "shipped",
+        "shipping"
+      ].includes(status);
+
+      if (!isValidStatus) return;
+
       const items = order.items || (order.order ? [order.order] : []);
       if (Array.isArray(items)) {
         items.forEach((item) => {

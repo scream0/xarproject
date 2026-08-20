@@ -7,35 +7,35 @@
   "nav": [
     {
       "id": "overview",
-      "label": "Overview"
-    },
-    {
-      "id": "products",
-      "label": "Inventory"
-    },
-    {
-      "id": "reviews",
-      "label": "Reviews"
-    },
-    {
-      "id": "analytics",
-      "label": "Analytics"
-    },
-    {
-      "id": "notifications",
-      "label": "Notifications"
-    },
-    {
-      "id": "settings",
-      "label": "Settings"
-    },
-    {
-      "id": "operations",
-      "label": "Operations"
+      "label": "Ringkasan"
     },
     {
       "id": "orders",
-      "label": "Orders"
+      "label": "Pesanan"
+    },
+    {
+      "id": "products",
+      "label": "Inventori"
+    },
+    {
+      "id": "reviews",
+      "label": "Ulasan"
+    },
+    {
+      "id": "analytics",
+      "label": "Analitik"
+    },
+    {
+      "id": "notifications",
+      "label": "Notifikasi"
+    },
+    {
+      "id": "chat",
+      "label": "Chat"
+    },
+    {
+      "id": "settings",
+      "label": "Pengaturan"
     }
   ],
   "stats": [

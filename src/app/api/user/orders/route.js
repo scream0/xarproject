@@ -11,7 +11,8 @@ async function verifyOwner(request, userId) {
   if (user.id !== userId) throw new Error("Forbidden");
 }
 
-function mapOrderRecord(order) {
+function mapOrderRecord(order, reviewsByOrder = {}) {
+  const reviewedItemIds = reviewsByOrder[order.id] || [];
   return {
     id: order.id,
     orderId: order.id,
@@ -31,6 +32,9 @@ function mapOrderRecord(order) {
     shippingReceiptNumber: order.shipping_receipt_number,
     notes: order.notes,
     statusHistory: Array.isArray(order.status_history) ? order.status_history : [],
+    items: order.items || [],
+    hasBeenReviewed: reviewedItemIds.length > 0,
+    reviewedItemIds,
     createdAt: order.created_at,
     updatedAt: order.updated_at,
   };
@@ -53,7 +57,7 @@ export async function GET(request) {
     }
     await verifyOwner(request, userId);
 
-    let query = supabaseAdmin.from("orders").select("*").eq("user_id", userId);
+    let query = supabaseAdmin.from("orders").select("*, items:order_items(*)").eq("user_id", userId);
     if (status) {
       query = query.eq("status", status);
     }
@@ -61,7 +65,18 @@ export async function GET(request) {
     const { data: rawOrders, error } = await query.order("created_at", { ascending: false });
     if (error) throw error;
 
-    let orders = (rawOrders || []).map(mapOrderRecord);
+    const { data: userReviews } = await supabaseAdmin
+      .from("reviews")
+      .select("order_id, product_id")
+      .eq("user_id", userId);
+
+    const reviewsByOrder = (userReviews || []).reduce((acc, rev) => {
+      if (!acc[rev.order_id]) acc[rev.order_id] = [];
+      acc[rev.order_id].push(rev.product_id);
+      return acc;
+    }, {});
+
+    let orders = (rawOrders || []).map(order => mapOrderRecord(order, reviewsByOrder));
 
     if (search) {
       orders = orders.filter((order) => {
@@ -100,4 +115,3 @@ export async function GET(request) {
     );
   }
 }
-

@@ -189,9 +189,13 @@ export default function AnalyticsChart() {
         const res = await fetch("/api/orders");
         const result = await res.json();
 
-        const transactions = Array.isArray(result)
+        let transactions = Array.isArray(result)
           ? result
           : result.data || result.orders || [];
+
+        // Hanya hitung pesanan yang sudah dibayar/diproses
+        const paidStatuses = new Set(["paid", "success", "processing", "shipped", "shipping", "completed", "settlement"]);
+        transactions = transactions.filter(tx => paidStatuses.has(String(tx.status || "").toLowerCase()));
 
         if (transactions && transactions.length > 0) {
           setRawTransactions(transactions);

@@ -53,7 +53,7 @@ export async function GET(request) {
 
       const { data, error, count } = await supabaseAdmin
         .from("orders")
-        .select("id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,created_at,updated_at", { count: "exact" })
+        .select("id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,created_at,updated_at, items:order_items(*)", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
       
@@ -92,7 +92,7 @@ export async function GET(request) {
     // 2. Fetch User's Orders
     const { data: ordersData, error: ordersError } = await supabaseAdmin
       .from("orders")
-      .select("id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,notes,created_at,updated_at")
+      .select("id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,notes,created_at,updated_at, items:order_items(*)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 

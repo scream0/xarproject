@@ -15,7 +15,8 @@ import {
   LogOut,
   Menu,
   X,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from "lucide-react";
 import styles from "./AdminDashboard.module.css";
 import { logoutUser } from "@/utils/authHelpers";
@@ -40,6 +41,7 @@ import OperationsCenter from "@/components/Dashboard/Admin/Operations/Operations
 import NotificationCenter from "@/components/Dashboard/Admin/Notifications/NotificationCenter";
 import UserManagement from "@/components/Dashboard/Admin/Operations/UserManagement";
 import OrdersManagement from "@/components/Dashboard/Admin/Orders/OrdersManagement";
+import AdminChatView from "@/components/Dashboard/Admin/Chat/AdminChatView";
 import { AdminDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
 const DEFAULT_TAB = "overview";
@@ -56,6 +58,7 @@ const NAV_ICONS = {
   operations: Activity,
   orders: ShoppingCart,
   settings: Settings,
+  chat: MessageSquare,
 };
 
 function getGreetingName(currentUser) {
@@ -117,14 +120,14 @@ export default function AdminDashboard() {
   });
 
   const navMeta = {
-    overview: "Orders & growth",
-    products: "Catalog & stock",
-    reviews: "Customer feedback",
-    analytics: "Performance insights",
-    notifications: "Alerts & system updates",
-    settings: "Storefront controls",
-    operations: "Customers, promos & reports",
-    orders: "Order pipeline & fulfillment",
+    overview: "Pertumbuhan & ikhtisar",
+    products: "Katalog & stok",
+    reviews: "Ulasan pelanggan",
+    analytics: "Wawasan kinerja",
+    notifications: "Peringatan & sistem",
+    settings: "Kontrol toko",
+    operations: "Pelanggan & promo",
+    orders: "Manajemen pesanan",
   };
 
   useEffect(() => {
@@ -365,6 +368,14 @@ export default function AdminDashboard() {
             </div>
           </section>
         );
+      case "chat":
+        return (
+          <section className={styles.workspaceArea}>
+            <div className={styles.workspaceInner}>
+              <AdminChatView />
+            </div>
+          </section>
+        );
       default:
         return (
           <section className={styles.workspaceArea}>
@@ -451,6 +462,12 @@ export default function AdminDashboard() {
           {adminConfig.brand.name}
           <span>{adminConfig.brand.suffix}</span>
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          <span className={styles.statusDot} style={storeStatus.hasError ? { background: 'var(--danger-color)', boxShadow: '0 0 0 3px rgba(220, 38, 38, 0.15)' } : {}} />
+          {storeStatus.latencyMs ? `${storeStatus.latencyMs}ms` : '...'}
+        </div>
+
         <button
           ref={mobileMenuButtonRef}
           type="button"

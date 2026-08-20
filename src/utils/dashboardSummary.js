@@ -14,7 +14,7 @@ function calculateDashboardStats({ products = [], orders = [] } = {}) {
     return count + lowStockVariants.length;
   }, 0);
 
-  const paidStatuses = new Set(["success", "processing", "shipping", "completed", "settlement"]);
+  const paidStatuses = new Set(["paid", "success", "processing", "shipped", "shipping", "completed", "settlement"]);
 
   const totalRevenue = orderList.reduce((total, order) => {
     const status = String(order?.status || "").toLowerCase();
