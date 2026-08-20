@@ -12,7 +12,6 @@ import {
   Activity,
   ShoppingCart,
   Settings,
-  LogOut,
   Menu,
   X,
   Sparkles,
@@ -24,6 +23,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 import dynamic from "next/dynamic";
 import adminConfig from "@/data/ui/adminConfig.json";
+import { supabase } from "@/lib/supabaseClient";
 
 const AnalyticsChart = dynamic(() => import("@/components/Dashboard/Admin/Analytics/AnalyticsChart"), {
   loading: () => <p>Loading chart...</p>,
@@ -105,8 +105,6 @@ export default function AdminDashboard() {
     : DEFAULT_TAB;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTopBarElevated, setIsTopBarElevated] = useState(false);
-  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [adminLocale, setAdminLocale] = useState(() => {
     if (typeof window === "undefined") {
       return "id";
@@ -201,7 +199,8 @@ export default function AdminDashboard() {
       const startedAt = performance.now();
 
       try {
-        const token = await user?.getIdToken?.();
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
         const res = await fetch("/api/admin/orders?status=pending&page=1&limit=1", {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
@@ -279,22 +278,6 @@ export default function AdminDashboard() {
     nextParams.set("tab", tabId);
     router.push(`${pathname}?${nextParams.toString()}`, { scroll: false });
     setIsMobileMenuOpen(false);
-  };
-
-  const handleLogoutRequest = () => {
-    setIsMobileMenuOpen(false);
-    setIsLogoutDialogOpen(true);
-  };
-
-  const handleLogoutConfirm = async () => {
-    try {
-      setIsLoggingOut(true);
-      await logoutUser();
-    } catch (error) {
-      console.error("Gagal logout admin:", error);
-      setIsLoggingOut(false);
-      setIsLogoutDialogOpen(false);
-    }
   };
 
   const renderTabContent = () => {
@@ -545,14 +528,6 @@ export default function AdminDashboard() {
               <p className={styles.statusMetric}>{latencyText}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleLogoutRequest}
-            className={styles.logoutBtn}
-          >
-            <LogOut size={15} />
-            <span>{adminConfig.logoutText || "Keluar"}</span>
-          </button>
         </div>
       </aside>
 
@@ -578,47 +553,6 @@ export default function AdminDashboard() {
           {renderTabContent()}
         </div>
       </main>
-
-      {isLogoutDialogOpen && (
-        <div className={styles.dialogOverlay} role="presentation">
-          <div
-            className={styles.logoutDialog}
-            role="dialog"
-            aria-modal="true"
-            aria-label={
-              adminConfig?.aria?.logoutDialog || "Dialog konfirmasi logout admin"
-            }
-          >
-            <h2 className={styles.dialogTitle}>
-              {adminConfig?.logoutDialog?.title || "Keluar dari panel admin?"}
-            </h2>
-            <p className={styles.dialogDescription}>
-              {adminConfig?.logoutDialog?.description ||
-                "Sesi admin akan diakhiri di perangkat ini. Pastikan proses penting sudah selesai."}
-            </p>
-            <div className={styles.dialogActions}>
-              <button
-                type="button"
-                className={styles.dialogSecondaryBtn}
-                onClick={() => setIsLogoutDialogOpen(false)}
-                disabled={isLoggingOut}
-              >
-                {adminConfig?.logoutDialog?.cancel || "Batal"}
-              </button>
-              <button
-                type="button"
-                className={styles.dialogPrimaryBtn}
-                onClick={handleLogoutConfirm}
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut
-                  ? "Memproses..."
-                  : adminConfig?.logoutDialog?.confirm || "Ya, keluar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

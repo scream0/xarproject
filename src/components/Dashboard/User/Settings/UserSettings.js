@@ -4,6 +4,7 @@ import styles from "./UserSettings.module.css";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 
 export default function UserSettings({
+  profile,
   addresses,
   deletingAccount,
   onBackToProfile,
@@ -29,6 +30,24 @@ export default function UserSettings({
         </div>
       </div>
 
+      {/* Profil Singkat (Synced from profile object) */}
+      <div className={styles.profileSummaryBox}>
+        <div className={styles.profileAvatar}>
+          {profile?.photoURL ? (
+            <img src={profile.photoURL} alt="Avatar" className={styles.avatarImg} />
+          ) : (
+            <span className={styles.avatarInitials}>
+              {(profile?.fullName || profile?.username || "U").charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
+        <div className={styles.profileSummaryInfo}>
+          <h4 className={styles.profileName}>{profile?.fullName || profile?.username || "Pengguna Xar"}</h4>
+          <p className={styles.profileEmail}>{profile?.email || "email@domain.com"}</p>
+          {profile?.phone && <p className={styles.profilePhone}>{profile.phone}</p>}
+        </div>
+      </div>
+
       <div className={styles.settingsSectionsWrapper}>
         {/* GRUP 1: INFORMASI AKUN & PENGIRIMAN */}
         <div className={styles.sectionGroup}>
@@ -43,7 +62,7 @@ export default function UserSettings({
                 </div>
                 <div className={styles.settingInfo}>
                   <h4>Edit Informasi Profil</h4>
-                  <p>Perbarui nama, username, nomor telepon, tanggal lahir & avatar.</p>
+                  <p>Ubah nama, avatar, atau data diri Anda.</p>
                 </div>
               </div>
               <div className={styles.settingRight}>
@@ -62,10 +81,10 @@ export default function UserSettings({
                   <h4>
                     Buku Alamat Pengiriman{" "}
                     <span className={styles.addressCountBadge}>
-                      ({addresses.length}/3 Alamat)
+                      ({addresses?.length || 0}/3)
                     </span>
                   </h4>
-                  <p>Atur alamat utama dan lokasi pengiriman pesanan Anda.</p>
+                  <p>Atur alamat utama untuk pengiriman.</p>
                 </div>
               </div>
               <div className={styles.settingRight}>
@@ -90,7 +109,7 @@ export default function UserSettings({
                 </div>
                 <div className={styles.settingInfo}>
                   <h4>Keamanan & Sandi</h4>
-                  <p>Perbarui kata sandi akun secara berkala untuk perlindungan optimal.</p>
+                  <p>Ganti kata sandi secara berkala.</p>
                 </div>
               </div>
               <div className={styles.settingRight}>

@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import styles from "./NotificationsSection.module.css";
 import notificationsConfig from "@/data/ui/notificationsConfig.json";
 import { NotificationsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
@@ -37,6 +38,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
   const [submittingMarkAllRead, setSubmittingMarkAllRead] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [currentSession, setCurrentSession] = useState(null);
+  const lastUserIdRef = useRef(null);
 
   const loadNotifications = useCallback(async (session) => {
     try {
@@ -68,6 +70,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
 
       const { data: { session } } = await supabase.auth.getSession();
       setCurrentSession(session);
+      lastUserIdRef.current = session?.user?.id || null;
 
       if (session) {
         await loadNotifications(session);
@@ -77,6 +80,9 @@ export default function NotificationsSection({ onUnreadCountChange }) {
 
       // Listener perubahan sesi Supabase
       const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserIdRef.current)) return;
+        lastUserIdRef.current = session?.user?.id || null;
+        
         setCurrentSession(session);
         if (session) {
           await loadNotifications(session);

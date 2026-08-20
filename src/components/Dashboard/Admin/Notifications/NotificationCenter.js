@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { auth, supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./NotificationCenter.module.css";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import config from "@/data/ui/notificationCenterConfig.json";
 import { NotificationsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
@@ -35,6 +36,7 @@ export default function NotificationCenter() {
   const [filter, setFilter] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const lastUserIdRef = useRef(null);
   const [createForm, setCreateForm] = useState({
     title: "",
     message: "",
@@ -75,6 +77,9 @@ export default function NotificationCenter() {
     initAuthAndFetch();
 
     const { data: { subscription } } = auth.onAuthStateChange(async (_event, session) => {
+      if (shouldSkipAuthEvent(_event, session, lastUserIdRef.current)) return;
+      lastUserIdRef.current = session?.user?.id || null;
+
       if (session) {
         await loadNotifications();
       }

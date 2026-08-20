@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, usePathname, useSearchParams, useParams } from "next/navigation";
 import { auth } from "@/lib/supabaseClient";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import toast from "react-hot-toast";
 import { formatAddressDisplay } from "@/utils/address";
 import styles from "./OrderDetailPage.module.css";
@@ -51,6 +52,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const routeParams = useParams();
+  const lastUserIdRef = useRef(null);
 
   // Menangkap orderId dari prop, useParams, searchParams (?order_id=...), atau URL path
   const resolvedOrderId = useMemo(() => {
@@ -112,6 +114,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
 
     const initAuth = async () => {
       const { data: { session } } = await auth.getSession();
+      lastUserIdRef.current = session?.user?.id || null;
       if (!session) {
         router.replace("/login");
         return;
@@ -119,6 +122,9 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
       setUser(session.user);
 
       const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserIdRef.current)) return;
+        lastUserIdRef.current = session?.user?.id || null;
+        
         if (!session) {
           router.replace("/login");
         } else {

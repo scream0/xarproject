@@ -1,8 +1,9 @@
-﻿"use client";
-import { useState, useEffect } from "react";
+"use client";
+import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { auth } from "@/lib/supabaseClient";
 import styles from "./ReturnsCenter.module.css";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 
 export default function ReturnsCenter() {
   const [requests, setRequests] = useState([]);
@@ -10,6 +11,7 @@ export default function ReturnsCenter() {
   const [reason, setReason] = useState("Damaged item");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
+  const lastUserIdRef = useRef(null);
 
 
   const load = async (sessionToken) => {
@@ -33,6 +35,7 @@ export default function ReturnsCenter() {
 
     const initAuth = async () => {
       const { data: { session } } = await auth.getSession();
+      lastUserIdRef.current = session?.user?.id || null;
       if (session) {
         load(session.access_token);
       } else {
@@ -40,6 +43,9 @@ export default function ReturnsCenter() {
       }
 
       const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserIdRef.current)) return;
+        lastUserIdRef.current = session?.user?.id || null;
+        
         if (session) {
           load(session.access_token);
         } else {

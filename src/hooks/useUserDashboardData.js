@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/supabaseClient";
 import userConfig from "@/data/ui/userDashboardConfig.json";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 
 function toTitleCase(value) {
   return value
@@ -64,6 +65,7 @@ export function useUserDashboardData() {
   useEffect(() => {
     let isCancelled = false;
     let subscription = null;
+    let lastUserId = null;
 
     const fetchUserData = async (currentUser, sessionToken) => {
       if (!currentUser) {
@@ -163,15 +165,22 @@ export function useUserDashboardData() {
         return;
       }
 
+      lastUserId = session.user.id || session.user.uid;
       await fetchUserData(session.user, session.access_token);
 
       const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserId)) {
+          return;
+        }
+
         if (!session?.user) {
           if (!isCancelled) {
             window.location.replace("/login");
           }
           return;
         }
+        
+        lastUserId = session.user.id || session.user.uid;
         await fetchUserData(session.user, session.access_token);
       });
       subscription = authListener?.subscription;

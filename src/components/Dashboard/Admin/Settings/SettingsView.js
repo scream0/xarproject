@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import styles from "./SettingsView.module.css";
 import { auth } from "@/lib/supabaseClient";
 import settingsConfig from "@/data/ui/settingsConfig.json";
+import { shouldSkipAuthEvent, logoutUser } from "@/utils/authHelpers";
 import {
   getAdminSettings,
   saveSettings,
 } from "@/services/settingsService";
+import UserManagement from "../Operations/UserManagement";
 
 const EMPTY = {
   store: {
@@ -73,14 +75,18 @@ const TAB_KEYS = [
   "footer",
   "payment",
   "couriers",
+  "account",
 ];
 
 export default function SettingsView() {
   const [settings, setSettings] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [activeTab, setActiveTab] = useState("store");
+  const lastUserIdRef = useRef(null);
   
   // State untuk file gambar About & Hero
   const [selectedAboutImageFile, setSelectedAboutImageFile] = useState(null);
@@ -203,6 +209,7 @@ export default function SettingsView() {
     const initAuthAndFetch = async () => {
       try {
         const { data: { session } } = await auth.getSession();
+        lastUserIdRef.current = session?.user?.id || null;
         setCurrentSession(session);
 
         if (!session) {
@@ -234,6 +241,9 @@ export default function SettingsView() {
 
       // Listener perubahan sesi Supabase
       const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserIdRef.current)) return;
+        lastUserIdRef.current = session?.user?.id || null;
+        
         setCurrentSession(session);
         if (session) {
           try {
@@ -362,6 +372,18 @@ export default function SettingsView() {
     } finally {
       setLoading(false);
       setUploadingImage(false);
+    }
+  };
+
+  const handleLogoutConfirm = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logoutUser();
+    } catch (error) {
+      console.error("Gagal logout admin:", error);
+    } finally {
+      setIsLogoutDialogOpen(false);
+      setIsLoggingOut(false);
     }
   };
 
@@ -583,9 +605,31 @@ export default function SettingsView() {
           />
         )}
 
+        {activeTab === "account" && (
+          <div className={styles.tabContent}>
+            <div style={{ marginBottom: "2rem" }}>
+              <h4 className={styles.sectionTitle}>Manajemen Akun</h4>
+              <p className={styles.helpText}>
+                Anda dapat mengelola sesi admin atau keluar dari panel dashboard ini.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsLogoutDialogOpen(true)}
+                className={styles.logoutActionBtn}
+              >
+                Keluar (Logout)
+              </button>
+            </div>
+            
+            <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "2rem" }}>
+              <UserManagement />
+            </div>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={loading || uploadingImage}
+          disabled={loading || uploadingImage || activeTab === "account"}
           className={styles.saveBtn}
         >
           {loading || uploadingImage
@@ -593,6 +637,35 @@ export default function SettingsView() {
             : cfg.buttons?.save || "Simpan Perubahan"}
         </button>
       </form>
+
+      {isLogoutDialogOpen && (
+        <div className={styles.dialogOverlay} role="presentation">
+          <div className={styles.logoutDialog} role="dialog" aria-modal="true">
+            <h2 className={styles.dialogTitle}>Keluar dari panel admin?</h2>
+            <p className={styles.dialogDescription}>
+              Sesi admin akan diakhiri di perangkat ini. Pastikan proses penting sudah selesai.
+            </p>
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className={styles.dialogSecondaryBtn}
+                onClick={() => setIsLogoutDialogOpen(false)}
+                disabled={isLoggingOut}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className={styles.dialogPrimaryBtn}
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? "Memproses..." : "Ya, keluar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { isPromoActive, getDiscountedPrice, getCartPromoSummary } from "@/utils/promo";
 import { buildAddressId, normalizeAddress } from "@/utils/address";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 
 const StoreContext = createContext();
 
@@ -220,11 +221,13 @@ const handleUserData = useCallback(async (currentUser, token) => {
 
   useEffect(() => {
     let subscription = null;
+    let lastUserId = null;
 
     const initAuth = async () => {
       const { data: { session } } = await auth.getSession();
       setCurrentSession(session);
       const currentUser = session?.user || null;
+      lastUserId = currentUser?.id || null;
 
       if (currentUser) {
         await handleUserDataRef.current(currentUser, session?.access_token);
@@ -235,8 +238,13 @@ const handleUserData = useCallback(async (currentUser, token) => {
       }
 
       const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserId)) {
+          return;
+        }
+
         setCurrentSession(session);
         const currentUser = session?.user || null;
+        lastUserId = currentUser?.id || null;
 
         if (currentUser) {
           await handleUserDataRef.current(currentUser, session?.access_token);

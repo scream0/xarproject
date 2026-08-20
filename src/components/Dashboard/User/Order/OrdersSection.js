@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import styles from "./OrdersSection.module.css";
 import ordersConfig from "@/data/ui/ordersConfig.json";
 import { auth } from "@/lib/supabaseClient";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import toast from "react-hot-toast";
 import { useStore } from "@/context/StoreContext";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
@@ -165,6 +166,10 @@ export default function OrdersSection() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isPayingId, setIsPayingId] = useState(null);
 
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedOrderToCancel, setSelectedOrderToCancel] = useState(null);
+  const lastUserIdRef = useRef(null);
+
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
   const [reviewTargetItem, setReviewTargetItem] = useState(null);
   const [rating, setRating] = useState(5);
@@ -182,8 +187,11 @@ export default function OrdersSection() {
 
     const initAuth = async () => {
       const { data: { session } } = await auth.getSession();
-      setCurrentSession(session);
-      setCurrentUser(session?.user || null);
+      lastUserIdRef.current = session?.user?.id || null;
+      if (session) {
+        setCurrentSession(session);
+        setCurrentUser(session?.user || null);
+      }
 
       if (!session) {
         setLoading(false);
@@ -191,8 +199,13 @@ export default function OrdersSection() {
       }
 
       const { data: authListener } = auth.onAuthStateChange((_event, session) => {
-        setCurrentSession(session);
-        setCurrentUser(session?.user || null);
+        if (shouldSkipAuthEvent(_event, session, lastUserIdRef.current)) return;
+        lastUserIdRef.current = session?.user?.id || null;
+
+        if (session) {
+          setCurrentSession(session);
+          setCurrentUser(session?.user || null);
+        }
         if (!session) {
           setLoading(false);
           setOrders([]);

@@ -23,6 +23,9 @@ export default function UserChatModal({ isOpen, onClose, user }) {
                 if (prev.find((m) => m.id === incoming.id)) return prev;
                 return [...prev, incoming];
               });
+            } else if (payload.eventType === "UPDATE") {
+              const updated = payload.new;
+              setMessages((prev) => prev.map(m => m.id === updated.id ? updated : m));
             }
           }
         )
@@ -91,10 +94,10 @@ export default function UserChatModal({ isOpen, onClose, user }) {
   return (
     <div style={{
       position: "fixed",
-      bottom: "80px",
-      right: "20px",
-      width: "350px",
-      height: "500px",
+      bottom: "clamp(20px, 10vw, 80px)",
+      right: "clamp(10px, 5vw, 20px)",
+      width: "min(350px, calc(100vw - 20px))",
+      height: "min(500px, calc(100vh - 120px))",
       background: "var(--surface-primary)",
       borderRadius: "12px",
       boxShadow: "var(--shadow-md)",
@@ -139,8 +142,11 @@ export default function UserChatModal({ isOpen, onClose, user }) {
               }}
             >
               <div style={{ fontSize: "14px" }}>{m.message}</div>
-              <div style={{ fontSize: "10px", opacity: 0.7, marginTop: "4px", textAlign: "right" }}>
+              <div style={{ fontSize: "10px", opacity: 0.7, marginTop: "4px", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
                 {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {m.sender_role === "user" && (
+                  <AppIcon name={m.is_read ? "check-check" : "check"} size={14} color={m.is_read ? "#3b82f6" : "currentColor"} />
+                )}
               </div>
             </div>
           ))
@@ -164,6 +170,9 @@ export default function UserChatModal({ isOpen, onClose, user }) {
           <AppIcon name="send" size={18} />
         </button>
       </form>
+      <div style={{ padding: "4px 16px 12px", background: "var(--surface-primary)", fontSize: "11px", color: "var(--text-secondary)", textAlign: "center" }}>
+        Riwayat obrolan akan direset otomatis setiap 24 jam.
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/supabaseClient";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 
 export function useAdminAuth() {
   const [user, setUser] = useState(null);
@@ -76,6 +77,7 @@ export function useAdminAuth() {
     };
 
     let subscription = null;
+    let lastUserId = null;
 
     const initAuth = async () => {
       const { data: { session } } = await auth.getSession();
@@ -86,15 +88,22 @@ export function useAdminAuth() {
         return;
       }
 
+      lastUserId = session.user.id || session.user.uid;
       await verifyAdmin(session.user, session.access_token);
 
       const { data: authListener } = auth.onAuthStateChange(async (_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserId)) {
+          return;
+        }
+
         if (!session?.user) {
           if (!isDisposed) {
             window.location.replace("/login");
           }
           return;
         }
+        
+        lastUserId = session.user.id || session.user.uid;
         await verifyAdmin(session.user, session.access_token);
       });
       subscription = authListener?.subscription;

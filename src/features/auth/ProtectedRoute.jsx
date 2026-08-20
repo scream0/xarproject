@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/supabaseClient";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 
 const ProtectedRoute = ({ children }) => {
   const [authorized, setAuthorized] = useState(false);
@@ -11,6 +12,7 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     let subscription = null;
+    let lastUserId = null;
 
     const checkAuth = async () => {
       try {
@@ -20,6 +22,7 @@ const ProtectedRoute = ({ children }) => {
           router.replace("/login");
           return;
         } else {
+          lastUserId = session.user.id || session.user.uid;
           setAuthorized(true);
         }
       } catch (err) {
@@ -31,11 +34,16 @@ const ProtectedRoute = ({ children }) => {
 
       // 2. Pasang listener untuk perubahan status autentikasi selanjutnya
       const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserId)) {
+          return;
+        }
+        
         const user = session?.user;
         if (!user) {
           router.replace("/login");
           setAuthorized(false);
         } else {
+          lastUserId = user.id || user.uid;
           setAuthorized(true);
         }
         setLoading(false);

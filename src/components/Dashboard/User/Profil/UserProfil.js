@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, lazy, Suspense, useCallback } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback, useRef } from "react";
 import styles from "./UserProfil.module.css";
 import profileConfig from "@/data/ui/userProfilConfig.json";
 import { auth } from "@/lib/supabaseClient";
@@ -13,6 +13,7 @@ import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers";
 import ProfileHeader from "./ProfileHeader";
 import AddressManagerModal from "./AddressManagerModal";
 import { EditProfileModal, AddressFormModal, PasswordModal } from "./ProfileModals";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 
 const OrdersSection = lazy(() => import("@/components/Dashboard/User/Order/OrdersSection"));
 const WishlistSection = lazy(() => import("@/components/Dashboard/User/Wishlist/WishlistSection"));
@@ -74,28 +75,34 @@ export default function ProfileSection() {
     }
   };
 
- useEffect(() => {
-  const getSessionData = async () => {
-    const { data: { session } } = await auth.getSession();
-    setCurrentSession(session);
-    setCurrentUser(session?.user ?? null);
-  };
-
-  getSessionData();
-
-  const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
-    if (event === "TOKEN_REFRESHED") {
+  useEffect(() => {
+    let lastUserId = null;
+    
+    const getSessionData = async () => {
+      const { data: { session } } = await auth.getSession();
+      lastUserId = session?.user?.id || null;
       setCurrentSession(session);
-      return; 
-    }
-    setCurrentSession(session);
-    setCurrentUser(session?.user ?? null);
-  });
+      setCurrentUser(session?.user ?? null);
+    };
 
-  return () => {
-    subscription?.unsubscribe();
-  };
-}, []);
+    getSessionData();
+
+    const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
+      if (shouldSkipAuthEvent(event, session, lastUserId)) return;
+      lastUserId = session?.user?.id || null;
+
+      if (event === "TOKEN_REFRESHED") {
+        setCurrentSession(session);
+        return; 
+      }
+      setCurrentSession(session);
+      setCurrentUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !currentSession) {
@@ -441,6 +448,7 @@ export default function ProfileSection() {
       <Suspense fallback={<OrdersSkeleton count={3} />}>
         {activeTab === "settings" ? (
           <UserSettings
+            profile={profile}
             addresses={addresses}
             deletingAccount={deletingAccount}
             onBackToProfile={() => setActiveTab("profile")}

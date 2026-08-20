@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
+import styles from "./AdminChatView.module.css";
 
 export default function AdminChatView() {
   const [users, setUsers] = useState([]);
@@ -11,11 +13,28 @@ export default function AdminChatView() {
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(null);
 
+  const selectedUserRef = useRef(selectedUser);
+
   useEffect(() => {
+    selectedUserRef.current = selectedUser;
+  }, [selectedUser]);
+
+  useEffect(() => {
+    // 24-hour cleanup
+    const cleanupOldChats = async () => {
+      try {
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        await supabase.from("chats").delete().lt("created_at", yesterday);
+      } catch (err) {
+        console.error("Cleanup error:", err);
+      }
+    };
+    cleanupOldChats();
+
     fetchUsers();
 
     const channel = supabase
-      .channel("public:chats")
+      .channel("admin_public_chats")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "chats" },
@@ -24,16 +43,20 @@ export default function AdminChatView() {
             const incoming = payload.new;
             // Update messages if the active chat matches
             setMessages((prev) => {
-              if (selectedUser && incoming.user_id === selectedUser.id) {
+              const currentSelected = selectedUserRef.current;
+              if (currentSelected && incoming.user_id === currentSelected.id) {
                 // Check for duplicates
                 if (prev.find((m) => m.id === incoming.id)) return prev;
                 return [...prev, incoming];
               }
               return prev;
             });
-            
             // Refresh user list to show new message indicators or resort
             fetchUsers();
+          } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new;
+            setMessages((prev) => prev.map(m => m.id === updated.id ? updated : m));
+            fetchUsers(); // Optional: update unread badge if needed
           }
         }
       )
@@ -42,7 +65,7 @@ export default function AdminChatView() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedUser]);
+  }, []);
 
   useEffect(() => {
     if (selectedUser) {
@@ -85,22 +108,36 @@ export default function AdminChatView() {
       // Now fetch profiles for these users
       const userIds = Array.from(userMap.keys());
       if (userIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, name, email")
-          .in("id", userIds);
+        let profiles = [];
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            const res = await fetch("/api/team", {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            if (res.ok) {
+              const result = await res.json();
+              profiles = result.users || [];
+            }
+          }
+        } catch (e) {
+          console.warn("Could not fetch profiles via API", e);
+        }
 
-        if (profilesError) throw profilesError;
-
-        const usersList = profiles.map((p) => ({
-          ...p,
-          ...userMap.get(p.id)
-        })).sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+        const usersList = userIds.map((id) => {
+          const p = profiles.find((prof) => prof.id === id) || {};
+          return {
+            id,
+            name: p.name || null,
+            email: p.email || null,
+            ...userMap.get(id)
+          };
+        }).sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
 
         setUsers(usersList);
       }
     } catch (err) {
-      console.error("Fetch users error:", err);
+      console.error("Fetch users error:", JSON.stringify(err, null, 2), err.message);
       // toast.error("Gagal mengambil daftar chat");
     }
   };
@@ -154,40 +191,32 @@ export default function AdminChatView() {
   };
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 100px)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden", background: "var(--surface-primary)", color: "var(--text-primary)" }}>
+    <div className={`${styles.chatContainer} ${selectedUser ? styles.chatActive : ""}`}>
       {/* Sidebar Users */}
-      <div style={{ width: "300px", borderRight: "1px solid var(--border-color)", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "16px", borderBottom: "1px solid var(--border-color)", fontWeight: "bold" }}>
+      <div className={styles.sidebar}>
+        <div className={styles.sidebarHeader}>
           Daftar Percakapan
         </div>
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div className={styles.userList}>
           {users.length === 0 ? (
-            <div style={{ padding: "16px", color: "var(--text-secondary)", textAlign: "center" }}>Belum ada chat</div>
+            <div className={styles.emptySidebar}>Belum ada chat</div>
           ) : (
             users.map((u) => (
               <div
                 key={u.id}
                 onClick={() => setSelectedUser(u)}
-                style={{
-                  padding: "16px",
-                  borderBottom: "1px solid var(--border-color)",
-                  cursor: "pointer",
-                  background: selectedUser?.id === u.id ? "var(--surface-secondary)" : "var(--surface-primary)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}
+                className={`${styles.userItem} ${selectedUser?.id === u.id ? styles.active : ""}`}
               >
-                <div style={{ overflow: "hidden" }}>
-                  <div style={{ fontWeight: "600", fontSize: "14px", textOverflow: "ellipsis", whiteSpace: "nowrap", overflow: "hidden" }}>
+                <div className={styles.userInfo}>
+                  <div className={styles.userName}>
                     {u.name || u.email || "User"}
                   </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", textOverflow: "ellipsis", whiteSpace: "nowrap", overflow: "hidden" }}>
+                  <div className={styles.userLastMessage}>
                     {u.lastMessage}
                   </div>
                 </div>
                 {u.unreadCount > 0 && (
-                  <div style={{ background: "var(--danger-color)", color: "#fff", fontSize: "12px", padding: "2px 6px", borderRadius: "10px", minWidth: "20px", textAlign: "center" }}>
+                  <div className={styles.unreadBadge}>
                     {u.unreadCount}
                   </div>
                 )}
@@ -198,54 +227,59 @@ export default function AdminChatView() {
       </div>
 
       {/* Chat Area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div className={styles.chatArea}>
         {selectedUser ? (
           <>
-            <div style={{ padding: "16px", borderBottom: "1px solid var(--border-color)", fontWeight: "bold", background: "var(--surface-secondary)" }}>
-              Chatting dengan {selectedUser.name || selectedUser.email}
+            <div className={styles.chatHeader}>
+              <button 
+                className={styles.backBtn}
+                onClick={() => setSelectedUser(null)}
+                aria-label="Kembali"
+              >
+                <AppIcon name="arrow-left" size={18} />
+              </button>
+              <span>Chatting dengan {selectedUser.name || selectedUser.email || "User"}</span>
             </div>
-            <div style={{ flex: 1, padding: "16px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", background: "var(--background)" }}>
+            <div className={styles.messagesList}>
               {messages.map((m) => (
                 <div
                   key={m.id}
-                  style={{
-                    alignSelf: m.sender_role === "admin" ? "flex-end" : "flex-start",
-                    background: m.sender_role === "admin" ? "var(--primary-accent)" : "var(--surface-primary)",
-                    color: m.sender_role === "admin" ? "var(--primary-accent-text)" : "var(--text-primary)",
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    maxWidth: "70%",
-                    boxShadow: "var(--shadow-sm)",
-                    border: m.sender_role === "admin" ? "none" : "1px solid var(--border-color)"
-                  }}
+                  className={`${styles.messageBubble} ${m.sender_role === "admin" ? styles.admin : styles.user}`}
                 >
-                  <div style={{ fontSize: "14px" }}>{m.message}</div>
-                  <div style={{ fontSize: "10px", opacity: 0.7, marginTop: "4px", textAlign: "right" }}>
+                  <div>{m.message}</div>
+                  <span className={styles.messageTime} style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
                     {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
+                    {m.sender_role === "admin" && (
+                      <AppIcon name={m.is_read ? "check-check" : "check"} size={14} color={m.is_read ? "#3b82f6" : "currentColor"} />
+                    )}
+                  </span>
                 </div>
               ))}
               <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={handleSendMessage} style={{ padding: "16px", borderTop: "1px solid var(--border-color)", display: "flex", gap: "8px", background: "var(--surface-primary)" }}>
+            <form onSubmit={handleSendMessage} className={styles.chatInputArea}>
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Tulis balasan..."
-                style={{ flex: 1, padding: "10px 14px", borderRadius: "6px", border: "1px solid var(--border-color)", outline: "none", background: "var(--input-background)", color: "var(--text-primary)" }}
+                className={styles.inputField}
               />
               <button
                 type="submit"
                 disabled={!newMessage.trim()}
-                style={{ padding: "10px 20px", background: "var(--primary-accent)", color: "var(--primary-accent-text)", border: "none", borderRadius: "6px", cursor: newMessage.trim() ? "pointer" : "not-allowed", opacity: newMessage.trim() ? 1 : 0.7 }}
+                className={styles.sendBtn}
               >
-                Kirim
+                <AppIcon name="send" size={18} />
               </button>
             </form>
+            <div style={{ padding: "4px 16px 12px", background: "var(--surface-primary)", fontSize: "11px", color: "var(--text-secondary)", textAlign: "center" }}>
+              Riwayat obrolan akan direset otomatis setiap 24 jam untuk menjaga kapasitas database.
+            </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}>
+          <div className={styles.emptyChat}>
+            <AppIcon name="message-square" size={48} opacity={0.3} />
             Pilih pengguna dari sidebar untuk mulai chat
           </div>
         )}

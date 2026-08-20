@@ -45,6 +45,8 @@ import {
   Calendar,
   ShieldCheck,
   Receipt,
+  Send,
+  CheckCheck,
 } from "lucide-react";
 
 const iconMap = {
@@ -105,12 +107,14 @@ const iconMap = {
   "dollar-sign": DollarSign,
   "copy": Copy,
   "check": Check,
+  "check-check": CheckCheck,
   "download": Download,
   "external-link": ExternalLink,
   "file-text": FileText,
   "calendar": Calendar,
   "shield-check": ShieldCheck,
   "receipt": Receipt,
+  "send": Send,
 };
 
 export function AppIcon({ name, className, size, strokeWidth = 2, ...props }) {

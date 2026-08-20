@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./UserManagement.module.css";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import config from "@/data/ui/userManagementConfig.json";
 import { TableSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 
@@ -33,6 +34,9 @@ export default function UserManagement() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [page, setPage] = useState(1);
+  const rowsPerPage = 10;
+  const lastUserIdRef = useRef(null);
 
   const loadUsers = async () => {
     try {
@@ -59,6 +63,7 @@ export default function UserManagement() {
   useEffect(() => {
     async function checkAuthAndLoad() {
       const { data: { session } } = await supabase.auth.getSession();
+      lastUserIdRef.current = session?.user?.id || null;
       if (session) {
         await loadUsers();
       } else {
@@ -69,6 +74,9 @@ export default function UserManagement() {
     checkAuthAndLoad();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (shouldSkipAuthEvent(event, session, lastUserIdRef.current)) return;
+      lastUserIdRef.current = session?.user?.id || null;
+      
       if (session) {
         await loadUsers();
       } else {
@@ -187,6 +195,7 @@ export default function UserManagement() {
                   : config.confirm.activateTitle}
               </h3>
               <button
+                type="button"
                 onClick={() => setConfirmTarget(null)}
                 className={styles.modalCloseBtn}
               >
@@ -201,12 +210,14 @@ export default function UserManagement() {
             </p>
             <div className={styles.modalFooter}>
               <button
+                type="button"
                 onClick={() => setConfirmTarget(null)}
                 className={styles.cancelBtn}
               >
                 {config.confirm.cancel}
               </button>
               <button
+                type="button"
                 onClick={confirmToggleStatus}
                 disabled={updatingId === confirmTarget.user.id}
                 className={
@@ -368,6 +379,7 @@ export default function UserManagement() {
                       <div className={styles.actionButtons}>
                         {(user.status || "active") === "blocked" ? (
                           <button
+                            type="button"
                             onClick={() => handleToggleStatus(user)}
                             disabled={updatingId === user.id}
                             className={styles.activateBtn}
@@ -376,6 +388,7 @@ export default function UserManagement() {
                           </button>
                         ) : (
                           <button
+                            type="button"
                             onClick={() => handleToggleStatus(user)}
                             disabled={updatingId === user.id}
                             className={styles.blockBtn}

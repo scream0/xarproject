@@ -1,14 +1,17 @@
-﻿"use client";
-import { useEffect, useState } from "react";
+"use client";
+import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { auth } from "@/lib/supabaseClient";
 import styles from "./SupportCenter.module.css";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 
 export default function SupportCenter() {
   const [tickets, setTickets] = useState([]);
   const [subject, setSubject] = useState("");
   const [orderId, setOrderId] = useState("");
   const [message, setMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const lastUserIdRef = useRef(null);
   const [loading, setLoading] = useState(true);
 
   const load = async (sessionToken) => {
@@ -32,6 +35,7 @@ export default function SupportCenter() {
 
     const initAuth = async () => {
       const { data: { session } } = await auth.getSession();
+      lastUserIdRef.current = session?.user?.id || null;
       if (session) {
         load(session.access_token);
       } else {
@@ -39,6 +43,9 @@ export default function SupportCenter() {
       }
 
       const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserIdRef.current)) return;
+        lastUserIdRef.current = session?.user?.id || null;
+        
         if (session) {
           load(session.access_token);
         } else {

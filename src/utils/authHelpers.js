@@ -175,3 +175,19 @@ export const logoutUser = async () => {
     console.error("Terjadi kesalahan saat logout:", error);
   }
 };
+
+/**
+ * 8. Helper to determine if an auth state change event should be skipped
+ * to prevent unnecessary re-fetching (e.g. on TOKEN_REFRESHED).
+ */
+export function shouldSkipAuthEvent(event, session, lastUserId) {
+  if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+    return true;
+  }
+  
+  if (session?.user?.id && session.user.id === lastUserId) {
+    return true;
+  }
+
+  return false;
+}

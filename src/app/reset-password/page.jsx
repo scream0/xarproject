@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -12,15 +13,19 @@ export default function ResetPasswordPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const lastUserIdRef = useRef(null);
 
   useEffect(() => {
     let active = true;
     const verifyRecoverySession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      lastUserIdRef.current = session?.user?.id || null;
       if (active && session) setReady(true);
     };
     void verifyRecoverySession();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (shouldSkipAuthEvent(event, session, lastUserIdRef.current)) return;
+      lastUserIdRef.current = session?.user?.id || null;
       if (event === "PASSWORD_RECOVERY" && session && active) setReady(true);
     });
     return () => {

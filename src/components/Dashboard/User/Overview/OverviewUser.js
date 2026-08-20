@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import styles from "./OverviewUser.module.css";
 import { auth } from "@/lib/supabaseClient";
 import { useStore } from "@/context/StoreContext";
 import { getDiscountedPrice } from "@/utils/promo";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewUserConfig.json";
 import { OverviewUserSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
@@ -48,6 +49,7 @@ export default function OverviewUser({ setActiveTab }) {
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const lastUserIdRef = useRef(null);
 
   // State untuk sesi & user Supabase
   const [currentSession, setCurrentSession] = useState(null);
@@ -58,6 +60,7 @@ export default function OverviewUser({ setActiveTab }) {
 
     const initAuth = async () => {
       const { data: { session } } = await auth.getSession();
+      lastUserIdRef.current = session?.user?.id || null;
       setCurrentSession(session);
       setCurrentUser(session?.user || null);
 
@@ -66,6 +69,8 @@ export default function OverviewUser({ setActiveTab }) {
       }
 
       const { data: authListener } = auth.onAuthStateChange((_event, session) => {
+        if (shouldSkipAuthEvent(_event, session, lastUserIdRef.current)) return;
+        lastUserIdRef.current = session?.user?.id || null;
         setCurrentSession(session);
         setCurrentUser(session?.user || null);
         if (!session) {

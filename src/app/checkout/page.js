@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import { useStore } from "@/context/StoreContext";
 import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
@@ -77,12 +78,13 @@ const buildLocalCourierOptions = (weight = 0) => {
 // ─── CHECKOUT PAGE ──────────────────────────────────────────
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, products, processPayment, isProcessing, activePromo, discountedCartTotal, cartTotal } =
+  const { cart, products, processPayment, isProcessing: isStoreProcessing, activePromo, discountedCartTotal, cartTotal } =
     useStore();
 
   // ── Auth ──
   const [currentUser, setCurrentUser] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
+  const lastUserIdRef = useRef(null);
 
   // ── Voucher State ──
   const [claimedVouchers, setClaimedVouchers] = useState([]);
@@ -107,16 +109,21 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      lastUserIdRef.current = session?.user?.id || null;
       const user = session?.user || null;
       setCurrentUser(user);
       setPageLoading(false);
+      
       if (!user) {
         router.push("/login?callbackUrl=/checkout");
       } else {
         fetchUserClaimedVouchers(user.id, session.access_token);
       }
-    });
+    };
+    
+    initAuth();
 
     // Fetch store settings for couriers
     fetch("/api/settings?public=true")
@@ -129,6 +136,9 @@ export default function CheckoutPage() {
       .catch((err) => console.error("Failed to load settings:", err));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (shouldSkipAuthEvent(event, session, lastUserIdRef.current)) return;
+      lastUserIdRef.current = session?.user?.id || null;
+
       const user = session?.user || null;
       setCurrentUser(user);
       if (event === 'SIGNED_OUT' || !user) {

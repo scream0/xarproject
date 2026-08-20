@@ -96,6 +96,112 @@
   text-transform: uppercase;
 }
 
+.toastContent {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ====================================================
+   ACCOUNT TAB & DIALOG
+   ==================================================== */
+.tabContent {
+  background: rgba(var(--surface-primary-rgb), 0.88);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.helpText {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.logoutActionBtn {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.12);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  color: var(--danger-color);
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutActionBtn:hover {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.2);
+  transform: translateY(-1px);
+}
+
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 1400;
+  padding: 1rem;
+}
+
+.logoutDialog {
+  width: min(420px, 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: rgba(var(--surface-primary-rgb), 0.98);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+  padding: 1.5rem;
+}
+
+.dialogTitle {
+  margin: 0;
+  font: 400 1.15rem var(--font-serif);
+  color: var(--text-primary);
+}
+
+.dialogDescription {
+  margin: 0.6rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.dialogActions {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.dialogSecondaryBtn,
+.dialogPrimaryBtn {
+  border-radius: 20px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.dialogSecondaryBtn {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dialogPrimaryBtn {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.12);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  color: var(--danger-color);
+}
+
 .inputGroup {
   display: flex;
   flex-direction: column;
