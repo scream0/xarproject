@@ -18,12 +18,15 @@ export default function OverviewStats() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/products?limit=200");
-      const productsResult = await res.json();
+      const [res, ordersRes] = await Promise.all([
+        fetch("/api/products?limit=200"),
+        fetch("/api/orders?limit=200")
+      ]);
+      
+      const productsResult = res.ok ? await res.json() : {};
       const products = (productsResult.data || productsResult.products || []).filter(Boolean);
 
-      const ordersRes = await fetch("/api/orders?limit=200");
-      const ordersResult = await ordersRes.json();
+      const ordersResult = ordersRes.ok ? await ordersRes.json() : {};
       const orders = (ordersResult.data || ordersResult.orders || []).filter(Boolean);
 
       const summary = calculateDashboardStats({ products, orders });

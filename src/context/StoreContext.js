@@ -144,72 +144,83 @@ const handleUserData = useCallback(async (currentUser, token) => {
     phone: currentUser.phone || "",
   });
 
-  try {
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const res = await fetch(`/api/users?userId=${userId}`, { headers });
-    const result = await res.json();
-    if (res.ok && result.exists && result.data) {
-      const dbData = result.data;
-      const photoFromDb = dbData.photo_url || defaultPhoto;
-
-      mergedUser = {
-        ...currentUser,
-        uid: userId,
-        ...dbData,
-        photoURL: photoFromDb,
-        photo_url: photoFromDb,
-      };
-
-      setCustomer({
-        name:
-          dbData.full_name ||
-          dbData.username ||
-          currentUser.user_metadata?.full_name ||
-          currentUser.email?.split("@")[0] ||
-          "User",
-        email: currentUser.email || "",
-        phone: dbData.phone || currentUser.phone || "",
-      });
-    }
-  } catch (err) {
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  
+  // Start promises concurrently
+  const userPromise = fetch(`/api/users?userId=${userId}`, { headers }).catch(err => {
     console.error("Gagal memuat profil user untuk navbar:", err);
-  }
+    return null;
+  });
+  
+  const cartPromise = !isCartSynced
+    ? fetch('/api/cart', { headers }).catch(err => {
+        console.error("Gagal menyinkronkan keranjang:", err);
+        return null;
+      })
+    : Promise.resolve(null);
 
-  setUser(mergedUser);
+  try {
+    const [userRes, cartRes] = await Promise.all([userPromise, cartPromise]);
 
-  // Sync cart after user is set
-  if (!isCartSynced) {
-    try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch('/api/cart', { headers });
-      if (res.ok) {
-        const remoteCart = await res.json();
-        const normalizedRemoteCart = remoteCart
-          ? { ...remoteCart, items: normalizeCartItems(remoteCart.items) }
-          : remoteCart;
+    // 1. Process User
+    if (userRes && userRes.ok) {
+      const result = await userRes.json();
+      if (result.exists && result.data) {
+        const dbData = result.data;
+        const photoFromDb = dbData.photo_url || defaultPhoto;
 
-        // ⬇️ pakai functional update, JANGAN baca `cart` dari closure
-        setCart((localCart) => {
-          const finalCart =
-            normalizedRemoteCart && normalizedRemoteCart.items.length > 0
-              ? normalizedRemoteCart
-              : localCart;
+        mergedUser = {
+          ...currentUser,
+          uid: userId,
+          ...dbData,
+          photoURL: photoFromDb,
+          photo_url: photoFromDb,
+        };
 
-          // sync ke DB kalau local cart yang menang & ada isinya
-          if (finalCart.items.length > 0) {
-            syncCartWithDB(finalCart).catch((error) => {
-              console.error("Gagal menyinkronkan keranjang setelah merge:", error);
-            });
-          }
-
-          return finalCart;
+        setCustomer({
+          name:
+            dbData.full_name ||
+            dbData.username ||
+            currentUser.user_metadata?.full_name ||
+            currentUser.email?.split("@")[0] ||
+            "User",
+          email: currentUser.email || "",
+          phone: dbData.phone || currentUser.phone || "",
         });
-
-        setIsCartSynced(true);
       }
-    } catch (error) {
-      console.error("Gagal menyinkronkan keranjang:", error);
     }
+
+    // Set User state exactly once
+    setUser(mergedUser);
+
+    // 2. Process Cart
+    if (cartRes && cartRes.ok) {
+      const remoteCart = await cartRes.json();
+      const normalizedRemoteCart = remoteCart
+        ? { ...remoteCart, items: normalizeCartItems(remoteCart.items) }
+        : remoteCart;
+
+      setCart((localCart) => {
+        const finalCart =
+          normalizedRemoteCart && normalizedRemoteCart.items.length > 0
+            ? normalizedRemoteCart
+            : localCart;
+
+        // sync ke DB kalau local cart yang menang & ada isinya
+        if (finalCart.items.length > 0) {
+          syncCartWithDB(finalCart).catch((error) => {
+            console.error("Gagal menyinkronkan keranjang setelah merge:", error);
+          });
+        }
+
+        return finalCart;
+      });
+
+      setIsCartSynced(true);
+    }
+  } catch (error) {
+    console.error("Error dalam sinkronisasi user dan cart:", error);
+    setUser(mergedUser); // Fallback
   }
 }, [isCartSynced, syncCartWithDB]); // ⬅️ `cart` DIHAPUS dari dependency
 

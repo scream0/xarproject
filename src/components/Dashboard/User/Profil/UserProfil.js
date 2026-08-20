@@ -117,11 +117,13 @@ export default function ProfileSection() {
       const token = currentSession.access_token;
       const headers = { Authorization: `Bearer ${token}` };
 
-      const res = await fetch(`/api/profile`, { headers });
-      const result = await res.json();
-
-      const resVouchers = await fetch(`/api/vouchers/available`, { headers });
-      const resultVouchers = await resVouchers.json();
+      const [res, resVouchers] = await Promise.all([
+        fetch(`/api/profile`, { headers }),
+        fetch(`/api/vouchers/available`, { headers })
+      ]);
+      
+      const result = res.ok ? await res.json() : {};
+      const resultVouchers = resVouchers.ok ? await resVouchers.json() : {};
 
       if (resVouchers.ok && resultVouchers.success) {
         setAvailableVouchers(resultVouchers.vouchers || []);

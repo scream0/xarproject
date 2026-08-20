@@ -96,20 +96,47 @@ export default function OverviewUser({ setActiveTab }) {
         const token = currentSession.access_token;
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Ambil data pesanan dari database secara sinkron
-        const orderRes = await fetch(`/api/orders?userId=${userId}`, {
-          headers,
+        // Ambil data pesanan dan profil secara paralel
+        const orderPromise = fetch(`/api/orders?userId=${userId}`, { headers }).catch(e => {
+          console.error("Gagal mengambil orders:", e);
+          return null;
         });
-        if (!orderRes.ok)
-          throw new Error(overviewConfig.toasts.fetchOrdersError);
+        
+        const userPromise = fetch(`/api/users?userId=${userId}`, { headers }).catch(e => {
+          console.error("Gagal mengambil user profile:", e);
+          return null;
+        });
 
-        const orderResult = await orderRes.json();
-        const orderData = Array.isArray(orderResult)
-          ? orderResult
-          : orderResult.data || orderResult.orders || [];
+        const [orderRes, userRes] = await Promise.all([orderPromise, userPromise]);
 
-        // Ambil nama profil dari user metadata atau fallback
+        let orderData = [];
+        let orderResult = {};
+        if (orderRes && orderRes.ok) {
+          orderResult = await orderRes.json();
+          orderData = Array.isArray(orderResult)
+            ? orderResult
+            : orderResult.data || orderResult.orders || [];
+        } else if (!orderRes?.ok) {
+          console.error(overviewConfig.toasts.fetchOrdersError);
+        }
+
+        let userBalance = 0;
         let fetchedFullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || "";
+
+        if (userRes && userRes.ok) {
+          const userResult = await userRes.json();
+          if (userResult.exists && userResult.data) {
+            userBalance = Number(userResult.data.balance || 0);
+            if (!fetchedFullName) {
+              fetchedFullName =
+                userResult.data.full_name ||
+                userResult.data.username ||
+                fetchedFullName;
+            }
+          }
+        }
+
+        // Fallback nama profil dari alamat pengiriman
         try {
           if (
             !fetchedFullName &&
@@ -159,33 +186,6 @@ export default function OverviewUser({ setActiveTab }) {
             "capture"
           ].includes((o.status || "").toLowerCase()),
         ).length;
-
-        // Ambil saldo wallet user
-        let userBalance = 0;
-        try {
-          const userRes = await fetch(`/api/users?userId=${userId}`, {
-            headers,
-          });
-          const userResult = await userRes.json();
-          if (userRes.ok && userResult.exists && userResult.data) {
-            userBalance = Number(userResult.data.balance || 0);
-
-            if (!fetchedFullName) {
-              fetchedFullName =
-                userResult.data.full_name ||
-                userResult.data.username ||
-                fetchedFullName;
-            }
-          }
-        } catch (e) {
-          console.error("Gagal mengambil saldo user:", e);
-        }
-
-        setUserProfile({
-          fullName:
-            fetchedFullName || overviewConfig.welcomeBanner.defaultGuest,
-          username: currentUser.email || "",
-        });
 
         setStats({
           totalOrders: total,

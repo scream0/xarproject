@@ -91,13 +91,16 @@
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--surface-secondary);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--border-color);
   border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-accent);
 }
@@ -142,18 +145,22 @@ h4,
     font-size: 90%;
   }
 }
+
 @media (max-width: 1440px) {
   html {
     font-size: 80%;
   }
 }
+
 @media (max-width: 768px) {
+
   html,
   body {
     overscroll-behavior-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 }
+
 @media (max-width: 478px) {
   html {
     font-size: 75%;

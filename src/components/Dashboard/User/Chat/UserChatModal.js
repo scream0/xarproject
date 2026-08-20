@@ -92,21 +92,37 @@ export default function UserChatModal({ isOpen, onClose, user }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: "fixed",
-      bottom: "clamp(20px, 10vw, 80px)",
-      right: "clamp(10px, 5vw, 20px)",
-      width: "min(350px, calc(100vw - 20px))",
-      height: "min(500px, calc(100vh - 120px))",
-      background: "var(--surface-primary)",
-      borderRadius: "12px",
-      boxShadow: "var(--shadow-md)",
-      display: "flex",
-      flexDirection: "column",
-      zIndex: 1000,
-      border: "1px solid var(--border-color)",
-      overflow: "hidden"
-    }}>
+    <>
+      <div 
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(3px)",
+          zIndex: 999,
+          animation: "fadeIn 0.2s ease"
+        }}
+        onClick={onClose}
+      />
+      <div style={{
+        position: "fixed",
+        bottom: "clamp(20px, 10vw, 80px)",
+        right: "clamp(10px, 5vw, 20px)",
+        width: "min(350px, calc(100vw - 20px))",
+        height: "min(500px, calc(100vh - 120px))",
+        background: "var(--surface-primary)",
+        borderRadius: "12px",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+        display: "flex",
+        flexDirection: "column",
+        zIndex: 1000,
+        border: "1px solid var(--border-color)",
+        overflow: "hidden",
+        animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+      }}>
       <div style={{
         background: "var(--primary-accent)",
         color: "var(--primary-accent-text)",
@@ -173,6 +189,7 @@ export default function UserChatModal({ isOpen, onClose, user }) {
       <div style={{ padding: "4px 16px 12px", background: "var(--surface-primary)", fontSize: "11px", color: "var(--text-secondary)", textAlign: "center" }}>
         Riwayat obrolan akan direset otomatis setiap 24 jam.
       </div>
-    </div>
+      </div>
+    </>
   );
 }
