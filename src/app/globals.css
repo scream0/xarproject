@@ -6,7 +6,7 @@
   --font-serif: "Tenor Sans", sans-serif;
   --font-sans: "Lato", sans-serif;
 
-  /* Light Theme Palette (Clean Minimalist with #07191E & #02F5A1 harmony) */
+  /* Light Theme Palette */
   --background: #f4f8f7;
   --text-primary: #07191E;
   --text-secondary: #4a6368;
@@ -33,46 +33,45 @@
   --danger-color-rgb: 220, 38, 38;
   --success-color-rgb: 2, 245, 161;
 
-
-
   /* Skeleton loading colors (Light theme) */
   --skeleton-base: rgba(7, 25, 30, 0.08);
   --skeleton-shine: rgba(255, 255, 255, 0.7);
 }
 
 [data-theme="dark"] {
-  /* Dark Theme Palette (Deep Base #07191E & Neon Mint Accent #02F5A1) */
+  /* Dark Theme Palette (Base #07191E & #fafafa Accent) */
   --background: #07191E;
   --text-primary: #fafafa;
   --text-secondary: #94b8b3;
-  --surface-primary: #0b2229;
-  --surface-secondary: #11313a;
-  --border-color: #1a4550;
-  --primary-accent: #1DB954;
-  --primary-accent-text: #fafafa;
+  --surface-primary: #0b2026;
+  --surface-secondary: #112c33;
+  --border-color: #1c3e47;
+
+  /* Aksen utama #fafafa dengan teks gelap */
+  --primary-accent: #fafafa;
+  --primary-accent-text: #07191E;
+
   --danger-color: #f87171;
   --success-color: #02F5A1;
   --text-tertiary: #658c85;
-  --primary-accent-bg: rgba(2, 245, 161, 0.15);
+  --primary-accent-bg: rgba(250, 250, 250, 0.15);
   --success-bg: rgba(2, 245, 161, 0.1);
-  --input-background: #0b2229;
+  --input-background: #0b2026;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
 
-  /* RGB versions for rgba() — Dark Theme */
-  --surface-primary-rgb: 11, 34, 41;
+  /* RGB versions for rgba() — Dark Theme (Matched to #07191E) */
+  --surface-primary-rgb: 11, 32, 38;
   --background-rgb: 7, 25, 30;
   --text-secondary-rgb: 148, 184, 179;
-  --primary-accent-rgb: 29, 185, 84;
+  --primary-accent-rgb: 250, 250, 250;
   --danger-color-rgb: 248, 113, 113;
   --success-color-rgb: 2, 245, 161;
 
-
-
   /* Skeleton loading colors (Dark theme) */
   --skeleton-base: rgba(148, 184, 179, 0.12);
-  --skeleton-shine: rgba(2, 245, 161, 0.08);
+  --skeleton-shine: rgba(250, 250, 250, 0.08);
 }
 
 /* ====================================================

@@ -41,6 +41,7 @@
 .filterSelect,
 .statusSelect,
 .refreshButton,
+.searchButton,
 .pagination button {
   border: 1px solid var(--border-color);
   border-radius: 999px;
@@ -52,6 +53,7 @@
 
 .searchForm button,
 .refreshButton,
+.searchButton,
 .pagination button {
   background: var(--primary-accent);
   color: var(--primary-accent-text);

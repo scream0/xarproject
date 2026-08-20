@@ -150,10 +150,10 @@ export async function POST(request) {
       if (!productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) throw new Error("Item checkout tidak valid");
 
       const product = productsMap[productId];
-      const allowedStatuses = ["published", "Stok Menipis"];
+      const allowedStatuses = ["published"];
       if (!product || !allowedStatuses.includes(product.status)) {
         const productName = product ? `${product.name} (${item.size})` : `ID ${productId}`;
-        throw new Error(`Produk "${productName}" tidak tersedia atau sudah habis.`);
+        throw new Error(`Produk "${productName}" tidak tersedia atau sudah tidak aktif.`);
       }
 
       const variantIndex = (Array.isArray(product.variants) ? product.variants : []).findIndex(

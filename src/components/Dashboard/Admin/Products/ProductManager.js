@@ -71,19 +71,19 @@ export default function ProductManager() {
       let processedData = data.map((product) => {
         const totalStock =
           product.variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) || 0;
-        let status = pmConfig.status.soldOut;
+        let computedStockStatus = pmConfig.status.soldOut;
         if (totalStock > 5) {
-          status = pmConfig.status.ready;
+          computedStockStatus = pmConfig.status.ready;
         } else if (totalStock > 0) {
-          status = pmConfig.status.lowStock;
+          computedStockStatus = pmConfig.status.lowStock;
         }
-        return { ...product, totalStock, status };
+        return { ...product, totalStock, computedStockStatus };
       });
 
       // Client-side filtering for stock status
       if (filters.stockStatus !== "all") {
         processedData = processedData.filter(
-          (p) => p.status === pmConfig.status[filters.stockStatus],
+          (p) => p.computedStockStatus === pmConfig.status[filters.stockStatus],
         );
       }
 
@@ -297,9 +297,9 @@ export default function ProductManager() {
                       <td>{item.totalStock}</td>
                       <td>
                         <span
-                          className={`${styles.statusBadge} ${styles[`status${item.status.replace(/\s+/g, "")}`]}`}
+                          className={`${styles.statusBadge} ${styles[`status${item.computedStockStatus.replace(/\s+/g, "")}`]}`}
                         >
-                          {item.status}
+                          {item.computedStockStatus}
                         </span>
                       </td>
                       <td>

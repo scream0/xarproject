@@ -80,15 +80,15 @@ export default function OrdersManagement() {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       const data = await res.json();
-      
+
       const activeData = (res.ok && data.order) ? data.order : order;
       setActiveOrder(activeData);
-      
+
       const shippingInfo = activeData.shipping_detail || activeData.shippingDetail || activeData.shipping_details?.[0] || {};
       setShippingDraft({
         courierName: shippingInfo.courier_name || shippingInfo.courierName || activeData.courier_name || activeData.courier || "",
         serviceType: shippingInfo.service_type || shippingInfo.serviceType || activeData.courier_service || "",
-        trackingNumber: shippingInfo.tracking_number || shippingInfo.trackingNumber || "",
+        trackingNumber: shippingInfo.tracking_number || shippingInfo.trackingNumber || activeData.shipping_receipt_number || "",
       });
     } catch (e) {
       setActiveOrder(order);
@@ -221,7 +221,7 @@ export default function OrdersManagement() {
               placeholder="Cari ID pesanan atau pelanggan"
               aria-label="Search orders"
             />
-            <button type="submit">Cari</button>
+            <button className={styles.searchButton} type="submit">Cari</button>
           </form>
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={styles.filterSelect}>
             <option value="all">Semua status</option>
@@ -297,8 +297,8 @@ export default function OrdersManagement() {
                     </td>
                     <td>
                       <div className={styles.orderCell}>
-                        <strong>{order.customerName || order.shipping_address?.recipientName || "Pelanggan"}</strong>
-                        <small>{order.customerEmail || "Tidak ada email"}</small>
+                        <strong>{order.customer_name || order.shipping_address?.recipientName || "Pelanggan"}</strong>
+                        <small>{order.customer_email || "Tidak ada email"}</small>
                       </div>
                     </td>
                     <td>{money(orderValue(order))}</td>
@@ -320,7 +320,7 @@ export default function OrdersManagement() {
                     <td>
                       <div className={styles.orderCell}>
                         <strong>{shippingInfo.courier_name || shippingInfo.courierName || order.courier_name || order.courier || "—"}</strong>
-                        <small>{shippingInfo.tracking_number || shippingInfo.trackingNumber || "Belum ada resi"}</small>
+                        <small>{shippingInfo.tracking_number || shippingInfo.trackingNumber || order.shipping_receipt_number || "Belum ada resi"}</small>
                       </div>
                     </td>
                     <td>{new Date(order.createdAt || order.created_at || "1970-01-01").toLocaleDateString("id-ID")}</td>
@@ -361,7 +361,7 @@ export default function OrdersManagement() {
                     <div className={styles.printHeader}>
                       <div>
                         <strong>{order.orderId || order.order_number || orderId}</strong>
-                        <p>{order.customerName || "Pelanggan"}</p>
+                        <p>{order.customer_name || "Pelanggan"}</p>
                       </div>
                       <div className={styles.printMeta}>
                         <span>{money(orderValue(order))}</span>
@@ -369,9 +369,9 @@ export default function OrdersManagement() {
                       </div>
                     </div>
                     <div className={styles.printBody}>
-                      <p><b>Penerima:</b> {order.customerName || "Pelanggan"}</p>
+                      <p><b>Penerima:</b> {order.customer_name || order.shipping_address?.recipientName || "Pelanggan"}</p>
                       <p><b>Kurir:</b> {shippingInfo.courier_name || shippingInfo.courierName || order.courier_name || order.courier || "—"}</p>
-                      <p><b>Resi:</b> {shippingInfo.tracking_number || shippingInfo.trackingNumber || "Belum ada resi"}</p>
+                      <p><b>Resi:</b> {shippingInfo.tracking_number || shippingInfo.trackingNumber || order.shipping_receipt_number || "Belum ada resi"}</p>
                       <p><b>Alamat:</b> {order.shipping_address?.address || order.shippingAddress?.address || "Alamat tidak tersedia"}</p>
                     </div>
                     <div className={styles.printItems}>
@@ -406,8 +406,8 @@ export default function OrdersManagement() {
             <div className={styles.drawerGrid}>
               <div className={styles.drawerCard}>
                 <h4>Pelanggan</h4>
-                <p>{activeOrder.customerName || "Pelanggan"}</p>
-                <p>{activeOrder.customerEmail || "Tidak ada email"}</p>
+                <p>{activeOrder.customer_name || "Pelanggan"}</p>
+                <p>{activeOrder.customer_email || "Tidak ada email"}</p>
                 {activeOrder.shipping_address?.address && (
                   <p style={{ marginTop: '8px', fontSize: '0.875rem' }}>{activeOrder.shipping_address.address}</p>
                 )}
@@ -426,20 +426,28 @@ export default function OrdersManagement() {
                 <input value={shippingDraft.trackingNumber} onChange={(event) => setShippingDraft((draft) => ({ ...draft, trackingNumber: event.target.value }))} placeholder="Nomor resi" />
               </div>
               <div className={styles.drawerActions}>
-                <button className={styles.refreshButton} onClick={() => saveShipping(activeOrder)}>Simpan pengiriman</button>
+                <button
+                  className={styles.refreshButton}
+                  onClick={() => saveShipping(activeOrder)}
+                  disabled={updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number))}
+                  style={{ opacity: updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number)) ? 0.6 : 1, cursor: updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number)) ? 'not-allowed' : 'pointer' }}
+                >
+                  {updatingId === (activeOrder.id || activeOrder.orderId) ? "Menyimpan..." : "Simpan pengiriman"}
+                </button>
                 <button className={styles.secondaryButton} onClick={() => updateStatus(activeOrder.id || activeOrder.orderId, "shipped")}>Tandai dikirim</button>
               </div>
             </div>
-            <div className={styles.drawerCard}>
-              <h4>Barang</h4>
-              {(activeOrder.items || []).map((item, index) => (
-                <div key={`${item.name}-${index}`} className={styles.itemRow}>
-                  <span>{item.name || item.product_name || "Produk"}</span>
-                  <strong>{item.quantity || item.qty || 1} × {money(item.price || 0)}</strong>
-                </div>
-              ))}
-              {!activeOrder.items?.length && <p>Tidak ada daftar barang.</p>}
-            </div>
+            {activeOrder.items && activeOrder.items.length > 0 && (
+              <div className={styles.drawerCard}>
+                <h4>Barang</h4>
+                {activeOrder.items.map((item, index) => (
+                  <div key={`${item.name}-${index}`} className={styles.itemRow}>
+                    <span>{item.name || item.product_name || "Produk"}</span>
+                    <strong>{item.quantity || item.qty || 1} × {money(item.price || 0)}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -316,7 +316,9 @@ export default function OverviewUser({ setActiveTab }) {
                   order.items.length > 0
                 ) {
                   const firstItem = order.items[0];
-                  itemName = `${firstItem.name || "Produk"} (${firstItem.size || "Standard"})`;
+                  const productName = firstItem.product_name || firstItem.name || "Produk";
+                  const variantName = firstItem.variant_name || firstItem.size || "Standard";
+                  itemName = `${productName} (${variantName})`;
                   if (order.items.length > 1) {
                     itemName += ` +${order.items.length - 1} lainnya`;
                   }

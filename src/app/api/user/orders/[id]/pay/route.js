@@ -64,6 +64,8 @@ export async function POST(request, context) {
       } catch {}
     }
 
+    const grossAmount = Number(order.amount || order.total_amount || 0);
+
     const payload = {
       transaction_details: {
         order_id: order.id,

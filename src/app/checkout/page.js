@@ -909,7 +909,7 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <span style={{ fontSize: "0.75rem", background: "var(--surface-primary)", padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border-color)" }}>
-                  {claimedVouchers.length} voucher tersedia &gt;
+                  {claimedVouchers.filter(v => v.status === "active").length} voucher tersedia &gt;
                 </span>
               </button>
             ) : (
@@ -991,10 +991,10 @@ export default function CheckoutPage() {
           <button
             className={styles.payButton}
             onClick={handlePay}
-            disabled={isProcessing || !selectedAddress || !selectedCourierKey}
+            disabled={isStoreProcessing || !selectedAddress || !selectedCourierKey}
           >
             <span className={styles.payButtonMain}>
-              {isProcessing ? "Memproses Pembayaran..." : `Bayar Sekarang • ${rupiah(grandTotal)}`}
+              {isStoreProcessing ? "Memproses Pembayaran..." : `Bayar Sekarang • ${rupiah(grandTotal)}`}
             </span>
             <span className={styles.payButtonSub}>
               {!selectedAddress

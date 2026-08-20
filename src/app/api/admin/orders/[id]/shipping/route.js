@@ -87,6 +87,7 @@ async function handleShippingUpdate(request, context) {
       shipping_detail: {
         courier_name: body.courierName || body.courier_name || null,
         service_type: body.serviceType || body.service_type || null,
+        tracking_number: trackingNumber,
       },
       shipping_address: shippingAddress,
       shipping_receipt_number: trackingNumber,

@@ -139,15 +139,19 @@ function SocialLink({ href, icon, label }) {
   };
 
   return (
-    <a
-      href={href}
-      onClick={handleClick}
-      target={href.startsWith("#") ? "_self" : "_blank"}
-      rel="noopener noreferrer"
-      aria-label={label}
-    >
-      <AppIcon name={icon} className={styles.feather} />
-    </a>
+    <div className={styles.socialItem}>
+      <a
+        href={href}
+        onClick={handleClick}
+        target={href.startsWith("#") ? "_self" : "_blank"}
+        rel="noopener noreferrer"
+        aria-label={label}
+        className={styles.socialLinkBtn}
+      >
+        <AppIcon name={icon} className={styles.feather} />
+      </a>
+      {label && <span className={styles.socialLabel}>{label}</span>}
+    </div>
   );
 }
 

@@ -38,6 +38,7 @@ export default function ReviewManager() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState(null);
+  const [deleteReviewId, setDeleteReviewId] = useState(null);
 
   const fetchReviews = async (session) => {
     try {
@@ -132,11 +133,15 @@ export default function ReviewManager() {
     }
   };
 
-  const handleDelete = async (reviewId) => {
-    if (!confirm(reviewConfig.confirmations.deletePrompt)) {
-      return;
-    }
+  const handleDeleteClick = (reviewId) => {
+    setDeleteReviewId(reviewId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteReviewId) return;
+    const reviewId = deleteReviewId;
     setUpdatingId(reviewId);
+    setDeleteReviewId(null);
     try {
       const session = await getSupabaseSession();
       const token = session?.access_token;
@@ -265,20 +270,44 @@ export default function ReviewManager() {
                           : reviewConfig.buttons.approve}
                       </button>
                     )}
-                    <button
-                      onClick={() => handleDelete(review.id)}
-                      disabled={updatingId === review.id}
-                      className={styles.deleteBtn}
-                    >
-                      {updatingId === review.id
-                        ? reviewConfig.buttons.loading
-                        : reviewConfig.buttons.delete}
-                    </button>
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => handleDeleteClick(review.id)}
+                        disabled={updatingId === review.id}
+                      >
+                        {updatingId === review.id
+                          ? reviewConfig.buttons.processing
+                          : reviewConfig.buttons.delete}
+                      </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {deleteReviewId && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h3 className={styles.modalHeader}>Konfirmasi Hapus</h3>
+            <p className={styles.modalBody}>{reviewConfig.confirmations.deletePrompt}</p>
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.cancelBtn} 
+                onClick={() => setDeleteReviewId(null)}
+                disabled={updatingId === deleteReviewId}
+              >
+                Batal
+              </button>
+              <button 
+                className={styles.confirmBtn} 
+                onClick={confirmDelete}
+                disabled={updatingId === deleteReviewId}
+              >
+                {updatingId === deleteReviewId ? "Menghapus..." : "Hapus Ulasan"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
