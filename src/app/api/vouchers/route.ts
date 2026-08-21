@@ -112,8 +112,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, message: "Voucher berhasil dibuat", voucher: data });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("DELETE Voucher Error:", message);
+    const message = error instanceof Error ? error.message : (error && typeof error === "object" && (error as any).message) ? (error as any).message : "Unknown error";
+    console.error("POST Voucher Error:", message, error);
     if (
       message.includes("Unauthorized") ||
       message.includes("Forbidden")
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
         { status: message.includes("Unauthorized") ? 401 : 403 },
       );
     }
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message, details: error }, { status: 500 });
   }
 }
 

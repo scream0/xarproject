@@ -7,6 +7,7 @@ import styles from "./NotificationCenter.module.css";
 import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import config from "@/data/ui/notificationCenterConfig.json";
 import { NotificationsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
 
 function timeAgo(dateString) {
   if (!dateString) return "Baru saja";
@@ -36,6 +37,7 @@ export default function NotificationCenter() {
   const [filter, setFilter] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [notificationToDelete, setNotificationToDelete] = useState(null);
   const lastUserIdRef = useRef(null);
   const [createForm, setCreateForm] = useState({
     title: "",
@@ -136,10 +138,15 @@ export default function NotificationCenter() {
     }
   };
 
-  const deleteNotification = async (notification) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus notifikasi ini?")) {
-      return;
-    }
+  const deleteNotification = (notification) => {
+    setNotificationToDelete(notification);
+  };
+
+  const confirmDeleteNotification = async () => {
+    if (!notificationToDelete) return;
+    const notification = notificationToDelete;
+    setNotificationToDelete(null);
+
     try {
       const token = await getSupabaseToken();
       if (!token) {
@@ -418,6 +425,14 @@ export default function NotificationCenter() {
           </div>
         </div>
       )}
+      
+      <ConfirmationModal
+        isOpen={!!notificationToDelete}
+        onClose={() => setNotificationToDelete(null)}
+        onConfirm={confirmDeleteNotification}
+        title="Hapus Notifikasi"
+        message="Apakah Anda yakin ingin menghapus notifikasi ini?"
+      />
     </div>
   );
 }

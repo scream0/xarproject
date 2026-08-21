@@ -73,6 +73,45 @@ async function decrementStockIfNeeded(supabaseAdmin, { orderId, items, currentSt
 }
 
 /**
+ * Mengembalikan stok produk secara atomik untuk item-item dalam sebuah order
+ * ketika order dibatalkan (dibatalkan oleh user atau admin).
+ */
+async function restoreStockIfNeeded(supabaseAdmin, { orderId, items, currentStatus, nextStatus }) {
+  const shouldRestore = nextStatus === "cancelled" && currentStatus !== "cancelled";
+
+  if (!shouldRestore || !items || items.length === 0) {
+    return { restored: false };
+  }
+
+  for (const item of items) {
+    const quantity = Number(item.quantity) || 1;
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("id, name, variants")
+      .eq("id", item.product_id)
+      .single();
+
+    if (product && Array.isArray(product.variants)) {
+      const variantIndex = product.variants.findIndex(
+        (v) => String(v.size || "").toLowerCase() === String(item.variant_name || "").toLowerCase()
+      );
+
+      if (variantIndex > -1) {
+        const currentStock = Number(product.variants[variantIndex].stock ?? product.variants[variantIndex].stok ?? 0);
+        product.variants[variantIndex].stock = currentStock + quantity;
+        
+        await supabaseAdmin
+          .from("products")
+          .update({ variants: product.variants })
+          .eq("id", product.id);
+      }
+    }
+  }
+
+  return { restored: true };
+}
+
+/**
  * Update status sebuah order: validasi status, catat history, kurangi stok
  * bila perlu, dan (opsional) simpan nomor resi sekaligus.
  * Melempar Error dengan properti `.status` (kode HTTP) bila gagal validasi.
@@ -120,6 +159,13 @@ async function applyOrderStatusUpdate(supabaseAdmin, {
     nextStatus: normalizedStatus,
   });
 
+  await restoreStockIfNeeded(supabaseAdmin, {
+    orderId,
+    items: orderData.items,
+    currentStatus,
+    nextStatus: normalizedStatus,
+  });
+
   const historyEntry = {
     status: normalizedStatus,
     notes: notes || `Status diperbarui menjadi ${normalizedStatus}`,
@@ -154,5 +200,6 @@ export {
   STOCK_DECREMENT_STATUSES,
   isStockDecrementStatus,
   decrementStockIfNeeded,
+  restoreStockIfNeeded,
   applyOrderStatusUpdate,
 };

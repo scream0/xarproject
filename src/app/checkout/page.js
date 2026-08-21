@@ -9,6 +9,8 @@ import toast from "react-hot-toast";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
 import { buildAddressId, normalizeAddress, resolveAddressRegion, resolveCityId } from "@/utils/address";
 import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers";
+import { AddressFormModal } from "@/components/Dashboard/User/Profil/ProfileModals";
+import profileConfig from "@/data/ui/userProfilConfig.json";
 import styles from "./checkout.module.css";
 
 const ORIGIN_CITY_ID = "114"; // Jakarta
@@ -200,15 +202,15 @@ export default function CheckoutPage() {
       setAddressLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const r = await fetch(`/api/users?userId=${currentUser.id}`, {
+        const r = await fetch(`/api/profile`, {
           headers: session?.access_token
             ? { Authorization: `Bearer ${session.access_token}` }
             : {},
         });
         const result = await r.json();
 
-        if (result.exists && result.data?.addresses) {
-          const addrs = (result.data.addresses || []).map((addr) => normalizeAddress(addr));
+        if (r.ok && result.success && result.profile?.addresses) {
+          const addrs = (result.profile.addresses || []).map((addr) => normalizeAddress(addr));
           setAddresses(addrs);
         }
       } catch {
@@ -255,6 +257,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (addresses.length >= 3) {
+      toast.error("Maksimal hanya dapat menyimpan 3 alamat. Hapus salah satu alamat di halaman profil jika ingin menambahkan yang baru.");
+      return;
+    }
+
     setSavingAddress(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -265,12 +272,15 @@ export default function CheckoutPage() {
           addressForm.province,
           addressForm.postalCode,
         ) || addressForm.cityId,
-        id: buildAddressId(),
-        isPrimary: addresses.length === 0,
+        id: addressForm.id || buildAddressId(),
+        isPrimary: addresses.length === 0 && !addressForm.id ? true : addressForm.isPrimary,
       });
 
-      const updated = [...addresses, newAddr];
-      const res = await fetch("/api/users", {
+      const isEditing = addresses.some(a => a.id === newAddr.id);
+      const updated = isEditing 
+        ? addresses.map(a => a.id === newAddr.id ? newAddr : a)
+        : [...addresses, newAddr];
+      const res = await fetch("/api/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -279,8 +289,6 @@ export default function CheckoutPage() {
             : {}),
         },
         body: JSON.stringify({
-          userId: currentUser.id,
-          type: "addresses",
           addresses: updated,
         }),
       });
@@ -720,9 +728,22 @@ export default function CheckoutPage() {
                         onClick={() => setSelectedAddressId(addr.id)}
                       >
                         <div className={styles.addressContent}>
-                          <span className={styles.addressLabel}>
-                            {addr.label || "Alamat"}
-                            {addr.isPrimary && <span className={styles.primaryBadge}>Utama</span>}
+                          <span className={styles.addressLabel} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                            <span>
+                              {addr.label || "Alamat"}
+                              {addr.isPrimary && <span className={styles.primaryBadge}>Utama</span>}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAddressForm(addr);
+                                setShowAddressModal(true);
+                              }}
+                              style={{ background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-primary)", fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}
+                            >
+                              Edit
+                            </button>
                           </span>
                           <p className={styles.addressName}>{addr.recipientName}</p>
                           <p className={styles.addressPhone}>{addr.recipientPhone}</p>
@@ -1033,114 +1054,16 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* ─── MODAL TAMBAH ALAMAT (DENGAN KODE POS & LABEL) ─── */}
-      {showAddressModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowAddressModal(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px" }}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2 className={styles.modalTitle}>Tambah Alamat Baru</h2>
-                <p style={{ margin: "2px 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                  Isi data alamat dengan lengkap untuk mempermudah kurir.
-                </p>
-              </div>
-              <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>&times;</button>
-            </div>
-
-            <form onSubmit={handleSaveAddress} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "10px" }}>
-              {/* Label Alamat */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Label Alamat</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  placeholder="Rumah / Kantor / Kos"
-                  value={addressForm.label}
-                  onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
-                  required
-                />
-              </div>
-
-              {/* Nama Penerima & Telepon */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Nama Penerima</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    placeholder="Nama Lengkap"
-                    value={addressForm.recipientName}
-                    onChange={(e) => setAddressForm({ ...addressForm, recipientName: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Nomor Telepon</label>
-                  <input
-                    type="tel"
-                    className={styles.formInput}
-                    placeholder="08123456789"
-                    value={addressForm.recipientPhone}
-                    onChange={(e) => setAddressForm({ ...addressForm, recipientPhone: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Provinsi & Kota Select */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Provinsi & Kota / Kabupaten</label>
-                <ProvinceCitySelect
-                  value={{
-                    province: addressForm.province,
-                    city: addressForm.city,
-                    cityId: addressForm.cityId,
-                    cityType: addressForm.cityType,
-                  }}
-                  postalCode={addressForm.postalCode}
-                  onChange={(value) => setAddressForm((prev) => ({ ...prev, ...value }))}
-                />
-              </div>
-
-              {/* Kode Pos */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Kode Pos</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  placeholder="Contoh: 12345"
-                  maxLength={5}
-                  value={addressForm.postalCode}
-                  onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value.replace(/\D/g, "") })}
-                  required
-                />
-              </div>
-
-              {/* Detail Alamat / Jalan */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Alamat Lengkap (Jalan, No. Rumah, RT/RW, Patokan)</label>
-                <textarea
-                  className={styles.formTextarea}
-                  placeholder="Jl. Mawar No. 12 RT 01/RW 02 (pagar hitam samping pos)"
-                  value={addressForm.street}
-                  onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
-                  rows={3}
-                  required
-                ></textarea>
-              </div>
-
-              <div className={styles.modalFooter} style={{ marginTop: "8px" }}>
-                <button type="button" className={styles.modalBtnCancel} onClick={() => setShowAddressModal(false)} disabled={savingAddress}>
-                  Batal
-                </button>
-                <button type="submit" className={styles.modalBtnSave} disabled={savingAddress}>
-                  {savingAddress ? "Menyimpan..." : "Simpan Alamat"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* ─── MODAL TAMBAH ALAMAT ─── */}
+      <AddressFormModal
+        isOpen={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        currentAddress={addressForm}
+        setCurrentAddress={setAddressForm}
+        handleSaveAddress={handleSaveAddress}
+        profileConfig={profileConfig}
+        loading={savingAddress}
+      />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { auth } from "@/lib/supabaseClient";
 import styles from "./OrdersManagement.module.css";
+import AdminReturns from "./AdminReturns";
+import AdminWithdrawals from "./AdminWithdrawals";
 
 const money = (value) =>
   new Intl.NumberFormat("id-ID", {
@@ -23,6 +25,7 @@ export default function OrdersManagement() {
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalOrders: 0 });
   const [updatingId, setUpdatingId] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
+  const [adminTab, setAdminTab] = useState('orders'); // 'orders', 'returns', 'withdrawals'
   const [shippingDraft, setShippingDraft] = useState({ courierName: "", serviceType: "", trackingNumber: "" });
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [bulkStatus, setBulkStatus] = useState("processing");
@@ -213,17 +216,42 @@ export default function OrdersManagement() {
           <p className={styles.eyebrow}>Manajemen Pesanan</p>
           <h2 className={styles.title}>Lacak setiap pesanan, status, dan pengiriman di satu tempat.</h2>
         </div>
-        <div className={styles.controls}>
-          <form onSubmit={handleSearch} className={styles.searchForm}>
-            <input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Cari ID pesanan atau pelanggan"
-              aria-label="Search orders"
-            />
-            <button className={styles.searchButton} type="submit">Cari</button>
-          </form>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={styles.filterSelect}>
+      </div>
+      
+      <div className={styles.adminTabs}>
+        <button 
+          className={`${styles.tabBtn} ${adminTab === 'orders' ? styles.activeTab : ''}`}
+          onClick={() => setAdminTab('orders')}
+        >
+          Daftar Pesanan
+        </button>
+        <button 
+          className={`${styles.tabBtn} ${adminTab === 'returns' ? styles.activeTab : ''}`}
+          onClick={() => setAdminTab('returns')}
+        >
+          Pengembalian Dana (Refund)
+        </button>
+        <button 
+          className={`${styles.tabBtn} ${adminTab === 'withdrawals' ? styles.activeTab : ''}`}
+          onClick={() => setAdminTab('withdrawals')}
+        >
+          Penarikan (Withdrawals)
+        </button>
+      </div>
+
+      {adminTab === 'orders' && (
+        <>
+          <div className={styles.controls}>
+            <form onSubmit={handleSearch} className={styles.searchForm}>
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Cari ID pesanan atau pelanggan"
+                aria-label="Search orders"
+              />
+              <button className={styles.searchButton} type="submit">Cari</button>
+            </form>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={styles.filterSelect}>
             <option value="all">Semua status</option>
             <option value="pending">Menunggu</option>
             <option value="paid">Dibayar</option>
@@ -239,7 +267,6 @@ export default function OrdersManagement() {
             Segarkan
           </button>
         </div>
-      </div>
 
       <div className={styles.summaryBar}>
         <span>{pagination.totalOrders} pesanan</span>
@@ -430,20 +457,49 @@ export default function OrdersManagement() {
             <div className={styles.drawerCard}>
               <h4>Info pengiriman</h4>
               <div className={styles.shippingFields}>
-                <input value={shippingDraft.courierName} onChange={(event) => setShippingDraft((draft) => ({ ...draft, courierName: event.target.value }))} placeholder="Kurir" />
-                <input value={shippingDraft.serviceType} onChange={(event) => setShippingDraft((draft) => ({ ...draft, serviceType: event.target.value }))} placeholder="Layanan" />
-                <input value={shippingDraft.trackingNumber} onChange={(event) => setShippingDraft((draft) => ({ ...draft, trackingNumber: event.target.value }))} placeholder="Nomor resi" />
+                <input 
+                  value={shippingDraft.courierName} 
+                  onChange={(event) => setShippingDraft((draft) => ({ ...draft, courierName: event.target.value }))} 
+                  placeholder="Kurir (contoh: JNE)" 
+                  disabled={["delivered", "cancelled", "returned"].includes(activeOrder.status)}
+                />
+                <input 
+                  value={shippingDraft.serviceType} 
+                  onChange={(event) => setShippingDraft((draft) => ({ ...draft, serviceType: event.target.value }))} 
+                  placeholder="Layanan (contoh: REG)" 
+                  disabled={["delivered", "cancelled", "returned"].includes(activeOrder.status)}
+                />
+                <input 
+                  value={shippingDraft.trackingNumber} 
+                  onChange={(event) => setShippingDraft((draft) => ({ ...draft, trackingNumber: event.target.value }))} 
+                  placeholder="Nomor resi pengiriman" 
+                  disabled={["delivered", "cancelled", "returned"].includes(activeOrder.status)}
+                />
               </div>
               <div className={styles.drawerActions}>
-                <button
-                  className={styles.refreshButton}
-                  onClick={() => saveShipping(activeOrder)}
-                  disabled={updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number))}
-                  style={{ opacity: updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number)) ? 0.6 : 1, cursor: updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number)) ? 'not-allowed' : 'pointer' }}
-                >
-                  {updatingId === (activeOrder.id || activeOrder.orderId) ? "Menyimpan..." : "Simpan pengiriman"}
-                </button>
-                <button className={styles.secondaryButton} onClick={() => updateStatus(activeOrder.id || activeOrder.orderId, "shipped")}>Tandai dikirim</button>
+                {["delivered", "cancelled", "returned"].includes(activeOrder.status) ? (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
+                    Info pengiriman tidak dapat diubah karena status pesanan sudah final.
+                  </p>
+                ) : (
+                  <>
+                    <button
+                      className={styles.refreshButton}
+                      onClick={() => saveShipping(activeOrder)}
+                      disabled={updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number))}
+                      style={{ opacity: updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number)) ? 0.6 : 1, cursor: updatingId === (activeOrder.id || activeOrder.orderId) || (shippingDraft.trackingNumber && shippingDraft.trackingNumber === (activeOrder.shipping_detail?.tracking_number || activeOrder.shippingDetail?.trackingNumber || activeOrder.shipping_receipt_number)) ? 'not-allowed' : 'pointer' }}
+                    >
+                      {updatingId === (activeOrder.id || activeOrder.orderId) 
+                        ? "Menyimpan..." 
+                        : (activeOrder.status === "shipped" ? "Perbarui Resi" : "Simpan & Kirim")}
+                    </button>
+                    {!["shipped", "return_requested", "returning"].includes(activeOrder.status) && (
+                      <button className={styles.secondaryButton} onClick={() => updateStatus(activeOrder.id || activeOrder.orderId, "shipped")}>
+                        Tandai dikirim
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </div>
             {activeOrder.items && activeOrder.items.length > 0 && (
@@ -459,6 +515,16 @@ export default function OrdersManagement() {
             )}
           </div>
         </div>
+      )}
+        </>
+      )}
+
+      {adminTab === 'returns' && (
+        <AdminReturns />
+      )}
+
+      {adminTab === 'withdrawals' && (
+        <AdminWithdrawals />
       )}
     </section>
   );

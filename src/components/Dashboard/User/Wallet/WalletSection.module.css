@@ -1,0 +1,352 @@
+.walletContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.balanceCard {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 30px;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.balanceHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  opacity: 0.9;
+  margin-bottom: 15px;
+}
+
+.walletIcon {
+  color: var(--text-primary);
+}
+
+.balanceAmount {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 25px;
+}
+
+.withdrawBtn {
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.withdrawBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.withdrawBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.transactionsSection {
+  background: var(--surface-primary);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+}
+
+.transactionsTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.emptyIcon {
+  color: var(--border-color);
+  margin-bottom: 16px;
+}
+
+.transactionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transactionItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.transactionItem:hover {
+  border-color: var(--primary-accent);
+  background-color: var(--surface-secondary);
+}
+
+.transactionLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.transactionIconWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transactionIconWrapper[data-type="refund"] {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success-color, #10b981);
+}
+
+.transactionIconWrapper[data-type="withdrawal"] {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning-color, #f59e0b);
+}
+
+.transactionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.transactionType {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.transactionDate {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.transactionDesc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.transactionRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.transactionAmount {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.transactionAmount[data-type="refund"] {
+  color: var(--success-color, #10b981);
+}
+
+.transactionAmount[data-type="withdrawal"] {
+  color: var(--text-primary);
+}
+
+.transactionStatus {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+  background: var(--surface-primary);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 450px;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modalHeader h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.closeBtn:hover {
+  color: var(--error-color, #ef4444);
+}
+
+.warningBox {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid var(--error-color, #ef4444);
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.bankInfoPreview {
+  background-color: var(--surface-secondary);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bankInfoItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.bankInfoLabel {
+  color: var(--text-secondary);
+}
+
+.bankInfoValue {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.formGroup input {
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.formGroup input:focus {
+  border-color: var(--primary-accent);
+}
+
+.formGroup small {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancelBtn, .submitBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelBtn {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.cancelBtn:hover {
+  background: var(--surface-secondary);
+}
+
+.submitBtn {
+  background: var(--primary-accent);
+  border: none;
+  color: var(--primary-accent-text);
+}
+
+.submitBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

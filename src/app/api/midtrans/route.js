@@ -256,9 +256,9 @@ export async function POST(request) {
 
     const totalDiscountAmount = subtotalDiscountAmount + shippingDiscountAmount;
 
-    let customerName = "Customer XAR Store";
-    let customerEmail = "customer@xarstore.com";
-    let customerPhone = "08123456789";
+    let customerName = body.customerDetails?.name || "Customer XAR Store";
+    let customerEmail = body.customerDetails?.email || "customer@xarstore.com";
+    let customerPhone = body.customerDetails?.phone || "08123456789";
 
     if (userId) {
       try {
@@ -274,6 +274,10 @@ export async function POST(request) {
 
     if (shippingAddress?.recipientName) {
         customerName = shippingAddress.recipientName;
+    }
+    
+    if (shippingAddress?.recipientPhone) {
+        customerPhone = shippingAddress.recipientPhone;
     }
 
     // Format item details for Midtrans
@@ -302,10 +306,18 @@ export async function POST(request) {
       });
     }
 
-    const computedGrossAmount = Math.max(
-      1000, 
-      rawSubtotal - subtotalDiscountAmount + actualShippingCost
-    );
+    let computedGrossAmount = formattedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    if (computedGrossAmount < 1000) {
+      const adjustment = 1000 - computedGrossAmount;
+      formattedItems.push({
+        id: "MIN-TX-ADJUSTMENT",
+        price: adjustment,
+        quantity: 1,
+        name: "Penyesuaian Minimum Transaksi",
+      });
+      computedGrossAmount = 1000;
+    }
 
     const originHeader = request.headers.get("origin") || request.headers.get("referer");
     let baseUrl = "http://localhost:3000";

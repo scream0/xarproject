@@ -12,6 +12,7 @@ import { formatAddressDisplay } from "@/utils/address";
 import { sortOrdersByNewestFirst } from "./orderSorting";
 import { useRouter } from "next/navigation";
 import ReturnsCenter from "@/components/Dashboard/User/Returns/ReturnsCenter"; // Sesuaikan path jika berbeda
+import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
 
 // Mapping status mentah dari database/Admin -> label & tahap yang ditampilkan
 const STATUS_INFO = {
@@ -168,6 +169,7 @@ export default function OrdersSection() {
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedOrderToCancel, setSelectedOrderToCancel] = useState(null);
+  const [orderToConfirm, setOrderToConfirm] = useState(null);
   const lastUserIdRef = useRef(null);
 
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
@@ -301,7 +303,7 @@ export default function OrdersSection() {
       } else if (filter === "shipping") {
         result = result.filter((o) => ["shipping", "shipped"].includes(o.status));
       } else if (filter === "history") {
-        result = result.filter((o) => ["completed", "delivered", "cancelled", "canceled"].includes(o.status));
+        result = result.filter((o) => ["completed", "delivered", "cancelled", "canceled", "return_requested", "returning", "returned", "return_rejected"].includes(o.status));
       }
     }
 
@@ -323,10 +325,9 @@ export default function OrdersSection() {
     const pending = orders.filter((o) => ["pending", "unpaid"].includes(o.status)).length;
     const processing = orders.filter((o) => ["paid", "success", "processing", "settlement", "capture"].includes(o.status)).length;
     const shipping = orders.filter((o) => ["shipping", "shipped"].includes(o.status)).length;
-    const history = orders.filter((o) => ["completed", "delivered", "cancelled", "canceled"].includes(o.status)).length;
-    const returnCount = orders.filter((o) => ["return_requested", "returning", "returned"].includes(o.status)).length;
+    const history = orders.filter((o) => ["completed", "delivered", "cancelled", "canceled", "return_requested", "returning", "returned", "return_rejected"].includes(o.status)).length;
 
-    return { total, pending, processing, shipping, history, return: returnCount };
+    return { total, pending, processing, shipping, history };
   }, [orders]);
 
   const filterTabs = useMemo(
@@ -336,7 +337,6 @@ export default function OrdersSection() {
       { key: "processing", label: "Sedang Dikemas", icon: "package", count: orderStats.processing },
       { key: "shipping", label: "Dikirim", icon: "truck", count: orderStats.shipping },
       { key: "history", label: "Riwayat Pesanan", icon: "clock", count: orderStats.history },
-      { key: "return", label: "Return Center", icon: "rotate-ccw", count: orderStats.return },
     ],
     [orderStats],
   );
@@ -535,12 +535,17 @@ export default function OrdersSection() {
     router.push(`/account/orders/${order.id}`);
   };
 
-  const handleCancelOrder = async (order) => {
+  const handleCancelOrder = (order) => {
     if (isCancelling) return;
-    const confirmCancel = window.confirm(
-      `Batalkan pesanan ${order.id}? Tindakan ini tidak bisa dibatalkan.`,
-    );
-    if (!confirmCancel) return;
+    setSelectedOrderToCancel(order);
+    setIsCancelModalOpen(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!selectedOrderToCancel) return;
+    const order = selectedOrderToCancel;
+    setIsCancelModalOpen(false);
+    setSelectedOrderToCancel(null);
 
     setIsCancelling(true);
     const toastId = toast.loading("Membatalkan pesanan...");
@@ -577,13 +582,15 @@ export default function OrdersSection() {
     }
   };
 
-  const handleConfirmReceived = async (order) => {
+  const handleConfirmReceived = (order) => {
     if (isConfirming) return;
+    setOrderToConfirm(order);
+  };
 
-    const confirmAction = window.confirm(
-      `Konfirmasi bahwa pesanan ${order.id} sudah diterima?`,
-    );
-    if (!confirmAction) return;
+  const confirmReceivedAction = async () => {
+    if (!orderToConfirm) return;
+    const order = orderToConfirm;
+    setOrderToConfirm(null);
 
     setIsConfirming(true);
     const toastId = toast.loading("Mengonfirmasi penerimaan pesanan...");
@@ -1217,6 +1224,25 @@ export default function OrdersSection() {
           </div>
         </div>
       )}
+      
+      <ConfirmationModal
+        isOpen={isCancelModalOpen}
+        onClose={() => {
+          setIsCancelModalOpen(false);
+          setSelectedOrderToCancel(null);
+        }}
+        onConfirm={confirmCancelOrder}
+        title="Batalkan Pesanan"
+        message={`Batalkan pesanan ${selectedOrderToCancel?.id}? Tindakan ini tidak bisa dibatalkan.`}
+      />
+      
+      <ConfirmationModal
+        isOpen={!!orderToConfirm}
+        onClose={() => setOrderToConfirm(null)}
+        onConfirm={confirmReceivedAction}
+        title="Konfirmasi Pesanan"
+        message={`Konfirmasi bahwa pesanan ${orderToConfirm?.id} sudah diterima?`}
+      />
     </div>
   );
 }

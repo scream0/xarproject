@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import styles from "./WishlistSection.module.css";
 import wishlistConfig from "@/data/ui/wishlistConfig.json";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
+import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
 
 function readWishlist() {
   if (typeof window === "undefined") {
@@ -25,6 +26,7 @@ export default function WishlistSection() {
   const { products, addToCart } = useStore();
   const [wishlist, setWishlist] = useState(readWishlist);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const syncWishlist = () => {
     setWishlist(readWishlist());
@@ -124,8 +126,8 @@ export default function WishlistSection() {
     toast.success(wishlistConfig.toasts.removeSuccess || "Produk dihapus dari wishlist");
   };
 
-  const handleClearAll = () => {
-    if (!window.confirm("Apakah Anda yakin ingin mengosongkan seluruh wishlist?")) return;
+  const confirmClearAll = () => {
+    setShowClearConfirm(false);
     setWishlist([]);
     window.dispatchEvent(
       new CustomEvent("wishlist-updated", {
@@ -133,6 +135,10 @@ export default function WishlistSection() {
       }),
     );
     toast.success("Wishlist berhasil dikosongkan");
+  };
+
+  const handleClearAll = () => {
+    setShowClearConfirm(true);
   };
 
   const handleAddToCart = (product, e) => {
@@ -293,6 +299,14 @@ export default function WishlistSection() {
           })}
         </div>
       )}
+      
+      <ConfirmationModal
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={confirmClearAll}
+        title="Kosongkan Wishlist"
+        message="Apakah Anda yakin ingin mengosongkan seluruh wishlist?"
+      />
     </div>
   );
 }

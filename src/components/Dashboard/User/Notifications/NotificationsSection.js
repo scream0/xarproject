@@ -6,6 +6,7 @@ import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import styles from "./NotificationsSection.module.css";
 import notificationsConfig from "@/data/ui/notificationsConfig.json";
 import { NotificationsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
+import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
 
 // Format waktu menjadi "Baru saja", "5 menit lalu", dst.
 function timeAgo(dateString) {
@@ -37,6 +38,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [submittingMarkAllRead, setSubmittingMarkAllRead] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [notificationToDelete, setNotificationToDelete] = useState(null);
   const [currentSession, setCurrentSession] = useState(null);
   const lastUserIdRef = useRef(null);
 
@@ -157,10 +159,15 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     }
   };
 
-  const deleteNotification = async (notification) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus notifikasi ini?")) {
-      return;
-    }
+  const deleteNotification = (notification) => {
+    setNotificationToDelete(notification);
+  };
+
+  const confirmDeleteNotification = async () => {
+    if (!notificationToDelete) return;
+    const notification = notificationToDelete;
+    setNotificationToDelete(null);
+
     try {
       setDeletingId(notification.id);
       const { data: { session } } = await supabase.auth.getSession();
@@ -330,6 +337,14 @@ export default function NotificationsSection({ onUnreadCountChange }) {
           })
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={!!notificationToDelete}
+        onClose={() => setNotificationToDelete(null)}
+        onConfirm={confirmDeleteNotification}
+        title="Hapus Notifikasi"
+        message="Apakah Anda yakin ingin menghapus notifikasi ini?"
+      />
     </div>
   );
 }

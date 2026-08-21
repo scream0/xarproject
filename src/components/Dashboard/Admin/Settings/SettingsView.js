@@ -10,7 +10,7 @@ import {
   getAdminSettings,
   saveSettings,
 } from "@/services/settingsService";
-import UserManagement from "../Operations/UserManagement";
+import UserManagement from "../Promotions/UserManagement";
 
 const EMPTY = {
   store: {
@@ -522,7 +522,17 @@ export default function SettingsView() {
 
   return (
     <div className={styles.settingsContainer}>
-      <h3 className={styles.settingsTitle}>{cfg.title}</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 className={styles.settingsTitle} style={{ margin: 0 }}>{cfg.title}</h3>
+        <button
+          type="button"
+          onClick={() => setIsLogoutDialogOpen(true)}
+          className={styles.logoutActionBtn}
+          style={{ marginBottom: '1.5rem', padding: '8px 16px', fontSize: '0.9rem' }}
+        >
+          Keluar (Logout)
+        </button>
+      </div>
 
       {/* Tab navigasi */}
       <div className={styles.tabNav}>
@@ -610,15 +620,8 @@ export default function SettingsView() {
             <div style={{ marginBottom: "2rem" }}>
               <h4 className={styles.sectionTitle}>Manajemen Akun</h4>
               <p className={styles.helpText}>
-                Anda dapat mengelola sesi admin atau keluar dari panel dashboard ini.
+                Anda dapat mengelola pengguna admin di bagian bawah.
               </p>
-              <button
-                type="button"
-                onClick={() => setIsLogoutDialogOpen(true)}
-                className={styles.logoutActionBtn}
-              >
-                Keluar (Logout)
-              </button>
             </div>
             
             <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "2rem" }}>

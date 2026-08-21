@@ -66,6 +66,45 @@ export async function POST(request, context) {
 
     if (updateErr) throw updateErr;
 
+    // --- Mengembalikan Stok ---
+    try {
+      const { data: orderItems } = await supabaseAdmin
+        .from("order_items")
+        .select("*")
+        .eq("order_id", orderId);
+
+      if (orderItems && orderItems.length > 0) {
+        for (const item of orderItems) {
+          const quantity = Number(item.quantity) || 1;
+          const { data: product } = await supabaseAdmin
+            .from("products")
+            .select("id, name, variants")
+            .eq("id", item.product_id)
+            .single();
+
+          if (product && Array.isArray(product.variants)) {
+            const variantIndex = product.variants.findIndex(
+              (v) => String(v.size || "").toLowerCase() === String(item.variant_name || "").toLowerCase()
+            );
+
+            if (variantIndex > -1) {
+              const currentStock = Number(product.variants[variantIndex].stock ?? product.variants[variantIndex].stok ?? 0);
+              product.variants[variantIndex].stock = currentStock + quantity;
+              
+              await supabaseAdmin
+                .from("products")
+                .update({ variants: product.variants })
+                .eq("id", product.id);
+            }
+          }
+        }
+      }
+    } catch (stockErr) {
+      console.error("Failed to restore stock on cancel:", stockErr);
+      // Tetap lanjutkan meskipun gagal restore stock agar pesanan tetap batal
+    }
+    // --------------------------
+
     return NextResponse.json({ success: true, order: updatedOrder });
   } catch (error) {
     console.error("Failed to cancel order:", error);
@@ -75,4 +114,3 @@ export async function POST(request, context) {
     );
   }
 }
-

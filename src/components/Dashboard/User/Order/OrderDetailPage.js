@@ -297,47 +297,117 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
     setTimeout(() => setCopiedResi(false), 2000);
   };
 
-  const handleDownloadInvoice = () => {
+  const handleDownloadInvoice = async () => {
     if (!order) return;
 
-    const invoiceContent = `=====================================================
-               INVOICE TRANSAKSI XAR
-=====================================================
-ID Transaksi     : ${order.id}
-Nomor Pesanan    : ${order.order_number || order.id}
-Tanggal Pesanan  : ${new Date(order.created_at || order.createdAt || Date.now()).toLocaleString("id-ID")}
-Status Transaksi : ${getStatusInfo(order.status).label}
-Metode Bayar     : ${order.payment_type || "Online Payment"}
------------------------------------------------------
-RINCIAN PRODUK:
-${items.map((item, i) => `${i + 1}. ${item.name || item.product_name || "Produk XAR"} (${item.size || item.variant_name || "Standard"})
-   Qty: ${item.quantity || 1} x Rp ${Number(item.price || 0).toLocaleString("id-ID")} = Rp ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString("id-ID")}`).join("\n")}
------------------------------------------------------
-RINCIAN BIAYA:
-Subtotal Produk  : Rp ${subtotalAmount.toLocaleString("id-ID")}
-Ongkos Kirim     : Rp ${shippingCost.toLocaleString("id-ID")}
-Diskon Voucher   : - Rp ${discountAmount.toLocaleString("id-ID")}
------------------------------------------------------
-TOTAL DIBAYAR    : Rp ${totalAmount.toLocaleString("id-ID")}
------------------------------------------------------
-INFORMASI PENGIRIMAN:
-Penerima         : ${order.customer_name || "Pelanggan XAR"} (${order.customer_phone || "-"})
-Kurir & Layanan  : ${shipping?.courier_name || "-"} - ${shipping?.service_type || "-"}
-Nomor Resi       : ${shipping?.tracking_number || "Belum tersedia"}
-Alamat Tujuan    : ${shippingAddressText}
-=====================================================
-Terima kasih telah berbelanja di XAR Perfumery.`;
+    try {
+      const toastId = toast.loading("Menyiapkan Invoice PDF...");
+      // Dynamically import html2pdf to prevent SSR issues
+      const html2pdf = (await import("html2pdf.js")).default;
+      
+      const invoiceElement = document.createElement("div");
+      invoiceElement.innerHTML = `
+        <div style="padding: 40px; font-family: 'Inter', sans-serif; color: #111;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eaeaea; padding-bottom: 20px; margin-bottom: 20px;">
+            <div>
+              <h1 style="margin: 0; font-size: 24px; color: #000; letter-spacing: 2px;">XAR PERFUMERY</h1>
+              <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">INVOICE TRANSAKSI</p>
+            </div>
+            <div style="text-align: right;">
+              <p style="margin: 0; font-weight: bold; color: #333;">Order ID: ${order.order_number || order.id}</p>
+              <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Tanggal: ${new Date(order.created_at || order.createdAt || Date.now()).toLocaleDateString("id-ID")}</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+            <div>
+              <p style="margin: 0; font-weight: bold; font-size: 14px; color: #888; text-transform: uppercase;">Ditagihkan Kepada</p>
+              <p style="margin: 5px 0 0 0; font-weight: 600;">${order.customer_name || "Pelanggan XAR"}</p>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #444;">${order.customer_phone || "-"}</p>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #444; max-width: 250px; line-height: 1.4;">${shippingAddressText}</p>
+            </div>
+            <div style="text-align: right;">
+              <p style="margin: 0; font-weight: bold; font-size: 14px; color: #888; text-transform: uppercase;">Informasi Pengiriman</p>
+              <p style="margin: 5px 0 0 0; font-weight: 600;">${shipping?.courier_name || "-"} - ${shipping?.service_type || "-"}</p>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #444;">Resi: ${shipping?.tracking_number || "Belum tersedia"}</p>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #444;">Status: ${getStatusInfo(order.status).label}</p>
+            </div>
+          </div>
 
-    const blob = new Blob([invoiceContent], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Invoice-${order.order_number || resolvedOrderId}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success("Invoice transaksi berhasil diunduh.");
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+              <tr style="background-color: #f9f9f9; border-bottom: 1px solid #ddd;">
+                <th style="padding: 12px; text-align: left; font-size: 13px; color: #666; text-transform: uppercase;">Produk</th>
+                <th style="padding: 12px; text-align: center; font-size: 13px; color: #666; text-transform: uppercase;">Qty</th>
+                <th style="padding: 12px; text-align: right; font-size: 13px; color: #666; text-transform: uppercase;">Harga Satuan</th>
+                <th style="padding: 12px; text-align: right; font-size: 13px; color: #666; text-transform: uppercase;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item) => `
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 12px;">
+                    <p style="margin: 0; font-weight: 600; font-size: 14px;">${item.name || item.product_name || "Produk XAR"}</p>
+                    <p style="margin: 3px 0 0 0; font-size: 12px; color: #888;">Varian: ${item.size || item.variant_name || "Standard"}</p>
+                  </td>
+                  <td style="padding: 12px; text-align: center; font-size: 14px;">${item.quantity || 1}</td>
+                  <td style="padding: 12px; text-align: right; font-size: 14px;">Rp ${Number(item.price || 0).toLocaleString("id-ID")}</td>
+                  <td style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600;">Rp ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString("id-ID")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+          <div style="display: flex; justify-content: flex-end;">
+            <div style="width: 300px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
+                <span style="color: #666;">Subtotal Produk:</span>
+                <span>Rp ${subtotalAmount.toLocaleString("id-ID")}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
+                <span style="color: #666;">Ongkos Kirim:</span>
+                <span>Rp ${shippingCost.toLocaleString("id-ID")}</span>
+              </div>
+              ${discountAmount > 0 ? `
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #dc2626;">
+                <span>Diskon Voucher:</span>
+                <span>- Rp ${discountAmount.toLocaleString("id-ID")}</span>
+              </div>
+              ` : ""}
+              <div style="display: flex; justify-content: space-between; padding-top: 15px; margin-top: 10px; border-top: 2px solid #eee; font-weight: bold; font-size: 18px;">
+                <span>Total Pembayaran:</span>
+                <span>Rp ${totalAmount.toLocaleString("id-ID")}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #888; font-size: 12px;">
+            <p style="margin: 0;">Terima kasih telah berbelanja di XAR Perfumery.</p>
+            <p style="margin: 5px 0 0 0;">Jika ada pertanyaan mengenai pesanan Anda, silakan hubungi customer service kami.</p>
+          </div>
+        </div>
+      `;
+
+      const opt = {
+        margin:       [0.5, 0.5, 0.5, 0.5],
+        filename:     `Invoice-XAR-${order.order_number || resolvedOrderId}.pdf`,
+        image:        { type: "jpeg", quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: "in", format: "a4", orientation: "portrait" }
+      };
+      
+      html2pdf().from(invoiceElement).set(opt).save().then(() => {
+        toast.dismiss(toastId);
+        toast.success("Invoice PDF berhasil diunduh.");
+      }).catch((err) => {
+        console.error(err);
+        toast.dismiss(toastId);
+        toast.error("Terjadi kesalahan saat membuat PDF.");
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal memuat modul PDF.");
+    }
   };
 
   const handleTrackOrder = () => {

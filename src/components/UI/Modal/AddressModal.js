@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import { ProvinceCitySelect } from "@/components/UI/ProvinceCitySelect/ProvinceCitySelect";
+import toast from "react-hot-toast";
 import styles from "./AddressModal.module.css";
 import config from "@/data/ui/addressModalConfig.json";
 
@@ -50,7 +51,7 @@ export function AddressModal() {
       !formData.province ||
       !formData.city
     ) {
-      return alert(config.validationAlert);
+      return toast.error(config.validationAlert);
     }
     saveAddressAndPay(formData);
   };

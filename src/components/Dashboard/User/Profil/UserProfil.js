@@ -9,16 +9,17 @@ import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import { OrdersSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import MyVouchers from "@/components/Dashboard/User/Vouchers/MyVouchers";
 
-// Import komponen modular baru
 import ProfileHeader from "./ProfileHeader";
 import AddressManagerModal from "./AddressManagerModal";
 import { EditProfileModal, AddressFormModal, PasswordModal } from "./ProfileModals";
 import { shouldSkipAuthEvent } from "@/utils/authHelpers";
+import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
 
 const OrdersSection = lazy(() => import("@/components/Dashboard/User/Order/OrdersSection"));
 const WishlistSection = lazy(() => import("@/components/Dashboard/User/Wishlist/WishlistSection"));
 const SupportCenter = lazy(() => import("@/components/Dashboard/User/Support/SupportCenter"));
 const UserSettings = lazy(() => import("@/components/Dashboard/User/Settings/UserSettings"));
+const WalletSection = lazy(() => import("@/components/Dashboard/User/Wallet/WalletSection"));
 
 export default function ProfileSection() {
   const [loading, setLoading] = useState(false);
@@ -43,6 +44,9 @@ export default function ProfileSection() {
     memberTier: "VIP Collector",
     newsletterSubscribed: true,
     user_vouchers: [], 
+    bankName: "",
+    bankAccountNumber: "",
+    bankAccountName: "",
   });
 
   const [availableVouchers, setAvailableVouchers] = useState([]);
@@ -61,6 +65,9 @@ export default function ProfileSection() {
 
   const [currentSession, setCurrentSession] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+
+  const [isAvatarDeleteConfirmOpen, setIsAvatarDeleteConfirmOpen] = useState(false);
+  const [addressToDeleteId, setAddressToDeleteId] = useState(null);
 
   const extractPublicIdFromUrl = (url) => {
     if (!url || !url.includes("cloudinary.com")) return "";
@@ -106,7 +113,7 @@ export default function ProfileSection() {
 
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !currentSession) {
-      setProfile({ username: "", fullName: "", gender: "", birthDate: "", phone: "", email: "", photoURL: "", photoPublicId: "", memberTier: "VIP Collector", newsletterSubscribed: true, user_vouchers: [] });
+      setProfile({ username: "", fullName: "", gender: "", birthDate: "", phone: "", email: "", photoURL: "", photoPublicId: "", memberTier: "VIP Collector", newsletterSubscribed: true, user_vouchers: [], bankName: "", bankAccountNumber: "", bankAccountName: "" });
       setAvailableVouchers([]);
       setAddresses([]);
       return;
@@ -155,6 +162,9 @@ export default function ProfileSection() {
           memberTier: data.member_tier || "VIP Collector",
           newsletterSubscribed: data.newsletter_subscribed ?? true,
           user_vouchers: formattedVouchers, 
+          bankName: data.bank_name || "",
+          bankAccountNumber: data.bank_account_number || "",
+          bankAccountName: data.bank_account_name || "",
         });
         setAddresses(data.addresses || []);
       } else {
@@ -170,6 +180,9 @@ export default function ProfileSection() {
           gender: "",
           birthDate: "",
           user_vouchers: [], 
+          bankName: "",
+          bankAccountNumber: "",
+          bankAccountName: "",
         });
         setAddresses([]);
       }
@@ -225,8 +238,14 @@ export default function ProfileSection() {
     }
   };
 
-  const handleRemoveAvatar = async () => {
-    if (!currentUser || !currentSession || !tempProfile.photoURL || !window.confirm(profileConfig.prompts.removeAvatarConfirm)) return;
+  const handleRemoveAvatar = () => {
+    if (!currentUser || !currentSession || !tempProfile.photoURL) return;
+    setIsAvatarDeleteConfirmOpen(true);
+  };
+
+  const confirmRemoveAvatar = async () => {
+    if (!currentUser || !currentSession || !tempProfile.photoURL) return;
+    setIsAvatarDeleteConfirmOpen(false);
 
     const toastId = toast.loading(profileConfig.toasts.removeAvatarLoading);
     setRemovingImage(true);
@@ -270,6 +289,9 @@ export default function ProfileSection() {
         photo_url: tempProfile.photoURL,
         photo_public_id: tempProfile.photoPublicId,
         newsletter_subscribed: tempProfile.newsletterSubscribed,
+        bank_name: tempProfile.bankName,
+        bank_account_number: tempProfile.bankAccountNumber,
+        bank_account_name: tempProfile.bankAccountName,
       };
 
       const res = await fetch("/api/profile", {
@@ -420,8 +442,14 @@ export default function ProfileSection() {
     }
   };
 
-  const handleDeleteAddress = async (id) => {
-    if (!window.confirm(profileConfig.prompts.deleteAddressConfirm)) return;
+  const handleDeleteAddress = (id) => {
+    setAddressToDeleteId(id);
+  };
+
+  const confirmDeleteAddress = async () => {
+    if (!addressToDeleteId) return;
+    const id = addressToDeleteId;
+    setAddressToDeleteId(null);
     const toastId = toast.loading(profileConfig.toasts.deleteAddressLoading);
     try {
       let updatedAddresses = addresses.filter((addr) => addr.id !== id);
@@ -482,6 +510,17 @@ export default function ProfileSection() {
             </div>
             <SupportCenter onClose={() => setActiveTab("profile")} />
           </div>
+        ) : activeTab === "wallet" ? (
+          <div className={styles.tabContainer}>
+            <div className={styles.tabHeaderCard}>
+              <button onClick={() => setActiveTab("profile")} className={styles.backToProfileBtn}>
+                <AppIcon name="arrow-left" size={16} />
+                <span>Kembali ke Profil</span>
+              </button>
+              <h3 className={styles.tabTitle}>Dompet & Penarikan Dana</h3>
+            </div>
+            <WalletSection profile={profile} />
+          </div>
         ) : (
           <>
             {/* Wrapper Header Profil yang menyatukan Tombol Navbar di Pojok Kanan Atas */}
@@ -502,6 +541,14 @@ export default function ProfileSection() {
                   style={activeTab === "wishlist" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
                 >
                   <AppIcon name="heart" className={styles.svgIcon} />
+                </button>
+                <button 
+                  className={styles.chatIconBtnNavbar} 
+                  onClick={() => setActiveTab("wallet")} 
+                  title="Dompet & Penarikan Dana" 
+                  style={activeTab === "wallet" ? { color: "var(--primary-accent)", borderColor: "var(--primary-accent)" } : {}}
+                >
+                  <AppIcon name="wallet" className={styles.svgIcon} />
                 </button>
                 <button 
                   className={styles.cartIconBtnNavbar} 
@@ -582,6 +629,22 @@ export default function ProfileSection() {
         handlePasswordChange={handlePasswordChange}
         profileConfig={profileConfig}
         isPasswordChanging={isPasswordChanging}
+      />
+      
+      <ConfirmationModal
+        isOpen={isAvatarDeleteConfirmOpen}
+        onClose={() => setIsAvatarDeleteConfirmOpen(false)}
+        onConfirm={confirmRemoveAvatar}
+        title="Hapus Avatar"
+        message={profileConfig.prompts.removeAvatarConfirm}
+      />
+      
+      <ConfirmationModal
+        isOpen={!!addressToDeleteId}
+        onClose={() => setAddressToDeleteId(null)}
+        onConfirm={confirmDeleteAddress}
+        title="Hapus Alamat"
+        message={profileConfig.prompts.deleteAddressConfirm}
       />
     </div>
   );

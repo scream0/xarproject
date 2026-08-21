@@ -59,7 +59,11 @@ export async function GET(request) {
 
     // Apply filtering by status
     if (status) {
-      query = query.eq("status", status);
+      if (status.includes(",")) {
+        query = query.in("status", status.split(",").map(s => s.trim()));
+      } else {
+        query = query.eq("status", status);
+      }
     }
 
     // Apply search filter across multiple relevant fields

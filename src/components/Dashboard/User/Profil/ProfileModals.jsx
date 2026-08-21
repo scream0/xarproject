@@ -77,6 +77,23 @@ export function EditProfileModal({
             <input type="checkbox" id="newsletter" checked={tempProfile.newsletterSubscribed ?? true} onChange={(e) => setTempProfile({ ...tempProfile, newsletterSubscribed: e.target.checked })} />
             <label htmlFor="newsletter">{profileConfig.modals.editProfile.newsletterLabel}</label>
           </div>
+
+          <div style={{ marginTop: '20px', marginBottom: '10px', borderTop: '1px solid #eaeaea', paddingTop: '15px' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '15px' }}>Informasi Rekening Bank (Untuk Penarikan Dana)</h4>
+            <div className={styles.formGroup}>
+              <label className={styles.inputLabel}>Nama Bank</label>
+              <input type="text" value={tempProfile.bankName || ""} onChange={(e) => setTempProfile({ ...tempProfile, bankName: e.target.value })} className={styles.formInput} placeholder="Contoh: BCA, Mandiri, BRI" />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.inputLabel}>Nomor Rekening</label>
+              <input type="text" value={tempProfile.bankAccountNumber || ""} onChange={(e) => setTempProfile({ ...tempProfile, bankAccountNumber: e.target.value })} className={styles.formInput} placeholder="Masukkan nomor rekening valid" />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.inputLabel}>Nama Pemilik Rekening</label>
+              <input type="text" value={tempProfile.bankAccountName || ""} onChange={(e) => setTempProfile({ ...tempProfile, bankAccountName: e.target.value })} className={styles.formInput} placeholder="Sesuai buku tabungan" />
+            </div>
+          </div>
+          
           <div className={styles.modalFooter}>
             <button type="button" onClick={onClose} className={styles.actionBtnOutline}>{profileConfig.modals.editProfile.cancel}</button>
             <button type="submit" disabled={loading || uploadingImage || removingImage} className={styles.actionBtnPrimary}>

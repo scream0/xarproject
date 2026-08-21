@@ -34,6 +34,10 @@
       "label": "Chat"
     },
     {
+      "id": "vouchers",
+      "label": "Promo & Voucher"
+    },
+    {
       "id": "settings",
       "label": "Pengaturan"
     }

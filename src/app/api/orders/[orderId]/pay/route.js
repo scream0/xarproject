@@ -27,6 +27,11 @@ export async function POST(request, context) {
       return NextResponse.json({ error: "Pesanan tidak ditemukan di database." }, { status: 404 });
     }
 
+    const { data: orderItems } = await supabase
+      .from("order_items")
+      .select("*")
+      .eq("order_id", orderId);
+
     // Jika sudah ada snap_token yang valid, bisa langsung dikembalikan
     if (order.snap_token) {
       return NextResponse.json({ snap_token: order.snap_token }, { status: 200 });
@@ -56,14 +61,57 @@ export async function POST(request, context) {
 
     const grossAmount = Number(order.amount || order.total_amount || 0);
 
+    const formattedItems = (orderItems || []).map((item) => ({
+      id: String(item.product_id || item.id).substring(0, 50),
+      price: Math.round(Number(item.price) || 0),
+      quantity: Math.max(1, Number(item.quantity) || 1),
+      name: `${item.product_name} (${item.variant_name || "Standard"})`.substring(0, 50),
+    }));
+
+    const shippingCost = Number(order.shipping_cost || 0);
+    const discountAmount = Number(order.discount_amount || 0);
+
+    if (discountAmount > 0) {
+      formattedItems.push({
+        id: "VOUCHER-DISCOUNT",
+        price: -Math.round(discountAmount),
+        quantity: 1,
+        name: "Diskon Voucher Toko",
+      });
+    }
+
+    if (shippingCost > 0) {
+      formattedItems.push({
+        id: "SHIPPING-COST",
+        price: Math.round(shippingCost),
+        quantity: 1,
+        name: "Ongkos Kirim",
+      });
+    }
+
+    let finalGrossAmount = formattedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    if (finalGrossAmount < 1000) {
+      const adjustment = 1000 - finalGrossAmount;
+      formattedItems.push({
+        id: "MIN-TX-ADJUSTMENT",
+        price: adjustment,
+        quantity: 1,
+        name: "Penyesuaian Minimum Transaksi",
+      });
+      finalGrossAmount = 1000;
+    }
+
     const payload = {
       transaction_details: {
         order_id: order.id,
-        gross_amount: grossAmount,
+        gross_amount: finalGrossAmount,
       },
+      item_details: formattedItems,
       customer_details: {
         first_name: order.customer_name || "Pelanggan XAR",
         email: order.customer_email || "customer@xar.com",
+        phone: order.customer_phone || "08123456789",
       },
       callbacks: {
         finish: `${baseUrl}/account/orders/${order.id}?order_id=${order.id}`,

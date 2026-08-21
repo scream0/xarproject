@@ -24,6 +24,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "framer-motion": "^12.42.2",
+    "html2pdf.js": "^0.14.0",
     "lru-cache": "^11.5.2",
     "lucide-react": "^1.28.0",
     "midtrans-client": "^1.4.3",

@@ -37,9 +37,9 @@ import OverviewStats from "@/components/Dashboard/Admin/Overview/OverviewStats";
 import ProductManager from "@/components/Dashboard/Admin/Products/ProductManager";
 import ReviewManager from "@/components/Dashboard/Admin/Reviews/ReviewManager";
 import SettingsView from "@/components/Dashboard/Admin/Settings/SettingsView";
-import OperationsCenter from "@/components/Dashboard/Admin/Operations/OperationsCenter";
+import PromoManagement from "@/components/Dashboard/Admin/Promotions/PromoManagement";
 import NotificationCenter from "@/components/Dashboard/Admin/Notifications/NotificationCenter";
-import UserManagement from "@/components/Dashboard/Admin/Operations/UserManagement";
+import UserManagement from "@/components/Dashboard/Admin/Promotions/UserManagement";
 import OrdersManagement from "@/components/Dashboard/Admin/Orders/OrdersManagement";
 import AdminChatView from "@/components/Dashboard/Admin/Chat/AdminChatView";
 import { AdminDashboardSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
@@ -55,7 +55,7 @@ const NAV_ICONS = {
   analytics: TrendingUp,
   notifications: Bell,
   customers: Users,
-  operations: Activity,
+  vouchers: Activity,
   orders: ShoppingCart,
   settings: Settings,
   chat: MessageSquare,
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
     analytics: "Wawasan kinerja",
     notifications: "Peringatan & sistem",
     settings: "Kontrol toko",
-    operations: "Pelanggan & promo",
+    vouchers: "Diskon & voucher",
     orders: "Manajemen pesanan",
   };
 
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
-        const res = await fetch("/api/admin/orders?status=pending&page=1&limit=1", {
+        const res = await fetch("/api/admin/orders?status=pending,paid,processing&page=1&limit=1", {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         const data = await res.json();
@@ -324,14 +324,11 @@ export default function AdminDashboard() {
             </div>
           </section>
         );
-      case "operations":
+      case "vouchers":
         return (
           <section className={styles.workspaceArea}>
             <div className={styles.workspaceInner}>
-              <OperationsCenter />
-              <div style={{ marginTop: "1.5rem" }}>
-                <UserManagement />
-              </div>
+              <PromoManagement />
             </div>
           </section>
         );
@@ -505,7 +502,14 @@ export default function AdminDashboard() {
                   >
                     <IconComponent className={styles.navIcon} />
                     <div className={styles.navItemContent}>
-                      <span className={styles.navItemText}>{item.label}</span>
+                      <span className={styles.navItemText}>
+                        {item.label}
+                        {item.id === "orders" && storeStatus.newOrders > 0 && (
+                          <span className={styles.navBadge}>
+                            {storeStatus.newOrders > 99 ? "99+" : storeStatus.newOrders}
+                          </span>
+                        )}
+                      </span>
                       <span className={styles.navItemMeta}>
                         {navMeta[item.id]}
                       </span>
