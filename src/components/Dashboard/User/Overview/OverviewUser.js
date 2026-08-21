@@ -350,7 +350,7 @@ export default function OverviewUser({ setActiveTab }) {
                           if (orderId) {
                             router.push(`/account/orders/${orderId}`);
                           } else {
-                            router.push("/account/orders");
+                            router.push("/dashboard");
                           }
                         }}
                         className={styles.detailsLink}

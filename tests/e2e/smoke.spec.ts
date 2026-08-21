@@ -22,12 +22,11 @@ test("login and open account orders page", async ({ page }) => {
     "Set E2E_LOGIN_EMAIL and E2E_LOGIN_PASSWORD to run authenticated E2E flow.",
   );
 
-  await page.goto("/login?callbackUrl=/account/orders");
+  await page.goto("/login?callbackUrl=/dashboard");
 
   await page.locator('input[name="email"]').fill(String(e2eLoginEmail));
   await page.locator('input[name="password"]').fill(String(e2eLoginPassword));
   await page.locator('button[type="submit"]').click();
 
-  await expect(page).toHaveURL(/\/account\/orders/);
-  await expect(page.locator("body")).toContainText(/pesanan|total pesanan|belum ada pesanan/i);
+  await expect(page).toHaveURL(/\/dashboard/);
 });

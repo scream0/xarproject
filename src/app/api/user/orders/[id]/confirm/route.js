@@ -48,7 +48,7 @@ export async function POST(request, context) {
     }
 
     const historyEntry = {
-      status: "completed",
+      status: "delivered",
       notes: "Pembeli mengonfirmasi pesanan diterima",
       actor: "customer",
       timestamp: new Date().toISOString(),
@@ -57,7 +57,7 @@ export async function POST(request, context) {
     const { data: updatedOrder, error: updateErr } = await supabaseAdmin
       .from("orders")
       .update({
-        status: "completed",
+        status: "delivered",
         status_history: [...(orderData.status_history || []), historyEntry],
         updated_at: new Date().toISOString(),
       })

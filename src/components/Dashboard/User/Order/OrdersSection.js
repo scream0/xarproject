@@ -611,7 +611,7 @@ export default function OrdersSection() {
       toast.success("Pesanan berhasil dikonfirmasi diterima.", { id: toastId });
       
       setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, status: "completed" } : o))
+        prev.map((o) => (o.id === order.id ? { ...o, status: "delivered" } : o))
       );
     } catch (err) {
       console.error("Confirm Order Error:", err);

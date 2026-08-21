@@ -14,6 +14,9 @@ const ALLOWED_ORDER_STATUSES = new Set([
   "shipped",
   "delivered",
   "completed", // alias lama untuk "delivered", dipertahankan untuk kompatibilitas data lama
+  "return_requested",
+  "returning",
+  "returned",
   "cancelled",
   "settlement", // alias status Midtrans untuk "paid"
   "success", // alias status Midtrans untuk "paid"

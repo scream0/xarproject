@@ -69,6 +69,7 @@ export async function POST(request, context) {
     await supabaseAdmin
       .from("orders")
       .update({
+        status: "return_requested",
         status_history: [...existingHistory, historyEntry],
         updated_at: new Date().toISOString(),
       })

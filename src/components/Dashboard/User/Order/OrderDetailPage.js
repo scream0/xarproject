@@ -439,7 +439,7 @@ Terima kasih telah berbelanja di XAR Perfumery.`;
 
   const handleBackToOrders = () => {
     if (pathname?.startsWith("/account/orders")) {
-      router.push("/account/orders");
+      router.push("/dashboard");
     } else {
       router.push("/dashboard?tab=orders");
     }

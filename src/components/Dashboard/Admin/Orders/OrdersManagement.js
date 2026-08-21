@@ -230,6 +230,9 @@ export default function OrdersManagement() {
             <option value="processing">Diproses</option>
             <option value="shipped">Dikirim</option>
             <option value="delivered">Selesai</option>
+            <option value="return_requested">Pengajuan Return</option>
+            <option value="returning">Return Dikirim</option>
+            <option value="returned">Return Selesai</option>
             <option value="cancelled">Dibatalkan</option>
           </select>
           <button className={styles.refreshButton} onClick={() => loadOrders(page, statusFilter, searchTerm)}>
@@ -252,6 +255,9 @@ export default function OrdersManagement() {
           <option value="processing">Diproses</option>
           <option value="shipped">Dikirim</option>
           <option value="delivered">Selesai</option>
+          <option value="return_requested">Pengajuan Return</option>
+          <option value="returning">Return Dikirim</option>
+          <option value="returned">Return Selesai</option>
           <option value="cancelled">Dibatalkan</option>
         </select>
         <button className={styles.refreshButton} onClick={applyBulkStatus} disabled={!selectedOrders.length || bulkUpdating}>
@@ -314,6 +320,9 @@ export default function OrdersManagement() {
                         <option value="processing">Diproses</option>
                         <option value="shipped">Dikirim</option>
                         <option value="delivered">Selesai</option>
+                        <option value="return_requested">Pengajuan Return</option>
+                        <option value="returning">Return Dikirim</option>
+                        <option value="returned">Return Selesai</option>
                         <option value="cancelled">Dibatalkan</option>
                       </select>
                     </td>
