@@ -40,12 +40,12 @@ export async function GET(request) {
 
     let query = supabaseAdmin.from("notifications").select("*");
 
-    // Admin scope: can see system/admin notifications.
+    // Admin scope: can see system/admin notifications, all broadcasts, and their own notifications
     if (user.admin && scope !== "mine") {
-      query = query.in("audience", ["all", "admin"]);
+      query = query.or(`audience.eq.admin,user_id.is.null,user_id.eq.${user.uid}`);
     } else {
-      // Default scope: user's own notifications + system-wide 'all' notifications.
-      query = query.or(`user_id.eq.${user.uid},audience.eq.all`);
+      // Default scope: user's own notifications + system-wide broadcasts ('all' and 'user')
+      query = query.or(`user_id.eq.${user.uid},and(user_id.is.null,audience.eq.all),and(user_id.is.null,audience.eq.user)`);
     }
 
     // Apply sorting and limit directly in the query for efficiency.
@@ -73,12 +73,11 @@ export async function POST(request) {
       return NextResponse.json({ error: "title and message are required" }, { status: 400 });
     }
 
-    // Non-admins can only create notifications for themselves.
-    const targetUserId = actor.admin && userId ? userId : actor.uid;
+    const targetUserId = actor.admin && userId ? userId : (actor.admin ? null : actor.uid);
     const targetAudience = actor.admin ? audience || "user" : "user";
 
     const payload = {
-      user_id: targetAudience === "user" ? targetUserId : null,
+      user_id: targetUserId,
       audience: targetAudience,
       title,
       message,
@@ -116,9 +115,9 @@ export async function PUT(request) {
         .eq("is_read", false);
 
       if (user.admin) {
-        query = query.in("audience", ["all", "admin"]);
+        query = query.is("user_id", null);
       } else {
-        query = query.or(`user_id.eq.${user.uid},audience.eq.all`);
+        query = query.eq("user_id", user.uid);
       }
 
       const { count, error } = await query;
@@ -139,8 +138,8 @@ export async function PUT(request) {
       .single();
 
     if (fetchError) return NextResponse.json({ error: "Notification not found." }, { status: 404 });
-    if (!user.admin && notification.audience !== 'all' && notification.user_id !== user.uid) {
-      return NextResponse.json({ error: "You can only update your own notifications." }, { status: 403 });
+    if (!user.admin && notification.user_id !== user.uid) {
+      return NextResponse.json({ error: "You can only update your own private notifications." }, { status: 403 });
     }
     
     const readStatus = isRead !== undefined ? isRead : true;
@@ -188,8 +187,8 @@ export async function DELETE(request) {
     if (fetchError) return NextResponse.json({ error: "Notification not found." }, { status: 404 });
 
     // Ownership check for non-admins
-    if (!user.admin && notification.audience !== 'all' && notification.user_id !== user.uid) {
-      return NextResponse.json({ error: "You can only delete your own notifications." }, { status: 403 });
+    if (!user.admin && notification.user_id !== user.uid) {
+      return NextResponse.json({ error: "You can only delete your own private notifications." }, { status: 403 });
     }
 
     const { error: deleteError } = await supabaseAdmin

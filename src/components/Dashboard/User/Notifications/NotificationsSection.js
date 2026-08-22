@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { shouldSkipAuthEvent } from "@/utils/authHelpers";
@@ -7,6 +8,7 @@ import styles from "./NotificationsSection.module.css";
 import notificationsConfig from "@/data/ui/notificationsConfig.json";
 import { NotificationsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
+import { Package, CreditCard, Gift, Bell } from "lucide-react";
 
 // Format waktu menjadi "Baru saja", "5 menit lalu", dst.
 function timeAgo(dateString) {
@@ -24,14 +26,17 @@ function timeAgo(dateString) {
   return `${days} ${notificationsConfig.timeAgo.daysAgo}`;
 }
 
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
 const TYPE_ICON = {
-  order: "package",
-  payment: "shopping-cart",
-  promo: "gift",
-  system: "bell",
+  order: <Package size={18} />,
+  payment: <CreditCard size={18} />,
+  promo: <Gift size={18} />,
+  system: <Bell size={18} />,
 };
 
 export default function NotificationsSection({ onUnreadCountChange }) {
+  const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -52,7 +57,14 @@ export default function NotificationsSection({ onUnreadCountChange }) {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal memuat notifikasi.");
-      setNotifications(result.notifications || []);
+      
+      // Map dari struktur database ke frontend (camelCase)
+      const mappedNotifications = (result.notifications || []).map(n => ({
+        ...n,
+        createdAt: n.created_at,
+        isRead: n.is_read,
+      }));
+      setNotifications(mappedNotifications);
     } catch (err) {
       console.error("Gagal memuat notifikasi:", err);
       toast.error(notificationsConfig.toasts.fetchError);
@@ -63,7 +75,6 @@ export default function NotificationsSection({ onUnreadCountChange }) {
 
   useEffect(() => {
     let subscription = null;
-    let realtimeChannel = null;
 
     const initAuth = async () => {
       if (!supabase?.auth) {
@@ -95,38 +106,39 @@ export default function NotificationsSection({ onUnreadCountChange }) {
         }
       });
       subscription = authListener?.subscription;
-
-      // Real-time subscription for user notifications
-      realtimeChannel = supabase
-        .channel("user_notifications_changes")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "notifications" },
-          (payload) => {
-            const userId = lastUserIdRef.current;
-            // Muat ulang jika ditujukan ke 'user' secara umum, atau spesifik ke user_id ini,
-            // atau jika itu adalah event DELETE
-            if (
-              payload.eventType === "DELETE" ||
-              (payload.new &&
-                (payload.new.audience === "user" ||
-                  payload.new.user_id === userId))
-            ) {
-              // Panggil ulang loadNotifications dengan session saat ini agar bisa mengambil token
-              supabase.auth.getSession().then(({ data }) => {
-                if (data?.session) loadNotifications(data.session);
-              });
-            }
-          }
-        )
-        .subscribe();
     };
 
     initAuth();
 
+    // Real-time subscription for user notifications
+    // Dibuat secara sinkron (di luar async) agar bisa langsung dibersihkan saat unmount
+    const realtimeChannel = supabase
+      .channel("user_notifications_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications" },
+        (payload) => {
+          const userId = lastUserIdRef.current;
+          // Muat ulang jika ditujukan ke 'user' secara umum, atau spesifik ke user_id ini,
+          // atau jika itu adalah event DELETE
+          if (
+            payload.eventType === "DELETE" ||
+            (payload.new &&
+              (payload.new.audience === "user" ||
+                payload.new.user_id === userId))
+          ) {
+            // Panggil ulang loadNotifications dengan session saat ini agar bisa mengambil token
+            supabase.auth.getSession().then(({ data }) => {
+              if (data?.session) loadNotifications(data.session);
+            });
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       if (subscription) subscription.unsubscribe();
-      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+      supabase.removeChannel(realtimeChannel);
     };
   }, [loadNotifications]);
 
@@ -186,6 +198,13 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     }
   };
 
+  const handleNotificationClick = (notification) => {
+    markRead(notification);
+    if (notification.link) {
+      router.push(notification.link);
+    }
+  };
+
   const deleteNotification = (notification) => {
     setNotificationToDelete(notification);
   };
@@ -207,7 +226,10 @@ export default function NotificationsSection({ onUnreadCountChange }) {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
       );
-      if (!res.ok) throw new Error("Gagal menghapus notifikasi.");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Gagal menghapus notifikasi.");
+      }
       setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
       toast.success(notificationsConfig.toasts.deleteSuccess);
     } catch (err) {
@@ -222,6 +244,8 @@ export default function NotificationsSection({ onUnreadCountChange }) {
     let result = notifications;
     if (filter === "unread") {
       result = result.filter((n) => !n.isRead);
+    } else if (filter !== "all") {
+      result = result.filter((n) => n.type === filter);
     }
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
@@ -318,15 +342,16 @@ export default function NotificationsSection({ onUnreadCountChange }) {
                 key={notification.id}
                 className={`${styles.notificationItem} ${
                   isUnread ? styles.notificationUnread : ""
-                }`}
-                onClick={() => markRead(notification)}
+                } ${notification.link ? styles.clickable : ""}`}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div
                   className={`${styles.notificationIcon} ${
-                    styles[`type_${notification.type}`] || ""
+                    styles[`icon${capitalize(notification.type)}`] ||
+                    styles.iconSystem
                   }`}
                 >
-                  {TYPE_ICON[notification.type] || "bell"}
+                  {TYPE_ICON[notification.type] || <Bell size={18} />}
                 </div>
                 <div className={styles.notificationContent}>
                   <div className={styles.notificationTitleRow}>
@@ -346,19 +371,24 @@ export default function NotificationsSection({ onUnreadCountChange }) {
                     <span className={styles.timeAgo}>
                       {timeAgo(notification.createdAt)}
                     </span>
+                    {notification.link && (
+                      <span className={styles.linkIndicator}>Lihat Detail &rarr;</span>
+                    )}
                   </div>
                 </div>
-                <button
-                  className={styles.deleteBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteNotification(notification);
-                  }}
-                  aria-label="Hapus notifikasi"
-                  disabled={deletingId === notification.id}
-                >
-                  {deletingId === notification.id ? "..." : "✕"}
-                </button>
+                {notification.user_id !== null && (
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNotification(notification);
+                    }}
+                    aria-label="Hapus notifikasi"
+                    disabled={deletingId === notification.id}
+                  >
+                    {deletingId === notification.id ? "..." : "✕"}
+                  </button>
+                )}
               </div>
             );
           })

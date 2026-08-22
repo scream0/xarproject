@@ -114,6 +114,7 @@ export default function AdminDashboard() {
     }
     return window.localStorage.getItem("adminLocale") === "en" ? "en" : "id";
   });
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [storeStatus, setStoreStatus] = useState({
     latencyMs: null,
     newOrders: 0,
@@ -331,13 +332,7 @@ export default function AdminDashboard() {
           </section>
         );
       case "notifications":
-        return (
-          <section className={styles.workspaceArea}>
-            <div className={styles.workspaceInner}>
-              <NotificationCenter />
-            </div>
-          </section>
-        );
+        return null; // NotificationCenter is rendered outside the switch statement
       case "vouchers":
         return (
           <section className={styles.workspaceArea}>
@@ -521,6 +516,11 @@ export default function AdminDashboard() {
                         {item.id === "orders" && storeStatus.newOrders > 0 && (
                           <span className={styles.navBadge}>
                             {storeStatus.newOrders > 99 ? "99+" : storeStatus.newOrders}
+                          </span>
+                        )}
+                        {item.id === "notifications" && unreadNotificationCount > 0 && (
+                          <span className={styles.navBadge}>
+                            {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                           </span>
                         )}
                       </span>

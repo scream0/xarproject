@@ -243,9 +243,9 @@ export default function UserDashboard({ user }) {
             <OverviewSection setActiveTab={handleTabChange} />
           )}
           {activeTab === "orders" && <OrdersSection />}
-          {activeTab === "notifications" && (
+          <div style={{ display: activeTab === "notifications" ? "block" : "none" }}>
             <NotificationsSection onUnreadCountChange={setNotificationCount} />
-          )}
+          </div>
           {activeTab === "profile" && <ProfileSection />}
         </div>
       </main>

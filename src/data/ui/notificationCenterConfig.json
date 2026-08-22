@@ -10,11 +10,11 @@
     "all": "Semua",
     "order": "Pesanan",
     "payment": "Pembayaran",
-    "system": "Sistem"
+    "system": "Sistem",
+    "promo": "Promo"
   },
   "typeLabels": {
     "order": "Pesanan",
-    "stock": "Stok",
     "payment": "Pembayaran",
     "system": "Sistem",
     "promo": "Promo"
@@ -29,6 +29,13 @@
     "titlePlaceholder": "Judul notifikasi",
     "messageLabel": "Pesan",
     "messagePlaceholder": "Isi pesan notifikasi",
+    "linkLabel": "Tautan (Link) Tujuan",
+    "linkOptions": [
+      { "value": "", "label": "Tidak ada (Tanpa Tautan)" },
+      { "value": "/dashboard?tab=shop", "label": "Katalog Produk" },
+      { "value": "/dashboard?tab=orders", "label": "Pesanan Saya" },
+      { "value": "/dashboard?tab=profile", "label": "Pengaturan Profil" }
+    ],
     "typeLabel": "Tipe",
     "typeOptions": ["order", "payment", "promo", "system"],
     "audienceLabel": "Target",

@@ -284,6 +284,26 @@
   color: var(--text-secondary);
 }
 
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background: rgba(var(--primary-accent-rgb), 0.1);
+}
+
+.linkIndicator {
+  font-size: 0.75rem;
+  color: var(--primary-accent);
+  font-weight: 600;
+  margin-left: 0.5rem;
+  transition: transform 0.2s;
+}
+
+.clickable:hover .linkIndicator {
+  transform: translateX(3px);
+}
+
 .deleteBtn {
   background: transparent;
   border: none;

@@ -9,7 +9,9 @@
   "loadingText": "Memuat notifikasi...",
   "tabs": {
     "all": "Semua",
-    "unread": "Belum Dibaca"
+    "unread": "Belum Dibaca",
+    "order": "Pesanan",
+    "promo": "Promo"
   },
   "buttons": {
     "markAllRead": "Tandai Semua Dibaca",

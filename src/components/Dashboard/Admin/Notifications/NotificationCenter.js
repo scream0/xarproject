@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { auth, supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import styles from "./NotificationCenter.module.css";
@@ -8,6 +9,7 @@ import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import config from "@/data/ui/notificationCenterConfig.json";
 import { NotificationsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
+import { Package, CreditCard, Gift, Bell, TrendingDown } from "lucide-react";
 
 function timeAgo(dateString) {
   if (!dateString) return "Baru saja";
@@ -23,15 +25,21 @@ function timeAgo(dateString) {
   return `${days} hari lalu`;
 }
 
-const TYPE_ICON = {
-  order: "📦",
-  payment: "💳",
-  promo: "🎁",
-  system: "🔔",
-  stock: "📉",
+const capitalize = (s) => {
+  if (typeof s !== "string") return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
-export default function NotificationCenter() {
+const TYPE_ICON = {
+  order: <Package size={18} />,
+  payment: <CreditCard size={18} />,
+  promo: <Gift size={18} />,
+  system: <Bell size={18} />,
+  stock: <TrendingDown size={18} />,
+};
+
+export default function NotificationCenter({ onUnreadCountChange }) {
+  const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -42,6 +50,7 @@ export default function NotificationCenter() {
   const [createForm, setCreateForm] = useState({
     title: "",
     message: "",
+    link: "",
     type: "system",
     audience: "admin",
   });
@@ -62,7 +71,18 @@ export default function NotificationCenter() {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal memuat notifikasi.");
-      setNotifications(result.notifications || []);
+      
+      const mappedNotifications = (result.notifications || []).map(n => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        link: n.link,
+        type: n.type,
+        audience: n.audience,
+        createdAt: n.created_at,
+        isRead: n.is_read,
+      }));
+      setNotifications(mappedNotifications);
     } catch (err) {
       console.error("Gagal memuat notifikasi admin:", err);
       toast.error(err.message || "Gagal memuat notifikasi.");
@@ -87,18 +107,15 @@ export default function NotificationCenter() {
       }
     });
 
-    // Real-time subscription for admin notifications
     const channel = supabase
       .channel("admin_notifications_changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications" },
         (payload) => {
-          // Hanya muat ulang jika audiensnya relevan untuk admin (misal 'admin')
-          // atau jika itu adalah event DELETE (karena payload.new mungkin tidak ada)
           if (
             payload.eventType === "DELETE" ||
-            (payload.new && payload.new.audience === "admin")
+            payload.new
           ) {
             loadNotifications();
           }
@@ -158,6 +175,33 @@ export default function NotificationCenter() {
     }
   };
 
+  const markRead = async (notification) => {
+    if (notification.isRead) return;
+    try {
+      const token = await getSupabaseToken();
+      await fetch("/api/notifications", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({ notificationId: notification.id, isRead: true }),
+      });
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)),
+      );
+    } catch (err) {
+      console.error("Gagal menandai notifikasi:", err);
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    markRead(notification);
+    if (notification.link) {
+      router.push(notification.link);
+    }
+  };
+
   const deleteNotification = (notification) => {
     setNotificationToDelete(notification);
   };
@@ -192,7 +236,7 @@ export default function NotificationCenter() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    const { title, message, type, audience } = createForm;
+    const { title, message, link, type, audience } = createForm;
     if (!title || !message) {
       toast.error("Judul dan pesan wajib diisi.");
       return;
@@ -206,18 +250,13 @@ export default function NotificationCenter() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ title, message, type, audience }),
+        body: JSON.stringify({ title, message, link, type, audience }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Gagal membuat notifikasi.");
       toast.success(config.toasts.createSuccess);
       setIsCreateOpen(false);
-      setCreateForm({
-        title: "",
-        message: "",
-        type: "system",
-        audience: "admin",
-      });
+      setCreateForm({ title: "", message: "", link: "", type: "system", audience: "admin" });
       await loadNotifications();
     } catch (err) {
       console.error("Gagal membuat notifikasi:", err);
@@ -226,6 +265,13 @@ export default function NotificationCenter() {
       setSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (onUnreadCountChange) {
+      const unreadCount = notifications.filter((n) => !n.isRead).length;
+      onUnreadCountChange(unreadCount);
+    }
+  }, [notifications, onUnreadCountChange]);
 
   const filteredNotifications = useMemo(() => {
     if (filter === "all") return notifications;
@@ -236,7 +282,6 @@ export default function NotificationCenter() {
 
   return (
     <div className={styles.workspaceInner}>
-      {/* Header */}
       <div className={`card ${styles.cardHeader}`}>
         <div className={styles.headerTopRow}>
           <div>
@@ -276,7 +321,6 @@ export default function NotificationCenter() {
         </div>
       </div>
 
-      {/* Notification List */}
       <div className={styles.notificationsList}>
         {loading ? (
           <NotificationsSkeleton count={5} />
@@ -292,16 +336,18 @@ export default function NotificationCenter() {
             return (
               <div
                 key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
                 className={`${styles.notificationItem} ${
                   isUnread ? styles.notificationUnread : ""
-                }`}
+                } ${notification.link ? styles.clickable : ""}`}
               >
                 <div
                   className={`${styles.notificationIcon} ${
-                    styles[`type_${notification.type}`] || ""
+                    styles[`icon${capitalize(notification.type)}`] ||
+                    styles.iconSystem
                   }`}
                 >
-                  {TYPE_ICON[notification.type] || "🔔"}
+                  {TYPE_ICON[notification.type] || <Bell size={18} />}
                 </div>
                 <div className={styles.notificationContent}>
                   <div className={styles.notificationTitleRow}>
@@ -324,11 +370,17 @@ export default function NotificationCenter() {
                     <span className={styles.timeAgo}>
                       {timeAgo(notification.createdAt)}
                     </span>
+                    {notification.link && (
+                      <span className={styles.linkIndicator}>Lihat Detail &rarr;</span>
+                    )}
                   </div>
                 </div>
                 <button
                   className={styles.deleteBtn}
-                  onClick={() => deleteNotification(notification)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteNotification(notification);
+                  }}
                   aria-label="Hapus notifikasi"
                 >
                   ✕
@@ -390,6 +442,24 @@ export default function NotificationCenter() {
                   }
                   required
                 />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.inputLabel}>
+                  {config.modal.linkLabel}
+                </label>
+                <select
+                  className={styles.formSelect}
+                  value={createForm.link}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, link: e.target.value })
+                  }
+                >
+                  {config.modal.linkOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
