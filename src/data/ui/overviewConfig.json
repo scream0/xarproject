@@ -14,7 +14,7 @@
     "lowStockOk": "Stok aman terkendali"
   },
   "ordersSection": {
-    "title": "Kelola & Konfirmasi Pesanan Masuk",
+    "title": "Pesanan Masuk Terbaru",
     "loading": "Memuat daftar pesanan...",
     "empty": "Belum ada pesanan masuk.",
     "searchPlaceholder": "Cari ID atau nama pemesan...",
@@ -22,6 +22,7 @@
     "filter": {
       "all": "Semua Status",
       "pending": "Pending",
+      "verifying": "Verifikasi Manual",
       "success": "Success",
       "processing": "Processing",
       "shipped": "Shipped",
@@ -43,7 +44,7 @@
       "next": "Berikutnya"
     }
   },
-  "tableHeaders": ["Order ID", "Pemesan", "Total", "Kurir", "Status", "Aksi Seller"],
+  "tableHeaders": ["Order ID", "Pemesan", "Total", "Kurir", "Status"],
   "actions": {
     "confirmPayment": "Konfirmasi Bayar",
     "confirming": "Mengonfirmasi...",

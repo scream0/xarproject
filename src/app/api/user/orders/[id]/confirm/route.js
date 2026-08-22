@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { verifyUser } from "@/lib/apiAuth";
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY || process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export const dynamic = "force-dynamic";
 
@@ -54,10 +61,31 @@ export async function POST(request, context) {
       timestamp: new Date().toISOString(),
     };
 
+    let newShippingDetail = orderData.shipping_detail || {};
+    
+    const paymentProofUrl = newShippingDetail.payment_proof_url;
+    if (paymentProofUrl) {
+      try {
+        const match = paymentProofUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/);
+        const publicId = match ? match[1] : null;
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId, {
+            resource_type: "image",
+            invalidate: true,
+          });
+        }
+      } catch (cloudinaryErr) {
+        console.error("Gagal menghapus bukti pembayaran dari Cloudinary:", cloudinaryErr);
+      }
+      
+      delete newShippingDetail.payment_proof_url;
+    }
+
     const { data: updatedOrder, error: updateErr } = await supabaseAdmin
       .from("orders")
       .update({
         status: "delivered",
+        shipping_detail: newShippingDetail,
         status_history: [...(orderData.status_history || []), historyEntry],
         updated_at: new Date().toISOString(),
       })

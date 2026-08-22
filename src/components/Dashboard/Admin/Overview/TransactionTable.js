@@ -17,12 +17,7 @@ export default function TransactionTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [visibleCount, setVisibleCount] = useState(ORDERS_PER_PAGE);
-  const [selectedIds, setSelectedIds] = useState([]);
   const [savedViews, setSavedViews] = useState([]);
-
-  // State for shipping modal
-  const [shippingModalOrder, setShippingModalOrder] = useState(null);
-  const [shippingReceipt, setShippingReceipt] = useState("");
 
   const observer = useRef();
 
@@ -61,66 +56,6 @@ export default function TransactionTable() {
     }
   }, []);
 
-  const handleUpdateOrder = async (
-    orderId,
-    newStatus,
-    receiptNumber = null,
-  ) => {
-    try {
-      setUpdatingId(orderId);
-      const payload = { orderId, status: newStatus };
-      if (receiptNumber) {
-        payload.shippingReceiptNumber = receiptNumber;
-      }
-
-      const res = await fetch("/api/orders", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await res.json();
-      if (!res.ok)
-        throw new Error(result.error || "Gagal memperbarui status pesanan");
-
-      toast.success(`Pesanan ${orderId} berhasil diubah ke: ${newStatus}`);
-
-      setAllOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === orderId || o.orderId === orderId) {
-            const updatedOrder = { ...o, status: newStatus };
-            if (receiptNumber) {
-              updatedOrder.shippingReceiptNumber = receiptNumber;
-            }
-            return updatedOrder;
-          }
-          return o;
-        }),
-      );
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message);
-    } finally {
-      setUpdatingId(null);
-      setShippingModalOrder(null);
-      setShippingReceipt("");
-    }
-  };
-
-  const handleShipOrderClick = (order) => {
-    setShippingModalOrder(order);
-  };
-
-  const handleShippingSubmit = (e) => {
-    e.preventDefault();
-    if (shippingModalOrder && shippingReceipt) {
-      const orderId = shippingModalOrder.orderId || shippingModalOrder.id;
-      handleUpdateOrder(orderId, "shipped", shippingReceipt);
-    } else {
-      toast.error("Nomor resi tidak boleh kosong.");
-    }
-  };
-
   const formatRupiah = (number) =>
     new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -132,6 +67,7 @@ export default function TransactionTable() {
     const statusMap = {
       success: styles.badgeSuccess,
       processing: styles.badgeProcessing,
+      verifying: styles.badgeProcessing,
       shipped: styles.badgeShipping,
       shipping: styles.badgeShipping,
       cancelled: styles.badgeCancelled,
@@ -171,20 +107,6 @@ export default function TransactionTable() {
 
   const hasMore = visibleCount < filteredOrders.length;
 
-  const lastOrderElementRef = useCallback(
-    (node) => {
-      if (loading) return;
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          setVisibleCount((prev) => prev + ORDERS_PER_PAGE);
-        }
-      });
-      if (node) observer.current.observe(node);
-    },
-    [loading, hasMore],
-  );
-
   const saveCurrentView = () => { const label = searchTerm ? `${statusFilter}: ${searchTerm}` : statusFilter; const next = [...savedViews.filter((view) => view.label !== label), { label, status: statusFilter, search: searchTerm }].slice(-5); setSavedViews(next); window.localStorage.setItem("xar-order-views", JSON.stringify(next)); toast.success("Filter view saved."); };
   const toggleOrder = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
   const toggleVisible = () => { const ids = visibleOrders.map((order) => order.orderId || order.id); setSelectedIds((current) => ids.every((id) => current.includes(id)) ? current.filter((id) => !ids.includes(id)) : [...new Set([...current, ...ids])]); };
@@ -204,8 +126,6 @@ export default function TransactionTable() {
           <h3 className={styles.sectionTitle}>{overviewConfig.ordersSection.title}</h3>
           <button className={styles.exportBtn} onClick={exportOrders}>Export CSV</button>
         </div>
-
-        {selectedIds.length > 0 && <div className={styles.bulkBar}><span>{selectedIds.length} selected</span><div><button onClick={() => runBulkAction("pending", "processing")}>Confirm payment</button><button onClick={() => runBulkAction("shipped", "completed")}>Mark completed</button></div></div>}
 
         <div className={styles.controlsContainer}>
           <input
@@ -247,7 +167,6 @@ export default function TransactionTable() {
               <table className={styles.ordersTable}>
                 <thead>
                   <tr>
-                    <th><input type="checkbox" aria-label="Select visible orders" checked={visibleOrders.length > 0 && visibleOrders.every((order) => selectedIds.includes(order.orderId || order.id))} onChange={toggleVisible} /></th>
                     {overviewConfig.tableHeaders.map((header) => (
                       <th key={header}>{header}</th>
                     ))}
@@ -264,11 +183,8 @@ export default function TransactionTable() {
                     const orderTotal = Number(order.amount || order.price || 0);
                     const displayStatus = order.status === "success" ? "processing" : order.status === "shipping" ? "shipped" : order.status || "pending";
 
-                    const rowProps = isLastElement ? { ref: lastOrderElementRef } : {};
-
                     return (
-                      <tr key={currentId} {...rowProps}>
-                        <td data-label="Pilih"><input type="checkbox" aria-label={`Select ${currentId}`} checked={selectedIds.includes(currentId)} onChange={() => toggleOrder(currentId)} /></td>
+                      <tr key={currentId}>
                         <td className={styles.orderId} data-label="ID Pesanan">{currentId}</td>
                         <td data-label="Pelanggan">{customerName}</td>
                         <td data-label="Total">{formatRupiah(orderTotal)}</td>
@@ -284,106 +200,27 @@ export default function TransactionTable() {
                             {displayStatus}
                           </span>
                         </td>
-                        <td data-label="Aksi">
-                          {displayStatus === "pending" && (
-                            <button
-                              className={styles.actionBtnConfirm}
-                              onClick={() =>
-                                handleUpdateOrder(currentId, "processing")
-                              }
-                              disabled={updatingId === currentId}
-                            >
-                              {updatingId === currentId
-                                ? overviewConfig.actions.confirming
-                                : overviewConfig.actions.confirmPayment}
-                            </button>
-                          )}
-                          {displayStatus === "processing" && (
-                            <button
-                              className={styles.actionBtn}
-                              onClick={() => handleShipOrderClick(order)}
-                              disabled={updatingId === currentId}
-                            >
-                              {updatingId === currentId
-                                ? overviewConfig.actions.shipping
-                                : overviewConfig.actions.shipItem}
-                            </button>
-                          )}
-                          {displayStatus === "shipped" && (
-                            <button
-                              className={styles.actionBtn}
-                              onClick={() =>
-                                handleUpdateOrder(currentId, "completed")
-                              }
-                              disabled={updatingId === currentId}
-                            >
-                              {updatingId === currentId
-                                ? overviewConfig.actions.completing
-                                : overviewConfig.actions.completeOrder}
-                            </button>
-                          )}
-                          {order.status === "completed" && (
-                            <span className={styles.statusCompletedText}>
-                              {overviewConfig.actions.completed}
-                            </span>
-                          )}
-                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-            {loading && hasMore && <p className={styles.loadingText}>Loading more orders...</p>}
-            {!hasMore && visibleOrders.length > 0 && <p className={styles.emptyText}>You have reached the end of the list.</p>}
+            {hasMore && visibleOrders.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
+                <button 
+                  className={styles.saveViewBtn} 
+                  style={{ padding: '0.75rem 2rem' }}
+                  onClick={() => setVisibleCount((prev) => prev + ORDERS_PER_PAGE)}
+                >
+                  Muat Lebih Banyak
+                </button>
+              </div>
+            )}
+            {!hasMore && visibleOrders.length > 0 && <p className={styles.emptyText}>Semua pesanan telah dimuat.</p>}
           </>
         )}
       </div>
-
-      {shippingModalOrder && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>{overviewConfig.modal.title}</h3>
-            <p className={styles.modalSubtitle}>
-              {overviewConfig.modal.subtitle}{" "}
-              <strong>
-                {shippingModalOrder.orderId || shippingModalOrder.id}
-              </strong>
-            </p>
-            <form onSubmit={handleShippingSubmit}>
-              <input
-                type="text"
-                className={styles.modalInput}
-                value={shippingReceipt}
-                onChange={(e) => setShippingReceipt(e.target.value)}
-                placeholder={overviewConfig.modal.placeholder}
-                required
-              />
-              <div className={styles.modalActions}>
-                <button
-                  type="button"
-                  className={styles.modalBtnCancel}
-                  onClick={() => setShippingModalOrder(null)}
-                >
-                  {overviewConfig.modal.cancel}
-                </button>
-                <button
-                  type="submit"
-                  className={styles.modalBtnConfirm}
-                  disabled={
-                    updatingId ===
-                    (shippingModalOrder.orderId || shippingModalOrder.id)
-                  }
-                >
-                  {updatingId
-                    ? overviewConfig.modal.loading
-                    : overviewConfig.modal.confirm}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </>
   );
 }

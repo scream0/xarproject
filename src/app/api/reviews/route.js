@@ -87,7 +87,8 @@ export async function POST(request) {
     if (orderErr || !orderDoc) {
       return Response.json({ error: "Order not found." }, { status: 404 });
     }
-    if ((orderDoc.status || "").toLowerCase() !== "completed") {
+    const orderStatus = (orderDoc.status || "").toLowerCase();
+    if (orderStatus !== "completed" && orderStatus !== "delivered") {
       return Response.json({ error: "Reviews are available after the order is completed." }, { status: 400 });
     }
     if (orderDoc.user_id !== userId) {
@@ -162,11 +163,18 @@ export async function GET(request) {
 
   try {
     if (isPublicRequest) {
+      const page = Math.max(1, Number(searchParams.get("page") || 1));
+      const limit = Math.max(1, Math.min(50, Number(searchParams.get("limit") || 10)));
+      
       let query = supabaseAdmin.from("reviews").select("id, product_id, user_name, product_name, rating, comment, review_photo, created_at").eq("approved", true);
       if (productId) {
         query = query.eq("product_id", productId);
       }
-      const { data, error } = await query.order("created_at", { ascending: false });
+      
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .range((page - 1) * limit, page * limit - 1);
+        
       if (error) throw error;
 
       const reviews = (data || []).map((r) => ({

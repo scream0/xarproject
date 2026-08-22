@@ -126,7 +126,7 @@
 }
 
 .fieldVisible {
-  max-height: 90px;
+  max-height: 180px;
   opacity: 1;
   transform: translateY(0);
 }

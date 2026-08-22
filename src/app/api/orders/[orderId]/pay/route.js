@@ -70,7 +70,7 @@ export async function POST(request, context) {
 
     // 2. Siapkan parameter untuk Midtrans Snap API
     const isProduction = process.env.NODE_ENV === "production";
-    const serverKey = process.env.MIDTRANS_SERVER_KEY;
+    const serverKey = isProduction ? process.env.MIDTRANS_SERVER_KEY_PRODUCTION : process.env.MIDTRANS_SERVER_KEY_SANDBOX;
     
     if (!serverKey) {
       return NextResponse.json({ error: "Midtrans Server Key belum dikonfigurasi di environment." }, { status: 500 });
@@ -143,6 +143,14 @@ export async function POST(request, context) {
         first_name: order.customer_name || "Pelanggan XAR",
         email: order.customer_email || "customer@xar.com",
         phone: order.customer_phone || "08123456789",
+        shipping_address: order.shipping_address ? {
+          first_name: order.shipping_address.recipientName || order.customer_name,
+          phone: order.shipping_address.recipientPhone || order.customer_phone,
+          address: order.shipping_address.street || "",
+          city: order.shipping_address.city || "",
+          postal_code: order.shipping_address.postalCode || "",
+          country_code: "IDN",
+        } : undefined,
       },
       callbacks: {
         finish: `${baseUrl}/account/orders/${order.id}?order_id=${order.id}`,

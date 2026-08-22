@@ -190,52 +190,52 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  const fetchStoreStatus = async (isDisposedObj) => {
+    const startedAt = performance.now();
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch("/api/admin/orders?status=pending,paid,processing,verifying&page=1&limit=1", {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Unable to refresh store status");
+      }
+
+      const elapsed = Math.round(performance.now() - startedAt);
+
+      if (!isDisposedObj?.current) {
+        setStoreStatus({
+          latencyMs: elapsed,
+          newOrders: Number(data?.pagination?.totalOrders || 0),
+          hasError: false,
+        });
+      }
+    } catch {
+      if (!isDisposedObj?.current) {
+        setStoreStatus((previous) => ({
+          ...previous,
+          hasError: true,
+        }));
+      }
+    }
+  };
+
   useEffect(() => {
     if (!isAdmin) {
       return;
     }
 
-    let isDisposed = false;
+    const isDisposedObj = { current: false };
 
-    const fetchStoreStatus = async () => {
-      const startedAt = performance.now();
-
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        const res = await fetch("/api/admin/orders?status=pending,paid,processing&page=1&limit=1", {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data?.error || "Unable to refresh store status");
-        }
-
-        const elapsed = Math.round(performance.now() - startedAt);
-
-        if (!isDisposed) {
-          setStoreStatus({
-            latencyMs: elapsed,
-            newOrders: Number(data?.pagination?.totalOrders || 0),
-            hasError: false,
-          });
-        }
-      } catch {
-        if (!isDisposed) {
-          setStoreStatus((previous) => ({
-            ...previous,
-            hasError: true,
-          }));
-        }
-      }
-    };
-
-    fetchStoreStatus();
-    const intervalId = window.setInterval(fetchStoreStatus, 60000);
+    fetchStoreStatus(isDisposedObj);
+    const intervalId = window.setInterval(() => fetchStoreStatus(isDisposedObj), 60000);
 
     return () => {
-      isDisposed = true;
+      isDisposedObj.current = true;
       window.clearInterval(intervalId);
     };
   }, [isAdmin, user]);
@@ -349,7 +349,7 @@ export default function AdminDashboard() {
         return (
           <section className={styles.workspaceArea}>
             <div className={styles.workspaceInner}>
-              <OrdersManagement />
+              <OrdersManagement onOrderUpdate={fetchStoreStatus} />
             </div>
           </section>
         );

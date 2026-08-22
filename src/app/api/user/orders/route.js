@@ -47,7 +47,7 @@ export async function GET(request) {
     const status = searchParams.get("status")?.trim().toLowerCase();
     const search = searchParams.get("search")?.trim().toLowerCase();
     const page = Math.max(1, Number(searchParams.get("page") || 1));
-    const limit = Math.max(1, Math.min(50, Number(searchParams.get("limit") || 10)));
+    const limit = Math.max(1, Math.min(1000, Number(searchParams.get("limit") || 50)));
 
     if (!userId) {
       return NextResponse.json(

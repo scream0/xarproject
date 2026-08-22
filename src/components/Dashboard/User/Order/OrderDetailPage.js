@@ -544,11 +544,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
   };
 
   const handleBackToOrders = () => {
-    if (pathname?.startsWith("/account/orders")) {
-      router.push("/dashboard");
-    } else {
-      router.push("/dashboard?tab=orders");
-    }
+    router.push("/dashboard?tab=orders");
   };
 
   const openReviewModal = (orderToReview, item) => {
@@ -716,7 +712,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
     const toastId = toast.loading("Mengunggah bukti pembayaran...");
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await auth.getSession();
       const token = session?.access_token;
       
       const uploadData = new FormData();
@@ -834,7 +830,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
         </div>
 
         <div className={styles.heroActions}>
-          {isPendingStatus && (
+          {isPendingStatus && order?.payment_type !== "Manual Transfer" && (
             <button onClick={handleContinuePayment} className={styles.payBtn}>
               <AppIcon name="creditcard" size={16} />
               <span>Bayar Sekarang</span>
@@ -867,7 +863,19 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
                 storeSettings.contact.bankAccounts.map((account, idx) => (
                   <div key={idx} style={{ background: "var(--surface-primary)", border: "1px solid var(--border-color)", padding: "1rem", borderRadius: "8px", flex: 1, minWidth: "200px" }}>
                     <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>{account.bankName}</div>
-                    <div style={{ fontSize: "1.2rem", margin: "0.5rem 0", letterSpacing: "1px" }}>{account.accountNumber}</div>
+                    <div style={{ fontSize: "1.2rem", margin: "0.5rem 0", letterSpacing: "1px", display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span>{account.accountNumber}</span>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(account.accountNumber);
+                          toast.success("Nomor rekening berhasil disalin!");
+                        }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary-accent)", display: "flex", alignItems: "center", padding: "4px", borderRadius: "4px" }}
+                        title="Salin Nomor Rekening"
+                      >
+                        <AppIcon name="copy" size={16} />
+                      </button>
+                    </div>
                     <div style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>a.n. {account.accountName}</div>
                   </div>
                 ))

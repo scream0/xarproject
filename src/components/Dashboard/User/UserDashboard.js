@@ -12,6 +12,7 @@ import OverviewSection from "@/components/Dashboard/User/Overview/OverviewUser";
 import ProfileSection from "@/components/Dashboard/User/Profil/UserProfil";
 import ShopPage from "@/components/Dashboard/User/Shop/Shop";
 import NotificationsSection from "@/components/Dashboard/User/Notifications/NotificationsSection";
+import OrdersSection from "@/components/Dashboard/User/Order/OrdersSection";
 import { CartSidebar } from "@/components/UI/Sidebar/CartSidebar";
 import { Modal as ProductModal } from "@/components/UI/Modal/ProductModal";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
@@ -20,7 +21,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import UserChatModal from "@/components/Dashboard/User/Chat/UserChatModal";
 
 const DEFAULT_TAB = "shop";
-const ALLOWED_TABS = ["shop", "overview", "notifications", "profile"];
+const ALLOWED_TABS = ["shop", "overview", "orders", "notifications", "profile"];
 const filteredNav = userConfig.nav.filter((item) => ALLOWED_TABS.includes(item.id));
 const VALID_TABS = filteredNav.map((item) => item.id);
 
@@ -218,6 +219,7 @@ export default function UserDashboard({ user }) {
           {activeTab === "overview" && (
             <OverviewSection setActiveTab={handleTabChange} />
           )}
+          {activeTab === "orders" && <OrdersSection />}
           {activeTab === "notifications" && (
             <NotificationsSection onUnreadCountChange={setNotificationCount} />
           )}

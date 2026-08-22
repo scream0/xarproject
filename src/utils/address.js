@@ -145,10 +145,10 @@ export function normalizeAddress(addr) {
     recipientName: addr?.recipientName || "",
     recipientPhone: addr?.recipientPhone || "",
     street: addr?.street || "",
-    province: region.province || addr?.province || "",
-    city: region.city || addr?.city || "",
+    province: addr?.province || region.province || "",
+    city: addr?.city || region.city || "",
     cityId: addr?.cityId || region.cityId || resolveCityId(addr?.city, addr?.province, addr?.postalCode) || "",
-    cityType: region.cityType || addr?.cityType || "",
+    cityType: addr?.cityType || region.cityType || "",
     postalCode: addr?.postalCode || "",
     isPrimary: Boolean(addr?.isPrimary),
   };

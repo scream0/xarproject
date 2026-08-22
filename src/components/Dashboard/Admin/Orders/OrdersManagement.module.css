@@ -331,10 +331,12 @@
   }
 
   .drawer {
-    width: 100%;
-    box-shadow: none;
-    border: 0;
-    padding: 0;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
   }
 
   .closeButton,
@@ -351,9 +353,37 @@
     display: none !important;
   }
 
+  .printPreview {
+    display: block !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
   .printCard {
     break-inside: avoid;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem !important;
+    padding-bottom: 2rem !important;
+    border: 0 !important;
+    border-bottom: 2px dashed #ccc !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    position: relative;
+  }
+
+  .printCard::after {
+    content: "✂";
+    position: absolute;
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 0 10px;
+    color: #999;
+    font-size: 20px;
   }
 
   .printBrand {
@@ -562,4 +592,21 @@
 .modalCancelBtn:hover {
   background: var(--surface-secondary);
   color: var(--text-primary);
+}
+
+.actionDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }

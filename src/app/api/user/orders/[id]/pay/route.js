@@ -42,6 +42,37 @@ export async function POST(request, context) {
       .select("*")
       .eq("order_id", order.id);
 
+    // ── MANUAL PAYMENT PROOF UPLOAD ──
+    if (body.receiptUrl) {
+      const newShippingDetail = { ...(order.shipping_detail || {}), payment_proof_url: body.receiptUrl };
+      
+      const statusHistory = Array.isArray(order.status_history) ? [...order.status_history] : [];
+      statusHistory.push({
+        id: `${Date.now()}-user`,
+        status_from: order.status,
+        status_to: "verifying",
+        notes: "Pembeli mengunggah bukti pembayaran.",
+        changed_by: "user",
+        created_at: new Date().toISOString()
+      });
+
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({ 
+          shipping_detail: newShippingDetail,
+          status: "verifying",
+          status_history: statusHistory
+        })
+        .eq("id", order.id);
+
+      if (updateError) {
+        return NextResponse.json({ error: "Gagal menyimpan bukti pembayaran." }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+    // ─────────────────────────────────
+
     // Jika sudah ada snap_token yang valid, langsung kembalikan
     if (order.snap_token) {
       return NextResponse.json({ snap_token: order.snap_token }, { status: 200 });
@@ -49,7 +80,7 @@ export async function POST(request, context) {
 
     // 2. Siapkan parameter untuk Midtrans Snap API
     const isProduction = process.env.NODE_ENV === "production";
-    const serverKey = process.env.MIDTRANS_SERVER_KEY;
+    const serverKey = isProduction ? process.env.MIDTRANS_SERVER_KEY_PRODUCTION : process.env.MIDTRANS_SERVER_KEY_SANDBOX;
 
     if (!serverKey) {
       return NextResponse.json({ error: "Midtrans Server Key belum dikonfigurasi di environment." }, { status: 500 });
@@ -122,6 +153,14 @@ export async function POST(request, context) {
         first_name: order.customer_name || "Pelanggan XAR",
         email: order.customer_email || "customer@xar.com",
         phone: order.customer_phone || "08123456789",
+        shipping_address: order.shipping_address ? {
+          first_name: order.shipping_address.recipientName || order.customer_name,
+          phone: order.shipping_address.recipientPhone || order.customer_phone,
+          address: order.shipping_address.street || "",
+          city: order.shipping_address.city || "",
+          postal_code: order.shipping_address.postalCode || "",
+          country_code: "IDN",
+        } : undefined,
       },
       callbacks: {
         finish: `${baseUrl}/account/orders/${order.id}?order_id=${order.id}`,

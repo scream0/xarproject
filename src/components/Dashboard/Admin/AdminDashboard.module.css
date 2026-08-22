@@ -880,3 +880,21 @@
     text-align: center;
   }
 }
+
+@media print {
+  .dashboardContainer,
+  .mainContent,
+  .workspaceArea,
+  .workspaceInner {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+}

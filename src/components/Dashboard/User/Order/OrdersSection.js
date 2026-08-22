@@ -20,6 +20,10 @@ const STATUS_INFO = {
     label: "Menunggu Pembayaran",
     badgeClass: "statusPending",
   },
+  verifying: {
+    label: "Sedang Diverifikasi",
+    badgeClass: "statusProcessing",
+  },
   unpaid: {
     label: "Menunggu Pembayaran",
     badgeClass: "statusPending",
@@ -159,9 +163,11 @@ export default function OrdersSection() {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useStore();
   const router = useRouter();
+  const [visibleCount, setVisibleCount] = useState(5);
   
   const [currentUser, setCurrentUser] = useState(null);
   const [currentSession, setCurrentSession] = useState(null);
+  const [isMidtransEnabled, setIsMidtransEnabled] = useState(false);
   
   const [isCancelling, setIsCancelling] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -228,8 +234,12 @@ export default function OrdersSection() {
       try {
         const { getPublicSettings } = await import('@/services/settingsService');
         const settings = await getPublicSettings();
-        if (!settings || settings.enableMidtrans === false) return;
+        if (!settings || settings.enableMidtrans === false) {
+          setIsMidtransEnabled(false);
+          return;
+        }
 
+        setIsMidtransEnabled(true);
         const isProduction = settings.midtransIsProduction === true;
         const snapScriptUrl = isProduction
           ? "https://app.midtrans.com/snap/snap.js"
@@ -268,7 +278,7 @@ export default function OrdersSection() {
         const userId = currentUser.id || currentUser.uid;
         const token = currentSession.access_token;
 
-        const response = await fetch(`/api/user/orders?userId=${userId}`, {
+        const response = await fetch(`/api/user/orders?userId=${userId}&limit=1000`, {
           cache: "no-store",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -316,7 +326,7 @@ export default function OrdersSection() {
       if (filter === "pending") {
         result = result.filter((o) => ["pending", "unpaid"].includes(o.status));
       } else if (filter === "processing") {
-        result = result.filter((o) => ["paid", "success", "processing", "settlement", "capture"].includes(o.status));
+        result = result.filter((o) => ["paid", "success", "processing", "settlement", "capture", "verifying"].includes(o.status));
       } else if (filter === "shipping") {
         result = result.filter((o) => ["shipping", "shipped"].includes(o.status));
       } else if (filter === "history") {
@@ -340,7 +350,7 @@ export default function OrdersSection() {
   const orderStats = useMemo(() => {
     const total = orders.length;
     const pending = orders.filter((o) => ["pending", "unpaid"].includes(o.status)).length;
-    const processing = orders.filter((o) => ["paid", "success", "processing", "settlement", "capture"].includes(o.status)).length;
+    const processing = orders.filter((o) => ["paid", "success", "processing", "settlement", "capture", "verifying"].includes(o.status)).length;
     const shipping = orders.filter((o) => ["shipping", "shipped"].includes(o.status)).length;
     const history = orders.filter((o) => ["completed", "delivered", "cancelled", "canceled", "return_requested", "returning", "returned", "return_rejected"].includes(o.status)).length;
 
@@ -473,18 +483,19 @@ export default function OrdersSection() {
       let addedCount = 0;
 
       for (const item of orderItems) {
+        const itemName = item.name || item.product_name || "Produk";
         const pId = String(item.id || item.productId || item.product_id || "");
-        const orderedSize = String(item.size || "").trim();
+        const orderedSize = String(item.size || item.variant_name || "").trim();
         const orderedQty = Number(item.quantity || item.qty || 1);
 
         const foundProduct = latestProducts.find(
           (p) =>
             String(p.id || p._id) === pId ||
-            p.name?.toLowerCase() === item.name?.toLowerCase(),
+            p.name?.toLowerCase() === itemName.toLowerCase(),
         );
 
         if (!foundProduct) {
-          toast.error(`Produk "${item.name}" sudah tidak tersedia.`);
+          toast.error(`Produk "${itemName}" sudah tidak tersedia.`);
           continue;
         }
 
@@ -510,7 +521,7 @@ export default function OrdersSection() {
 
         if (currentStock <= 0) {
           toast.error(
-            `Stok "${item.name} (${orderedSize || "Standard"})" sudah habis.`,
+            `Stok "${itemName} (${orderedSize || "Standard"})" sudah habis.`,
           );
           continue;
         }
@@ -518,7 +529,7 @@ export default function OrdersSection() {
         const finalQty = Math.min(orderedQty, currentStock);
         if (finalQty < orderedQty) {
           toast(
-            `Stok terbatas! Jumlah "${item.name}" disesuaikan jadi ${finalQty}.`,
+            `Stok terbatas! Jumlah "${itemName}" disesuaikan jadi ${finalQty}.`,
           );
         }
 
@@ -528,8 +539,10 @@ export default function OrdersSection() {
           stock: currentStock,
         };
 
-        addToCart(foundProduct, variantData, finalQty);
-        addedCount++;
+        const result = await addToCart(foundProduct, variantData, finalQty, true);
+        if (result && result.success) {
+          addedCount++;
+        }
       }
 
       toast.dismiss(toastId);
@@ -882,7 +895,10 @@ export default function OrdersSection() {
             return (
               <button
                 key={tab.key}
-                onClick={() => setFilter(tab.key)}
+                onClick={() => {
+                  setFilter(tab.key);
+                  setVisibleCount(5);
+                }}
                 className={`${styles.filterBtn} ${isActive ? styles.filterBtnActive : ""}`}
               >
                 <div className={styles.filterIconWrapper}>
@@ -995,14 +1011,16 @@ export default function OrdersSection() {
                       </button>
                       {isPending && (
                         <>
-                          <button
-                            onClick={() => handlePayOrder(order)}
-                            disabled={isPayingId === order.id}
-                            className={styles.payBtn}
-                          >
-                            <AppIcon name="creditcard" size={14} />
-                            <span>{isPayingId === order.id ? "Memuat..." : "Bayar Sekarang"}</span>
-                          </button>
+                          {isMidtransEnabled && !order.paymentMethod?.toLowerCase().includes("manual") && (
+                            <button
+                              onClick={() => handlePayOrder(order)}
+                              disabled={isPayingId === order.id}
+                              className={styles.payBtn}
+                            >
+                              <AppIcon name="creditcard" size={14} />
+                              <span>{isPayingId === order.id ? "Memuat..." : "Bayar Sekarang"}</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleCancelOrder(order)}
                             disabled={isCancelling}
@@ -1040,6 +1058,17 @@ export default function OrdersSection() {
                 </div>
               );
             })
+          )}
+          
+          {visibleCount < filteredOrders.length && (
+            <div className={styles.loadMoreContainer}>
+              <button 
+                onClick={() => setVisibleCount((prev) => prev + 5)}
+                className={styles.loadMoreBtn}
+              >
+                Muat Lebih Banyak <AppIcon name="chevron-down" size={16} />
+              </button>
+            </div>
           )}
         </div>
       )}

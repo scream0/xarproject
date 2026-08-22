@@ -47,6 +47,9 @@ import {
   Receipt,
   Send,
   CheckCheck,
+  ChevronDown,
+  Banknote,
+  CheckCircle,
 } from "lucide-react";
 
 const iconMap = {
@@ -115,6 +118,10 @@ const iconMap = {
   "shield-check": ShieldCheck,
   "receipt": Receipt,
   "send": Send,
+  "chevron-down": ChevronDown,
+  "banknote": Banknote,
+  "copy": Copy,
+  "check-circle": CheckCircle,
 };
 
 const InstagramLogo = ({ className, size = 24, ...props }) => (

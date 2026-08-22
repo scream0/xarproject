@@ -15,7 +15,7 @@ import { EditProfileModal, AddressFormModal, PasswordModal } from "./ProfileModa
 import { shouldSkipAuthEvent } from "@/utils/authHelpers";
 import ConfirmationModal from "@/components/UI/Modal/ConfirmationModal";
 
-const OrdersSection = lazy(() => import("@/components/Dashboard/User/Order/OrdersSection"));
+
 const WishlistSection = lazy(() => import("@/components/Dashboard/User/Wishlist/WishlistSection"));
 const SupportCenter = lazy(() => import("@/components/Dashboard/User/Support/SupportCenter"));
 const UserSettings = lazy(() => import("@/components/Dashboard/User/Settings/UserSettings"));
@@ -563,9 +563,7 @@ export default function ProfileSection() {
               <ProfileHeader profile={profile} />
             </div>
 
-            <div className="card" style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}>
-              <OrdersSection />
-            </div>
+
             <MyVouchers
               availableVouchers={availableVouchers}
               claimedVouchers={profile.user_vouchers || []}

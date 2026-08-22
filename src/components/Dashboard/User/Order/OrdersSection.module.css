@@ -947,6 +947,42 @@
   }
 }
 
+/* --- LOAD MORE BUTTON --- */
+.loadMoreContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.loadMoreBtn {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.85rem 2.5rem;
+  border-radius: 999px;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.loadMoreBtn:hover {
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border-color: var(--primary-accent);
+  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.25);
+  transform: translateY(-2px);
+}
+
 /* --- RESPONSIVE MOBILE VIEW --- */
 @media (max-width: 768px) {
   .workspaceInner {

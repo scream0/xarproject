@@ -279,12 +279,12 @@ const handleUserData = useCallback(async (currentUser, token) => {
     cart?.items?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) ||
     0;
 
-  const addToCart = async (product, customVariant = null, quantity = 1) => {
+  const addToCart = async (product, customVariant = null, quantity = 1, suppressToast = false) => {
     let variant = customVariant || (product.variants && product.variants[0]);
 
     if (!variant) {
-      toast.error("Varian tidak tersedia");
-      return;
+      if (!suppressToast) toast.error("Varian tidak tersedia");
+      return { success: false, reason: "no_variant" };
     }
 
     if (
@@ -299,8 +299,8 @@ const handleUserData = useCallback(async (currentUser, token) => {
 
     const stock = Number(variant.stock ?? variant.stok ?? 10);
     if (stock <= 0) {
-      toast.error(`${product.name} (${variant.size}) stok habis!`);
-      return;
+      if (!suppressToast) toast.error(`${product.name} (${variant.size}) stok habis!`);
+      return { success: false, reason: "out_of_stock" };
     }
 
     const prodId = String(product.id || product._id).trim();
@@ -367,16 +367,20 @@ const handleUserData = useCallback(async (currentUser, token) => {
     });
 
     if (errorMessage) {
-      toast.error(errorMessage);
+      if (!suppressToast) toast.error(errorMessage);
+      return { success: false, reason: "exceeds_stock" };
     } else if (successMessage) {
-      toast.success(successMessage);
+      if (!suppressToast) toast.success(successMessage);
       try {
         await syncCartWithDB(newCart);
       } catch (error) {
         setCart(previousCart); // Rollback
-        toast.error("Gagal menyimpan keranjang. Silakan coba lagi.");
+        if (!suppressToast) toast.error("Gagal menyimpan keranjang. Silakan coba lagi.");
+        return { success: false, reason: "sync_failed" };
       }
+      return { success: true };
     }
+    return { success: false };
   };
 
   // mode: "decrement" (default, dipakai tombol -) mengurangi 1 quantity,
@@ -743,6 +747,7 @@ const handleUserData = useCallback(async (currentUser, token) => {
         recipientName: addressData.recipientName,
         recipientPhone: addressData.recipientPhone,
         street: addressData.street,
+        province: addressData.province || "",
         city: addressData.city,
         cityId: addressData.cityId || "",
         postalCode: addressData.postalCode || "",

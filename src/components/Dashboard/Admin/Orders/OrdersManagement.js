@@ -17,7 +17,7 @@ const money = (value) =>
 
 const orderValue = (order) => Number(order.amount || order.total_amount || order.total || 0);
 
-export default function OrdersManagement() {
+export default function OrdersManagement({ onOrderUpdate }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -128,15 +128,18 @@ export default function OrdersManagement() {
           serviceType: shippingDraft.serviceType,
           trackingNumber: shippingDraft.trackingNumber,
           shippingAddress: order.shipping_address || order.shippingAddress || null,
-          recipientName: order.customerName || null,
-          phoneNumber: order.phone || null,
+          recipientName: order.customerName || order.customer_name || null,
+          phoneNumber: order.customerPhone || order.customer_phone || order.phone || null,
           status: "shipped",
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan informasi pengiriman");
-      setOrders((items) => items.map((item) => (item.id === orderId || item.orderId === orderId ? { ...item, status: "shipped", shipping_detail: { ...(item.shipping_detail || item.shippingDetail || {}), courier_name: shippingDraft.courierName || null, service_type: shippingDraft.serviceType || null, tracking_number: shippingDraft.trackingNumber || null } } : item)));
+      const updatedOrderData = { ...order, status: "shipped", shipping_detail: { ...(order.shipping_detail || order.shippingDetail || {}), courier_name: shippingDraft.courierName || null, service_type: shippingDraft.serviceType || null, tracking_number: shippingDraft.trackingNumber || null } };
+      setOrders((items) => items.map((item) => (item.id === orderId || item.orderId === orderId ? updatedOrderData : item)));
+      setActiveOrder(updatedOrderData);
       toast.success("Informasi pengiriman berhasil disimpan.");
+      if (onOrderUpdate) onOrderUpdate();
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Unable to save shipping info.");
@@ -192,6 +195,7 @@ export default function OrdersManagement() {
       }));
       setSelectedOrders([]);
       toast.success("Status pesanan massal berhasil diperbarui.", { id: toastId });
+      if (onOrderUpdate) onOrderUpdate();
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Unable to update selected orders.", { id: toastId });
@@ -216,6 +220,7 @@ export default function OrdersManagement() {
       if (!res.ok) throw new Error(data.error || "Gagal mengubah status pesanan");
       setOrders((items) => items.map((item) => (item.id === orderId || item.orderId === orderId ? { ...item, status: nextStatus } : item)));
       toast.success("Status pesanan berhasil diperbarui.");
+      if (onOrderUpdate) onOrderUpdate();
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Unable to update order status.");
@@ -269,6 +274,7 @@ export default function OrdersManagement() {
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={styles.filterSelect}>
             <option value="all">Semua status</option>
             <option value="pending">Menunggu</option>
+            <option value="verifying">Menunggu Verifikasi</option>
             <option value="paid">Dibayar</option>
             <option value="processing">Diproses</option>
             <option value="shipped">Dikirim</option>
@@ -293,7 +299,10 @@ export default function OrdersManagement() {
           <input type="checkbox" checked={selectedOrders.length > 0 && selectedOrders.length === orders.length} onChange={() => setSelectedOrders(selectedOrders.length === orders.length ? [] : orders.map((order) => order.id || order.orderId))} />
           Pilih semua
         </label>
-        <select value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value)} className={styles.filterSelect}>
+        <select className={styles.statusSelect} value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
+          <option value="pending">Menunggu</option>
+          <option value="verifying">Menunggu Verifikasi</option>
+          <option value="paid">Dibayar</option>
           <option value="processing">Diproses</option>
           <option value="shipped">Dikirim</option>
           <option value="delivered">Selesai</option>
@@ -339,7 +348,10 @@ export default function OrdersManagement() {
                     <td>
                       <div className={styles.orderCell}>
                         <button className={styles.linkButton} onClick={() => openOrderDetails(order)}>
-                          <strong>{order.orderId || order.order_number || orderId}</strong>
+                          <strong>
+                            {order.orderId || order.order_number || orderId}
+                            {order.status === "verifying" && <span className={styles.actionDot} title="Menunggu Konfirmasi Admin"></span>}
+                          </strong>
                         </button>
                         <small>{order.id || order.orderId}</small>
                       </div>
@@ -359,6 +371,7 @@ export default function OrdersManagement() {
                         disabled={updatingId === orderId || bulkUpdating}
                       >
                         <option value="pending">Menunggu</option>
+                        <option value="verifying">Menunggu Verifikasi</option>
                         <option value="paid">Dibayar</option>
                         <option value="processing">Diproses</option>
                         <option value="shipped">Dikirim</option>
@@ -402,7 +415,10 @@ export default function OrdersManagement() {
                 <p className={styles.eyebrow}>Pratinjau cetak</p>
                 <h3>{printType === "slip" ? "Slip Pengiriman" : "Faktur Belanja"}</h3>
               </div>
-              <button className={styles.closeButton} onClick={() => setPrintOrders([])}>Tutup</button>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button className={styles.refreshButton} onClick={() => window.print()}>Cetak</button>
+                <button className={styles.closeButton} onClick={() => setPrintOrders([])}>Tutup</button>
+              </div>
             </div>
             <div className={styles.printPreview}>
               {printOrders.map((order) => {
@@ -451,7 +467,7 @@ export default function OrdersManagement() {
                             <strong>Tagihan Kepada:</strong>
                             <p>{order.customer_name || alamat?.recipientName || "Pelanggan"}</p>
                             <p>{order.customer_email || "-"}</p>
-                            <p>{alamat?.phone || order.phone || "-"}</p>
+                            <p>{alamat?.phone || order.customerPhone || order.customer_phone || order.phone || "-"}</p>
                           </div>
                         </div>
                         <div className={styles.printBody} style={{ marginBottom: "1rem" }}>
@@ -534,7 +550,7 @@ export default function OrdersManagement() {
                         </div>
                         <div className={styles.printBody}>
                           <p><b>Penerima:</b> {alamat?.recipientName || order.customer_name || "Pelanggan"}</p>
-                          <p><b>No. HP:</b> {alamat?.phone || order.phone || "-"}</p>
+                          <p><b>No. HP:</b> {alamat?.phone || order.customerPhone || order.customer_phone || order.phone || "-"}</p>
                           <p><b>Alamat:</b> {getAddressStr(alamat)}</p>
                           <p><b>Kurir:</b> {shippingInfo.courier_name || shippingInfo.courierName || order.courier_name || order.courier || "—"} ({shippingInfo.service_type || shippingInfo.serviceType || order.courier_service || "-"})</p>
                           <p><b>Resi:</b> {shippingInfo.tracking_number || shippingInfo.trackingNumber || order.shipping_receipt_number || "Belum ada resi"}</p>
@@ -552,9 +568,6 @@ export default function OrdersManagement() {
                   </div>
                 );
               })}
-            </div>
-            <div className={styles.drawerActions}>
-              <button className={styles.refreshButton} onClick={() => window.print()}>Cetak</button>
             </div>
           </div>
         </div>
@@ -582,7 +595,21 @@ export default function OrdersManagement() {
               <div className={styles.drawerCard}>
                 <h4>Jumlah</h4>
                 <p>{money(orderValue(activeOrder))}</p>
-                <p>Status: {activeOrder.status || "pending"}</p>
+                <p>Status: <span style={{ textTransform: "capitalize", fontWeight: "bold" }}>{activeOrder.status === "verifying" ? "Menunggu Verifikasi" : activeOrder.status || "pending"}</span></p>
+                <p style={{ marginTop: '8px', fontSize: '0.85rem', color: "var(--text-secondary)" }}>
+                  Metode: {activeOrder.payment_method || activeOrder.paymentMethod || activeOrder.payment_type || activeOrder.paymentType || "Midtrans"}
+                </p>
+                {(activeOrder.shipping_detail?.payment_proof_url || activeOrder.shippingDetail?.payment_proof_url) && (
+                  <a 
+                    href={activeOrder.shipping_detail?.payment_proof_url || activeOrder.shippingDetail?.payment_proof_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={styles.refreshButton}
+                    style={{ display: "inline-block", marginTop: "10px", padding: "6px 12px", borderRadius: "6px", fontSize: "0.85rem", textDecoration: "none", textAlign: "center" }}
+                  >
+                    Lihat Bukti Bayar
+                  </a>
+                )}
               </div>
             </div>
             <div className={styles.drawerCard}>

@@ -15,6 +15,8 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
 
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [hasMoreReviews, setHasMoreReviews] = useState(true);
 
   useEffect(() => {
     if (!item) return;
@@ -46,15 +48,34 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
 
   useEffect(() => {
     if (!item?.id) return;
+    setReviews([]);
+    setReviewsPage(1);
+    setHasMoreReviews(true);
+    fetchReviews(1);
+  }, [item?.id]);
+
+  const fetchReviews = (pageToFetch) => {
     setLoadingReviews(true);
-    fetch(`/api/reviews?productId=${item.id}&public=true`)
+    fetch(`/api/reviews?productId=${item.id}&public=true&page=${pageToFetch}&limit=10`)
       .then((res) => res.json())
       .then((data) => {
-        setReviews(data.reviews || []);
+        const newReviews = data.reviews || [];
+        if (pageToFetch === 1) {
+          setReviews(newReviews);
+        } else {
+          setReviews((prev) => [...prev, ...newReviews]);
+        }
+        setHasMoreReviews(newReviews.length === 10);
       })
       .catch((err) => console.error("Failed to fetch reviews", err))
       .finally(() => setLoadingReviews(false));
-  }, [item?.id]);
+  };
+
+  const handleLoadMoreReviews = () => {
+    const nextPage = reviewsPage + 1;
+    setReviewsPage(nextPage);
+    fetchReviews(nextPage);
+  };
 
   const handleClose = () => {
     setIsClosing(true);
@@ -288,6 +309,16 @@ export function Modal({ isOpen, item, onClose, onAddToCart, rupiah }) {
                       )}
                     </div>
                   ))}
+                  {hasMoreReviews && (
+                    <button
+                      className={styles.modalAddToCartBtn}
+                      style={{ marginTop: '1rem', background: 'var(--surface-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                      onClick={handleLoadMoreReviews}
+                      disabled={loadingReviews}
+                    >
+                      {loadingReviews ? "Memuat..." : "Muat Lebih Banyak Ulasan"}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <p className={styles.noReviews}>Belum ada ulasan untuk produk ini.</p>
