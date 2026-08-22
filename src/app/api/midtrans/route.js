@@ -3,12 +3,8 @@ import midtransClient from "midtrans-client";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { v4 as uuidv4 } from 'uuid';
 
-// Initialize Midtrans Snap Client
-const snap = new midtransClient.Snap({
-  isProduction: process.env.MIDTRANS_IS_PRODUCTION === "true",
-  serverKey: process.env.MIDTRANS_SERVER_KEY,
-  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY,
-});
+// We will instantiate Snap dynamically per-request because the environment (Sandbox vs Production) 
+// and keys depend on the admin settings stored in the database.
 
 /**
  * Creates an order and its normalized order_items rows in Supabase.
@@ -117,6 +113,7 @@ export async function POST(request) {
       shippingVoucherClaimId,
       discountVoucherId,
       discountVoucherClaimId,
+      paymentMethod,
     } = body;
 
     const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -354,8 +351,34 @@ export async function POST(request) {
       },
     };
 
-    // 1. Create Midtrans Snap Token TERLEBIH DAHULU
-    const transaction = await snap.createTransaction(parameter);
+    const isManualTransfer = paymentMethod === "manual";
+
+    let transaction = null;
+    if (!isManualTransfer) {
+      // 1. Create Midtrans Snap Token TERLEBIH DAHULU (Hanya jika Midtrans)
+      // ── GET MIDTRANS SETTINGS FROM DB ──
+      const { data: storeConfig } = await supabaseAdmin
+        .from("store_config")
+        .select("midtrans_is_production")
+        .eq("id", "main")
+        .single();
+      
+      const isProduction = storeConfig?.midtrans_is_production === true;
+      const serverKey = isProduction ? process.env.MIDTRANS_SERVER_KEY_PRODUCTION : process.env.MIDTRANS_SERVER_KEY_SANDBOX;
+      const clientKey = isProduction ? process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_PRODUCTION : process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX;
+
+      if (!serverKey) {
+        throw new Error(`Midtrans Server Key untuk mode ${isProduction ? 'Production' : 'Sandbox'} belum diatur di .env`);
+      }
+
+      const snap = new midtransClient.Snap({
+        isProduction,
+        serverKey,
+        clientKey,
+      });
+
+      transaction = await snap.createTransaction(parameter);
+    }
 
     // 2. Save the order record to Supabase
     await createOrderInSupabase({
@@ -371,9 +394,9 @@ export async function POST(request) {
       customerEmail,
       customerPhone,
       status: "pending",
-      paymentType: "Midtrans",
+      paymentType: isManualTransfer ? "Manual Transfer" : "Midtrans",
       appliedVouchersList: validatedVouchers,
-      snapToken: transaction.token,
+      snapToken: isManualTransfer ? null : transaction.token,
     });
 
     // 3. Update stock in products table to reserve the stock
@@ -382,6 +405,14 @@ export async function POST(request) {
       await supabaseAdmin.from("products").update({
         variants: product.variants
       }).eq("id", productId);
+    }
+
+    if (isManualTransfer) {
+      return NextResponse.json({
+        success: true,
+        method: "manual",
+        orderId,
+      });
     }
 
     return NextResponse.json({

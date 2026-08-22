@@ -7,12 +7,12 @@
   "nav": [
     {
       "id": "shop",
-      "label": "Katalog Parfum",
+      "label": "Katalog",
       "icon": "shopping-bag"
     },
     {
       "id": "overview",
-      "label": "Dashboard Overview",
+      "label": "Ringkasan",
       "icon": "layout-dashboard"
     },
     {
@@ -42,7 +42,7 @@
     },
     {
       "id": "profile",
-      "label": "Profil Pengguna",
+      "label": "Profil",
       "icon": "user"
     }
   ],

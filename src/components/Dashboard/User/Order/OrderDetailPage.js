@@ -83,6 +83,10 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
   const [copied, setCopied] = useState(false);
   const [copiedResi, setCopiedResi] = useState(false);
 
+  const [proofFile, setProofFile] = useState(null);
+  const [proofPreview, setProofPreview] = useState(null);
+  const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+
   // Review Modal States
   const [reviewModalOrder, setReviewModalOrder] = useState(null);
   const [reviewTargetItem, setReviewTargetItem] = useState(null);
@@ -92,21 +96,39 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
   const [reviewPhotoPreview, setReviewPhotoPreview] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // Load Midtrans Snap Script
-  useEffect(() => {
-    const snapScriptUrl = process.env.NODE_ENV === "production"
-      ? "https://app.midtrans.com/snap/snap.js"
-      : "https://app.sandbox.midtrans.com/snap/snap.js";
-    
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
+  const [storeSettings, setStoreSettings] = useState(null);
 
-    if (!document.getElementById("midtrans-snap-script")) {
-      const script = document.createElement("script");
-      script.id = "midtrans-snap-script";
-      script.src = snapScriptUrl;
-      script.setAttribute("data-client-key", clientKey || "");
-      document.body.appendChild(script);
-    }
+  // Load Settings & Midtrans Snap Script
+  useEffect(() => {
+    const loadMidtrans = async () => {
+      try {
+        const { getPublicSettings } = await import('@/services/settingsService');
+        const settings = await getPublicSettings();
+        setStoreSettings(settings);
+        if (!settings || settings.enableMidtrans === false) return;
+
+        const isProduction = settings.midtransIsProduction === true;
+        const snapScriptUrl = isProduction
+          ? "https://app.midtrans.com/snap/snap.js"
+          : "https://app.sandbox.midtrans.com/snap/snap.js";
+        
+        const clientKey = isProduction 
+          ? process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_PRODUCTION 
+          : process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX;
+
+        if (!document.getElementById("midtrans-snap-script") && clientKey) {
+          const script = document.createElement("script");
+          script.id = "midtrans-snap-script";
+          script.src = snapScriptUrl;
+          script.setAttribute("data-client-key", clientKey);
+          script.async = true;
+          document.body.appendChild(script);
+        }
+      } catch (err) {
+        console.error("Failed to load midtrans settings", err);
+      }
+    };
+    loadMidtrans();
   }, []);
 
   useEffect(() => {
@@ -218,12 +240,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
   }, [resolvedOrderId, user]);
 
   const totalAmount = useMemo(() => {
-    const raw = Number(order?.total_amount || order?.amount || order?.rawPrice || 0);
-    return Number.isFinite(raw) ? raw : 0;
-  }, [order]);
-
-  const shippingCost = useMemo(() => {
-    const raw = Number(order?.shipping_cost || order?.shippingCost || 0);
+    const raw = Number(order?.gross_amount || order?.total_amount || order?.amount || order?.rawPrice || 0);
     return Number.isFinite(raw) ? raw : 0;
   }, [order]);
 
@@ -232,12 +249,25 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
     return Number.isFinite(raw) ? raw : 0;
   }, [order]);
 
-  const subtotalAmount = useMemo(() => {
+  const subtotalFromItems = useMemo(() => {
     if (items && items.length > 0) {
       return items.reduce((acc, item) => acc + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
     }
+    return 0;
+  }, [items]);
+
+  const shippingCost = useMemo(() => {
+    let raw = Number(order?.shipping_cost || order?.shippingCost || 0);
+    if (raw === 0 && totalAmount > 0 && subtotalFromItems > 0) {
+      raw = Math.max(0, totalAmount - subtotalFromItems + discountAmount);
+    }
+    return Number.isFinite(raw) ? raw : 0;
+  }, [order, totalAmount, subtotalFromItems, discountAmount]);
+
+  const subtotalAmount = useMemo(() => {
+    if (subtotalFromItems > 0) return subtotalFromItems;
     return Math.max(0, totalAmount - shippingCost + discountAmount);
-  }, [items, totalAmount, shippingCost, discountAmount]);
+  }, [subtotalFromItems, totalAmount, shippingCost, discountAmount]);
 
   const shippingAddressText = useMemo(() => {
     const addr = shipping?.shipping_address || order?.shipping_address;
@@ -309,9 +339,15 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
       invoiceElement.innerHTML = `
         <div style="padding: 40px; font-family: 'Inter', sans-serif; color: #111;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eaeaea; padding-bottom: 20px; margin-bottom: 20px;">
-            <div>
-              <h1 style="margin: 0; font-size: 24px; color: #000; letter-spacing: 2px;">XAR PERFUMERY</h1>
-              <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">INVOICE TRANSAKSI</p>
+            <div style="display: flex; align-items: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 458.47 321.05" style="width: 45px; height: 45px; color: #000; margin-right: 15px;" fill="currentColor">
+                <polygon points="256.99 0 0 321.05 64.03 321.05 321.03 0 256.99 0" />
+                <polygon points="394.44 321.05 458.47 321.05 329.96 160.5 458.44 0 394.41 0 297.94 120.51 265.93 160.5 137.41 321.05 160.51 321.05 201.44 321.05 295.46 321.05 330.28 278.26 235.69 278.26 297.94 200.5 394.44 321.05" />
+              </svg>
+              <div>
+                <h1 style="margin: 0; font-size: 24px; color: #000; letter-spacing: 2px;">MAKE ME KOOL</h1>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">INVOICE TRANSAKSI</p>
+              </div>
             </div>
             <div style="text-align: right;">
               <p style="margin: 0; font-weight: bold; color: #333;">Order ID: ${order.order_number || order.id}</p>
@@ -322,7 +358,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
           <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
             <div>
               <p style="margin: 0; font-weight: bold; font-size: 14px; color: #888; text-transform: uppercase;">Ditagihkan Kepada</p>
-              <p style="margin: 5px 0 0 0; font-weight: 600;">${order.customer_name || "Pelanggan XAR"}</p>
+              <p style="margin: 5px 0 0 0; font-weight: 600;">${order.customer_name || "Pelanggan"}</p>
               <p style="margin: 5px 0 0 0; font-size: 14px; color: #444;">${order.customer_phone || "-"}</p>
               <p style="margin: 5px 0 0 0; font-size: 14px; color: #444; max-width: 250px; line-height: 1.4;">${shippingAddressText}</p>
             </div>
@@ -382,7 +418,7 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
           </div>
 
           <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #888; font-size: 12px;">
-            <p style="margin: 0;">Terima kasih telah berbelanja di XAR Perfumery.</p>
+            <p style="margin: 0;">Terima kasih telah berbelanja di MAKE ME KOOL.</p>
             <p style="margin: 5px 0 0 0;">Jika ada pertanyaan mengenai pesanan Anda, silakan hubungi customer service kami.</p>
           </div>
         </div>
@@ -652,6 +688,81 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
     return ord.hasBeenReviewed;
   };
 
+  const handleProofChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Format foto harus JPG, PNG, atau WebP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran foto maksimal 5 MB.");
+      return;
+    }
+    setProofFile(file);
+    setProofPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveProof = () => {
+    if (proofPreview) URL.revokeObjectURL(proofPreview);
+    setProofFile(null);
+    setProofPreview(null);
+  };
+
+  const handleUploadProof = async () => {
+    if (!proofFile || !user) return;
+    setIsSubmittingProof(true);
+    const toastId = toast.loading("Mengunggah bukti pembayaran...");
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const uploadData = new FormData();
+      uploadData.append("file", proofFile);
+      uploadData.append("userId", user.id || user.uid);
+      uploadData.append("folder", "payments");
+      
+      const uploadRes = await fetch("/api/cloudinary", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: uploadData,
+      });
+      const uploadResult = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadResult.error || "Gagal upload gambar.");
+      
+      const proofUrl = uploadResult.secure_url;
+      
+      const res = await fetch(`/api/user/orders/${order.id}/pay`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ receiptUrl: proofUrl, userId: user.id || user.uid }),
+      });
+      
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal menyimpan bukti pembayaran.");
+      
+      toast.success("Bukti pembayaran berhasil diunggah!", { id: toastId });
+      
+      // Update local state to reflect changes
+      setOrder(prev => ({ 
+        ...prev, 
+        status: "verifying", 
+        shipping_detail: { ...(prev.shipping_detail || {}), payment_proof_url: proofUrl } 
+      }));
+      
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message, { id: toastId });
+    } finally {
+      setIsSubmittingProof(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.pageContainer}>
@@ -736,6 +847,85 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
           </button>
         </div>
       </div>
+
+      {/* ─── MANUAL TRANSFER INFO ─── */}
+      {order?.payment_type === "Manual Transfer" && (isPendingStatus || (order.status || "").toLowerCase() === "verifying") && (
+        <div className={styles.panel} style={{ marginBottom: "1.5rem", border: "1px solid var(--primary-accent)", background: "rgba(var(--primary-accent-rgb), 0.03)" }}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelIconCircle} style={{ background: "var(--primary-accent)", color: "var(--primary-accent-text)" }}>
+              <AppIcon name="banknote" size={18} />
+            </div>
+            <h2 className={styles.panelTitle}>Instruksi Transfer Manual</h2>
+          </div>
+          
+          <div style={{ padding: "0 1.5rem 1.5rem" }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "1rem" }}>
+              Silakan transfer tepat sebesar <strong>Rp {totalAmount.toLocaleString("id-ID")}</strong> ke salah satu rekening berikut:
+            </p>
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+              {storeSettings?.contact?.bankAccounts && storeSettings.contact.bankAccounts.length > 0 ? (
+                storeSettings.contact.bankAccounts.map((account, idx) => (
+                  <div key={idx} style={{ background: "var(--surface-primary)", border: "1px solid var(--border-color)", padding: "1rem", borderRadius: "8px", flex: 1, minWidth: "200px" }}>
+                    <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>{account.bankName}</div>
+                    <div style={{ fontSize: "1.2rem", margin: "0.5rem 0", letterSpacing: "1px" }}>{account.accountNumber}</div>
+                    <div style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>a.n. {account.accountName}</div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", fontStyle: "italic" }}>
+                  (Belum ada rekening yang diatur. Silakan hubungi admin.)
+                </div>
+              )}
+            </div>
+
+            {isPendingStatus ? (
+              <div style={{ background: "var(--surface-primary)", padding: "1.2rem", borderRadius: "8px", border: "1px dashed var(--border-color)" }}>
+                <h4 style={{ marginBottom: "0.5rem", fontSize: "0.95rem" }}>Upload Bukti Pembayaran</h4>
+                {proofPreview ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "1rem" }}>
+                    <img src={proofPreview} alt="Bukti Transfer" style={{ maxWidth: "200px", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button onClick={handleRemoveProof} className={styles.secondaryBtn} disabled={isSubmittingProof}>Ganti Foto</button>
+                      <button onClick={handleUploadProof} className={styles.primaryBtn} disabled={isSubmittingProof}>
+                        {isSubmittingProof ? "Mengunggah..." : "Kirim Bukti Pembayaran"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label style={{ display: "inline-block", cursor: "pointer", background: "rgba(var(--primary-accent-rgb), 0.08)", color: "var(--primary-accent)", padding: "10px 16px", borderRadius: "6px", fontWeight: 600, fontSize: "0.9rem" }}>
+                    Pilih Foto Struk / Screenshot
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProofChange} style={{ display: "none" }} />
+                  </label>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", background: "var(--surface-primary)", padding: "1.2rem", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-secondary)" }}>
+                  <AppIcon name="check-circle" size={16} style={{ color: "var(--success-color)" }} />
+                  <span>Bukti pembayaran sudah diunggah dan sedang diverifikasi admin.</span>
+                </div>
+                
+                {/* ── TOMBOL WHATSAPP (HYBRID NOTIF) ── */}
+                {(() => {
+                  let waNumber = storeSettings?.contact?.whatsappNumber?.replace(/\D/g, "") || "6281234567890";
+                  if (waNumber.startsWith("0")) waNumber = "62" + waNumber.slice(1);
+                  return (
+                    <a 
+                      href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Halo Admin, saya sudah mentransfer dan meng-upload bukti pembayaran untuk pesanan ${order.order_number || order.id}. Tolong diverifikasi ya!`)}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#25D366", color: "#fff", padding: "10px 16px", borderRadius: "6px", fontWeight: 600, fontSize: "0.9rem", textDecoration: "none", width: "fit-content" }}
+                    >
+                      <AppIcon name="message-circle" size={18} />
+                      Kabari Admin via WhatsApp
+                    </a>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Grid: Ringkasan & Pengiriman */}
       <div className={styles.grid}>

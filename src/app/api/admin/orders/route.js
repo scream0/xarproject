@@ -50,7 +50,7 @@ export async function GET(request) {
     const limit = Math.max(1, Math.min(100, Number(searchParams.get("limit") || 20)));
     const offset = (page - 1) * limit;
     const ORDER_LIST_SELECT =
-      "id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,shipping_address,shipping_detail,created_at,updated_at";
+      "id,user_id,status,amount,shipping_cost,discount_amount,tax_amount,payment_type,customer_name,customer_email,customer_phone,shipping_receipt_number,shipping_address,shipping_detail,created_at,updated_at,items:order_items(*)";
 
     // Base query with count for pagination
     let query = supabaseAdmin

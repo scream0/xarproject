@@ -263,6 +263,27 @@
   border-bottom: 0;
 }
 
+.printBrand {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  gap: 0.8rem;
+}
+
+.printBrandLogo {
+  width: 80px;
+}
+
+.printBrandTitle {
+  margin: 0;
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
 .printPreview {
   display: flex;
   flex-direction: column;
@@ -318,17 +339,30 @@
 
   .closeButton,
   .drawerActions,
+  .drawerHeader,
   .bulkBar,
   .summaryBar,
   .pagination,
   .header,
-  .controls {
+  .controls,
+  .tableWrap,
+  .adminTabs,
+  .empty {
     display: none !important;
   }
 
   .printCard {
     break-inside: avoid;
     margin-bottom: 1rem;
+  }
+
+  .printBrand {
+    color: #000000 !important;
+  }
+
+  .printBrand svg {
+    color: #000000 !important;
+    fill: #000000 !important;
   }
 }
 

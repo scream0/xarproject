@@ -231,7 +231,7 @@ export default function LoginForm() {
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       });
       if (resetError) throw resetError;
       setSuccessMessage("Link reset password telah dikirim ke email Anda.");

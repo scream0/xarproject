@@ -168,11 +168,12 @@ export default function OverviewUser({ setActiveTab }) {
             "settlement",
             "capture",
             "paid",
+            "delivered"
           ].includes((o.status || "").toLowerCase()),
         );
 
         const totalSpent = completedOrders.reduce(
-          (sum, o) => sum + Number(o.amount || o.price || o.rawPrice || 0),
+          (sum, o) => sum + Number(o.gross_amount || o.totalAmount || o.amount || o.price || o.rawPrice || 0),
           0,
         );
 
@@ -278,17 +279,6 @@ export default function OverviewUser({ setActiveTab }) {
           </h3>
           <p className={styles.metricDesc}>
             {overviewConfig.metrics.processingOrders.desc}
-          </p>
-        </div>
-        <div className={`${styles.metricCard} ${styles.metricCardWallet}`}>
-          <p className={styles.metricTitle}>
-            {overviewConfig.metrics.balance.title}
-          </p>
-          <h3 className={styles.metricValue}>
-            {loading ? "..." : formatRupiah(stats.balance)}
-          </h3>
-          <p className={styles.metricDesc}>
-            {overviewConfig.metrics.balance.desc}
           </p>
         </div>
       </div>

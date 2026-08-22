@@ -14,12 +14,12 @@ function calculateDashboardStats({ products = [], orders = [] } = {}) {
     return count + lowStockVariants.length;
   }, 0);
 
-  const paidStatuses = new Set(["paid", "success", "processing", "shipped", "shipping", "completed", "settlement"]);
+  const paidStatuses = new Set(["paid", "success", "processing", "shipped", "shipping", "completed", "settlement", "delivered", "capture"]);
 
   const totalRevenue = orderList.reduce((total, order) => {
     const status = String(order?.status || "").toLowerCase();
     if (!paidStatuses.has(status)) return total;
-    return total + Number(order?.amount || order?.price || 0);
+    return total + Number(order?.amount || order?.total_amount || order?.gross_amount || order?.total || order?.price || 0);
   }, 0);
 
   return {

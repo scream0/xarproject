@@ -169,7 +169,22 @@ h4,
 /* Print mode untuk cetak PDF yang bersih */
 @media print {
   body {
-    background: var(--surface-primary) !important;
-    color: var(--text-primary) !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  /* Sembunyikan elemen dashboard saat nge-print dari OrdersManagement */
+  aside[id="admin-sidebar-drawer"],
+  div[class*="mobileTopBar"],
+  header[class*="header"] {
+    display: none !important;
+  }
+  
+  main[class*="mainContent"] {
+    margin-left: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    background: white !important;
   }
 }

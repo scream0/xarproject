@@ -643,6 +643,7 @@ const handleUserData = useCallback(async (currentUser, token) => {
       const shippingVoucherClaimId = customParams.shippingVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type === 'shipping')?.claimId || null;
       const discountVoucherId = customParams.discountVoucherId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.voucherId || null;
       const discountVoucherClaimId = customParams.discountVoucherClaimId || shippingDetail?.appliedVouchers?.find(v => v.type !== 'shipping')?.claimId || null;
+      const paymentMethod = customParams.paymentMethod || "midtrans";
 
       const response = await fetch("/api/midtrans", {
         method: "POST",
@@ -670,6 +671,7 @@ const handleUserData = useCallback(async (currentUser, token) => {
           shippingVoucherClaimId,
           discountVoucherId,
           discountVoucherClaimId,
+          paymentMethod,
         }),
       });
 
@@ -691,7 +693,10 @@ const handleUserData = useCallback(async (currentUser, token) => {
       await fetchProducts();
       window.dispatchEvent(new Event("product-stock-updated"));
 
-      if (data.token && window.snap) {
+      if (data.method === "manual") {
+        toast.success("Pesanan Berhasil Dibuat!");
+        router.push(`/account/orders/${orderId}?order_id=${orderId}&status_code=201&transaction_status=pending&payment_type=manual`);
+      } else if (data.token && window.snap) {
         window.snap.pay(data.token, {
           onSuccess: async (result) => {
             toast.success("Pembayaran Berhasil!");

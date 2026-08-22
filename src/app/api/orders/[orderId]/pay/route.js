@@ -32,6 +32,37 @@ export async function POST(request, context) {
       .select("*")
       .eq("order_id", orderId);
 
+    // ── MANUAL PAYMENT PROOF UPLOAD ──
+    if (body.receiptUrl) {
+      const newShippingDetail = { ...(order.shipping_detail || {}), payment_proof_url: body.receiptUrl };
+      
+      const statusHistory = Array.isArray(order.status_history) ? [...order.status_history] : [];
+      statusHistory.push({
+        id: `${Date.now()}-user`,
+        status_from: order.status,
+        status_to: "verifying",
+        notes: "Pembeli mengunggah bukti pembayaran.",
+        changed_by: "user",
+        created_at: new Date().toISOString()
+      });
+
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ 
+          shipping_detail: newShippingDetail,
+          status: "verifying",
+          status_history: statusHistory
+        })
+        .eq("id", orderId);
+
+      if (updateError) {
+        return NextResponse.json({ error: "Gagal menyimpan bukti pembayaran." }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+    // ─────────────────────────────────
+
     // Jika sudah ada snap_token yang valid, bisa langsung dikembalikan
     if (order.snap_token) {
       return NextResponse.json({ snap_token: order.snap_token }, { status: 200 });

@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import overviewConfig from "@/data/ui/overviewConfig.json";
 import { StatsSkeleton } from "@/components/UI/Skeleton/SkeletonLayouts";
 import { calculateDashboardStats } from "@/utils/dashboardSummary";
+import { auth } from "@/lib/supabaseClient";
 
 export default function OverviewStats() {
   const [stats, setStats] = useState({
@@ -18,9 +19,13 @@ export default function OverviewStats() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      const { data: { session } } = await auth.getSession();
+      const token = session?.access_token;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
       const [res, ordersRes] = await Promise.all([
-        fetch("/api/products?limit=200"),
-        fetch("/api/orders?limit=200")
+        fetch("/api/products?limit=200", { headers }),
+        fetch("/api/admin/orders?limit=1000", { headers })
       ]);
       
       const productsResult = res.ok ? await res.json() : {};

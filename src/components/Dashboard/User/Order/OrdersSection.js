@@ -224,19 +224,36 @@ export default function OrdersSection() {
   }, []);
 
   useEffect(() => {
-    const snapScriptUrl = process.env.NODE_ENV === "production"
-      ? "https://app.midtrans.com/snap/snap.js"
-      : "https://app.sandbox.midtrans.com/snap/snap.js";
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+    const loadMidtrans = async () => {
+      try {
+        const { getPublicSettings } = await import('@/services/settingsService');
+        const settings = await getPublicSettings();
+        if (!settings || settings.enableMidtrans === false) return;
 
-    if (!document.getElementById("midtrans-snap-script")) {
-      const script = document.createElement("script");
-      script.id = "midtrans-snap-script";
-      script.src = snapScriptUrl;
-      script.setAttribute("data-client-key", clientKey);
-      script.async = true;
-      document.body.appendChild(script);
-    }
+        const isProduction = settings.midtransIsProduction === true;
+        const snapScriptUrl = isProduction
+          ? "https://app.midtrans.com/snap/snap.js"
+          : "https://app.sandbox.midtrans.com/snap/snap.js";
+        
+        // Karena di client NEXT_PUBLIC_ ditarik saat build, 
+        // pastikan env yang sesuai mode ditarik.
+        const clientKey = isProduction 
+          ? process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_PRODUCTION 
+          : process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX;
+
+        if (!document.getElementById("midtrans-snap-script") && clientKey) {
+          const script = document.createElement("script");
+          script.id = "midtrans-snap-script";
+          script.src = snapScriptUrl;
+          script.setAttribute("data-client-key", clientKey);
+          script.async = true;
+          document.body.appendChild(script);
+        }
+      } catch (err) {
+        console.error("Failed to load midtrans settings", err);
+      }
+    };
+    loadMidtrans();
   }, []);
 
   useEffect(() => {
@@ -901,10 +918,21 @@ export default function OrdersSection() {
             </div>
           ) : (
             filteredOrders.map((order) => {
-              const isFinished = order.status === "completed";
-              const isPending = order.status === "pending";
+              const isFinished = ["completed", "delivered"].includes(order.status);
+              const isPending = ["pending", "unpaid"].includes(order.status);
               const isDelivered = ["shipping", "shipped", "delivered", "completed"].includes(order.status);
-              const canReturn = ["shipping", "shipped", "delivered", "completed"].includes(order.status) && !["return_requested", "returning", "returned"].includes(order.status);
+              
+              // Cek masa garansi pengembalian 48 jam
+              const isReturnPeriodValid = () => {
+                if (!isFinished) return true; // jika masih dikirim, masih valid
+                const lastUpdate = new Date(order.updated_at || order.updatedAt || order.created_at || order.createdAt || Date.now());
+                const now = new Date();
+                const diffHours = (now - lastUpdate) / (1000 * 60 * 60);
+                return diffHours <= 48;
+              };
+
+              const canReturn = ["shipping", "shipped", "delivered", "completed"].includes(order.status) && !["return_requested", "returning", "returned", "return_rejected"].includes(order.status) && isReturnPeriodValid();
+              
               const statusInfo = getStatusInfo(order.status);
               const reviewableItems =
                 order.items && order.items.length > 0

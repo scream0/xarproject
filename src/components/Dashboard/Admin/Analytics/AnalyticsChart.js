@@ -12,6 +12,7 @@ import styles from "./AnalyticsChart.module.css";
 
 // Import Konfigurasi JSON
 import analyticsConfig from "@/data/ui/analyticsConfig.json";
+import { auth } from "@/lib/supabaseClient";
 
 export default function AnalyticsChart() {
   const [rawTransactions, setRawTransactions] = useState([]);
@@ -186,7 +187,11 @@ export default function AnalyticsChart() {
   useEffect(() => {
     const fetchTransactionData = async () => {
       try {
-        const res = await fetch("/api/orders");
+        const { data: { session } } = await auth.getSession();
+        const token = session?.access_token;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const res = await fetch("/api/admin/orders?limit=1000", { headers });
         const result = await res.json();
 
         let transactions = Array.isArray(result)
@@ -194,7 +199,7 @@ export default function AnalyticsChart() {
           : result.data || result.orders || [];
 
         // Hanya hitung pesanan yang sudah dibayar/diproses
-        const paidStatuses = new Set(["paid", "success", "processing", "shipped", "shipping", "completed", "settlement"]);
+        const paidStatuses = new Set(["paid", "success", "processing", "shipped", "shipping", "delivered", "completed", "settlement", "capture"]);
         transactions = transactions.filter(tx => paidStatuses.has(String(tx.status || "").toLowerCase()));
 
         if (transactions && transactions.length > 0) {
@@ -222,8 +227,65 @@ export default function AnalyticsChart() {
     }
   }, [timeframe, rawTransactions, processChartData]);
 
-  const handleExportPdf = () => {
-    window.print();
+  const handleExportPdf = async () => {
+    const reportElement = document.getElementById("analytics-report-content");
+    const headerElement = document.getElementById("analytics-pdf-header");
+
+    if (!reportElement) {
+      alert("Elemen laporan tidak ditemukan.");
+      return;
+    }
+
+    try {
+      // Tampilkan header khusus PDF
+      if (headerElement) headerElement.style.display = "flex";
+
+      const html2pdf = (await import("html2pdf.js")).default;
+      const opt = {
+        margin: [15, 10, 15, 10], // top, left, bottom, right
+        filename: `Laporan_Analitik_${timeframe}_${new Date().getTime()}.pdf`,
+        image: { type: "jpeg", quality: 1.0 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff", // Paksa background putih (penting jika sedang di dark mode)
+          windowWidth: 1200, // Paksa lebar agar grafik tidak gepeng
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+      };
+
+      await html2pdf().set(opt).from(reportElement).save();
+    } catch (error) {
+      console.error("Gagal mengekspor PDF:", error);
+      alert("Terjadi kesalahan saat membuat PDF.");
+    } finally {
+      // Sembunyikan kembali header
+      if (headerElement) headerElement.style.display = "none";
+    }
+  };
+
+  const handleExportCsv = () => {
+    if (!chartData || chartData.length === 0) {
+      alert("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    const csvRows = [];
+    csvRows.push(["Periode", "Total Penjualan"]);
+
+    chartData.forEach(row => {
+      csvRows.push([row.name, row.sales]);
+    });
+
+    const csvContent = csvRows.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Data_Analitik_${timeframe}_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -251,6 +313,9 @@ export default function AnalyticsChart() {
               {analyticsConfig.tabs.yearly}
             </button>
           </div>
+          <button onClick={handleExportCsv} className={styles.exportBtn} style={{ marginRight: '8px' }}>
+            Export CSV
+          </button>
           <button onClick={handleExportPdf} className={styles.exportBtn}>
             {analyticsConfig.buttons.exportPdf}
           </button>

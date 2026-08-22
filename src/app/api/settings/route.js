@@ -13,8 +13,9 @@ const DEFAULT_SETTINGS = {
   lowStockThreshold: 10,
   storeCityId: "",
   storeCityName: "",
-  midtransServerKey: "",
-  midtransClientKey: "",
+  enableMidtrans: true,
+  enableManualTransfer: false,
+  midtransIsProduction: false,
   hero: {
     tagline: "Artisanal Craftsmanship",
     title: { main: "Meracik Batas Antara", highlight: "Aroma & Rasa" },
@@ -70,6 +71,10 @@ const DEFAULT_SETTINGS = {
       fields: { name: "Nama Lengkap", email: "Alamat Email", phone: "Nomor WhatsApp", message: "Tulis Pesan Anda..." },
       submitText: "Kirim via WhatsApp",
     },
+    bankAccounts: [
+      { id: "1", bankName: "BCA", accountNumber: "123456789", accountName: "PT Mameko Store" },
+      { id: "2", bankName: "Bank Mandiri", accountNumber: "0987654321", accountName: "PT Mameko Store" }
+    ],
   },
   footer: {
     branding: {
@@ -164,6 +169,9 @@ async function ensureSettingsDoc() {
       promo_code: DEFAULT_SETTINGS.promoCode,
       promo_destination: DEFAULT_SETTINGS.promoDestination,
       active_couriers: DEFAULT_SETTINGS.activeCouriers,
+      enable_midtrans: DEFAULT_SETTINGS.enableMidtrans,
+      enable_manual_transfer: DEFAULT_SETTINGS.enableManualTransfer,
+      midtrans_is_production: DEFAULT_SETTINGS.midtransIsProduction,
     };
     const { error: insertError } = await supabaseAdmin.from("store_config").insert(insertPayload);
     if (insertError) throw new Error(`Failed to create default settings: ${insertError.message}`);
@@ -178,8 +186,9 @@ async function ensureSettingsDoc() {
     lowStockThreshold: data.low_stock_threshold !== undefined ? data.low_stock_threshold : data.lowStockThreshold,
     storeCityId: data.store_city_id !== undefined ? data.store_city_id : data.storeCityId,
     storeCityName: data.store_city_name !== undefined ? data.store_city_name : data.storeCityName,
-    midtransServerKey: data.midtrans_server_key !== undefined ? data.midtrans_server_key : data.midtransServerKey,
-    midtransClientKey: data.midtrans_client_key !== undefined ? data.midtrans_client_key : data.midtransClientKey,
+    enableMidtrans: data.enable_midtrans !== undefined ? data.enable_midtrans : data.enableMidtrans,
+    enableManualTransfer: data.enable_manual_transfer !== undefined ? data.enable_manual_transfer : data.enableManualTransfer,
+    midtransIsProduction: data.midtrans_is_production !== undefined ? data.midtrans_is_production : data.midtransIsProduction,
     promoBannerEnabled: data.promo_banner_enabled !== undefined ? data.promo_banner_enabled : data.promoBannerEnabled,
     promoBannerText: data.promo_banner_text !== undefined ? data.promo_banner_text : data.promoBannerText,
     promoDiscountType: data.promo_discount_type !== undefined ? data.promo_discount_type : data.promoDiscountType,
@@ -273,6 +282,15 @@ export async function PUT(request) {
     if (newSettings.lowStockThreshold !== undefined) updateData.low_stock_threshold = Number(newSettings.lowStockThreshold);
     if (newSettings.storeCityId !== undefined) updateData.store_city_id = String(newSettings.storeCityId || "");
     if (newSettings.storeCityName !== undefined) updateData.store_city_name = String(newSettings.storeCityName || "");
+    if (newSettings.enableMidtrans !== undefined) {
+      updateData.enable_midtrans = newSettings.enableMidtrans;
+    }
+    if (newSettings.enableManualTransfer !== undefined) {
+      updateData.enable_manual_transfer = newSettings.enableManualTransfer;
+    }
+    if (newSettings.midtransIsProduction !== undefined) {
+      updateData.midtrans_is_production = newSettings.midtransIsProduction;
+    }
     if (newSettings.promoBannerEnabled !== undefined) updateData.promo_banner_enabled = Boolean(newSettings.promoBannerEnabled);
     if (newSettings.promoBannerText !== undefined) updateData.promo_banner_text = newSettings.promoBannerText;
     if (newSettings.promoDiscountType !== undefined) updateData.promo_discount_type = newSettings.promoDiscountType === "fixed" ? "fixed" : "percentage";

@@ -24,6 +24,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import dynamic from "next/dynamic";
 import adminConfig from "@/data/ui/adminConfig.json";
 import { supabase } from "@/lib/supabaseClient";
+import { Logo } from "@/components/UI/Logo/logo";
 
 const AnalyticsChart = dynamic(() => import("@/components/Dashboard/Admin/Analytics/AnalyticsChart"), {
   loading: () => <p>Loading chart...</p>,
@@ -34,6 +35,7 @@ const AdvancedAnalytics = dynamic(() => import("@/components/Dashboard/Admin/Ana
   ssr: false
 });
 import OverviewStats from "@/components/Dashboard/Admin/Overview/OverviewStats";
+import TransactionTable from "@/components/Dashboard/Admin/Overview/TransactionTable";
 import ProductManager from "@/components/Dashboard/Admin/Products/ProductManager";
 import ReviewManager from "@/components/Dashboard/Admin/Reviews/ReviewManager";
 import SettingsView from "@/components/Dashboard/Admin/Settings/SettingsView";
@@ -287,7 +289,7 @@ export default function AdminDashboard() {
           <>
             <OverviewStats />
             <section className={styles.workspaceArea}>
-              <AnalyticsChart />
+              <TransactionTable />
             </section>
           </>
         );
@@ -310,7 +312,18 @@ export default function AdminDashboard() {
       case "analytics":
         return (
           <section className={styles.workspaceArea}>
-            <div className={styles.workspaceInner}>
+            <div className={styles.workspaceInner} id="analytics-report-content">
+              {/* Header khusus untuk Export PDF (disembunyikan secara default, ditampilkan saat export) */}
+              <div id="analytics-pdf-header" style={{ display: "none", alignItems: "center", justifyContent: "space-between", paddingBottom: "20px", marginBottom: "20px", borderBottom: "2px solid #eaeaea", color: "#000" }}>
+                <div style={{ display: "flex", alignItems: "center", transform: "scale(0.8)", transformOrigin: "left center" }}>
+                  <Logo />
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <h3 style={{ margin: 0, fontSize: "1.2rem", color: "#000" }}>Laporan Analitik & Penjualan</h3>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#666" }}>Dicetak pada: {new Date().toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+              </div>
+
               <AnalyticsChart />
               <AdvancedAnalytics />
             </div>

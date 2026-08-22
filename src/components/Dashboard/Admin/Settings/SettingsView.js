@@ -19,8 +19,9 @@ const EMPTY = {
     currency: "IDR",
     adminLocale: "id",
     lowStockThreshold: 10,
-    midtransServerKey: "",
-    midtransClientKey: "",
+    enableMidtrans: true,
+    enableManualTransfer: false,
+    midtransIsProduction: false,
   },
   couriers: {
     activeCouriers: ["jne", "jnt", "pos"],
@@ -109,6 +110,9 @@ export default function SettingsView() {
       lowStockThreshold: Number(data?.lowStockThreshold ?? 10),
       midtransServerKey: data?.midtransServerKey || "",
       midtransClientKey: data?.midtransClientKey || "",
+      enableMidtrans: data?.enableMidtrans ?? true,
+      enableManualTransfer: data?.enableManualTransfer ?? false,
+      midtransIsProduction: data?.midtransIsProduction ?? false,
     },
     couriers: {
       activeCouriers: data?.activeCouriers || ["jne", "jnt", "pos"],
@@ -177,6 +181,7 @@ export default function SettingsView() {
         },
         submitText: data?.contact?.form?.submitText || "",
       },
+      bankAccounts: data?.contact?.bankAccounts || [],
     },
     footer: {
       branding: {
@@ -399,6 +404,9 @@ export default function SettingsView() {
       lowStockThreshold: Number(s.store.lowStockThreshold) || 10,
       midtransServerKey: strictValue(s.store.midtransServerKey),
       midtransClientKey: strictValue(s.store.midtransClientKey),
+      enableMidtrans: Boolean(s.store.enableMidtrans),
+      enableManualTransfer: Boolean(s.store.enableManualTransfer),
+      midtransIsProduction: Boolean(s.store.midtransIsProduction),
       activeCouriers: s.couriers.activeCouriers || ["jne", "jnt", "pos"],
       hero: {
         image: strictValue(s.hero.image),
@@ -462,6 +470,7 @@ export default function SettingsView() {
           },
           submitText: strictValue(s.contact.form?.submitText),
         },
+        bankAccounts: s.contact.bankAccounts || [],
       },
       footer: {
         branding: {
@@ -599,6 +608,8 @@ export default function SettingsView() {
           <PaymentTab
             settings={settings.store}
             handleInputChange={handleInputChange}
+            bankAccounts={settings.contact?.bankAccounts || []}
+            updateBankAccounts={(accounts) => updateTab("contact", { ...settings.contact, bankAccounts: accounts })}
             cfg={cfg}
           />
         )}
@@ -1719,42 +1730,162 @@ function FooterTab({ settings, updateTab, cfg }) {
 /* ============================================================
    TAB: PAYMENT
    ============================================================ */
-function PaymentTab({ settings, handleInputChange, cfg }) {
+function PaymentTab({ settings, handleInputChange, bankAccounts, updateBankAccounts, cfg }) {
   return (
     <div className={styles.formSection}>
       <h4 className={styles.sectionTitle}>
         {cfg.sections?.paymentKeys || "Kunci API Gateway Pembayaran"}
       </h4>
       <div className={styles.inputGroup}>
-        <label className={styles.fieldLabel}>
-          {cfg.labels?.midtransServerKey || "Midtrans Server Key"}
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "600", fontSize: "0.95rem" }}>
+          <input
+            type="checkbox"
+            name="enableMidtrans"
+            checked={settings.enableMidtrans ?? true}
+            onChange={(e) => {
+              const syntheticEvent = {
+                target: {
+                  name: "enableMidtrans",
+                  value: e.target.checked
+                }
+              };
+              handleInputChange(syntheticEvent);
+            }}
+            style={{ width: "18px", height: "18px" }}
+          />
+          Aktifkan Midtrans (Pembayaran Otomatis)
         </label>
-        <input
-          type="password"
-          name="midtransServerKey"
-          value={settings.midtransServerKey}
-          onChange={handleInputChange}
-          className={styles.inputField}
-          placeholder={cfg.placeholders?.updateKey || ""}
-        />
-        <small className={styles.fieldDesc}>
-          {cfg.descriptions?.midtransServerKey ||
-            "Kunci ini bersifat rahasia dan tidak akan pernah ditampilkan lagi."}
-        </small>
+        <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginTop: "0.5rem", marginLeft: "1.7rem" }}>
+          Pembayaran otomatis melalui Virtual Account, GoPay, QRIS, dsb. Pastikan Server Key & Client Key sudah diatur di file .env server Anda.
+        </p>
       </div>
-      <div className={styles.inputGroup}>
-        <label className={styles.fieldLabel}>
-          {cfg.labels?.midtransClientKey || "Midtrans Client Key"}
+
+      {settings.enableMidtrans && (
+        <div className={styles.inputGroup} style={{ marginTop: "1rem", marginLeft: "1.7rem", padding: "1rem", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+          <label className={styles.fieldLabel}>
+            Lingkungan Midtrans (Mode)
+          </label>
+          <select
+            name="midtransIsProduction"
+            value={settings.midtransIsProduction ? "true" : "false"}
+            onChange={(e) => {
+              const syntheticEvent = {
+                target: {
+                  name: "midtransIsProduction",
+                  value: e.target.value === "true"
+                }
+              };
+              handleInputChange(syntheticEvent);
+            }}
+            className={styles.inputField}
+            style={{ marginTop: "0.5rem" }}
+          >
+            <option value="false">Sandbox (Mode Uji Coba)</option>
+            <option value="true">Production (Mode Live Asli)</option>
+          </select>
+          <small className={styles.fieldDesc} style={{ display: "block", marginTop: "0.5rem" }}>
+            Pastikan <strong>MIDTRANS_SERVER_KEY_SANDBOX</strong> dan <strong>MIDTRANS_SERVER_KEY_PRODUCTION</strong> sudah diatur di .env!
+          </small>
+        </div>
+      )}
+
+      <div className={styles.inputGroup} style={{ marginTop: "1.5rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "600", fontSize: "0.95rem" }}>
+          <input
+            type="checkbox"
+            name="enableManualTransfer"
+            checked={settings.enableManualTransfer ?? false}
+            onChange={(e) => {
+              const syntheticEvent = {
+                target: {
+                  name: "enableManualTransfer",
+                  value: e.target.checked
+                }
+              };
+              handleInputChange(syntheticEvent);
+            }}
+            style={{ width: "18px", height: "18px" }}
+          />
+          Aktifkan Transfer Bank Manual
         </label>
-        <input
-          type="password"
-          name="midtransClientKey"
-          value={settings.midtransClientKey}
-          onChange={handleInputChange}
-          className={styles.inputField}
-          placeholder={cfg.placeholders?.updateKey || ""}
-        />
+        <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginTop: "0.5rem", marginLeft: "1.7rem" }}>
+          Sistem akan mengirimkan instruksi transfer manual (rekening bank dsb) kepada pelanggan, lalu admin memverifikasi bukti bayar secara manual.
+        </p>
       </div>
+
+      {settings.enableManualTransfer && (
+        <div className={styles.inputGroup} style={{ marginTop: "1rem", marginLeft: "1.7rem", padding: "1rem", background: "var(--surface-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+          <h5 style={{ margin: "0 0 1rem 0", fontSize: "0.9rem", color: "var(--text-primary)" }}>Daftar Rekening Bank</h5>
+          {bankAccounts.map((account, idx) => (
+            <div key={account.id || idx} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "1rem", background: "var(--surface-primary)", borderRadius: "6px", marginBottom: "1rem", border: "1px solid var(--border-color)" }}>
+              <div className={styles.row2}>
+                <div className={styles.inputGroup} style={{ margin: 0 }}>
+                  <label className={styles.fieldLabel}>Nama Bank</label>
+                  <input
+                    className={styles.inputField}
+                    value={account.bankName}
+                    placeholder="BCA"
+                    onChange={(e) => {
+                      const newAccs = [...bankAccounts];
+                      newAccs[idx].bankName = e.target.value;
+                      updateBankAccounts(newAccs);
+                    }}
+                  />
+                </div>
+                <div className={styles.inputGroup} style={{ margin: 0 }}>
+                  <label className={styles.fieldLabel}>No. Rekening</label>
+                  <input
+                    className={styles.inputField}
+                    value={account.accountNumber}
+                    placeholder="1234567890"
+                    onChange={(e) => {
+                      const newAccs = [...bankAccounts];
+                      newAccs[idx].accountNumber = e.target.value;
+                      updateBankAccounts(newAccs);
+                    }}
+                  />
+                </div>
+              </div>
+              <div className={styles.inputGroup} style={{ margin: 0 }}>
+                <label className={styles.fieldLabel}>Atas Nama</label>
+                <input
+                  className={styles.inputField}
+                  value={account.accountName}
+                  placeholder="PT Mameko Store"
+                  onChange={(e) => {
+                    const newAccs = [...bankAccounts];
+                    newAccs[idx].accountName = e.target.value;
+                    updateBankAccounts(newAccs);
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                style={{ alignSelf: "flex-start", padding: "0.4rem 0.8rem", fontSize: "12px", background: "#ff4d4f", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                onClick={() => {
+                  const newAccs = bankAccounts.filter((_, i) => i !== idx);
+                  updateBankAccounts(newAccs);
+                }}
+              >
+                Hapus Rekening
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            className={styles.addRowBtn}
+            style={{ marginTop: "0.5rem" }}
+            onClick={() => {
+              updateBankAccounts([
+                ...bankAccounts,
+                { id: Date.now().toString(), bankName: "", accountNumber: "", accountName: "" }
+              ]);
+            }}
+          >
+            + Tambah Rekening
+          </button>
+        </div>
+      )}
     </div>
   );
 }

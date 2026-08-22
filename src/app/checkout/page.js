@@ -95,6 +95,8 @@ export default function CheckoutPage() {
   
   // ── Store Settings ──
   const [activeCouriers, setActiveCouriers] = useState(["jne", "jnt", "pos"]);
+  const [storeSettings, setStoreSettings] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("midtrans");
 
   const fetchUserClaimedVouchers = async (userId, token) => {
     try {
@@ -127,12 +129,23 @@ export default function CheckoutPage() {
     
     initAuth();
 
-    // Fetch store settings for couriers
+    // Fetch store settings for couriers and payment methods
     fetch("/api/settings?public=true")
       .then((res) => res.json())
       .then((data) => {
-        if (data && data.activeCouriers) {
-          setActiveCouriers(data.activeCouriers);
+        if (data) {
+          setStoreSettings(data);
+          if (data.activeCouriers) {
+            setActiveCouriers(data.activeCouriers);
+          }
+          // Default payment method logic
+          if (data.enableMidtrans && !data.enableManualTransfer) {
+            setPaymentMethod("midtrans");
+          } else if (!data.enableMidtrans && data.enableManualTransfer) {
+            setPaymentMethod("manual");
+          } else {
+            setPaymentMethod("midtrans"); // default if both active
+          }
         }
       })
       .catch((err) => console.error("Failed to load settings:", err));
@@ -607,6 +620,7 @@ export default function CheckoutPage() {
       shippingVoucherClaimId: shippingVoucher?.claimId || null,
       discountVoucherId: discountVoucher?.id || null,
       discountVoucherClaimId: discountVoucher?.claimId || null,
+      paymentMethod, // Teruskan metode pembayaran ke context
     });
   };
 
@@ -944,6 +958,60 @@ export default function CheckoutPage() {
               </button>
             )}
           </section>
+
+          {/* ─── PAYMENT METHOD SECTION ─── */}
+          {storeSettings && (storeSettings.enableMidtrans && storeSettings.enableManualTransfer) && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <div className={styles.sectionIconWrap}>
+                  <span>💳</span>
+                </div>
+                <h3 className={styles.sectionTitle}>Metode Pembayaran</h3>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "1rem" }}>
+                <label style={{
+                  display: "flex", alignItems: "center", gap: "12px", padding: "12px",
+                  border: `1px solid ${paymentMethod === "midtrans" ? "var(--primary-accent)" : "var(--border-color)"}`,
+                  borderRadius: "8px", cursor: "pointer",
+                  background: paymentMethod === "midtrans" ? "rgba(var(--primary-accent-rgb), 0.05)" : "transparent"
+                }}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="midtrans"
+                    checked={paymentMethod === "midtrans"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    style={{ width: "18px", height: "18px", accentColor: "var(--primary-accent)" }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: "600", fontSize: "0.95rem" }}>Otomatis (Midtrans)</div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Virtual Account, QRIS, e-Wallet</div>
+                  </div>
+                </label>
+                
+                <label style={{
+                  display: "flex", alignItems: "center", gap: "12px", padding: "12px",
+                  border: `1px solid ${paymentMethod === "manual" ? "var(--primary-accent)" : "var(--border-color)"}`,
+                  borderRadius: "8px", cursor: "pointer",
+                  background: paymentMethod === "manual" ? "rgba(var(--primary-accent-rgb), 0.05)" : "transparent"
+                }}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="manual"
+                    checked={paymentMethod === "manual"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    style={{ width: "18px", height: "18px", accentColor: "var(--primary-accent)" }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: "600", fontSize: "0.95rem" }}>Transfer Bank Manual</div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Verifikasi manual oleh admin (upload bukti)</div>
+                  </div>
+                </label>
+              </div>
+            </section>
+          )}
+
         </div>
 
         {/* ─── RIGHT COLUMN — RINGKASAN ─── */}

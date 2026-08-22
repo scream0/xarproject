@@ -16,10 +16,12 @@ import styles from "./AdvancedAnalytics.module.css";
 
 // Import Konfigurasi JSON
 import config from "@/data/ui/advancedAnalyticsConfig.json";
+import { auth } from "@/lib/supabaseClient";
 
 const COLORS = ["#3b82f6", "#10b981", "#fbbf24", "#ef4444", "#8b5cf6"];
 
 const FALLBACK_STATUS = [{ name: "Selesai", value: 100 }];
+const FALLBACK_VARIANTS = [{ name: "Belum ada pesanan", sold: 0 }];
 
 export default function AdvancedAnalytics() {
   const [metrics, setMetrics] = useState({
@@ -66,6 +68,8 @@ export default function AdvancedAnalytics() {
           "paid",
           "settlement",
           "completed",
+          "delivered",
+          "capture",
           "success",
           "pending",
           "processing",
@@ -119,7 +123,9 @@ export default function AdvancedAnalytics() {
         status === "settlement" ||
         status === "completed" ||
         status === "success" ||
-        status === "paid"
+        status === "paid" ||
+        status === "delivered" ||
+        status === "capture"
       ) {
         statusMap.paid += 1;
       } else if (statusMap[status] !== undefined) {
@@ -148,6 +154,8 @@ export default function AdvancedAnalytics() {
         "paid",
         "settlement",
         "completed",
+        "delivered",
+        "capture",
         "success",
         "processing",
         "shipped",
@@ -159,7 +167,7 @@ export default function AdvancedAnalytics() {
       const items = order.items || (order.order ? [order.order] : []);
       if (Array.isArray(items)) {
         items.forEach((item) => {
-          const name = `${item.name || config.labels.defaultVariantName} (${item.size || item.concentration || item.variant || config.labels.defaultVariantSize})`;
+          const name = `${item.name || item.product_name || config.labels.defaultVariantName} (${item.size || item.variant_name || item.concentration || item.variant || config.labels.defaultVariantSize})`;
           const qty = Number(item.quantity || item.qty || 1);
 
           if (!variantMap[name]) variantMap[name] = 0;
@@ -200,9 +208,13 @@ export default function AdvancedAnalytics() {
   useEffect(() => {
     const fetchAdvancedData = async () => {
       try {
+        const { data: { session } } = await auth.getSession();
+        const token = session?.access_token;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         const [ordersRes, productsRes] = await Promise.all([
-          fetch("/api/orders"),
-          fetch("/api/products"),
+          fetch("/api/admin/orders?limit=1000", { headers }),
+          fetch("/api/products?limit=1000", { headers }),
         ]);
 
         const ordersResult = await ordersRes.json();
@@ -315,7 +327,7 @@ export default function AdvancedAnalytics() {
                     config.labels.soldTooltip,
                   ]}
                 />
-                <Bar dataKey="sold" fill="var(--primary-accent, #fbbf24)" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="sold" fill="var(--primary-accent, #fbbf24)" radius={[0, 6, 6, 0]} maxBarSize={30} />
               </BarChart>
             </ResponsiveContainer>
           </div>

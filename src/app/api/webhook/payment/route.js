@@ -8,8 +8,15 @@ export const dynamic = "force-dynamic";
 const MAX_AUDIT_SEGMENT_LENGTH = 80;
 const MAX_AUDIT_NOTE_LENGTH = 280;
 
-function verifyMidtransSignature(payload) {
-  const serverKey = process.env.MIDTRANS_SERVER_KEY;
+async function verifyMidtransSignature(payload) {
+  const { data: storeConfig } = await supabaseAdmin
+    .from("store_config")
+    .select("midtrans_is_production")
+    .eq("id", "main")
+    .single();
+  const isProduction = storeConfig?.midtrans_is_production === true;
+  const serverKey = isProduction ? process.env.MIDTRANS_SERVER_KEY_PRODUCTION : process.env.MIDTRANS_SERVER_KEY_SANDBOX;
+  
   const signature = String(payload?.signature_key || "");
   const orderId = String(payload?.order_id || "");
   const statusCode = String(payload?.status_code || "");
@@ -106,7 +113,8 @@ const paymentWebhookHandler = createPaymentWebhookHandler({
 
 export async function POST(request) {
   const payload = await request.json().catch(() => null);
-  if (!verifyMidtransSignature(payload)) {
+  const isValidSignature = await verifyMidtransSignature(payload);
+  if (!isValidSignature) {
     return NextResponse.json({ success: false, error: "Invalid payment webhook signature" }, { status: 401 });
   }
   return paymentWebhookHandler(new Request(request.url, {

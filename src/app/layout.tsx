@@ -7,6 +7,7 @@ import { AddressModal } from "@/components/UI/Modal/AddressModal";
 import { Tenor_Sans, Lato } from "next/font/google";
 import styles from "./not-found.module.css";
 import Script from "next/script";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 // 1. Setup Font
 const tenor = Tenor_Sans({
@@ -26,17 +27,29 @@ export const metadata = {
   description: "Artisanal Craftsmanship",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const { data: storeConfig } = await supabaseAdmin
+    .from("store_config")
+    .select("midtrans_is_production, enable_midtrans")
+    .eq("id", "main")
+    .single();
+
+  const isProduction = storeConfig?.midtrans_is_production === true;
+  const enableMidtrans = storeConfig?.enable_midtrans !== false;
+  const scriptSrc = isProduction ? "https://app.midtrans.com/snap/snap.js" : "https://app.sandbox.midtrans.com/snap/snap.js";
+  const clientKey = isProduction ? process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_PRODUCTION : process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX;
+
   return (
     // 2. Terapkan variable font ke html class
     <html lang="en" className={`${tenor.variable} ${lato.variable}`}>
       <head>
-        {/* untuk live production ganti ke app.midtrans.com , sama client production */}
-        <Script
-          src="https://app.sandbox.midtrans.com/snap/snap.js" // Gunakan 'app.midtrans.com' untuk mode Production
-          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY} // GANTI DENGAN CLIENT KEY ANDA (Bukan Server Key!)
-          strategy="afterInteractive"
-        />
+        {enableMidtrans && (
+          <Script
+            src={scriptSrc}
+            data-client-key={clientKey}
+            strategy="afterInteractive"
+          />
+        )}
       </head>
       <body className="font-lato antialiased">
         <ThemeProvider>
