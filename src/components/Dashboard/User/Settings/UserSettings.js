@@ -10,7 +10,6 @@ export default function UserSettings({
   onBackToProfile,
   onOpenProfileModal,
   onOpenManageAddressModal,
-  onOpenPasswordModal,
   onOpenLogoutModal,
   onDeleteAccount,
 }) {
@@ -96,30 +95,7 @@ export default function UserSettings({
           </div>
         </div>
 
-        {/* GRUP 2: KEAMANAN */}
-        <div className={styles.sectionGroup}>
-          <h4 className={styles.groupLabel}>Keamanan Akun</h4>
-          <div className={styles.settingsGrid}>
-            
-            {/* Menu 3: Ganti Password */}
-            <div className={styles.settingItem} onClick={onOpenPasswordModal} role="button" tabIndex={0}>
-              <div className={styles.settingLeft}>
-                <div className={styles.iconBox}>
-                  <AppIcon name="settings" size={20} />
-                </div>
-                <div className={styles.settingInfo}>
-                  <h4>Keamanan & Sandi</h4>
-                  <p>Ganti kata sandi secara berkala.</p>
-                </div>
-              </div>
-              <div className={styles.settingRight}>
-                <span className={styles.actionText}>Perbarui</span>
-                <span className={styles.chevronIcon}>›</span>
-              </div>
-            </div>
 
-          </div>
-        </div>
 
         {/* GRUP 3: ZONA BAHAYA / SESI */}
         <div className={styles.sectionGroup}>

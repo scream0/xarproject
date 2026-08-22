@@ -131,6 +131,40 @@
   transform: translateY(0);
 }
 
+.otpContainer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.otpInputBox {
+  width: 48px;
+  height: 52px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background-color: rgba(var(--surface-primary-rgb), 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.otpInputBox:focus {
+  border-color: var(--primary-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.2);
+  transform: translateY(-2px);
+}
+
+.otpInputBox:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .togglePassword {
   position: absolute;
   right: 14px;
@@ -246,6 +280,15 @@
 
 .switchModeBtn:hover {
   color: var(--text-primary);
+}
+
+.resendTimerText {
+  display: block;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 1rem;
+  font-family: var(--font-sans);
 }
 
 /* --- Feedback States (Loading, Errors, Success) --- */
@@ -414,6 +457,8 @@
   background-color: rgba(var(--primary-accent-rgb), 0.05);
   transform: translateY(-2px);
 }
+
+
 
 /* ====================================================
    EFEK SILUET SOROTAN SENTER WARM (Warm Flashlight Beam)

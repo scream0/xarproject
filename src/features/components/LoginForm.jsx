@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import loginConfig from "@/data/ui/loginConfig.json";
 import styles from "./LoginForm.module.css";
 import { useStore } from "@/context/StoreContext";
@@ -12,41 +12,52 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = getSafeAuthRedirect(searchParams.get("callbackUrl"));
 
-  const [formData, setFormData] = useState(() => {
-    if (typeof window === "undefined") {
-      return {
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      };
-    }
+  const [email, setEmail] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
+  useEffect(() => {
+    setIsClient(true);
     const savedEmail = localStorage.getItem("rememberedEmail");
-    return {
-      name: "",
-      email: savedEmail || "",
-      password: "",
-      confirmPassword: "",
-    };
-  });
-
-  const [rememberMe, setRememberMe] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
     }
+  }, []);
 
-    return Boolean(localStorage.getItem("rememberedEmail"));
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  // OTP State
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
+  const inputRefs = useRef([]);
+
+  // Timer State
+  const [resendTimer, setResendTimer] = useState(0);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-
-  const [isRegister, setIsRegister] = useState(false);
   const [isFormFocused, setIsFormFocused] = useState(false);
 
   const { form } = loginConfig || {};
+
+  // Resend Timer Logic
+  useEffect(() => {
+    let interval = null;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (resendTimer === 0) {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  const formatTime = (timeInSeconds) => {
+    const m = Math.floor(timeInSeconds / 60).toString().padStart(2, "0");
+    const s = (timeInSeconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
   // Helper untuk mengecek role di database dan melakukan redirect yang sesuai
   const handlePostLoginRedirect = useCallback(async (userId) => {
@@ -69,7 +80,7 @@ export default function LoginForm() {
   }, [callbackUrl]);
 
   // ==========================================
-  // GOOGLE CREDENTIAL RESPONSE HANDLER
+  // GOOGLE CREDENTIAL RESPONSE HANDLER (POPUP)
   // ==========================================
   const handleGoogleCredentialResponse = useCallback(async (response) => {
     setError("");
@@ -78,7 +89,6 @@ export default function LoginForm() {
 
     try {
       const idToken = response.credential;
-
       const { data, error: signInError } = await supabase.auth.signInWithIdToken({
         provider: "google",
         token: idToken,
@@ -113,9 +123,9 @@ export default function LoginForm() {
           const buttonElement = document.getElementById("googleButtonDiv");
           if (buttonElement) {
             window.google.accounts.id.renderButton(buttonElement, {
-              theme: "outline",
+              theme: "outline", // White background, visible and clean
               size: "large",
-              width: "100%",
+              width: buttonElement.offsetWidth || 350,
             });
           }
         }
@@ -125,137 +135,131 @@ export default function LoginForm() {
     }
   }, [handleGoogleCredentialResponse]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  // ==========================================
+  // OTP BOX HANDLERS
+  // ==========================================
+  const handleOtpChange = (index, value) => {
+    if (isNaN(value)) return;
+    const newOtpArray = [...otpArray];
+    newOtpArray[index] = value;
+    setOtpArray(newOtpArray);
+
+    // Auto-advance to next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
   };
 
-  // ==========================================
-  // LOGIN & REGISTER DENGAN EMAIL/PASSWORD SUPABASE
-  // ==========================================
-  const handleSubmit = async (e) => {
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !otpArray[index] && index > 0) {
+      // Move focus to previous input on backspace if current is empty
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
     e.preventDefault();
-    setError("");
-    setSuccessMessage("");
-    setIsLoading(true);
-
-    if (isRegister) {
-      if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-        setError(form?.validation?.allFieldsRequired || "Semua kolom registrasi wajib diisi.");
-        setIsLoading(false);
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError(form?.validation?.passwordMismatch || "Konfirmasi password tidak cocok.");
-        setIsLoading(false);
-        return;
-      }
-      if (formData.password.length < 12) {
-        setError("Password minimal 12 karakter.");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: { name: formData.name, role: "customer" },
-          },
-        });
-
-        if (signUpError) throw signUpError;
-
-        setCustomer({
-          name: formData.name,
-          email: formData.email,
-          phone: "",
-        });
-
-        if (!data.session) {
-          setSuccessMessage("Registrasi berhasil. Periksa email untuk memverifikasi akun, lalu masuk.");
-          setIsLoading(false);
-          return;
+    const pasteData = e.clipboardData.getData("text").slice(0, 6).split("");
+    if (pasteData.length > 0) {
+      const newOtpArray = [...otpArray];
+      pasteData.forEach((char, i) => {
+        if (!isNaN(char) && i < 6) {
+          newOtpArray[i] = char;
         }
-        setSuccessMessage("Registrasi berhasil! Mengalihkan...");
-        await handlePostLoginRedirect(data.user.id);
-      } catch (err) {
-        setError(err.message || "Gagal membuat akun.");
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    if (!formData.email || !formData.password) {
-      setError(form?.emptyFieldsMessage || "Semua kolom wajib diisi.");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
       });
-
-      if (signInError) throw signInError;
-
-      setCustomer({
-        name: data.user?.user_metadata?.name || "User",
-        email: data.user?.email,
-        phone: data.user?.user_metadata?.phone || "",
-      });
-
-      if (rememberMe) {
-        localStorage.setItem("rememberedEmail", formData.email);
+      setOtpArray(newOtpArray);
+      // Focus on the next empty box or the last one
+      const nextEmptyIndex = newOtpArray.findIndex(val => val === "");
+      if (nextEmptyIndex !== -1) {
+        inputRefs.current[nextEmptyIndex]?.focus();
       } else {
-        localStorage.removeItem("rememberedEmail");
+        inputRefs.current[5]?.focus();
       }
-
-      await handlePostLoginRedirect(data.user.id);
-    } catch (err) {
-      setError(err.message || "Email atau password salah.");
-      setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!formData.email) {
-      setError("Silakan masukkan email Anda terlebih dahulu untuk mereset password.");
-      return;
-    }
+  const requestOtpCode = async () => {
     setError("");
     setSuccessMessage("");
     setIsLoading(true);
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email: email,
       });
-      if (resetError) throw resetError;
-      setSuccessMessage("Link reset password telah dikirim ke email Anda.");
+      if (signInError) throw signInError;
+      
+      setSuccessMessage("Kode OTP telah dikirim ke email Anda. Silakan periksa kotak masuk (atau spam).");
+      setOtpSent(true);
+      setResendTimer(120); // 2 minutes
     } catch (err) {
-      setError(err.message || "Gagal mengirim email reset.");
+      setError(err.message || "Gagal mengirim kode OTP.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleRegisterMode = () => {
-    setIsRegister(!isRegister);
-    setError("");
-    setSuccessMessage("");
-  };
+  // ==========================================
+  // MAIN SUBMIT HANDLER
+  // ==========================================
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!email) {
+      setError("Email wajib diisi.");
+      return;
+    }
 
-  const getFormTitle = () => {
-    if (isRegister) return form?.titles?.register || "CREATE ACCOUNT";
-    return form?.title || "SIGN IN";
-  };
+    if (!otpSent) {
+      await requestOtpCode();
+    } else {
+      // TAHAP 2: VERIFIKASI KODE OTP
+      const otpCode = otpArray.join("");
+      if (otpCode.length < 6) {
+        setError("Silakan masukkan kode OTP 6 digit.");
+        return;
+      }
 
-  const getSubmitButtonText = () => {
-    if (isRegister) return form?.buttons?.signUp || "SIGN UP";
-    return form?.buttonText || "SIGN IN";
+      setError("");
+      setIsLoading(true);
+
+      try {
+        const { data, error: verifyError } = await supabase.auth.verifyOtp({
+          email: email,
+          token: otpCode,
+          type: "email",
+        });
+
+        if (verifyError) throw verifyError;
+
+        let userName = data.user?.user_metadata?.name;
+        // Jika user baru dan tidak punya nama, gunakan nama depan dari email
+        if (!userName) {
+          userName = email.split("@")[0];
+          await supabase.auth.updateUser({
+            data: { name: userName, role: "customer" },
+          });
+        }
+
+        setCustomer({
+          name: userName,
+          email: data.user?.email,
+          phone: data.user?.user_metadata?.phone || "",
+        });
+
+        if (rememberMe) {
+          localStorage.setItem("rememberedEmail", email);
+        } else {
+          localStorage.removeItem("rememberedEmail");
+        }
+
+        setSuccessMessage("Berhasil masuk! Mengalihkan...");
+        await handlePostLoginRedirect(data.user.id);
+      } catch (err) {
+        setError("Kode OTP salah atau telah kedaluwarsa.");
+        setIsLoading(false);
+      }
+    }
   };
 
   return (
@@ -282,41 +286,68 @@ export default function LoginForm() {
       </div>
 
       <div className={styles.loginCard}>
-        <h2 className={styles.loginTitle}>{getFormTitle()}</h2>
+        <h2 className={styles.loginTitle}>{form?.title || "WELCOME BACK"}</h2>
+
+        {!otpSent && (
+          <>
+            <div className={styles.socialWrapper} style={{ display: "flex", justifyContent: "center", width: "100%", marginBottom: "1.5rem" }}>
+              <div id="googleButtonDiv"></div>
+            </div>
+
+            <div className={styles.divider}>
+              <span>{form?.labels?.oauthDivider || "ATAU LANJUTKAN DENGAN EMAIL"}</span>
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit} className={styles.loginForm}>
           {error && <div className={styles.errorMessage}>{error}</div>}
           {successMessage && <div className={styles.successMessage}>{successMessage}</div>}
 
-          {form?.fields?.map((field) => {
-            if (!field || !field.name) return null;
-            const shouldRender =
-              field.visibility === "always" ||
-              (field.visibility === "registerOnly" && isRegister) ||
-              field.visibility === "emailModeOnly";
+          {/* Email Field - Hidden visually if OTP is sent, but keeps it around if needed */}
+          {!otpSent && (
+            <div className={styles.inputWrapper}>
+              <input
+                type="email"
+                name="email"
+                placeholder={form?.fields?.find(f => f.name === 'email')?.placeholder || "EMAIL ADDRESS"}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={styles.inputField}
+                disabled={isLoading}
+                required
+                onFocus={() => setIsFormFocused(true)}
+                onBlur={() => setIsFormFocused(false)}
+              />
+            </div>
+          )}
 
-            if (!shouldRender) return null;
+          {/* OTP Field (Muncul saat kode terkirim) */}
+          <div className={`${styles.inputWrapper} ${otpSent ? styles.fieldVisible : styles.fieldHidden}`}>
+             {otpSent && <p style={{textAlign: "center", marginBottom: "1rem", color: "var(--text-secondary)", fontSize: "0.85rem"}}>Masukkan kode yang dikirim ke <br/><strong style={{color: "var(--text-primary)"}}>{email}</strong></p>}
+             <div className={styles.otpContainer}>
+               {otpArray.map((digit, index) => (
+                 <input
+                   key={index}
+                   type="text"
+                   maxLength={1}
+                   value={digit}
+                   ref={(el) => (inputRefs.current[index] = el)}
+                   onChange={(e) => handleOtpChange(index, e.target.value)}
+                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                   onPaste={handleOtpPaste}
+                   className={styles.otpInputBox}
+                   disabled={isLoading || !otpSent}
+                   onFocus={() => setIsFormFocused(true)}
+                   onBlur={() => setIsFormFocused(false)}
+                   suppressHydrationWarning
+                 />
+               ))}
+             </div>
+          </div>
 
-            return (
-              <div key={field.name} className={styles.inputWrapper}>
-                <input
-                  type={field.type === "password" && showPassword ? "text" : field.type}
-                  name={field.name}
-                  placeholder={field.placeholder}
-                  value={formData[field.name] || ""}
-                  onChange={handleChange}
-                  className={styles.inputField}
-                  disabled={isLoading}
-                  required={field.required}
-                  onFocus={() => setIsFormFocused(true)}
-                  onBlur={() => setIsFormFocused(false)}
-                />
-              </div>
-            );
-          })}
-
-          {!isRegister && (
-            <div className={styles.optionsRow}>
+          {!otpSent && isClient && (
+            <div className={styles.optionsRow} style={{ justifyContent: "flex-start", marginBottom: "1rem" }}>
               <label className={styles.checkboxLabel}>
                 <input
                   type="checkbox"
@@ -327,47 +358,53 @@ export default function LoginForm() {
                 <span className={styles.customCheckmark}></span>
                 {form?.labels?.rememberMe || "Remember Me"}
               </label>
-              <button
-                type="button"
-                className={styles.forgotPasswordLink}
-                onClick={handleForgotPassword}
-                disabled={isLoading}
-              >
-                {form?.labels?.forgotPassword || "Forgot Password?"}
-              </button>
             </div>
           )}
 
           <button
             type="submit"
             className={`${styles.btnLogin} ${isLoading ? styles.btnLoading : ""}`}
-            disabled={isLoading}
+            disabled={isLoading || (otpSent && otpArray.join("").length < 6)}
           >
-            {isLoading ? <span className={styles.spinner}></span> : getSubmitButtonText()}
+            {isLoading ? <span className={styles.spinner}></span> : (!otpSent ? (form?.buttons?.sendOtp || "KIRIM KODE OTP") : (form?.buttons?.verifyOtp || "VERIFIKASI OTP"))}
           </button>
+
+          {otpSent && (
+            <>
+              {resendTimer > 0 ? (
+                <span className={styles.resendTimerText}>
+                  Kirim Ulang Kode ({formatTime(resendTimer)})
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.switchModeBtn}
+                  onClick={requestOtpCode}
+                  disabled={isLoading}
+                  style={{ marginTop: "1rem", fontWeight: "600", color: "var(--text-primary)" }}
+                >
+                  Kirim Ulang Kode OTP
+                </button>
+              )}
+
+              <button
+                type="button"
+                className={styles.switchModeBtn}
+                onClick={() => {
+                  setOtpSent(false);
+                  setOtpArray(["", "", "", "", "", ""]);
+                  setResendTimer(0);
+                  setError("");
+                  setSuccessMessage("");
+                }}
+                disabled={isLoading}
+                style={{ marginTop: "0.5rem" }}
+              >
+                Ubah Alamat Email
+              </button>
+            </>
+          )}
         </form>
-
-       
-
-        <div className={styles.divider}>
-          <span>{form?.labels?.oauthDivider || "OR CONTINUE WITH"}</span>
-        </div>
-
-        <div className={styles.socialWrapper} style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-          <div id="googleButtonDiv"></div>
-        </div>
-         <div className={styles.divider}> </div>
-         <button
-          type="button"
-          className={styles.switchModeBtn}
-          onClick={toggleRegisterMode}
-          disabled={isLoading}
-          style={{ marginTop: "0.25rem", fontWeight: "600", color: "#a3a3a3" }}
-        >
-          {isRegister
-            ? form?.switchText?.signIn || "Already have an account? Sign In"
-            : form?.switchText?.signUp || "Don&apos;t have an account? Sign Up"}
-        </button>
       </div>
     </div>
   );

@@ -28,7 +28,7 @@
     "labels": {
       "rememberMe": "Remember Me",
       "forgotPassword": "Forgot Password?",
-      "oauthDivider": "OR CONTINUE WITH"
+      "oauthDivider": "ATAU LANJUTKAN DENGAN EMAIL"
     },
     "switchText": {
       "emailMode": "Masuk dengan Email & Password",
@@ -70,43 +70,17 @@
     },
     "fields": [
       {
-        "name": "name",
-        "type": "text",
-        "placeholder": "FULL NAME",
-        "visibility": "registerOnly",
-        "isAnimated": true,
-        "required": true
-      },
-      {
-        "name": "phone",
-        "type": "tel",
-        "placeholder": "Contoh: 08123456789",
-        "visibility": "phoneModeOnly",
-        "isAnimated": false,
-        "required": true
-      },
-      {
         "name": "email",
         "type": "email",
         "placeholder": "EMAIL ADDRESS",
-        "visibility": "emailModeOnly",
-        "isAnimated": false,
+        "visibility": "always",
         "required": true
       },
       {
-        "name": "password",
-        "type": "password",
-        "placeholder": "PASSWORD",
-        "visibility": "emailModeOnly",
-        "isAnimated": false,
-        "required": true
-      },
-      {
-        "name": "confirmPassword",
-        "type": "password",
-        "placeholder": "CONFIRM PASSWORD",
-        "visibility": "registerOnly",
-        "isAnimated": true,
+        "name": "otp",
+        "type": "text",
+        "placeholder": "MASUKKAN 6 DIGIT OTP",
+        "visibility": "otpOnly",
         "required": true
       }
     ]
