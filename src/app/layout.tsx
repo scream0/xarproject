@@ -41,7 +41,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     // 2. Terapkan variable font ke html class
-    <html lang="en" className={`${tenor.variable} ${lato.variable}`}>
+    <html lang="en" className={`${tenor.variable} ${lato.variable}`} suppressHydrationWarning>
       <head>
         {enableMidtrans && (
           <Script

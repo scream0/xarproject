@@ -4,8 +4,8 @@ import { verifyAdmin, verifyUser } from "@/lib/apiAuth";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const USER_FOLDERS = new Set(["avatars", "reviews", "payments"]);
-const ADMIN_FOLDERS = new Set(["products", "storefront", "banners", "general"]);
+const USER_FOLDERS = new Set(["avatars", "reviews", "payments", "chats"]);
+const ADMIN_FOLDERS = new Set(["products", "storefront", "banners", "general", "chats"]);
 
 async function verifyUploadAccess(request, requestedUserId, folder) {
   const user = await verifyUser(request);
@@ -88,7 +88,7 @@ export async function POST(request) {
     }
 
     let newPublicId = explicitPublicId;
-    if (normalizedFolder === "reviews" || normalizedFolder === "payments") {
+    if (normalizedFolder === "reviews" || normalizedFolder === "payments" || normalizedFolder === "chats") {
       newPublicId = explicitPublicId || `${normalizedFolder}/${normalizedFolder}_${userId || "user"}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     } else if (userId && normalizedFolder === "avatars") {
       newPublicId = getAvatarPublicId(userId);

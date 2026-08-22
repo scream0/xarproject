@@ -6,31 +6,58 @@ import toast from "react-hot-toast";
 import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import styles from "./AdminChatView.module.css";
 
+const playNotificationSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.1);
+    
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.1);
+  } catch(e) {}
+};
+
+const QUICK_REPLIES = [
+  "Halo! Ada yang bisa kami bantu?",
+  "Pesanan Anda sedang kami proses.",
+  "Mohon tunggu sebentar ya, kami akan segera mengeceknya."
+];
+
 export default function AdminChatView() {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const presenceChannelRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   const selectedUserRef = useRef(selectedUser);
 
   useEffect(() => {
     selectedUserRef.current = selectedUser;
+    setIsTyping(false);
   }, [selectedUser]);
 
   useEffect(() => {
-    // 24-hour cleanup
-    const cleanupOldChats = async () => {
-      try {
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        await supabase.from("chats").delete().lt("created_at", yesterday);
-      } catch (err) {
-        console.error("Cleanup error:", err);
-      }
-    };
-    cleanupOldChats();
-
     fetchUsers();
 
     const channel = supabase
@@ -41,6 +68,9 @@ export default function AdminChatView() {
         (payload) => {
           if (payload.eventType === "INSERT") {
             const incoming = payload.new;
+            if (incoming.sender_role === 'user') {
+              playNotificationSound();
+            }
             // Update messages if the active chat matches
             setMessages((prev) => {
               const currentSelected = selectedUserRef.current;
@@ -62,8 +92,38 @@ export default function AdminChatView() {
       )
       .subscribe();
 
+    const presenceChannel = supabase.channel('public:chats:presence', {
+      config: { presence: { key: 'admin' } }
+    });
+    presenceChannelRef.current = presenceChannel;
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const online = new Set();
+        for (const key in state) {
+          state[key].forEach(s => {
+            if (s.role === 'user' && s.id) online.add(s.id);
+          });
+        }
+        setOnlineUsers(online);
+      })
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        if (payload.payload.role === 'user' && selectedUserRef.current && payload.payload.userId === selectedUserRef.current.id) {
+          setIsTyping(true);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({ role: 'admin' });
+        }
+      });
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(presenceChannel);
     };
   }, []);
 
@@ -82,7 +142,7 @@ export default function AdminChatView() {
       // Get unique users from chats
       const { data: chatsData, error: chatsError } = await supabase
         .from("chats")
-        .select("user_id, created_at, message, is_read, sender_role")
+        .select("user_id, created_at, message, image_url, is_read, sender_role")
         .order("created_at", { ascending: false });
 
       if (chatsError) throw chatsError;
@@ -93,7 +153,7 @@ export default function AdminChatView() {
         if (!userMap.has(chat.user_id)) {
           userMap.set(chat.user_id, {
             id: chat.user_id,
-            lastMessage: chat.message,
+            lastMessage: chat.message || (chat.image_url ? "📷 Gambar" : ""),
             lastMessageAt: chat.created_at,
             unreadCount: chat.sender_role === 'user' && !chat.is_read ? 1 : 0
           });
@@ -166,18 +226,74 @@ export default function AdminChatView() {
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Ukuran gambar maksimal 5MB");
+        return;
+      }
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleTyping = (e) => {
+    setNewMessage(e.target.value);
+    if (presenceChannelRef.current && selectedUser) {
+      presenceChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { role: 'admin', targetUserId: selectedUser.id }
+      });
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedUser) return;
+    if ((!newMessage.trim() && !selectedFile) || !selectedUser || isUploading) return;
 
     const msgText = newMessage.trim();
+    const fileToUpload = selectedFile;
     setNewMessage(""); // Optimistic clear
+    removeFile();
+    setIsUploading(true);
 
     try {
+      let imageUrl = null;
+      if (fileToUpload) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        
+        const formData = new FormData();
+        formData.append("file", fileToUpload);
+        formData.append("folder", "chats");
+
+        const res = await fetch("/api/cloudinary", {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.secure_url) {
+          imageUrl = data.secure_url;
+        } else {
+          throw new Error("Gagal mengunggah gambar");
+        }
+      }
+
       const { error } = await supabase.from("chats").insert([
         {
           user_id: selectedUser.id,
-          message: msgText,
+          message: msgText || "",
+          image_url: imageUrl,
           sender_role: "admin",
           is_read: true // admin messages are read by admin naturally
         }
@@ -187,6 +303,8 @@ export default function AdminChatView() {
     } catch (err) {
       console.error("Send message error:", err);
       toast.error("Gagal mengirim pesan");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -208,7 +326,8 @@ export default function AdminChatView() {
                 className={`${styles.userItem} ${selectedUser?.id === u.id ? styles.active : ""}`}
               >
                 <div className={styles.userInfo}>
-                  <div className={styles.userName}>
+                  <div className={styles.userName} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: onlineUsers.has(u.id) ? "#4ade80" : "#9ca3af" }}></span>
                     {u.name || u.email || "User"}
                   </div>
                   <div className={styles.userLastMessage}>
@@ -238,7 +357,12 @@ export default function AdminChatView() {
               >
                 <AppIcon name="arrow-left" size={18} />
               </button>
-              <span>Chatting dengan {selectedUser.name || selectedUser.email || "User"}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>Chatting dengan {selectedUser.name || selectedUser.email || "User"}</span>
+                <span style={{ display: "inline-block", padding: "2px 6px", fontSize: "10px", borderRadius: "10px", background: onlineUsers.has(selectedUser.id) ? "rgba(74, 222, 128, 0.2)" : "rgba(156, 163, 175, 0.2)", color: onlineUsers.has(selectedUser.id) ? "#4ade80" : "#9ca3af" }}>
+                  {onlineUsers.has(selectedUser.id) ? "Online" : "Offline"}
+                </span>
+              </div>
             </div>
             <div className={styles.messagesList}>
               {messages.map((m) => (
@@ -246,7 +370,15 @@ export default function AdminChatView() {
                   key={m.id}
                   className={`${styles.messageBubble} ${m.sender_role === "admin" ? styles.admin : styles.user}`}
                 >
-                  <div>{m.message}</div>
+                  {m.image_url && (
+                    <img 
+                      src={m.image_url} 
+                      alt="Attachment" 
+                      style={{ maxWidth: '100%', borderRadius: '4px', marginBottom: m.message ? '8px' : '0', cursor: 'pointer' }} 
+                      onClick={() => setZoomedImage(m.image_url)}
+                    />
+                  )}
+                  {m.message && <div>{m.message}</div>}
                   <span className={styles.messageTime} style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
                     {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     {m.sender_role === "admin" && (
@@ -255,22 +387,79 @@ export default function AdminChatView() {
                   </span>
                 </div>
               ))}
+              {isTyping && (
+                <div style={{ alignSelf: "flex-start", fontSize: "12px", color: "var(--text-secondary)", padding: "4px 8px", fontStyle: "italic" }}>
+                  Pengguna sedang mengetik...
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={handleSendMessage} className={styles.chatInputArea}>
+            {previewUrl && (
+              <div style={{ padding: "8px 16px", position: "relative", display: "inline-block", alignSelf: "flex-start", marginTop: "8px", marginLeft: "16px", background: "var(--surface-secondary)", borderRadius: "8px" }}>
+                <img src={previewUrl} alt="Preview" style={{ height: "60px", borderRadius: "4px", objectFit: "cover" }} />
+                <button type="button" onClick={removeFile} style={{ position: "absolute", top: "-6px", right: "-6px", background: "rgba(0,0,0,0.6)", color: "white", border: "none", borderRadius: "50%", padding: "4px", cursor: "pointer", display: "flex" }}>
+                  <AppIcon name="x" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {/* Quick Replies */}
+            <div style={{ padding: "0 16px", display: "flex", gap: "8px", overflowX: "auto", marginBottom: "8px", msOverflowStyle: "none", scrollbarWidth: "none" }}>
+              {QUICK_REPLIES.map((reply, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setNewMessage(reply)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "16px",
+                    border: "1px solid var(--border-color)",
+                    background: "var(--surface-secondary)",
+                    color: "var(--text-secondary)",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  {reply}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSendMessage} className={styles.chatInputArea} style={{ alignItems: "center" }}>
+              <input
+                type="file"
+                accept="image/jpeg, image/png, image/webp"
+                style={{ display: "none" }}
+                ref={fileInputRef}
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                style={{ padding: "8px", background: "transparent", color: "var(--text-secondary)", border: "none", cursor: "pointer", display: "flex", marginRight: "4px" }}
+              >
+                <AppIcon name="image" size={20} />
+              </button>
               <input
                 type="text"
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={handleTyping}
                 placeholder="Tulis balasan..."
                 className={styles.inputField}
               />
               <button
                 type="submit"
-                disabled={!newMessage.trim()}
+                disabled={(!newMessage.trim() && !selectedFile) || isUploading}
                 className={styles.sendBtn}
+                style={{ opacity: (!newMessage.trim() && !selectedFile) || isUploading ? 0.7 : 1 }}
               >
-                <AppIcon name="send" size={18} />
+                {isUploading ? (
+                  <AppIcon name="loader" size={18} className="animate-spin" />
+                ) : (
+                  <AppIcon name="send" size={18} />
+                )}
               </button>
             </form>
             <div style={{ padding: "4px 16px 12px", background: "var(--surface-primary)", fontSize: "11px", color: "var(--text-secondary)", textAlign: "center" }}>
@@ -284,6 +473,23 @@ export default function AdminChatView() {
           </div>
         )}
       </div>
+      
+      {/* Lightbox Zoom */}
+      {zoomedImage && (
+        <div 
+          style={{
+            position: "fixed", inset: 0, zIndex: 10000,
+            background: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "center", alignItems: "center",
+            padding: "20px"
+          }}
+          onClick={() => setZoomedImage(null)}
+        >
+          <img src={zoomedImage} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: "8px" }} alt="Zoomed" />
+          <button style={{ position: "absolute", top: "20px", right: "20px", background: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: "50%", padding: "12px", cursor: "pointer" }}>
+            <AppIcon name="x" size={24} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -50,6 +50,10 @@ import {
   ChevronDown,
   Banknote,
   CheckCircle,
+  CornerDownLeft,
+  ArrowUpRight,
+  Image,
+  Loader,
 } from "lucide-react";
 
 const iconMap = {
@@ -122,6 +126,10 @@ const iconMap = {
   "banknote": Banknote,
   "copy": Copy,
   "check-circle": CheckCircle,
+  "corner-down-left": CornerDownLeft,
+  "arrow-up-right": ArrowUpRight,
+  "image": Image,
+  "loader": Loader,
 };
 
 const InstagramLogo = ({ className, size = 24, ...props }) => (
