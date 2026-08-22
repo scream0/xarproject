@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
 import { useStore } from "@/context/StoreContext";
 import { getDiscountedPrice } from "@/utils/promo";
@@ -31,7 +31,31 @@ export default function Shop({ searchQuery = "", onBukaDetail, initialData }) {
   const [totalProducts, setTotalProducts] = useState(initialData?.totalProducts || 0);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
+  // Settings from DB
+  const [resolvedHeader, setResolvedHeader] = useState(initialData?.publicSettings?.product?.header || { tagline: "our curated collection", title: { main: "Produk", highlight: "Kami" } });
+
   const [wishlist, setWishlist] = useState([]);
+
+  // Scroll Animation
+  const shopRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (shopRef.current) {
+      observer.observe(shopRef.current);
+    }
+    return () => observer.disconnect();
+  }, []);
 
   // Populate wishlist from localStorage on client-side after mount to avoid hydration mismatch
   useEffect(() => {
@@ -167,6 +191,30 @@ export default function Shop({ searchQuery = "", onBukaDetail, initialData }) {
     }
   }, [searchQuery, sortBy, currentPage, fetchShopData, initialData]);
 
+  // Client-side fetch for latest settings (to immediately reflect admin changes)
+  useEffect(() => {
+    const fetchLatestSettings = async () => {
+      try {
+        const res = await fetch("/api/settings?public=true", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.product?.header) {
+            setResolvedHeader({
+              tagline: data.product.header.tagline || "our curated collection",
+              title: {
+                main: data.product.header.title?.main || "Produk",
+                highlight: data.product.header.title?.highlight || "Kami"
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Gagal mengambil pengaturan terbaru", error);
+      }
+    };
+    fetchLatestSettings();
+  }, []);
+
   // Supabase Realtime, deferred to prevent blocking initial render.
   useEffect(() => {
     let channel;
@@ -227,10 +275,12 @@ export default function Shop({ searchQuery = "", onBukaDetail, initialData }) {
   };
 
   return (
-    <div className={styles.shopContainer}>
+    <div className={`${styles.shopContainer} ${isVisible ? styles.visible : ""}`} ref={shopRef}>
 
-
-      <h2 className={styles.productsHeader}>Produk Kami</h2>
+      <div className={styles.shopHeader}>
+        <h5>{resolvedHeader.tagline}</h5>
+        <h2>{resolvedHeader.title?.main} <span>{resolvedHeader.title?.highlight}</span></h2>
+      </div>
 
       {/* Filter Tabs (Fungsional) */}
       <div className={styles.filterTabsWrapper}>

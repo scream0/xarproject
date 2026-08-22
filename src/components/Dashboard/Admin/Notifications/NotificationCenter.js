@@ -87,8 +87,28 @@ export default function NotificationCenter() {
       }
     });
 
+    // Real-time subscription for admin notifications
+    const channel = supabase
+      .channel("admin_notifications_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications" },
+        (payload) => {
+          // Hanya muat ulang jika audiensnya relevan untuk admin (misal 'admin')
+          // atau jika itu adalah event DELETE (karena payload.new mungkin tidak ada)
+          if (
+            payload.eventType === "DELETE" ||
+            (payload.new && payload.new.audience === "admin")
+          ) {
+            loadNotifications();
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       subscription?.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [loadNotifications]);
 

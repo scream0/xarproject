@@ -1,14 +1,14 @@
 /* ====================================================
    ABOUT SECTION CSS (Clean Look & Highly Readable)
    ==================================================== */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
+@keyframes pulseBlob {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.5;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  100% {
+    transform: translate(-50%, -50%) scale(1.3);
+    opacity: 0.8;
   }
 }
 
@@ -86,6 +86,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  /* Initial State for Scroll Reveal */
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.visible .aboutImgWrapper {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Glowing Blob Decoration */
+.aboutGlowBlob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 70%;
+  height: 70%;
+  background: radial-gradient(circle, rgba(var(--primary-accent-rgb), 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(40px);
+  z-index: 0;
+  animation: pulseBlob 8s infinite alternate ease-in-out;
+  pointer-events: none;
 }
 
 .imgContainer {
@@ -170,16 +196,25 @@
   z-index: 10;
   padding: 2.8rem 2.6rem;
   overflow: hidden;
-  animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  
+  /* Initial State for Scroll Reveal */
   opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0.2s;
   
   /* Latar belakang bersih, solid, dan mudah dibaca (Clean Look) */
   background: var(--hero-panel-bg);
   border: 1px solid var(--hero-panel-border);
   border-radius: 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 40px var(--hero-panel-shadow);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.visible .aboutContent {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Garis Aksen Vertikal Kiri yang Elegan */
@@ -243,6 +278,21 @@
   display: flex;
   gap: 1.2rem;
   align-items: flex-start;
+  padding: 0.8rem;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.featureItem:hover {
+  background: rgba(var(--surface-secondary-rgb), 0.3);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.15);
+  transform: translateX(6px);
+}
+
+.featureItem:hover .featureNumber {
+  text-shadow: 0 0 12px rgba(var(--primary-accent-rgb), 0.6);
+  transform: scale(1.1) rotate(-5deg);
 }
 
 .featureNumber {
@@ -251,6 +301,8 @@
   color: var(--primary-accent);
   font-weight: 600;
   min-width: 24px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-block;
 }
 
 .featureText h4 {

@@ -357,8 +357,8 @@ export default function AdminChatView() {
               >
                 <AppIcon name="arrow-left" size={18} />
               </button>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>Chatting dengan {selectedUser.name || selectedUser.email || "User"}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+                <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Chatting dengan {selectedUser.name || selectedUser.email || "User"}</span>
                 <span style={{ display: "inline-block", padding: "2px 6px", fontSize: "10px", borderRadius: "10px", background: onlineUsers.has(selectedUser.id) ? "rgba(74, 222, 128, 0.2)" : "rgba(156, 163, 175, 0.2)", color: onlineUsers.has(selectedUser.id) ? "#4ade80" : "#9ca3af" }}>
                   {onlineUsers.has(selectedUser.id) ? "Online" : "Offline"}
                 </span>
@@ -404,7 +404,7 @@ export default function AdminChatView() {
             )}
             
             {/* Quick Replies */}
-            <div style={{ padding: "0 16px", display: "flex", gap: "8px", overflowX: "auto", marginBottom: "8px", msOverflowStyle: "none", scrollbarWidth: "none" }}>
+            <div style={{ padding: "0 16px", display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px", maxWidth: "100%", boxSizing: "border-box" }}>
               {QUICK_REPLIES.map((reply, i) => (
                 <button
                   key={i}
@@ -418,7 +418,8 @@ export default function AdminChatView() {
                     color: "var(--text-secondary)",
                     fontSize: "12px",
                     cursor: "pointer",
-                    whiteSpace: "nowrap"
+                    whiteSpace: "nowrap",
+                    flexShrink: 0
                   }}
                 >
                   {reply}

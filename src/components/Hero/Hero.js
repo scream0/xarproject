@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { HeroParticles } from "@/components/UI/HeroParticles/HeroParticles";
 import { getPublicSettings } from "@/services/settingsService";
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
 import styles from "./Hero.module.css";
 import heroData from "@/data/ui/heroConfig.json"; // Fallback default JSON
 
@@ -10,9 +11,19 @@ export function Hero() {
   const [resolvedHero, setResolvedHero] = useState(heroData);
   const [isDimmed, setIsDimmed] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
 
   // Ref buat spotlight, supaya mousemove gak trigger re-render React
   const spotlightRef = useRef(null);
+
+  // Parallax scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // 2. Efek untuk melacak mouse (throttled via requestAnimationFrame, pakai CSS var)
   useEffect(() => {
@@ -122,21 +133,19 @@ export function Hero() {
     resolvedHero?.effects?.spotlightColor || "rgba(229, 228, 226, 0.1)";
 
   return (
-    <section id="home" className={styles.hero}>
-      {/* Background dinamis dari gambar yang di-upload */}
-      <div
-        className={`${styles.heroBackground} ${isDimmed ? styles.dimmed : ""}`}
-        style={
-          heroBackgroundImage
-            ? {
-                backgroundImage: `url(${heroBackgroundImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
-              }
-            : undefined
-        }
-      ></div>
+    <section id="home" className={`${styles.hero} ${isDimmed ? styles.dimmed : ""}`}>
+      {/* Aurora Background Mesh */}
+      <div className={styles.auroraBg}></div>
+
+      {/* Latar Belakang Gambar Fullscreen (sekarang opsional/redup) */}
+      {heroBackgroundImage && (
+        <div
+          className={styles.heroBackground}
+          style={{
+            backgroundImage: `url(${heroBackgroundImage})`,
+          }}
+        ></div>
+      )}
 
       <div
         ref={spotlightRef}
@@ -155,47 +164,70 @@ export function Hero() {
         <HeroParticles />
       </div>
 
-      <main className={styles.content}>
-        <div className={styles.contentGlow} aria-hidden="true" />
-        <h5
-          className={`${styles.heroTagline} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
-          style={{ "--reveal-delay": "0ms" }}
+      <div className={styles.heroInner}>
+        {/* Left Side: Glassmorphism Content */}
+        <main 
+          className={styles.content}
+          style={{ transform: `translateY(${scrollY * -0.15}px)` }}
         >
-          {resolvedHero?.tagline}
-        </h5>
-        <h1
-          className={`${styles.heroTitle} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
-          style={{ "--reveal-delay": "120ms" }}
-        >
-          {resolvedHero?.title?.main} <br />
-          <span>{resolvedHero?.title?.highlight}</span>
-        </h1>
-        <p
-          className={`${styles.heroDesc} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
-          style={{ "--reveal-delay": "240ms" }}
-        >
-          {resolvedHero?.description?.prefix}
-          <em>{resolvedHero?.description?.italic}</em>
-          {resolvedHero?.description?.suffix}
-        </p>
-        <div
-          className={`${styles.heroButtons} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
-          style={{ "--reveal-delay": "360ms" }}
-        >
-          <a
-            href={resolvedHero?.buttons?.primary?.href}
-            className={styles.ctaPrimary}
+          <div className={styles.contentGlow} aria-hidden="true" />
+          <h5
+            className={`${styles.heroTagline} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+            style={{ "--reveal-delay": "0ms" }}
           >
-            {resolvedHero?.buttons?.primary?.label}
-          </a>
-          <a
-            href={resolvedHero?.buttons?.secondary?.href}
-            className={styles.ctaSecondary}
+            {resolvedHero?.tagline}
+          </h5>
+          <h1
+            className={`${styles.heroTitle} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+            style={{ "--reveal-delay": "120ms" }}
           >
-            {resolvedHero?.buttons?.secondary?.label}
-          </a>
-        </div>
-      </main>
+            {resolvedHero?.title?.main} <br />
+            <span>{resolvedHero?.title?.highlight}</span>
+          </h1>
+          <p
+            className={`${styles.heroDesc} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+            style={{ "--reveal-delay": "240ms" }}
+          >
+            {resolvedHero?.description?.prefix}
+            <em>{resolvedHero?.description?.italic}</em>
+            {resolvedHero?.description?.suffix}
+          </p>
+          <div
+            className={`${styles.heroButtons} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+            style={{ "--reveal-delay": "360ms" }}
+          >
+            <a
+              href={resolvedHero?.buttons?.primary?.href}
+              className={styles.ctaPrimary}
+            >
+              {resolvedHero?.buttons?.primary?.label}
+              <AppIcon name="shopping-bag" size={16} className={styles.btnIcon} />
+            </a>
+            <a
+              href={resolvedHero?.buttons?.secondary?.href}
+              className={styles.ctaSecondary}
+            >
+              {resolvedHero?.buttons?.secondary?.label}
+            </a>
+          </div>
+        </main>
+
+        {/* Right Side: Floating Visual */}
+        {heroBackgroundImage && (
+          <div 
+            className={`${styles.heroVisual} ${styles.reveal} ${isRevealed ? styles.revealed : ""}`}
+            style={{ "--reveal-delay": "300ms", transform: `translateY(${scrollY * -0.05}px)` }}
+          >
+            <div className={styles.heroVisualGlow}></div>
+            <img 
+              src={heroBackgroundImage} 
+              alt="Hero Visual" 
+              className={styles.heroVisualImg} 
+              loading="eager"
+            />
+          </div>
+        )}
+      </div>
     </section>
   );
 }

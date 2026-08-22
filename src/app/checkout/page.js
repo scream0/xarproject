@@ -1085,13 +1085,13 @@ export default function CheckoutPage() {
             <span className={styles.payButtonMain}>
               {isStoreProcessing ? "Memproses Pembayaran..." : `Bayar Sekarang • ${rupiah(grandTotal)}`}
             </span>
-            <span className={styles.payButtonSub}>
-              {!selectedAddress
-                ? "Pilih alamat terlebih dahulu"
-                : !selectedCourierKey
-                  ? "Pilih kurir terlebih dahulu"
-                  : "Pembayaran via Midtrans"}
-            </span>
+            {(!selectedAddress || !selectedCourierKey) && (
+              <span className={styles.payButtonSub}>
+                {!selectedAddress
+                  ? "Pilih alamat terlebih dahulu"
+                  : "Pilih kurir terlebih dahulu"}
+              </span>
+            )}
           </button>
         </div>
       </div>

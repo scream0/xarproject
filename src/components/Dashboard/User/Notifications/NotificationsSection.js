@@ -63,6 +63,7 @@ export default function NotificationsSection({ onUnreadCountChange }) {
 
   useEffect(() => {
     let subscription = null;
+    let realtimeChannel = null;
 
     const initAuth = async () => {
       if (!supabase?.auth) {
@@ -94,12 +95,38 @@ export default function NotificationsSection({ onUnreadCountChange }) {
         }
       });
       subscription = authListener?.subscription;
+
+      // Real-time subscription for user notifications
+      realtimeChannel = supabase
+        .channel("user_notifications_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "notifications" },
+          (payload) => {
+            const userId = lastUserIdRef.current;
+            // Muat ulang jika ditujukan ke 'user' secara umum, atau spesifik ke user_id ini,
+            // atau jika itu adalah event DELETE
+            if (
+              payload.eventType === "DELETE" ||
+              (payload.new &&
+                (payload.new.audience === "user" ||
+                  payload.new.user_id === userId))
+            ) {
+              // Panggil ulang loadNotifications dengan session saat ini agar bisa mengambil token
+              supabase.auth.getSession().then(({ data }) => {
+                if (data?.session) loadNotifications(data.session);
+              });
+            }
+          }
+        )
+        .subscribe();
     };
 
     initAuth();
 
     return () => {
       if (subscription) subscription.unsubscribe();
+      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
     };
   }, [loadNotifications]);
 

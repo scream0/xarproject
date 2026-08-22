@@ -15,10 +15,10 @@
 }
 
 .statCard {
-  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98), rgba(var(--surface-secondary-rgb), 0.78));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color);
+  background: rgba(var(--surface-primary-rgb), 0.35);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   padding: 1.15rem 1.1rem;
   display: flex;
@@ -51,7 +51,7 @@
 
 .statCardWarning {
   border-color: rgba(var(--danger-color-rgb), 0.24);
-  background: linear-gradient(135deg, rgba(var(--danger-color-rgb), 0.08), rgba(var(--surface-primary-rgb), 0.95));
+  background: rgba(var(--danger-color-rgb), 0.15);
 }
 
 .statIcon {
@@ -107,10 +107,10 @@
 
 /* Bagian Tabel Manajemen Pesanan Seller */
 .ordersSection {
-  background-color: var(--surface-primary);
+  background-color: rgba(var(--surface-primary-rgb), 0.35);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 28px;
   margin-top: 10px;

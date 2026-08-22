@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getPublicSettings } from "@/services/settingsService";
 import styles from "./Footer.module.css";
 import footerData from "@/data/ui/footerConfig.json"; // Fallback default JSON
@@ -10,6 +10,27 @@ export function Footer() {
 
   // Resolved footer data (DB override JSON)
   const [footerInfo, setFooterInfo] = useState(footerData);
+
+  const footerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (footerRef.current) {
+      observer.observe(footerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchFooter = async () => {
@@ -64,7 +85,10 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className={styles.siteFooter}>
+    <footer className={`${styles.siteFooter} ${isVisible ? styles.visible : ""}`} ref={footerRef}>
+      {/* Decorative Glow Blob at the bottom */}
+      <div className={styles.footerGlowBlob}></div>
+
       <div className={styles.footerContainer}>
         {/* KOLOM 1: BRANDING & SOSIAL MEDIA */}
         <div className={`${styles.footerBox} ${styles.footerBranding}`}>

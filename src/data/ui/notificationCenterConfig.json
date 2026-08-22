@@ -9,8 +9,8 @@
   "tabs": {
     "all": "Semua",
     "order": "Pesanan",
-    "stock": "Stok",
-    "payment": "Pembayaran"
+    "payment": "Pembayaran",
+    "system": "Sistem"
   },
   "typeLabels": {
     "order": "Pesanan",

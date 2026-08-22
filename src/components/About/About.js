@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { getPublicSettings } from "@/services/settingsService";
 import styles from "./About.module.css";
 import aboutData from "@/data/ui/aboutConfig.json"; // Fallback default JSON
@@ -25,6 +25,28 @@ export function About() {
   const [aboutFeatures, setAboutFeatures] = useState(
     aboutData?.features || [],
   );
+
+  const aboutRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Intersection Observer untuk memicu animasi saat di-scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect(); // Hanya animasi sekali
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (aboutRef.current) {
+      observer.observe(aboutRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchAbout = async () => {
@@ -60,12 +82,15 @@ export function About() {
   }, []);
 
   return (
-    <section id="about" className={styles.about}>
+    <section id="about" className={`${styles.about} ${isVisible ? styles.visible : ""}`} ref={aboutRef}>
       <div className={styles.aboutContainer}>
         {/* Layout Utama */}
         <div className={styles.aboutRow}>
           {/* Sisi Kiri: Visual Editorial */}
           <div className={styles.aboutImgWrapper}>
+            {/* Glowing Blob Decoration */}
+            <div className={styles.aboutGlowBlob}></div>
+
             <div className={styles.imgFrame}></div>
             {/* Kontainer Gambar + Shimmer */}
             <div className={styles.imgContainer}>

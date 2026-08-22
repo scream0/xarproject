@@ -36,7 +36,6 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isFormFocused, setIsFormFocused] = useState(false);
 
   const { form } = loginConfig || {};
 
@@ -266,25 +265,6 @@ export default function LoginForm() {
     <div className={styles.formWrapper}>
       <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-      <div className={`${styles.lampContainer} ${isFormFocused ? styles.lampActive : ""}`}>
-        <svg className={styles.lampSvg} viewBox="0 0 40 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="metalGradient" x1="0" y1="110" x2="40" y2="122" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#121212" />
-              <stop offset="30%" stopColor="#262626" />
-              <stop offset="50%" stopColor="#3a3a3a" />
-              <stop offset="70%" stopColor="#262626" />
-              <stop offset="100%" stopColor="#121212" />
-            </linearGradient>
-          </defs>
-          <line x1="20" y1="0" x2="20" y2="110" className={styles.lampCord} />
-          <circle cx="20" cy="120" r="4.5" className={styles.lampBulb} />
-          <path d="M10 110L4 122H36L30 110H10Z" fill="url(#metalGradient)" className={styles.lampOuterBody} />
-          <ellipse cx="20" cy="122" rx="16" ry="2" className={styles.lampInnerRim} />
-        </svg>
-        <div className={styles.lampConeLight} />
-      </div>
-
       <div className={styles.loginCard}>
         <h2 className={styles.loginTitle}>{form?.title || "WELCOME BACK"}</h2>
 
@@ -316,8 +296,6 @@ export default function LoginForm() {
                 className={styles.inputField}
                 disabled={isLoading}
                 required
-                onFocus={() => setIsFormFocused(true)}
-                onBlur={() => setIsFormFocused(false)}
               />
             </div>
           )}
@@ -338,8 +316,6 @@ export default function LoginForm() {
                    onPaste={handleOtpPaste}
                    className={styles.otpInputBox}
                    disabled={isLoading || !otpSent}
-                   onFocus={() => setIsFormFocused(true)}
-                   onBlur={() => setIsFormFocused(false)}
                    suppressHydrationWarning
                  />
                ))}

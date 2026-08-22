@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getPublicSettings } from "@/services/settingsService";
 import styles from "./Contact.module.css";
 import contactData from "@/data/ui/contactConfig.json"; // Fallback default JSON
@@ -15,6 +15,27 @@ export function Contact() {
 
   // State resolved dari DB (fallback ke JSON)
   const [contactInfo, setContactInfo] = useState(contactData);
+
+  const contactRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    if (contactRef.current) {
+      observer.observe(contactRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchContact = async () => {
@@ -80,7 +101,7 @@ export function Contact() {
   };
 
   return (
-    <section id="contact" className={styles.contact}>
+    <section id="contact" className={`${styles.contact} ${isVisible ? styles.visible : ""}`} ref={contactRef}>
       <div className={styles.contactContainer}>
         {/* Sisi Kiri: Informasi */}
         <div className={styles.contactInfoCard}>

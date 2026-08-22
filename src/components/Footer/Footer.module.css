@@ -18,7 +18,28 @@
   border-top: 1px solid var(--border-color);
   padding: 5rem 7% 2rem 7%;
   font-family: var(--font-sans);
+  position: relative;
+  overflow: hidden;
   transition: background-color 0.4s ease, border-color 0.4s ease;
+}
+
+.footerGlowBlob {
+  position: absolute;
+  bottom: -200px;
+  right: -100px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(var(--primary-accent-rgb), 0.15) 0%, transparent 60%);
+  border-radius: 50%;
+  filter: blur(60px);
+  z-index: 0;
+  pointer-events: none;
+  animation: floatGlow 12s infinite alternate ease-in-out;
+}
+
+@keyframes floatGlow {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  100% { transform: translate(-50px, -50px) scale(1.2); opacity: 0.8; }
 }
 
 .footerContainer {
@@ -27,7 +48,24 @@
   display: grid;
   grid-template-columns: 1.5fr 1fr 1.2fr;
   gap: 3.5rem;
+  position: relative;
+  z-index: 10;
 }
+
+.footerBox {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.visible .footerBox {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.visible .footerBranding { transition-delay: 0.1s; }
+.visible .footerLinks { transition-delay: 0.3s; }
+.visible .footerPayment { transition-delay: 0.5s; }
 
 .footerBox h3 {
   font-family: var(--font-serif);
@@ -127,6 +165,9 @@
 }
 
 .linksGrid a {
+  position: relative;
+  display: inline-block;
+  width: fit-content;
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.88rem;
@@ -135,9 +176,23 @@
   transition: all 0.3s ease;
 }
 
+.linksGrid a::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: var(--primary-accent);
+  transition: width 0.3s ease;
+}
+
+.linksGrid a:hover::after {
+  width: 100%;
+}
+
 .linksGrid a:hover {
   color: var(--primary-accent);
-  padding-left: 4px;
 }
 
 /* Payment */
@@ -156,12 +211,15 @@
 }
 
 .badgePayment {
-  background: var(--hero-panel-bg);
+  background: rgba(var(--surface-primary-rgb), 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--text-secondary);
   padding: 0.6rem 0.9rem;
   font-size: 0.75rem;
   border-radius: 6px;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   text-align: center;
   font-weight: 500;
   letter-spacing: 0.8px;
@@ -170,17 +228,30 @@
 }
 
 .badgePayment:hover {
-  border-color: var(--primary-accent);
+  border-color: rgba(var(--primary-accent-rgb), 0.5);
   color: var(--text-primary);
-  background: rgba(var(--primary-accent-rgb), 0.04);
+  background: rgba(var(--primary-accent-rgb), 0.08);
+  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* Bottom */
 .footerBottom {
+  position: relative;
+  z-index: 10;
   margin-top: 4rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
   text-align: center;
+  
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0.7s;
+}
+
+.visible .footerBottom {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .footerBottom p {

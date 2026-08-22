@@ -45,6 +45,9 @@ const EMPTY = {
     content: { tagline: "", heading: "", leadText: "", bodyText: "" },
     features: [{ number: "01", title: "", desc: "" }],
   },
+  product: {
+    header: { tagline: "", title: { main: "", highlight: "" } },
+  },
   contact: {
     whatsappNumber: "",
     header: { tagline: "", title: { main: "", highlight: "" } },
@@ -72,6 +75,7 @@ const TAB_KEYS = [
   "store",
   "hero",
   "about",
+  "product",
   "contact",
   "footer",
   "payment",
@@ -153,6 +157,15 @@ export default function SettingsView() {
         bodyText: data?.about?.content?.bodyText || "",
       },
       features: data?.about?.features || [{ number: "01", title: "", desc: "" }],
+    },
+    product: {
+      header: {
+        tagline: data?.product?.header?.tagline || "",
+        title: {
+          main: data?.product?.header?.title?.main || "",
+          highlight: data?.product?.header?.title?.highlight || "",
+        },
+      },
     },
     contact: {
       whatsappNumber: data?.contact?.whatsappNumber || "",
@@ -445,6 +458,15 @@ export default function SettingsView() {
         },
         features: s.about.features || [],
       },
+      product: {
+        header: {
+          tagline: strictValue(s.product?.header?.tagline),
+          title: {
+            main: strictValue(s.product?.header?.title?.main),
+            highlight: strictValue(s.product?.header?.title?.highlight),
+          },
+        },
+      },
       contact: {
         whatsappNumber: strictValue(s.contact.whatsappNumber),
         header: {
@@ -584,6 +606,14 @@ export default function SettingsView() {
             updateTab={updateTab}
             handleAboutImageSelect={handleAboutImageSelect}
             aboutImagePreviewUrl={aboutImagePreviewUrl}
+            cfg={cfg}
+          />
+        )}
+
+        {activeTab === "product" && (
+          <ProductTab
+            settings={settings.product}
+            updateTab={updateTab}
             cfg={cfg}
           />
         )}
@@ -1938,5 +1968,68 @@ function CouriersTab({ settings, updateCouriers }) {
         </div>
       </div>
     </>
+  );
+}
+
+/* ============================================================
+   TAB: PRODUCT
+   ============================================================ */
+function ProductTab({ settings, updateTab, cfg }) {
+  const s = settings || { header: { tagline: "", title: { main: "", highlight: "" } } };
+  const set = (patch) => updateTab("product", { ...s, ...patch });
+
+  return (
+    <div className={styles.formSection}>
+      <h4 className={styles.sectionTitle}>
+        {cfg.sections?.product || "Katalog Produk"}
+      </h4>
+
+      <div className={styles.inputGroup}>
+        <label className={styles.fieldLabel}>Tagline (Teks Kecil Atas)</label>
+        <input
+          className={styles.inputField}
+          value={s.header?.tagline || ""}
+          onChange={(e) =>
+            set({ header: { ...s.header, tagline: e.target.value } })
+          }
+          placeholder="our curated collection"
+        />
+      </div>
+
+      <div className={styles.row2}>
+        <div className={styles.inputGroup}>
+          <label className={styles.fieldLabel}>Judul Utama</label>
+          <input
+            className={styles.inputField}
+            value={s.header?.title?.main || ""}
+            onChange={(e) =>
+              set({
+                header: {
+                  ...s.header,
+                  title: { ...s.header?.title, main: e.target.value },
+                },
+              })
+            }
+            placeholder="Produk"
+          />
+        </div>
+        <div className={styles.inputGroup}>
+          <label className={styles.fieldLabel}>Judul Sorotan (Highlight)</label>
+          <input
+            className={styles.inputField}
+            value={s.header?.title?.highlight || ""}
+            onChange={(e) =>
+              set({
+                header: {
+                  ...s.header,
+                  title: { ...s.header?.title, highlight: e.target.value },
+                },
+              })
+            }
+            placeholder="Kami"
+          />
+        </div>
+      </div>
+    </div>
   );
 }

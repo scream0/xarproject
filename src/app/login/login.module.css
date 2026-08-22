@@ -6,63 +6,54 @@
   flex-direction: column;
   min-height: 100vh;
   width: 100vw;
+  align-items: center;
+  justify-content: center;
   color: var(--text-primary);
   font-family: var(--font-sans);
   animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
   background-color: var(--background);
-}
-
-/* --- Panel Brand (Kiri / Atas) --- */
-.leftPanel {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  padding: 44px 24px 32px;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-  background-color: rgba(var(--surface-primary-rgb), 0.7);
-
-  /* Ambient Lighting eksklusif menyesuaikan tema */
-  background:
-    radial-gradient(
-      circle at 50% 15%,
-      rgba(var(--primary-accent-rgb), 0.08) 0%,
-      rgba(var(--surface-primary-rgb), 0.03) 30%,
-      transparent 70%
-    ),
-    radial-gradient(
-      circle at 50% 30%,
-      var(--surface-secondary) 0%,
-      var(--background) 90%
-    );
-
   position: relative;
-  overflow: hidden;
+  
+  /* Dynamic deep luxury background */
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(var(--primary-accent-rgb), 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(var(--surface-secondary-rgb), 0.08) 0%, transparent 50%),
+    var(--background);
 }
 
-.leftPanel::before {
+.pageContainer::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(var(--primary-accent-rgb), 0.3),
-    transparent
-  );
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.02;
   pointer-events: none;
+  z-index: 0;
+}
+
+.loginWrapper {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  padding: 2rem 1.5rem;
+}
+
+/* --- Brand Header --- */
+.brandHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 .brandTitle {
   font-family: var(--font-serif);
-  font-size: 2.4rem;
+  font-size: clamp(2rem, 4vw, 2.8rem);
   font-weight: 300;
   letter-spacing: 0.24em;
   color: var(--text-primary);
@@ -79,7 +70,7 @@
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 50px;
+  width: 60px;
   height: 1px;
   background: linear-gradient(
     90deg,
@@ -94,40 +85,29 @@
   color: var(--text-secondary);
   font-weight: 300;
   letter-spacing: 0.32em;
-  margin-top: 1.1rem;
+  margin-top: 1.25rem;
   font-size: 0.72rem;
   text-transform: uppercase;
   text-align: center;
 }
 
-/* --- Panel Form (Kanan / Bawah) --- */
-.rightPanel {
-  display: flex;
+/* --- Form Container --- */
+.formContainer {
   width: 100%;
-  padding: 24px 20px 32px;
-  align-items: center;
-  justify-content: flex-start;
-  flex-direction: column;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  flex-grow: 1;
-  background-color: var(--surface-primary);
-}
-
-.formWrapper {
-  width: 100%;
-  max-width: 440px;
-  display: flex;
-  flex-direction: column;
-  margin: auto 0;
 }
 
 /* --- Tautan Kembali (Back Link) --- */
+.footerLink {
+  margin-top: 2rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .backLink {
   display: inline-block;
-  margin: 2rem auto 0 auto;
   text-align: center;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-family: var(--font-sans);
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -136,9 +116,11 @@
   padding: 0.6rem 1.25rem;
   border: 1px solid var(--border-color);
   border-radius: 999px;
-  background: rgba(var(--surface-primary-rgb), 0.85);
+  background: rgba(var(--surface-primary-rgb), 0.5);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .backLink:hover {
@@ -149,42 +131,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* --- Responsive Desktop Split Screen --- */
-@media (min-width: 1024px) {
-  .pageContainer {
-    flex-direction: row;
-  }
-
-  .leftPanel {
-    width: 50%;
-    height: 100vh;
-    padding: 40px;
-    border-right: 1px solid var(--border-color);
-    border-bottom: none;
-  }
-
-  .rightPanel {
-    width: 50%;
-    height: 100vh;
-    padding: 60px 40px;
-    justify-content: center;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    background-color: var(--background);
-  }
-
-  .formWrapper {
-    margin: 0 auto;
-    min-height: min-content;
-    padding: 40px 0;
-  }
-}
-
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

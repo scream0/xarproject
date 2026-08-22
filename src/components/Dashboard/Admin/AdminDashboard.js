@@ -15,7 +15,8 @@ import {
   Menu,
   X,
   Sparkles,
-  MessageSquare
+  MessageSquare,
+  LogOut
 } from "lucide-react";
 import styles from "./AdminDashboard.module.css";
 import { logoutUser } from "@/utils/authHelpers";
@@ -545,6 +546,10 @@ export default function AdminDashboard() {
               <p className={styles.statusMetric}>{latencyText}</p>
             </div>
           </div>
+          <button onClick={logoutUser} className={styles.logoutBtn}>
+            <LogOut size={16} />
+            <span>Keluar Akun</span>
+          </button>
         </div>
       </aside>
 

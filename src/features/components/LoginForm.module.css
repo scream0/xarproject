@@ -29,36 +29,17 @@
 .loginCard {
   width: 100%;
   max-width: 100%;
-  padding: 2.4rem 2rem;
+  padding: 3rem 2.5rem;
   box-sizing: border-box;
   position: relative;
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
-  border: 1px solid var(--border-color);
-  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98) 0%, rgba(var(--surface-secondary-rgb), 0.8) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 36px rgba(22, 19, 17, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(var(--surface-primary-rgb), 0.95);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Titik Jatuh Sinar Warm di Atas Kartu */
-.loginCard::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 183, 77, 0.22) 0%,
-    transparent 100%
-  );
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease;
-  z-index: 2;
 }
 
 .loginCard > * {
@@ -92,11 +73,11 @@
 
 .inputField {
   width: 100%;
-  padding: 0.9rem 1rem;
+  padding: 1rem 1.25rem;
   margin-bottom: 1rem;
-  background-color: rgba(var(--surface-primary-rgb), 0.95);
+  background-color: transparent;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.9rem;
@@ -140,17 +121,18 @@
 }
 
 .otpInputBox {
-  width: 48px;
-  height: 52px;
+  width: 52px;
+  height: 60px;
   text-align: center;
-  font-size: 1.25rem;
-  font-weight: 600;
-  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 400;
+  font-family: var(--font-serif);
   color: var(--text-primary);
-  background-color: rgba(var(--surface-primary-rgb), 0.95);
+  background-color: transparent;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 12px;
   transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
 .otpInputBox:focus {
@@ -194,12 +176,12 @@
   justify-content: center;
   gap: 10px;
   width: 100%;
-  padding: 0.9rem 1.75rem;
-  min-height: 46px;
+  padding: 1rem 1.75rem;
+  min-height: 48px;
   background-color: var(--primary-accent);
   color: var(--primary-accent-text);
   border: 1px solid var(--primary-accent);
-  border-radius: 6px;
+  border-radius: 8px;
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 0.85rem;
@@ -213,32 +195,13 @@
 }
 
 .btnLogin:hover:not(:disabled) {
-  border-color: var(--primary-accent);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(var(--primary-accent-rgb), 0.3);
 }
 
 .btnLogin:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
   box-shadow: 0 3px 10px rgba(var(--primary-accent-rgb), 0.16);
-}
-
-/* Kilatan Cahaya Berjalan di Tombol */
-.btnLogin:not(:disabled)::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -150%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.35),
-    transparent
-  );
-  transform: skewX(-20deg);
-  animation: shineEffect 5s infinite ease-in-out;
 }
 
 .btnOtpRequest {
@@ -460,91 +423,7 @@
 
 
 
-/* ====================================================
-   EFEK SILUET SOROTAN SENTER WARM (Warm Flashlight Beam)
-   ==================================================== */
-.lampContainer {
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-  z-index: 10;
-  opacity: 0.2;
-  transition: opacity 0.5s ease;
-}
-
-.lampActive {
-  opacity: 1;
-}
-
-.lampActive ~ .loginCard::before {
-  opacity: 1;
-}
-
-.lampSvg {
-  width: 32px;
-  height: 90px;
-  overflow: visible;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.lampCord {
-  stroke: var(--border-color);
-  stroke-width: 1.5;
-}
-
-/* Bohlam Warm (Pijar Kuning Keemasan) */
-.lampBulb {
-  fill: #ffe082;
-  filter: drop-shadow(0 0 4px #ffe082) drop-shadow(0 0 12px #ffb300);
-}
-
-.lampActive .lampBulb {
-  fill: #fff8e1;
-  filter: drop-shadow(0 0 6px #ffe082) drop-shadow(0 0 20px #ffb300)
-    drop-shadow(0 0 35px rgba(255, 179, 0, 0.8));
-}
-
-/* Siluet Sorotan Senter Nuansa Warm (Amber/Gold Soft) */
-.lampConeLight {
-  position: absolute;
-  top: 75px;
-  width: 140px;
-  height: 160px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 183, 77, 0.4) 0%,
-    rgba(255, 143, 0, 0.12) 50%,
-    transparent 100%
-  );
-  clip-path: polygon(44% 0%, 56% 0%, 82% 100%, 18% 100%);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  mix-blend-mode: screen;
-}
-
-.lampActive .lampConeLight {
-  opacity: 1;
-}
-
 /* --- Keyframe Animations --- */
-@keyframes shineEffect {
-  0% {
-    left: -150%;
-  }
-  25% {
-    left: 150%;
-  }
-  100% {
-    left: 150%;
-  }
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);

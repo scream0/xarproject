@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import styles from "./UserDashboard.module.css";
 import { useUserDashboardData } from "@/hooks/useUserDashboardData";
+import { auth } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 
 import userConfig from "@/data/ui/userDashboardConfig.json";
@@ -41,6 +42,7 @@ export default function UserDashboard({ user }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const currentTabParam = searchParams.get("tab");
   
@@ -110,6 +112,20 @@ export default function UserDashboard({ user }) {
     setIsProductModalOpen(true);
   };
 
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    const toastId = toast.loading("Keluar dari sesi...");
+    setLoggingOut(true);
+    try {
+      await auth.signOut();
+      toast.success("Berhasil keluar.", { id: toastId });
+      window.location.href = "/login";
+    } catch (err) {
+      toast.error("Gagal keluar akun.", { id: toastId });
+      setLoggingOut(false);
+    }
+  };
+
   if (loading) {
     return <UserDashboardSkeleton />;
   }
@@ -163,6 +179,13 @@ export default function UserDashboard({ user }) {
             })}
           </ul>
         </nav>
+
+        <div className={styles.sidebarFooter}>
+          <button onClick={handleLogout} disabled={loggingOut} className={styles.logoutBtn} aria-label="Keluar dari akun">
+            <AppIcon name="log-out" size={18} />
+            <span>{loggingOut ? "Keluar..." : "Keluar Akun"}</span>
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}

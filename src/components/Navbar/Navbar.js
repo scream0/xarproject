@@ -24,6 +24,8 @@ export function Navbar() {
   const [imageError, setImageError] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [activeHash, setActiveHash] = useState("");
+  const [hoverStyle, setHoverStyle] = useState({});
+  const [hoveredLink, setHoveredLink] = useState(null);
 
   const {
     products,
@@ -175,6 +177,21 @@ export function Navbar() {
     setActivePanel(null); // pastikan panel lain nggak numpuk sama cart
   };
 
+  const handleMouseEnter = (e, index) => {
+    const el = e.currentTarget;
+    setHoverStyle({
+      width: el.offsetWidth,
+      left: el.offsetLeft,
+      opacity: 1,
+    });
+    setHoveredLink(index);
+  };
+
+  const handleMouseLeave = () => {
+    setHoverStyle((prev) => ({ ...prev, opacity: 0 }));
+    setHoveredLink(null);
+  };
+
   const userAvatar = user?.photoURL || user?.photo_url;
   const userName =
     user?.full_name ||
@@ -194,12 +211,15 @@ export function Navbar() {
 
         <div
           className={`${styles.navbarNav} ${activePanel === "navbar" ? styles.active : ""}`}
+          onMouseLeave={handleMouseLeave}
         >
+          <div className={styles.navHoverPill} style={hoverStyle} />
           {config.menuItems.map((item, index) => (
             <Link
               key={index}
               href={item.href}
               onClick={(e) => handleNavClick(e, item.href)}
+              onMouseEnter={(e) => handleMouseEnter(e, index)}
               className={isLinkActive(item.href) ? styles.navLinkActive : ""}
               aria-current={isLinkActive(item.href) ? "page" : undefined}
             >
@@ -277,7 +297,6 @@ export function Navbar() {
           }}
         />
 
-        <CartSidebar />
 
         <div className={styles.navbarExtra}>
           <button
@@ -313,13 +332,12 @@ export function Navbar() {
             className={styles.themeToggleBtn}
             aria-label="Toggle Theme"
           >
-            {/* Tunggu isThemeReady (dari ThemeContext) sebelum tampilkan icon
-                yang sesuai tema asli user — sebelum itu, theme masih default
-                'dark' yang sama persis dengan yang dirender server. */}
-            <AppIcon
-              name={!isThemeReady ? "sun" : theme === "dark" ? "sun" : "moon"}
-              className={styles.svgIcon}
-            />
+            <div className={styles.themeToggleMask}>
+              <div className={`${styles.themeIconWrapper} ${!isThemeReady || theme === 'dark' ? styles.dark : styles.light}`}>
+                <AppIcon name="sun" className={styles.svgIcon} />
+                <AppIcon name="moon" className={styles.svgIcon} />
+              </div>
+            </div>
           </button>
 
           <div className={styles.authContainer}>
@@ -408,6 +426,8 @@ export function Navbar() {
           </button>
         </div>
       </nav>
+
+      <CartSidebar />
 
       <Modal
         isOpen={isModalOpen}

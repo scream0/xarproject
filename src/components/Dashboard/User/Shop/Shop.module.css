@@ -1,15 +1,42 @@
 /* ====================================================
    SHOP SECTION CSS (Luxury High-End Theme)
    ==================================================== */
-.productsHeader {
-  font-family: var(--font-serif);
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
+.shopHeader {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
+  padding: 0 1rem;
+  
+  /* Initial State for Scroll Reveal */
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.visible .shopHeader {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.shopHeader h5 {
+  color: var(--primary-accent);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.3em;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-bottom: 0.85rem;
+}
+
+.shopHeader h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(2.1rem, 2.8vw, 2.5rem);
+  color: var(--text-primary);
+  font-weight: 300;
+  letter-spacing: 1.5px;
+}
+
+.shopHeader h2 span {
+  font-weight: 500;
+  color: var(--primary-accent);
 }
 
 .shopContainer {
@@ -183,10 +210,10 @@
 }
 
 .productCard {
-  background: var(--surface-primary);
+  background: rgba(var(--surface-primary-rgb), 0.4);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
@@ -195,12 +222,32 @@
   transition: all 0.3s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   position: relative;
+  
+  /* Initial State for Scroll Reveal */
+  opacity: 0;
+  transform: translateY(25px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
+
+.visible .productCard {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggering effects for grid items (up to 8 items) */
+.visible .productCard:nth-child(1) { transition-delay: 0.1s; }
+.visible .productCard:nth-child(2) { transition-delay: 0.15s; }
+.visible .productCard:nth-child(3) { transition-delay: 0.2s; }
+.visible .productCard:nth-child(4) { transition-delay: 0.25s; }
+.visible .productCard:nth-child(5) { transition-delay: 0.3s; }
+.visible .productCard:nth-child(6) { transition-delay: 0.35s; }
+.visible .productCard:nth-child(7) { transition-delay: 0.4s; }
+.visible .productCard:nth-child(8) { transition-delay: 0.45s; }
 
 @media (hover: hover) and (pointer: fine) {
   .productCard:hover {
     border-color: rgba(var(--primary-accent-rgb), 0.3);
-    transform: translateY(-3px);
+    transform: translateY(-5px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   }
 }
@@ -212,7 +259,7 @@
 .productCardImageWrapper {
   width: 100%;
   aspect-ratio: 1;
-  background: var(--surface-secondary);
+  background: rgba(var(--surface-secondary-rgb), 0.2);
   position: relative;
   overflow: hidden;
 }
@@ -736,6 +783,17 @@
   margin-bottom: 1.25rem;
   justify-content: flex-start;
   box-sizing: border-box;
+  
+  /* Initial State for Scroll Reveal */
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0.1s; /* delay after header */
+}
+
+.visible .filterTabsWrapper {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @media (min-width: 768px) {
@@ -752,8 +810,10 @@
 }
 
 .filterTabBtn {
-  background: var(--surface-primary);
-  border: 1px solid var(--border-color);
+  background: rgba(var(--surface-primary-rgb), 0.4);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
   padding: 0.5rem 1rem;
   border-radius: 9999px;
@@ -780,17 +840,17 @@
 
 @media (hover: hover) and (pointer: fine) {
   .filterTabBtn:hover {
-    background: var(--surface-secondary);
-    color: var(--text-primary);
-    border-color: var(--primary-accent);
+    background: rgba(var(--primary-accent-rgb), 0.08);
+    color: var(--primary-accent);
+    border-color: rgba(var(--primary-accent-rgb), 0.15);
   }
 }
 
 .activeFilterTab {
-  background: var(--primary-accent) !important;
-  color: var(--primary-accent-text) !important;
-  border-color: var(--primary-accent) !important;
+  background: rgba(var(--primary-accent-rgb), 0.15) !important;
+  color: var(--primary-accent) !important;
+  border-color: rgba(var(--primary-accent-rgb), 0.3) !important;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(var(--primary-accent-rgb), 0.25);
+  box-shadow: 0 4px 12px rgba(var(--primary-accent-rgb), 0.15);
 }
 .reviewSummary{margin:.5rem 0;color:var(--primary-accent);font-size:.76rem;font-weight:600}

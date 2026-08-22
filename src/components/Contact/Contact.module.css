@@ -34,6 +34,16 @@
   display: flex;
   flex-direction: column;
   gap: 3rem;
+  
+  /* Initial state for Scroll Reveal */
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.visible .contactInfoCard {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .infoHeader h5 {
@@ -72,29 +82,30 @@
   gap: 1.2rem;
   padding: 1.2rem;
   border-radius: 14px;
-  background: var(--hero-panel-bg);
-  border: 1px solid var(--hero-panel-border);
+  background: transparent;
+  border: 1px solid transparent;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+  box-shadow: none;
 }
 
 .infoItem:hover {
-  border-color: var(--primary-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  background: rgba(var(--surface-secondary-rgb), 0.3);
+  border-color: rgba(255, 255, 255, 0.05);
+  transform: translateX(5px);
+  box-shadow: none;
 }
 
 .infoIcon {
   width: 3.2rem;
   height: 3.2rem;
   border-radius: 10px;
-  background-color: var(--surface-secondary);
-  border: 1px solid var(--border-color);
+  background-color: transparent;
+  border: 1px solid transparent;
   color: var(--primary-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
 }
 
@@ -104,12 +115,12 @@
 }
 
 .infoItem:hover .infoIcon {
-  background-color: var(--primary-accent);
-  border-color: var(--primary-accent);
+  transform: scale(1.1);
 }
 
 .infoItem:hover .infoIcon svg {
-  stroke: var(--primary-accent-text) !important;
+  stroke: var(--primary-accent) !important;
+  filter: drop-shadow(0 0 8px rgba(var(--primary-accent-rgb), 0.6));
 }
 
 .infoText h4 {
@@ -164,12 +175,23 @@
 .contactFormWrapper {
   flex: 1.1;
   background: var(--hero-panel-bg);
-  border: 1px solid var(--hero-panel-border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 2.8rem;
   border-radius: 20px;
-  box-shadow: 0 16px 40px var(--hero-panel-shadow);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  
+  /* Initial state for Scroll Reveal */
+  opacity: 0;
+  transform: translateX(30px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0.2s; /* staggered after info card */
+}
+
+.visible .contactFormWrapper {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .contactForm h3 {
@@ -242,6 +264,7 @@
 .inputBox input:focus,
 .inputBox textarea:focus {
   border-bottom-color: var(--primary-accent);
+  box-shadow: 0 4px 12px -8px var(--primary-accent);
 }
 
 /* --- Submit Button --- */
