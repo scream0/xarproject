@@ -1,0 +1,232 @@
+{
+  "brand": {
+    "name": "MAKE ME",
+    "suffix": "KOOL",
+    "badge": "OWNER PANEL"
+  },
+  "nav": [
+    {
+      "id": "overview",
+      "label": "Ringkasan"
+    },
+    {
+      "id": "orders",
+      "label": "Pesanan"
+    },
+    {
+      "id": "products",
+      "label": "Inventori"
+    },
+    {
+      "id": "analytics",
+      "label": "Analitik"
+    },
+    {
+      "id": "notifications",
+      "label": "Notifikasi"
+    },
+    {
+      "id": "vouchers",
+      "label": "Promo & Voucher"
+    },
+    {
+      "id": "settings",
+      "label": "Pengaturan"
+    }
+  ],
+  "stats": [
+    "BRAND MATRICES",
+    "SECURITY NODE",
+    "CORE VAULT"
+  ],
+  "placeholders": {
+    "settings": "[ SYSTEM CONFIGURATION ]",
+    "analytics": "[ PERFORMANCE INSIGHTS & METRICS ]"
+  },
+  "loading": "LOADING EXECUTIVE SYSTEM...",
+  "logoutText": "Sign Out Control",
+  "copy": {
+    "brandCaption": "Pusat kendali operasional toko",
+    "header": {
+      "titlePrefix": "Command Center • Halo",
+      "subtitle": "Kelola operasional, pesanan, dan performa toko dari satu panel eksekutif.",
+      "rolePrefix": "Peran"
+    },
+    "summary": {
+      "eyebrow": "Pusat kontrol commerce",
+      "title": "Pantau performa, stok, dan aktivitas pelanggan dalam satu dashboard terpadu.",
+      "pills": [
+        "Operasional realtime",
+        "Keputusan cepat",
+        "Pengalaman premium"
+      ]
+    },
+    "status": {
+      "title": "Toko aktif",
+      "pendingTemplate": "{count} pesanan baru menunggu diproses",
+      "offline": "Monitor status sedang offline sementara",
+      "latencyTemplate": "Latensi {value}ms",
+      "checking": "Memeriksa latensi..."
+    },
+    "quickActions": [
+      {
+        "id": "orders",
+        "label": "Buka Pesanan"
+      },
+      {
+        "id": "products",
+        "label": "Kelola Inventori"
+      },
+      {
+        "id": "customers",
+        "label": "Lihat Pelanggan"
+      }
+    ],
+    "metrics": {
+      "pending": {
+        "label": "Pesanan tertunda",
+        "caption": "Perlu ditindak sekarang"
+      },
+      "response": {
+        "label": "Respon sistem"
+      },
+      "module": {
+        "label": "Modul aktif"
+      }
+    },
+    "accessDenied": {
+      "eyebrow": "Akses terbatas",
+      "title": "Akses Ditolak",
+      "description": "Anda bukan Administrator. Hubungi pemilik sistem jika memerlukan akses.",
+      "backButton": "Kembali ke Dashboard"
+    }
+  },
+  "copyLocales": {
+    "id": {
+      "brandCaption": "Pusat kendali operasional toko",
+      "header": {
+        "titlePrefix": "Command Center • Halo",
+        "subtitle": "Kelola operasional, pesanan, dan performa toko dari satu panel eksekutif.",
+        "rolePrefix": "Peran"
+      },
+      "summary": {
+        "eyebrow": "Pusat kontrol commerce",
+        "title": "Pantau performa, stok, dan aktivitas pelanggan dalam satu dashboard terpadu.",
+        "pills": [
+          "Operasional realtime",
+          "Keputusan cepat",
+          "Pengalaman premium"
+        ]
+      },
+      "status": {
+        "title": "Toko aktif",
+        "pendingTemplate": "{count} pesanan baru menunggu diproses",
+        "offline": "Monitor status sedang offline sementara",
+        "latencyTemplate": "Latensi {value}ms",
+        "checking": "Memeriksa latensi..."
+      },
+      "quickActions": [
+        {
+          "id": "orders",
+          "label": "Buka Pesanan"
+        },
+        {
+          "id": "products",
+          "label": "Kelola Inventori"
+        },
+        {
+          "id": "customers",
+          "label": "Lihat Pelanggan"
+        }
+      ],
+      "metrics": {
+        "pending": {
+          "label": "Pesanan tertunda",
+          "caption": "Perlu ditindak sekarang"
+        },
+        "response": {
+          "label": "Respon sistem"
+        },
+        "module": {
+          "label": "Modul aktif"
+        }
+      },
+      "accessDenied": {
+        "eyebrow": "Akses terbatas",
+        "title": "Akses Ditolak",
+        "description": "Anda bukan Administrator. Hubungi pemilik sistem jika memerlukan akses.",
+        "backButton": "Kembali ke Dashboard"
+      }
+    },
+    "en": {
+      "brandCaption": "Store operations command center",
+      "header": {
+        "titlePrefix": "Command Center • Hello",
+        "subtitle": "Manage operations, orders, and store performance from one executive panel.",
+        "rolePrefix": "Role"
+      },
+      "summary": {
+        "eyebrow": "Commerce control center",
+        "title": "Monitor performance, inventory, and customer activity in one unified dashboard.",
+        "pills": [
+          "Real-time operations",
+          "Faster decisions",
+          "Premium experience"
+        ]
+      },
+      "status": {
+        "title": "Store live",
+        "pendingTemplate": "{count} new orders waiting for processing",
+        "offline": "Status monitor is temporarily offline",
+        "latencyTemplate": "Latency {value}ms",
+        "checking": "Checking latency..."
+      },
+      "quickActions": [
+        {
+          "id": "orders",
+          "label": "Open Orders"
+        },
+        {
+          "id": "products",
+          "label": "Manage Inventory"
+        },
+        {
+          "id": "customers",
+          "label": "View Customers"
+        }
+      ],
+      "metrics": {
+        "pending": {
+          "label": "Pending orders",
+          "caption": "Need action now"
+        },
+        "response": {
+          "label": "System response"
+        },
+        "module": {
+          "label": "Current module"
+        }
+      },
+      "accessDenied": {
+        "eyebrow": "Restricted area",
+        "title": "Access Denied",
+        "description": "This account does not have administrator access. Contact the system owner if access is required.",
+        "backButton": "Back to Dashboard"
+      }
+    }
+  },
+  "greeting": {
+    "fallbackName": "Admin"
+  },
+  "logoutDialog": {
+    "title": "Keluar dari panel admin?",
+    "description": "Sesi admin pada perangkat ini akan ditutup. Pastikan semua perubahan penting sudah tersimpan.",
+    "confirm": "Ya, keluar",
+    "cancel": "Batal"
+  },
+  "aria": {
+    "menu": "Buka menu navigasi admin",
+    "menuExpanded": "Tutup menu navigasi admin",
+    "logoutDialog": "Dialog konfirmasi logout admin"
+  }
+}

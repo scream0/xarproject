@@ -1,0 +1,177 @@
+/* ====================================================
+   LOGIN PAGE CSS (Luxury High-End Theme)
+   ==================================================== */
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100vw;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+  background-color: var(--background);
+  position: relative;
+
+  /* Dynamic deep luxury background */
+  background:
+    radial-gradient(circle at 15% 50%, rgba(var(--primary-accent-rgb), 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(var(--surface-secondary-rgb), 0.08) 0%, transparent 50%),
+    var(--background);
+}
+
+.pageContainer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.loginWrapper {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  padding: 2rem 1.5rem;
+  opacity: 0;
+  animation: fadeUpIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.2s;
+}
+
+/* --- Brand Header --- */
+.brandLinkWrapper {
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+  cursor: pointer;
+  width: 100%;
+}
+
+.brandLinkWrapper:hover .brandTitle {
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.brandHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.brandTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 300;
+  letter-spacing: 0.24em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  text-align: center;
+  position: relative;
+  padding-bottom: 1rem;
+  margin: 0;
+}
+
+.brandTitle::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent,
+      var(--primary-accent),
+      transparent);
+}
+
+.brandSub {
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  font-weight: 300;
+  letter-spacing: 0.32em;
+  margin-top: 1.25rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* --- Form Container --- */
+.formContainer {
+  width: 100%;
+}
+
+/* --- Tautan Kembali (Back Link) --- */
+.footerLink {
+  margin-top: 2rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.backLink {
+  display: inline-block;
+  text-align: center;
+  font-size: 0.72rem;
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: rgba(var(--surface-primary-rgb), 0.5);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.backLink:hover {
+  color: var(--primary-accent);
+  border-color: var(--primary-accent);
+  background: rgba(var(--primary-accent-rgb), 0.05);
+  letter-spacing: 0.25em;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.socialWrapper {
+  min-height: 46px;
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

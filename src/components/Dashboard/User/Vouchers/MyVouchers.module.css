@@ -1,0 +1,130 @@
+/* Container Utama */
+.myVouchersSection {
+  padding: 1rem;
+  width: 100%;
+}
+
+.sectionGroup {
+  margin-bottom: 2.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--text-primary);
+}
+
+/* Grid Layout untuk Card */
+.availableVouchersList,
+.claimedVouchersList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* Wrapper Card */
+.voucherCardWrapper {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.voucherCardWrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Tombol Klaim */
+.claimButton {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.claimButton:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+/* Style saat tombol dimatikan (Sudah Diklaim) */
+.claimButton:disabled,
+.claimedButton {
+  background-color: var(--surface-secondary, #e0e0e0);
+  color: var(--text-secondary, #666666);
+  border: 1px solid var(--border-color, #ccc);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* State Kosong */
+.emptyState {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem;
+  background: var(--surface-secondary);
+  border-radius: 8px;
+  grid-column: 1 / -1;
+}
+.tabBar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tabButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.tabButton:hover {
+  background: var(--surface-secondary);
+}
+
+.tabButtonActive {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+}
+
+.tabCount {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.tabButton:not(.tabButtonActive) .tabCount {
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+}
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .myVouchersSection {
+    padding: 0.5rem;
+  }
+}

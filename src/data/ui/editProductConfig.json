@@ -1,0 +1,30 @@
+{
+  "title": "EDIT PRODUCT ARCHIVE",
+  "labels": {
+    "currentImage": "CURRENT MAIN VISUAL",
+    "changeImage": "UPDATE MAIN VISUAL (OPTIONAL)",
+    "productName": "PRODUCT NAME",
+    "variants": "VARIANTS CONFIGURATION (SIZE | PRICE | STOCK | VISUAL)",
+    "description": "CURATION DESCRIPTION",
+    "noImage": "No Image"
+  },
+  "buttons": {
+    "cancelImage": "Batalkan Ganti Gambar",
+    "removeMainImage": "✕ Hapus Gambar Utama",
+    "cancelRemoveMain": "Batalkan Hapus",
+    "removeVariantImage": "✕",
+    "addSize": "+ ADD SIZE VARIANT",
+    "saving": "SYNCHRONIZING...",
+    "save": "SAVE CHANGES",
+    "cancel": "ABORT",
+    "chooseFileMain": "📁 Ganti Gambar Utama",
+    "noFile": "Pilih",
+    "chooseFileVariant": "📁 Pilih file",
+    "chooseShort": "Pilih"
+  },
+  "alerts": {
+    "success": "Produk berhasil diperbarui di Supabase!",
+    "failedCloudinary": "Gagal mendapatkan URL gambar",
+    "failedUpdate": "Gagal memperbarui produk: "
+  }
+}

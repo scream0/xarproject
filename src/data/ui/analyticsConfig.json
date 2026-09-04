@@ -1,0 +1,24 @@
+{
+  "title": "SALES PERFORMANCE ANALYTICS",
+  "loadingText": "Memuat data analitik dari database...",
+  "tooltipLabel": "Sales",
+  "currencyPrefix": "Rp ",
+  "tabs": {
+    "daily": "Harian",
+    "weekly": "Mingguan",
+    "yearly": "Tahunan"
+  },
+  "buttons": {
+    "exportPdf": "📥 Export Laporan PDF"
+  },
+  "yearlyTable": {
+    "title": "RINCIAN KINERJA TAHUNAN",
+    "headers": {
+      "year": "Tahun",
+      "totalTransactions": "Total Transaksi",
+      "totalRevenue": "Total Pendapatan",
+      "avgOrderValue": "Rata-rata / Transaksi",
+      "bestMonth": "Bulan Terbaik"
+    }
+  }
+}

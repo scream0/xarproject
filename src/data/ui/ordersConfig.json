@@ -1,0 +1,61 @@
+{
+  "header": {
+    "title": "Pesanan",
+    "subtitle": "Pantau status peracikan, pengiriman, dan kelola pesanan Anda di sini."
+  },
+  "searchPlaceholder": "Cari berdasarkan ID pesanan atau nama produk...",
+  "tabs": ["all", "processing", "completed", "cancelled"],
+  "loadingText": "Memuat riwayat pesanan...",
+  "emptyText": "Belum ada pesanan ditemukan.",
+  "buttons": {
+    "details": "Detail",
+    "review": "Ulas Produk",
+    "reviewSent": "Sudah Diulas",
+    "reorder": "Pesan Lagi",
+    "copyId": "Salin ID",
+    "downloadInvoice": "Unduh Invoice",
+    "cancelOrder": "Batalkan",
+    "loadMore": "Muat Lebih Banyak Pesanan"
+  },
+  "labels": {
+    "orderId": "ID Transaksi",
+    "product": "Produk",
+    "specsAndNotes": "Spesifikasi & Catatan",
+    "paymentMethod": "Metode Pembayaran",
+    "shippingAddress": "Alamat Pengiriman",
+    "shippingReceipt": "Nomor Resi Pengiriman",
+    "trackShipping": "Lacak Kurir",
+    "totalPaid": "Total Pembayaran",
+    "reviewTitle": "Ulas Produk",
+    "ratingLabel": "Rating (1 - 5 Bintang)",
+    "commentLabel": "Komentar Ulasan",
+    "commentPlaceholder": "Bagaimana pengalaman Anda dengan aroma parfum ini?",
+    "uploadPhoto": "Unggah Foto Ulasan (Opsional)",
+    "submittingReview": "Mengirim Ulasan...",
+    "submitReview": "Kirim Ulasan & Foto"
+  },
+  "modal": {
+    "title": "Rincian Pesanan",
+    "closeBtn": "Tutup"
+  },
+  "detailTabs": {
+    "order": "Data Pesanan",
+    "history": "Riwayat Pesanan"
+  },
+  "stepper": {
+    "created": "Pesanan Dibuat",
+    "paid": "Pembayaran Dikonfirmasi",
+    "processing": "Peracikan / Diproses",
+    "shipping": "Dikirim / Selesai"
+  },
+  "ratingOptions": [
+    { "value": 5, "label": "★★★★★ (5 - Luar Biasa)" },
+    { "value": 4, "label": "★★★★☆ (4 - Sangat Bagus)" },
+    { "value": 3, "label": "★★★☆☆ (3 - Cukup)" },
+    { "value": 2, "label": "★★☆☆☆ (2 - Kurang)" },
+    { "value": 1, "label": "★☆☆☆☆ (1 - Buruk)" }
+  ],
+  "confirmations": {
+    "cancelPrompt": "Apakah Anda yakin ingin membatalkan pesanan ini?"
+  }
+}

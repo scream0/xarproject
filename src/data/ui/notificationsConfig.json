@@ -1,0 +1,39 @@
+{
+  "header": {
+    "title": "Notifikasi",
+    "subtitle": "Update pesanan, promo khusus, dan pengingat pembayaran untuk Anda."
+  },
+  "searchPlaceholder": "Cari notifikasi...",
+  "emptyTitle": "Belum ada notifikasi",
+  "emptyText": "Notifikasi tentang pesanan, promo, dan pengingat akan muncul di sini.",
+  "loadingText": "Memuat notifikasi...",
+  "tabs": {
+    "all": "Semua",
+    "unread": "Belum Dibaca",
+    "order": "Pesanan",
+    "promo": "Promo"
+  },
+  "buttons": {
+    "markAllRead": "Tandai Semua Dibaca",
+    "refresh": "Muat Ulang"
+  },
+  "emptyUnread": "Tidak ada notifikasi yang belum dibaca.",
+  "timeAgo": {
+    "justNow": "Baru saja",
+    "minutesAgo": "menit lalu",
+    "hoursAgo": "jam lalu",
+    "daysAgo": "hari lalu"
+  },
+  "typeLabels": {
+    "order": "Pesanan",
+    "payment": "Pembayaran",
+    "promo": "Promo",
+    "system": "Sistem"
+  },
+  "toasts": {
+    "markAllReadSuccess": "Semua notifikasi ditandai sudah dibaca.",
+    "deleteSuccess": "Notifikasi dihapus.",
+    "fetchError": "Gagal memuat notifikasi."
+  }
+}
+

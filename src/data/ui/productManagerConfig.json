@@ -1,0 +1,47 @@
+{
+  "title": "Manajemen Produk & Inventaris",
+  "searchPlaceholder": "Cari nama produk...",
+  "loadingText": "Memuat produk...",
+  "emptyText": "Tidak ada produk yang cocok dengan filter atau pencarian.",
+  "emptyState": "Belum ada produk yang ditambahkan.",
+  "status": {
+    "ready": "Tersedia",
+    "lowStock": "Stok Menipis",
+    "soldOut": "Habis"
+  },
+  "filters": {
+    "all": "Semua Status",
+    "ready": "Tersedia",
+    "lowStock": "Stok Menipis",
+    "soldOut": "Habis"
+  },
+  "tableHeaders": {
+    "image": "Gambar",
+    "name": "Nama Produk",
+    "category": "Kategori",
+    "stock": "Total Stok",
+    "status": "Status",
+    "actions": "Aksi"
+  },
+  "actions": {
+    "edit": "Edit",
+    "delete": "Hapus"
+  },
+  "pagination": {
+    "page": "Halaman",
+    "of": "dari",
+    "previous": "Sebelumnya",
+    "next": "Selanjutnya"
+  },
+  "deleteModal": {
+    "title": "Hapus Produk",
+    "message": "Apakah Anda yakin ingin menghapus produk \"{productName}\"? Tindakan ini tidak dapat dibatalkan.",
+    "confirmButton": "Hapus",
+    "cancelButton": "Batal"
+  },
+  "toasts": {
+    "fetchError": "Gagal memuat produk dari database.",
+    "deleteSuccess": "Produk berhasil dihapus.",
+    "deleteError": "Gagal menghapus produk."
+  }
+}

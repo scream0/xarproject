@@ -1,0 +1,605 @@
+/* ====================================================
+   OVERVIEW SECTION CSS (Clean Look Modern System)
+   ==================================================== */
+.overviewWorkspace {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding-bottom: 5rem; 
+}
+
+@media (min-width: 768px) {
+  .overviewWorkspace {
+    padding-bottom: 2rem;
+  }
+}
+
+/* Navbar Atas Melayang */
+.shopNavbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+:global([data-theme="dark"]) .shopNavbar {
+  background: var(--surface-primary);
+  box-shadow: none;
+}
+
+.navbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatIconBtnNavbar,
+.cartIconBtnNavbar {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chatIconBtnNavbar:hover,
+  .cartIconBtnNavbar:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+}
+
+.cartQuantityBadge {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text, #ffffff);
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 1px 3px;
+  border-radius: 99px;
+  min-width: 14px;
+  text-align: center;
+}
+
+.svgIcon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* 1. Metric Cards Grid */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.metricCard {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .metricCard:hover {
+    border-color: var(--primary-accent);
+  }
+}
+
+.metricTitle {
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin: 0;
+  font-weight: 600;
+}
+
+.metricValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.metricDesc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* 2. Overview Grid Two (Welcome Banner & Recent Orders) */
+.overviewGridTwo {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 992px) {
+  .overviewGridTwo {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}
+
+.sectionCard {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.welcomeBadge {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--primary-accent);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cardTitle span {
+  color: var(--primary-accent);
+}
+
+.cardDesc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.actionButtonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.btnPrimary,
+.btnOutline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.btnPrimary {
+  background-color: var(--primary-accent);
+  color: var(--primary-accent-text, #ffffff);
+  border-color: var(--primary-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btnPrimary:hover {
+    opacity: 0.9;
+  }
+}
+
+.btnPrimary:active {
+  transform: scale(0.98);
+}
+
+.btnOutline {
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btnOutline:hover {
+    background-color: var(--surface-primary);
+    border-color: var(--text-secondary);
+  }
+}
+
+.btnOutline:active {
+  transform: scale(0.98);
+}
+
+/* Recent Orders List */
+.recentOrdersList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recentOrderItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-secondary);
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  gap: 10px;
+  transition: border-color 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .recentOrderItem:hover {
+    border-color: var(--primary-accent);
+    background: var(--surface-primary);
+  }
+}
+
+.orderItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.orderId {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.orderItemName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orderItemStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.statusBadge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.completed,
+.success,
+.shipping {
+  background: rgba(var(--success-color-rgb, 16, 185, 129), 0.1);
+  color: var(--success-color, #10b981);
+  border: 1px solid rgba(var(--success-color-rgb, 16, 185, 129), 0.2);
+}
+
+.pending,
+.processing {
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
+}
+
+.detailsLink {
+  background: transparent;
+  border: none;
+  color: var(--primary-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s ease;
+}
+
+.detailsLink:hover {
+  opacity: 0.8;
+}
+
+.smallLoadingText {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+/* 3. Personalized Recommendations */
+.fullWidthCard {
+  width: 100%;
+}
+
+.curatedHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.65rem;
+  margin-bottom: 2px;
+}
+
+.seeAllLink {
+  background: transparent;
+  border: none;
+  color: var(--primary-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.seeAllLink:hover {
+  opacity: 0.8;
+}
+
+.curatedList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.curatedItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .curatedItem:hover {
+    border-color: var(--primary-accent);
+    background: var(--surface-primary);
+  }
+}
+
+.curatedThumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-primary);
+  flex-shrink: 0;
+}
+
+.curatedInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.curatedName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.curatedSub {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.curatedQuickAddBtn {
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .curatedQuickAddBtn:hover {
+    background: var(--primary-accent);
+    color: var(--primary-accent-text, #ffffff);
+    border-color: var(--primary-accent);
+  }
+}
+
+.curatedQuickAddBtn:active {
+  transform: scale(0.95);
+}
+
+.curatedOriginalPrice {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  margin-right: 4px;
+  opacity: 0.7;
+}
+
+.curatedDiscountedPrice {
+  color: var(--primary-accent);
+  font-weight: 600;
+}
+
+/* === POINTS & BALANCE ACCENT CARDS === */
+.metricCardAccent {
+  background: var(--surface-primary);
+  border-color: rgba(var(--primary-accent-rgb), 0.3);
+}
+
+.metricCardAccent .metricValue {
+  color: var(--primary-accent);
+}
+
+.metricCardWallet {
+  background: var(--surface-primary);
+  border-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.3);
+}
+
+.metricCardWallet .metricValue {
+  color: var(--success-color, #10b981);
+}
+
+/* === POINTS BANNER SECTION === */
+.pointsBannerCard {
+  position: relative;
+  overflow: hidden;
+}
+
+.pointsBannerContent {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: stretch;
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .pointsBannerContent {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}
+
+.pointsRulesTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 6px 0;
+}
+
+.pointsRulesList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pointsRulesList li {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  position: relative;
+  padding-left: 14px;
+}
+
+.pointsRulesList li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--primary-accent);
+  font-weight: bold;
+}
+
+.pointsBalanceBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.pointsBalanceItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+}
+
+.pointsBalanceItem span {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.pointsBalanceItem strong {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-accent);
+}
+
+.pointsBalanceItem:nth-child(2) strong {
+  color: var(--success-color, #10b981);
+}

@@ -1,0 +1,39 @@
+{
+  "branding": {
+    "logo": {
+      "text": "MAKE ",
+      "subtext": "ME KOOL",
+      "href": "#"
+    },
+    "description": "Meracik setiap produk dengan penuh perhatian untuk memberikan kualitas aroma dan rasa terbaik langsung ke tangan Anda.",
+    "socials": [
+      {
+        "href": "https://www.instagram.com/xar.project/",
+        "icon": "instagram",
+        "label": "Instagram"
+      },
+      {
+        "href": "#product",
+        "icon": "shopping-bag",
+        "label": "Shop"
+      }
+    ]
+  },
+  "navigation": {
+    "title": "Penjelajahan",
+    "links": [
+      { "label": "Home", "href": "#home" },
+      { "label": "Tentang Kami", "href": "#about" },
+      { "label": "Produk", "href": "#product" },
+      { "label": "Kontak", "href": "#contact" }
+    ]
+  },
+  "payment": {
+    "title": "Pembayaran",
+    "subtitle": "Didukung secara aman oleh:",
+    "methods": ["Midtrans", "QRIS"]
+  },
+  "copyright": {
+    "text": "Make Me Kool. All rights reserved."
+  }
+}

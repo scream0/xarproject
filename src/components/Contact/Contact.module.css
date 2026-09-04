@@ -1,0 +1,348 @@
+/* ====================================================
+   CONTACT CSS (Clean Look & High Readability Theme)
+   ==================================================== */
+.feather {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.contact {
+  padding: 8.5rem 7% 5.5rem;
+  background: var(--background);
+  color: var(--text-primary);
+  position: relative;
+}
+
+.contactContainer {
+  display: flex;
+  gap: 4.5rem;
+  align-items: flex-start;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* --- Left Info Card --- */
+.contactInfoCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  
+  /* Initial state for Scroll Reveal */
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.visible .contactInfoCard {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.infoHeader h5 {
+  color: var(--primary-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.infoHeader h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(2.1rem, 2.8vw, 2.5rem);
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin-bottom: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.infoHeader h2 span {
+  font-weight: 500;
+  color: var(--primary-accent);
+}
+
+.infoDetailsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.infoItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.2rem;
+  padding: 1.2rem;
+  border-radius: 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+  box-shadow: none;
+}
+
+.infoItem:hover {
+  background: rgba(var(--surface-secondary-rgb), 0.3);
+  border-color: rgba(255, 255, 255, 0.05);
+  transform: translateX(5px);
+  box-shadow: none;
+}
+
+.infoIcon {
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 10px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--primary-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.infoItem .infoIcon svg {
+  transition: all 0.3s ease;
+  stroke: var(--primary-accent);
+}
+
+.infoItem:hover .infoIcon {
+  transform: scale(1.1);
+}
+
+.infoItem:hover .infoIcon svg {
+  stroke: var(--primary-accent) !important;
+  filter: drop-shadow(0 0 8px rgba(var(--primary-accent-rgb), 0.6));
+}
+
+.infoText h4 {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.infoText p {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* --- Editorial Address Box --- */
+.addressBox {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.8rem;
+}
+
+.addressBox h4 {
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+.addressBox p {
+  color: var(--text-secondary);
+  line-height: 1.75;
+  font-size: 0.88rem;
+  font-weight: 400;
+}
+
+.coordinates {
+  font-family: monospace;
+  font-size: 0.74rem;
+  color: var(--primary-accent);
+  opacity: 0.8;
+  margin-top: 0.6rem;
+  display: block;
+  letter-spacing: 0.5px;
+}
+
+/* --- Form Container --- */
+.contactFormWrapper {
+  flex: 1.1;
+  background: var(--hero-panel-bg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2.8rem;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  
+  /* Initial state for Scroll Reveal */
+  opacity: 0;
+  transform: translateX(30px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0.2s; /* staggered after info card */
+}
+
+.visible .contactFormWrapper {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.contactForm h3 {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
+/* Input Grouping */
+.inputBox {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.inputBox input,
+.inputBox textarea {
+  width: 100%;
+  padding: 12px 0;
+  font-size: 0.9rem;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.inputBox textarea {
+  height: 110px;
+  resize: none;
+}
+
+/* Label Styling */
+.inputBox label {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+/* State Aktif (Floating Label) */
+.inputBox input:focus ~ label,
+.inputBox input:not(:placeholder-shown) ~ label,
+.inputBox textarea:focus ~ label,
+.inputBox textarea:not(:placeholder-shown) ~ label {
+  top: -20px;
+  font-size: 0.7rem;
+  color: var(--primary-accent);
+  letter-spacing: 1.5px;
+  font-weight: 700;
+}
+
+.inputBox input:hover,
+.inputBox textarea:hover {
+  border-bottom-color: var(--text-secondary);
+}
+
+.inputBox input:focus,
+.inputBox textarea:focus {
+  border-bottom-color: var(--primary-accent);
+  box-shadow: 0 4px 12px -8px var(--primary-accent);
+}
+
+/* --- Submit Button --- */
+.btnSubmit {
+  width: 100%;
+  padding: 13px 18px;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb), 0.2);
+}
+
+.btnSubmit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(var(--primary-accent-rgb), 0.3);
+}
+
+.btnSubmit:active {
+  transform: translateY(0);
+}
+
+/* Kilatan Cahaya Halus */
+.btnSubmit::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  transform: skewX(-20deg);
+  animation: lightSweep 6s infinite ease-in-out;
+}
+
+@keyframes lightSweep {
+  0% {
+    left: -150%;
+  }
+  25% {
+    left: 150%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+/* --- Responsive Media Queries --- */
+@media (max-width: 991px) {
+  .contact {
+    padding: 5rem 5%;
+  }
+  .contactContainer {
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+  .contactFormWrapper {
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
+  }
+  .infoHeader h2 {
+    font-size: 1.85rem;
+  }
+  .infoItem {
+    padding: 1rem;
+  }
+}

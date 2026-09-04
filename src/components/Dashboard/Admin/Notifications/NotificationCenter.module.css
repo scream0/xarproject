@@ -1,0 +1,443 @@
+.workspaceInner {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cardHeader {
+  background: rgba(var(--surface-primary-rgb), 0.35);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.headerTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.headerTitle {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.unreadBadge {
+  background: var(--danger-color);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.headerSubtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.markReadBtn {
+  background: rgba(var(--surface-primary-rgb), 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.markReadBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-accent);
+}
+
+.createBtn {
+  background: var(--primary-accent);
+  border: 1px solid var(--primary-accent);
+  color: var(--primary-accent-text);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.createBtn:hover {
+  opacity: 0.9;
+}
+
+.filterGroup {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.filterBtn {
+  background: rgba(var(--surface-primary-rgb), 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  padding: 0.45rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filterBtn:hover {
+  color: var(--text-primary);
+}
+
+.filterBtnActive {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+  font-weight: 600;
+}
+
+.notificationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.centerStateCard {
+  background: rgba(var(--surface-primary-rgb), 0.35);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.loadingText {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.emptyTitle {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.emptyText {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.notificationItem {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  background: rgba(var(--surface-primary-rgb), 0.25);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.notificationItem:hover {
+  border-color: var(--primary-accent);
+  transform: translateY(-1px);
+}
+
+.notificationUnread {
+  background: rgba(var(--primary-accent-rgb), 0.06);
+  border-left: 3px solid var(--primary-accent);
+}
+
+.notificationIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  background: rgba(var(--surface-primary-rgb), 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.type_order {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.type_payment {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.type_promo {
+  background: rgba(251, 191, 36, 0.15);
+}
+
+.type_system {
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.type_stock {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.notificationContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.notificationTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+
+.notificationTitle {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger-color);
+  flex-shrink: 0;
+}
+
+.notificationMessage {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.notificationMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.typeBadge,
+.audienceBadge {
+  font-size: 0.7rem;
+  background: rgba(var(--surface-primary-rgb), 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.timeAgo {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  border-color: var(--primary-accent);
+  background: rgba(var(--primary-accent-rgb), 0.1);
+}
+
+.linkIndicator {
+  font-size: 0.75rem;
+  color: var(--primary-accent);
+  font-weight: 600;
+  margin-left: 0.5rem;
+  transition: transform 0.2s;
+}
+
+.clickable:hover .linkIndicator {
+  transform: translateX(3px);
+}
+
+.deleteBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.5;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.deleteBtn:hover {
+  opacity: 1;
+  color: var(--danger-color);
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: rgba(var(--surface-primary-rgb), 0.85);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modalTitle {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.modalCloseBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 1.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.inputLabel {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.formInput,
+.formTextarea,
+.formSelect {
+  width: 100%;
+  background: rgba(var(--surface-primary-rgb), 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.formTextarea {
+  resize: vertical;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.cancelBtn,
+.submitBtn {
+  padding: 0.55rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+}
+
+.cancelBtn {
+  background: rgba(var(--surface-primary-rgb), 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.submitBtn {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+}
+
+@media (max-width: 640px) {
+  .headerTopRow {
+    flex-direction: column;
+  }
+  .headerActions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
+

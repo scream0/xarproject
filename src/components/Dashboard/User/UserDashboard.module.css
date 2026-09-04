@@ -1,0 +1,706 @@
+/* ====================================================
+   USER DASHBOARD CSS (Clean Look Modern System)
+   ==================================================== */
+.dashboardContainer {
+  display: flex;
+  height: 100vh;
+  background:
+    radial-gradient(circle at top center, rgba(var(--primary-accent-rgb), 0.12), transparent 40%),
+    linear-gradient(180deg, rgba(var(--background-rgb), 0.8) 0%, rgba(var(--background-rgb), 1) 100%);
+  color: var(--text-primary);
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Loading State & Pulse Scanner */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+.pulseScanner {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-accent);
+  border-radius: 50%;
+  animation: spin 0.7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Mobile Backdrop Overlay */
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 102;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobileBackdrop {
+    display: none;
+  }
+}
+
+/* Sidebar Styling (Desktop & Mobile Drawer) - Clean Look Flat Design */
+.sidebar {
+  width: 270px;
+  background: rgba(var(--surface-primary-rgb), 0.4);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: -270px;
+  z-index: 105;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="dark"]) .sidebar {
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.3);
+}
+
+.sidebarOpen {
+  left: 0;
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    left: 0;
+  }
+}
+
+/* Brand Section di Sidebar */
+.brandSection {
+  padding: 1.5rem 1.25rem 1.15rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sidebar .brandLogo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.sidebar .brandLogo span {
+  color: var(--primary-accent);
+}
+
+.brandBadge {
+  font-size: 0.65rem;
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  width: fit-content;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Navigasi List */
+.navContainer {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  overflow-y: auto;
+}
+
+.navigationList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.navItem {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  position: relative;
+}
+
+.navItem:hover {
+  background: rgba(var(--primary-accent-rgb), 0.08);
+  color: var(--primary-accent);
+  box-shadow: 0 0 15px rgba(var(--primary-accent-rgb), 0.15);
+  border-color: rgba(var(--primary-accent-rgb), 0.2);
+}
+
+.navLabel {
+  min-width: 0;
+  flex: 1;
+}
+
+.navItem:has(.navBadge) {
+  justify-content: space-between;
+}
+
+.navBadge {
+  min-width: 1.5rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  margin-left: auto;
+}
+
+.navItemActive {
+  background: rgba(var(--primary-accent-rgb), 0.12);
+  color: var(--primary-accent) !important;
+  font-weight: 600;
+  box-shadow: 0 0 20px rgba(var(--primary-accent-rgb), 0.25);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
+}
+
+.navItemActive::before {
+  content: none;
+}
+
+:global([data-theme="dark"]) .navItemActive {
+  background: rgba(var(--primary-accent-rgb), 0.15);
+  box-shadow: none;
+}
+
+.navItemActive .navBadge {
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: none;
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
+}
+
+/* Sidebar Footer & Logout Button */
+.sidebarFooter {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.logoutBtn {
+  width: 100%;
+  background: rgba(var(--danger-color-rgb), 0.05);
+  border: 1px solid rgba(var(--danger-color-rgb), 0.1);
+  color: var(--danger-color);
+  padding: 0.65rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+}
+
+.logoutBtn:hover {
+  background: rgba(var(--danger-color-rgb), 0.12);
+  border-color: rgba(var(--danger-color-rgb), 0.25);
+  box-shadow: 0 0 15px rgba(var(--danger-color-rgb), 0.2);
+}
+
+/* Sidebar User Greeting */
+.sidebarUserGreeting {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+}
+
+.sidebarUserGreeting .greetingEyebrow {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.sidebarUserGreeting .welcomeTitle {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.greetingWave {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: wave 1.8s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(12deg); }
+  30% { transform: rotate(-6deg); }
+  45% { transform: rotate(12deg); }
+  60% { transform: rotate(0deg); }
+}
+
+/* Konten Utama */
+.mainContent {
+  flex: 1;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background-color: var(--background);
+  height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 1024px) {
+  .mainContent {
+    margin-top: 0;
+    margin-left: 270px;
+    height: 100vh;
+  }
+}
+
+.errorBanner {
+  margin: 1rem 1rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--danger-color-rgb), 0.2);
+  background: rgba(var(--danger-color-rgb), 0.05);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.errorRetryBtn {
+  border: 1px solid rgba(var(--danger-color-rgb), 0.3);
+  background: transparent;
+  color: var(--danger-color);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.errorRetryBtn:hover {
+  background: rgba(var(--danger-color-rgb), 0.1);
+}
+
+/* SVG Icons */
+.svgIcon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.svgIcon use {
+  fill: none;
+}
+
+/* Area Tampilan Konten Dinamis */
+.viewWrapper {
+  flex: 1;
+  min-height: 0;
+  padding: 1.5rem 1.25rem 2rem;
+}
+
+.viewWrapperAnimated {
+  animation: viewEnter 0.2s ease-out;
+}
+
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.logoutDialog {
+  width: min(100%, 380px);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="dark"]) .logoutDialog {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.dialogTitle {
+  margin: 0 0 0.35rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.dialogDescription {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.dialogSecondaryBtn,
+.dialogPrimaryBtn {
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dialogSecondaryBtn {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.dialogSecondaryBtn:hover {
+  background: var(--surface-secondary);
+}
+
+.dialogPrimaryBtn {
+  border: 1px solid transparent;
+  background: var(--danger-color);
+  color: #ffffff;
+}
+
+.dialogPrimaryBtn:hover {
+  opacity: 0.9;
+}
+
+.dialogSecondaryBtn:disabled,
+.dialogPrimaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 639px) {
+  .errorBanner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dialogActions {
+    flex-direction: column-reverse;
+  }
+
+  .dialogSecondaryBtn,
+  .dialogPrimaryBtn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (min-width: 640px) {
+  .viewWrapper {
+    padding: 1.75rem 2rem 2.5rem;
+  }
+}
+
+/* ====================================================
+   FLOATING BOTTOM NAVIGATION (MOBILE CLEAN STYLE)
+   ==================================================== */
+.mobileBottomNav {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mobileBottomNav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface-primary);
+    border-top: 1px solid var(--border-color);
+    padding: 8px 12px env(safe-area-inset-bottom, 8px);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    gap: 2px;
+  }
+
+  .mobileBottomNavItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px 4px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    flex: 1;
+    min-width: 0;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .mobileNavIconWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobileNavSvg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  .mobileNavLabel {
+    font-size: 0.62rem;
+    font-weight: 500;
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1;
+  }
+
+  .mobileBottomNavItemActive {
+    color: var(--primary-accent) !important;
+  }
+
+  .mobileBottomNavItemActive .mobileNavLabel {
+    font-weight: 600;
+  }
+
+  .mobileNavBadge {
+    position: absolute;
+    top: -5px;
+    right: -7px;
+    background: var(--primary-accent);
+    color: var(--primary-accent-text);
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 1px 3px;
+    border-radius: 99px;
+    min-width: 12px;
+    text-align: center;
+  }
+
+  .mainContent {
+    padding-bottom: 90px !important;
+  }
+
+  .viewWrapper {
+    padding-bottom: 2.5rem !important;
+  }
+  }
+
+  /* Navbar Atas Melayang (Floating/Overlay Navbar) */
+  .shopNavbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--surface-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+
+    /* Posisi Melayang di atas */
+    position: sticky;
+    top: 16px;
+    z-index: 100;
+    margin: 1rem;
+  }
+
+  :global([data-theme="dark"]) .shopNavbar {
+    background: var(--surface-primary);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .navbarSearchWrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  }
+
+  .searchIcon {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  stroke: var(--text-secondary);
+  pointer-events: none;
+  }
+
+  .searchInputNavbar {
+  width: 100%;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.55rem 0.85rem 0.55rem 38px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  outline: none;
+  }
+
+  .searchInputNavbar::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+  }
+
+  .searchInputNavbar:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+  }
+
+  .navbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  }
+
+  .chatIconBtnNavbar,
+  .cartIconBtnNavbar {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+  .chatIconBtnNavbar:hover,
+  .cartIconBtnNavbar:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+  }
+
+  .cartQuantityBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 9999px;
+  min-width: 16px;
+  text-align: center;
+  border: 1px solid var(--surface-primary);
+  }

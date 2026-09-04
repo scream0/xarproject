@@ -1,0 +1,553 @@
+/* ====================================================
+   HERO CSS (Luxury High-End Theme - Refined Content)
+   ==================================================== */
+.hero {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  color: var(--text-primary);
+}
+
+/* Efek gradient halus di bagian bawah agar transisi ke section berikutnya seamless */
+.hero::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(var(--background-rgb), 0.7) 100%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* --- Background Cinematic (Aurora) --- */
+.auroraBg {
+  position: absolute;
+  inset: -15px;
+  width: calc(100% + 30px);
+  height: calc(100vh + 30px);
+  background: var(--background);
+  z-index: -2;
+  overflow: hidden;
+  transition: opacity 0.5s ease;
+}
+
+.auroraBg::before,
+.auroraBg::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.6;
+  animation: auroraAnimation 20s infinite alternate linear;
+}
+
+.auroraBg::before {
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle, rgba(var(--primary-accent-rgb), 0.25), transparent 70%);
+  top: -10vw;
+  left: -10vw;
+}
+
+.auroraBg::after {
+  width: 70vw;
+  height: 70vw;
+  background: radial-gradient(circle, rgba(147, 51, 234, 0.2), transparent 70%);
+  bottom: -20vw;
+  right: -10vw;
+  animation-delay: -5s;
+}
+
+@keyframes auroraAnimation {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(10vw, -10vw) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-10vw, 15vw) scale(0.9);
+  }
+
+  100% {
+    transform: translate(5vw, 5vw) scale(1.2);
+  }
+}
+
+/* Background image jika tidak memakai split screen atau sebagai tekstur tambahan */
+.heroBackground {
+  position: absolute;
+  inset: -15px;
+  width: calc(100% + 30px);
+  height: calc(100vh + 30px);
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+  filter: blur(10px) brightness(0.88) contrast(1.05);
+  transform: scale(1.02);
+  transition:
+    filter 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.5s ease,
+    background-color 0.4s ease;
+  opacity: 0.2;
+  /* Dibuat redup karena Aurora adalah main bg */
+}
+
+/* Dimming pas section berikutnya masuk viewport (dipicu isDimmed di komponen) */
+.hero.dimmed .auroraBg,
+.hero.dimmed .heroBackground {
+  opacity: 0.15;
+  filter: blur(15px);
+}
+
+.heroSpotlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  transition: background 0.1s ease-out;
+}
+
+.heroOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right,
+      rgba(var(--background-rgb), 0.94) 0%,
+      rgba(var(--background-rgb), 0.72) 55%,
+      rgba(var(--background-rgb), 0.4) 100%);
+  z-index: 2;
+}
+
+.heroParticlesContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* ====================================================
+   LAYOUT SPLIT-SCREEN & KACA KRISTAL
+   ==================================================== */
+.heroInner {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 5%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 60px;
+}
+
+.content {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  padding: 3rem 2.8rem;
+
+  /* Latar belakang kaca tebal yang adaptif & berkelas */
+  background: rgba(var(--surface-primary-rgb), 0.35);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  overflow: hidden;
+
+  /* Panel cuma fade-in opacity (TANPA translateY) supaya nggak numpuk gerakan
+     sama .reveal di children (tagline/title/desc/buttons) yang sudah slide-up
+     sendiri. Kalau dua-duanya translateY bareng, hasilnya "double motion". */
+  animation: heroPanelFadeIn 0.9s ease;
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
+}
+
+/* Garis pantulan cahaya kristal (specular highlight) di tepi atas kotak */
+.content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%);
+  pointer-events: none;
+}
+
+/* Aksen garis vertikal aksen di sisi kiri kotak */
+.content::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2.5px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--primary-accent), transparent);
+  pointer-events: none;
+}
+
+.contentGlow {
+  position: absolute;
+  top: -25%;
+  right: -10%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--primary-accent-rgb), 0.12), transparent 72%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+@keyframes heroPanelFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pembungkus luar dengan animasi fade-in otomatis saat load */
+.heroVisualWrapper {
+  position: relative;
+  width: 100%;
+  height: 550px;
+  animation: heroVisualFadeIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms);
+  animation-fill-mode: both;
+}
+
+@keyframes heroVisualFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Visual Image di Kanan */
+.heroVisual {
+  position: relative;
+  width: 100%;
+  height: 550px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: floatImage 8s ease-in-out infinite;
+}
+
+.heroVisualImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3), 0 0 40px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.heroVisualGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, rgba(var(--primary-accent-rgb), 0.3), transparent 70%);
+  filter: blur(60px);
+  z-index: -1;
+}
+
+@keyframes floatImage {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-15px) rotate(1.5deg);
+  }
+}
+
+/* --- Text reveal animation (staggered fade-in + slide-up) ---
+   Dipakai di heroTagline, heroTitle, heroDesc, heroButtons lewat
+   className tambahan `reveal` + `revealed`, dengan --reveal-delay
+   per elemen (diset inline dari komponen). Ini satu-satunya lapis
+   translateY di dalam .content, jadi gerakannya nggak dobel sama
+   animasi fade panel di atas. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Respect user preference: matikan animasi kalau browser/OS minta reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .content {
+    animation: none;
+    opacity: 1;
+  }
+
+  .reveal {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.heroTagline {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  color: var(--primary-accent);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.heroTitle {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-serif);
+  font-size: clamp(2.2rem, 3.8vw, 3.5rem);
+  line-height: 1.08;
+  font-weight: 300;
+  margin-bottom: 1.15rem;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+
+.heroTitle span {
+  font-weight: 500;
+  color: var(--primary-accent);
+}
+
+.heroDesc {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-sans);
+  font-size: 0.98rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin-bottom: 1.8rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  max-width: 560px;
+}
+
+.heroButtons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --- Tombol Utama (CTA Primary) --- */
+.ctaPrimary {
+  background-color: var(--primary-accent) !important;
+  color: var(--primary-accent-text) !important;
+  border: 1px solid var(--primary-accent);
+  padding: 0.75rem 1.6rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb), 0.2);
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ctaPrimary:hover {
+  opacity: 0.9;
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.ctaPrimary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.ctaPrimary::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(to bottom right,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 60%);
+  transform: rotate(30deg);
+  transition: all 0.7s ease;
+}
+
+.ctaPrimary:hover::after {
+  left: 100%;
+}
+
+.btnIcon {
+  margin-left: 8px;
+  transition: transform 0.3s ease;
+}
+
+.ctaPrimary:hover .btnIcon {
+  transform: translateX(4px);
+}
+
+/* --- Tombol Sekunder (CTA Secondary) --- */
+.ctaSecondary {
+  padding: 0.75rem 1.6rem;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.78rem;
+  text-decoration: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ctaSecondary:hover {
+  background-color: var(--surface-secondary);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  transform: translateY(-1px);
+}
+
+.ctaSecondary:active {
+  transform: translateY(0);
+}
+
+/* ====================================================
+   RESPONSIVE MOBILE OPTIMIZATIONS
+   ==================================================== */
+@media (max-width: 768px) {
+  .hero {
+    height: auto;
+    min-height: 100vh;
+    padding-top: 100px;
+    /* Offset for navbar */
+    padding-bottom: 40px;
+  }
+
+  .heroInner {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .heroVisualWrapper {
+    order: 1;
+    height: 350px;
+  }
+
+  .heroVisual {
+    order: 1;
+    height: 350px;
+  }
+
+  .content {
+    order: 2;
+    padding: 2rem 1.4rem;
+    border-radius: 20px;
+    width: 100%;
+    margin: 0;
+  }
+
+  .heroTagline {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    margin-bottom: 0.75rem;
+  }
+
+  .heroTitle {
+    font-size: 1.95rem;
+    line-height: 1.15;
+    margin-bottom: 0.9rem;
+  }
+
+  .heroDesc {
+    font-size: 0.92rem;
+    line-height: 1.65;
+    margin-bottom: 1.4rem;
+  }
+
+  .heroButtons {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .ctaPrimary,
+  .ctaSecondary {
+    width: 100%;
+    text-align: center;
+    padding: 0.8rem 1rem;
+    font-size: 0.8rem;
+    letter-spacing: 1.5px;
+  }
+}

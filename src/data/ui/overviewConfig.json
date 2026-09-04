@@ -1,0 +1,71 @@
+{
+  "title": "OVERVIEW ANALYTICS",
+  "cards": {
+    "revenue": "Total Pendapatan",
+    "orders": "Total Transaksi",
+    "products": "Produk Aktif",
+    "lowStock": "Stok Menipis"
+  },
+  "cardDescriptions": {
+    "revenue": "Akumulasi transaksi sukses",
+    "orders": "Total pesanan masuk",
+    "products": "Koleksi item di arsip",
+    "lowStockWarning": "Varian perlu restock segera",
+    "lowStockOk": "Stok aman terkendali"
+  },
+  "ordersSection": {
+    "title": "Pesanan Masuk Terbaru",
+    "loading": "Memuat daftar pesanan...",
+    "empty": "Belum ada pesanan masuk.",
+    "searchPlaceholder": "Cari ID atau nama pemesan...",
+    "filterAll": "Semua Status",
+    "filter": {
+      "all": "Semua Status",
+      "pending": "Pending",
+      "verifying": "Verifikasi Manual",
+      "success": "Success",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "table": {
+      "orderId": "Order ID",
+      "customer": "Pemesan",
+      "total": "Total",
+      "status": "Status",
+      "action": "Aksi Seller"
+    },
+    "buttons": {
+      "process": "Proses Pesanan",
+      "ship": "Kirim Barang",
+      "success": "Selesaikan",
+      "prev": "Sebelumnya",
+      "next": "Berikutnya"
+    }
+  },
+  "tableHeaders": ["Order ID", "Pemesan", "Total", "Kurir", "Status"],
+  "actions": {
+    "confirmPayment": "Konfirmasi Bayar",
+    "confirming": "Mengonfirmasi...",
+    "processOrder": "Proses Pesanan",
+    "processing": "Memproses...",
+    "shipItem": "Kirim Barang",
+    "shipping": "Mengirim...",
+    "completeOrder": "Selesaikan",
+    "completing": "Menyelesaikan...",
+    "completed": "Selesai"
+  },
+  "pagination": {
+    "prev": "Sebelumnya",
+    "next": "Berikutnya"
+  },
+  "modal": {
+    "title": "Input Nomor Resi",
+    "subtitle": "Masukkan nomor resi pengiriman untuk pesanan",
+    "placeholder": "Contoh: JX1234567890",
+    "cancel": "Batal",
+    "confirm": "Konfirmasi Kirim",
+    "loading": "Menyimpan..."
+  }
+}

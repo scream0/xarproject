@@ -1,0 +1,32 @@
+{
+  "sections": {
+    "growthRate": "Pertumbuhan MoM",
+    "topVariants": "Varian Parfum Terlaris",
+    "orderStatus": "Distribusi Status Pesanan",
+    "inventoryMovement": "Pergerakan Stok & Analisis Inventaris"
+  },
+  "headers": {
+    "productName": "Nama Produk & Varian",
+    "status": "Status Stok",
+    "action": "Rekomendasi Tindakan"
+  },
+  "statusLabels": {
+    "paid": "Berhasil",
+    "pending": "Tertunda",
+    "failed": "Gagal",
+    "settlement": "Selesai"
+  },
+  "labels": {
+    "unitsSold": "unit",
+    "ordersCount": "pesanan",
+    "soldTooltip": "Terjual",
+    "jumlahTooltip": "Jumlah",
+    "emptyInventory": "Belum ada data inventaris untuk dianalisis",
+    "defaultVariantName": "Product",
+    "defaultVariantSize": "Standard",
+    "trendUp": "▲ Meningkat dari bulan lalu",
+    "trendDown": "▼ Menurun dari bulan lalu",
+    "currentMonthLabel": "Pendapatan Bulan Ini",
+    "lastMonthPrefix": "Bulan lalu: Rp "
+  }
+}

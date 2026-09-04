@@ -1,0 +1,43 @@
+{
+  "header": {
+    "title": "Koleksi Eksklusif MAMEKO",
+    "subtitle": "Temukan aroma signature mewah yang diracik khusus untuk kepribadian Anda"
+  },
+  "filters": {
+    "allLabel": "Semua Koleksi",
+    "searchPlaceholder": "Cari nama parfum atau deskripsi aroma...",
+    "sortDefault": "Urutan Default",
+    "sortPriceLow": "Harga: Rendah ke Tinggi",
+    "sortPriceHigh": "Harga: Tinggi ke Rendah",
+    "sortName": "Nama Produk (A-Z)"
+  },
+  "messages": {
+    "loading": "Memuat katalog parfum...",
+    "empty": "Belum ada produk yang tersedia dalam kategori ini."
+  },
+  "card": {
+    "fallbackPrice": "Harga tidak tersedia",
+    "placeholderImageText": "MAMEKO PARFUM",
+    "defaultCategory": "Parfum Eksklusif",
+    "defaultDescription": "Parfum mewah racikan tangan dengan kualitas bahan terbaik yang tahan sepanjang hari.",
+    "variantLabel": "Pilih Varian Ukuran & Konsentrasi:",
+    "soldOutBadge": "HABIS",
+    "viewDetail": "Detail →",
+    "addToCartTitle": "Tambah ke Keranjang",
+    "outOfStockTitle": "Stok Habis"
+  },
+  "buttons": {
+    "loadMore": "Lihat Lebih Banyak",
+    "addToCart": "Tambah ke Keranjang",
+    "outOfStock": "Stok Varian Habis"
+  },
+  "toasts": {
+    "fetchError": "Gagal memuat produk dari database.",
+    "wishlistAdd": "Berhasil ditambahkan ke wishlist!",
+    "wishlistRemove": "Dihapus dari wishlist."
+  },
+  "reviews": {
+    "title": "Ulasan Pelanggan",
+    "empty": "Belum ada ulasan untuk produk ini."
+  }
+}

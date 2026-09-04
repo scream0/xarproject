@@ -1,0 +1,47 @@
+{
+  "add": {
+    "title": "Tambah Produk Baru ke Inventaris",
+    "submitButton": "Tambah Produk",
+    "submittingButton": "Menambahkan..."
+  },
+  "edit": {
+    "title": "Edit Detail Produk",
+    "submitButton": "Simpan Perubahan",
+    "submittingButton": "Menyimpan..."
+  },
+  "labels": {
+    "mainImage": "Gambar Utama Produk",
+    "name": "Nama Produk",
+    "category": "Kategori",
+    "variants": "Varian Produk (Ukuran, Harga, Stok, Gambar)",
+    "description": "Deskripsi Produk"
+  },
+  "placeholders": {
+    "name": "Contoh: Parfum Kopi Xar",
+    "size": "Ukuran (cth: 30ml)",
+    "price": "Harga (Rp)",
+    "stock": "Stok",
+    "description": "Jelaskan keunikan, bahan, dan cerita di balik produk Anda..."
+  },
+  "buttons": {
+    "chooseFile": "Pilih File",
+    "noFile": "Belum ada file",
+    "removeImage": "Hapus",
+    "addVariant": "+ Tambah Varian",
+    "cancel": "Batal"
+  },
+  "categories": [
+    "Parfum",
+    "Biji Kopi",
+    "Kopi Bubuk",
+    "Peralatan Kopi",
+    "Lainnya"
+  ],
+  "toasts": {
+    "selectImageError": "Harap pilih gambar utama untuk produk baru.",
+    "addSuccess": "Produk baru berhasil ditambahkan!",
+    "editSuccess": "Produk berhasil diperbarui!",
+    "genericError": "Terjadi kesalahan",
+    "variantError": "Setidaknya harus ada satu varian produk."
+  }
+}

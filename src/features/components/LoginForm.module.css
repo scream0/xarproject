@@ -1,0 +1,463 @@
+/* ====================================================
+   LOGIN FORM CSS (Luxury High-End & Warm Flashlight Beam)
+   ==================================================== */
+
+/* --- Layout & Wrapper --- */
+.formWrapper {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  margin: auto 0;
+  padding-top: 24px;
+}
+
+.loginContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  height: auto;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.loginCard {
+  width: 100%;
+  max-width: 100%;
+  padding: 3rem 2.5rem;
+  box-sizing: border-box;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(var(--surface-primary-rgb), 0.95);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loginCard>* {
+  position: relative;
+  z-index: 3;
+}
+
+.loginTitle {
+  text-align: center;
+  color: var(--text-primary);
+  margin-bottom: 1.6rem;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+/* --- Form & Input Elements --- */
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.inputWrapper {
+  position: relative;
+  width: 100%;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inputField {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 400;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.inputField::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.inputField:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.fieldHidden {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+  margin-bottom: 0 !important;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fieldVisible {
+  max-height: 180px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.otpContainer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.otpInputBox {
+  width: 52px;
+  height: 60px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 400;
+  font-family: var(--font-serif);
+  color: var(--text-primary);
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.otpInputBox:focus {
+  border-color: var(--primary-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.2);
+  transform: translateY(-2px);
+}
+
+.otpInputBox:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.togglePassword {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.3s ease;
+}
+
+.togglePassword:hover {
+  color: var(--text-primary);
+}
+
+.togglePassword svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* --- Buttons (Login, OTP, Switch Mode) --- */
+.btnLogin {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 1rem 1.75rem;
+  min-height: 48px;
+  background-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: 1px solid var(--primary-accent);
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btnLogin:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(var(--primary-accent-rgb), 0.3);
+}
+
+.btnLogin:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 3px 10px rgba(var(--primary-accent-rgb), 0.16);
+}
+
+.btnOtpRequest {
+  width: 100%;
+  padding: 0.85rem;
+  min-height: 44px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.btnOtpRequest:hover:not(:disabled) {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+.switchModeBtn {
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 1.25rem;
+  width: 100%;
+  text-align: center;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.switchModeBtn:hover {
+  color: var(--text-primary);
+}
+
+.resendTimerText {
+  display: block;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 1rem;
+  font-family: var(--font-sans);
+}
+
+/* --- Feedback States (Loading, Errors, Success) --- */
+.btnLoading {
+  cursor: not-allowed;
+  opacity: 0.8;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+.errorMessage,
+.successMessage {
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.errorMessage {
+  background-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.2);
+  color: var(--danger-color);
+}
+
+.successMessage {
+  background-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.1);
+  border: 1px solid rgba(var(--success-color-rgb, 16, 185, 129), 0.2);
+  color: var(--success-color);
+}
+
+/* --- Options, Checkbox & Divider --- */
+.optionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.25rem 0 1.5rem 0;
+}
+
+.forgotPasswordLink {
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.forgotPasswordLink:hover {
+  color: var(--primary-accent);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 1.5rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.checkboxLabel input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.customCheckmark {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  height: 14px;
+  width: 14px;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.checkboxLabel input:checked~.customCheckmark {
+  background-color: var(--primary-accent);
+  border-color: var(--primary-accent);
+}
+
+.customCheckmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 7px;
+  border: solid var(--primary-accent-text);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkboxLabel input:checked~.customCheckmark:after {
+  display: block;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.75rem 0;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.divider span {
+  padding: 0 1rem;
+}
+
+.socialWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.btnGoogle {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.otpNoticeText {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.otpNoticeEmail {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.optionsRowLeft {
+  justify-content: flex-start;
+  margin-bottom: 1rem;
+}
+
+.resendOtpBtn {
+  margin-top: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.changeEmailBtn {
+  margin-top: 0.5rem;
+}
+
+
+
+/* --- Keyframe Animations --- */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

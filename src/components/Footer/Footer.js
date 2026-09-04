@@ -1,0 +1,201 @@
+"use client";
+import { useState, useEffect, useRef } from "react";
+import { getPublicSettings } from "@/services/settingsService";
+import { useTheme } from "@/context/ThemeContext";
+import styles from "./Footer.module.css";
+import footerData from "@/data/ui/footerConfig.json"; // Fallback default JSON
+import { AppIcon } from "@/components/UI/Icon/AppIcon";
+
+export function Footer() {
+  const currentYear = new Date().getFullYear(); // Tahun dinamis
+
+  // Resolved footer data (DB override JSON)
+  const [footerInfo, setFooterInfo] = useState(footerData);
+
+  const footerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { theme, setTheme, isThemeReady } = useTheme();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (footerRef.current) {
+      observer.observe(footerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const fetchFooter = async () => {
+      try {
+        const data = await getPublicSettings({ force: true });
+        if (!data?.footer) return;
+        setFooterInfo({
+          ...footerData,
+          ...data.footer,
+          branding: {
+            ...(footerData?.branding || {}),
+            ...(data.footer?.branding || {}),
+            logo: {
+              ...(footerData?.branding?.logo || {}),
+              ...(data.footer?.branding?.logo || {}),
+            },
+            socials:
+              Array.isArray(data.footer?.branding?.socials) &&
+                data.footer.branding.socials.length > 0
+                ? data.footer.branding.socials
+                : footerData?.branding?.socials || [],
+          },
+          navigation: {
+            ...(footerData?.navigation || {}),
+            ...(data.footer?.navigation || {}),
+            links:
+              Array.isArray(data.footer?.navigation?.links) &&
+                data.footer.navigation.links.length > 0
+                ? data.footer.navigation.links
+                : footerData?.navigation?.links || [],
+          },
+          payment: {
+            ...(footerData?.payment || {}),
+            ...(data.footer?.payment || {}),
+            methods:
+              Array.isArray(data.footer?.payment?.methods) &&
+                data.footer.payment.methods.length > 0
+                ? data.footer.payment.methods
+                : footerData?.payment?.methods || [],
+          },
+          copyright: {
+            ...(footerData?.copyright || {}),
+            ...(data.footer?.copyright || {}),
+          },
+        });
+      } catch (error) {
+        console.error("Failed to load footer settings", error);
+      }
+    };
+
+    fetchFooter();
+  }, []);
+
+  return (
+    <footer className={`${styles.siteFooter} ${isVisible ? styles.visible : ""}`} ref={footerRef}>
+      {/* Decorative Glow Blob at the bottom */}
+      <div className={styles.footerGlowBlob}></div>
+
+      <div className={styles.footerContainer}>
+        {/* KOLOM 1: BRANDING & SOSIAL MEDIA */}
+        <div className={`${styles.footerBox} ${styles.footerBranding}`}>
+          <a
+            href={footerInfo?.branding?.logo?.href}
+            className={styles.footerLogo}
+          >
+            {footerInfo?.branding?.logo?.text}
+            <span>{footerInfo?.branding?.logo?.subtext}</span>.
+          </a>
+          <p className={styles.footerDesc}>
+            {footerInfo?.branding?.description}
+          </p>
+          <div className={styles.footerSocial}>
+            {footerInfo?.branding?.socials?.map((social, index) => (
+              <SocialLink
+                key={index}
+                href={social.href}
+                icon={social.icon}
+                label={social.label}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* KOLOM 2: NAVIGASI */}
+        <div className={`${styles.footerBox} ${styles.footerLinks}`}>
+          <h3>{footerInfo?.navigation?.title}</h3>
+          <div className={styles.linksGrid}>
+            {footerInfo?.navigation?.links?.map((link, index) => (
+              <a key={index} href={link.href}>
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* KOLOM 3: PAYMENT */}
+        <div className={`${styles.footerBox} ${styles.footerPayment}`}>
+          <h3>{footerInfo?.payment?.title}</h3>
+          <p className={styles.mutedText}>{footerInfo?.payment?.subtitle}</p>
+          <div className={styles.paymentBadges}>
+            {footerInfo?.payment?.methods?.map((method, index) => (
+              <span key={index} className={styles.badgePayment}>
+                {method}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.footerBottom}>
+        <div className={styles.footerBottomWrapper}>
+          <p>
+            &copy; {currentYear} {footerInfo?.copyright?.text}
+          </p>
+          <div className={styles.themeSwitcher}>
+            <button
+              className={`${styles.themeBtn} ${isThemeReady && theme === 'light' ? styles.active : ''}`}
+              onClick={() => setTheme('light')}
+              aria-label="Tema Terang"
+            >
+              <AppIcon name="sun" />
+            </button>
+            <button
+              className={`${styles.themeBtn} ${!isThemeReady || theme === 'dark' ? styles.active : ''}`}
+              onClick={() => setTheme('dark')}
+              aria-label="Tema Gelap"
+            >
+              <AppIcon name="moon" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// Sub-komponen tetap dipertahankan
+function SocialLink({ href, icon, label }) {
+  const handleClick = (e) => {
+    // Mencegah refresh jika href diawali dengan #
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
+
+  return (
+    <div className={styles.socialItem}>
+      <a
+        href={href}
+        onClick={handleClick}
+        target={href.startsWith("#") ? "_self" : "_blank"}
+        rel="noopener noreferrer"
+        aria-label={label}
+        className={styles.socialLinkBtn}
+      >
+        <AppIcon name={icon} className={styles.feather} />
+      </a>
+      {label && <span className={styles.socialLabel}>{label}</span>}
+    </div>
+  );
+}
+

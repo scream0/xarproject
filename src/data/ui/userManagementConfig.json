@@ -1,0 +1,64 @@
+{
+  "header": {
+    "title": "Manajemen User",
+    "subtitle": "Lihat pelanggan, status akun, kelola peran, dan blokir/aktifkan akun."
+  },
+  "searchPlaceholder": "Cari nama atau email...",
+  "loadingText": "Memuat data pengguna...",
+  "emptyText": "Tidak ada pengguna yang cocok dengan filter.",
+  "filters": {
+    "all": "Semua Status",
+    "active": "Aktif",
+    "blocked": "Diblokir",
+    "roleAll": "Semua Peran",
+    "roleAdmin": "Admin",
+    "roleStaff": "Staff",
+    "roleCustomer": "Pelanggan"
+  },
+  "tableHeaders": {
+    "customer": "Pelanggan",
+    "contact": "Kontak",
+    "role": "Peran",
+    "status": "Status",
+    "orders": "Belanja",
+    "points": "Poin",
+    "joined": "Bergabung",
+    "actions": "Aksi"
+  },
+  "statusBadges": {
+    "active": "Aktif",
+    "blocked": "Diblokir"
+  },
+  "roleOptions": [
+    "customer",
+    "staff",
+    "admin"
+  ],
+  "actions": {
+    "block": "Blokir",
+    "activate": "Aktifkan",
+    "saving": "Menyimpan..."
+  },
+  "toasts": {
+    "fetchError": "Gagal memuat data pengguna.",
+    "updateSuccess": "Perubahan berhasil disimpan.",
+    "updateError": "Gagal menyimpan perubahan.",
+    "blockSuccess": "Akun berhasil diblokir.",
+    "activateSuccess": "Akun berhasil diaktifkan."
+  },
+  "confirm": {
+    "blockTitle": "Blokir Pengguna",
+    "blockMessage": "Blokir akun {name}? Pengguna tidak akan bisa login lagi.",
+    "activateTitle": "Aktifkan Pengguna",
+    "activateMessage": "Aktifkan kembali akun {name}?",
+    "cancel": "Batal",
+    "confirm": "Ya, Lanjutkan"
+  },
+  "summary": {
+    "total": "Total Pengguna",
+    "active": "Aktif",
+    "blocked": "Diblokir",
+    "customers": "Pelanggan"
+  }
+}
+

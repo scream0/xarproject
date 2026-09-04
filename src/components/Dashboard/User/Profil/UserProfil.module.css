@@ -1,0 +1,437 @@
+/* ====================================================
+   NAVBAR ATAS MELAYANG (Clean & Minimalist)
+   ==================================================== */
+.shopNavbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+}
+
+.navbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatIconBtnNavbar,
+.cartIconBtnNavbar {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chatIconBtnNavbar:hover,
+  .cartIconBtnNavbar:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+}
+
+.svgIcon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* ====================================================
+   PROFILE SECTION CSS (Clean Look Modern System)
+   ==================================================== */
+.workspaceInner {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 5rem; 
+}
+
+@media (min-width: 768px) {
+  .workspaceInner {
+    padding-bottom: 2rem;
+  }
+}
+
+.sectionHeaderCard {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.sectionHeaderTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.sectionHeaderSubtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ====================================================
+   TAB CONTAINER & HEADER (Wishlist & Support)
+   ==================================================== */
+.tabContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.tabHeaderCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-primary);
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.backToProfileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backToProfileBtn:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  background: var(--surface-primary);
+}
+
+.tabTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ====================================================
+   Modals (Clean Flat Design)
+   ==================================================== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: fadeInOverlay 0.2s ease-out;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  animation: scaleUpModal 0.2s ease-out;
+}
+
+@keyframes scaleUpModal {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+
+.modalTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.closeModalBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.closeModalBtn:hover {
+  color: var(--text-primary);
+}
+
+/* ====================================================
+   Buttons & Form Elements
+   ==================================================== */
+.actionBtnOutline,
+.actionBtnPrimary,
+.actionBtnDanger,
+.smallBtn,
+.smallBtnDanger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0.55rem 1rem;
+  border: 1px solid transparent;
+}
+
+.actionBtnOutline {
+  background: var(--surface-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.actionBtnOutline:hover {
+  background: var(--surface-primary);
+  border-color: var(--text-secondary);
+}
+
+.actionBtnPrimary {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text, #ffffff);
+  box-shadow: none;
+  text-align: center;
+}
+
+.actionBtnPrimary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.actionBtnOutline:disabled,
+.actionBtnPrimary:disabled,
+.actionBtnDanger:disabled,
+.smallBtn:disabled,
+.smallBtnDanger:disabled {
+  background: var(--surface-tertiary, #374151);
+  color: var(--text-tertiary, #9ca3af);
+  border-color: transparent;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.actionBtnDanger {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.08);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.2);
+  color: var(--danger-color, #ef4444);
+  text-align: center;
+}
+
+.actionBtnDanger:hover {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.15);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.inputLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.formInput,
+.formSelect,
+.formTextarea {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.formInput:focus,
+.formSelect:focus,
+.formTextarea:focus {
+  border-color: var(--primary-accent);
+}
+
+.inputWithPrefix {
+  display: flex;
+  align-items: center;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.inputWithPrefix span {
+  padding-left: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.inputWithPrefix input {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 0.7rem 0.85rem;
+  outline: none;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.avatarUpload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.formGroupCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 14px;
+}
+
+.formRow2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sectionDividerTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin: 10px 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.otpUnverifiedTag {
+  font-size: 0.75rem;
+  color: var(--danger-color, #ef4444);
+}
+
+.otpActionBtn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 480px) {
+  .formRow2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

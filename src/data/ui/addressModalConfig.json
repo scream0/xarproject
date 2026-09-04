@@ -1,0 +1,17 @@
+{
+  "title": "Lengkapi Alamat Pengiriman",
+  "description": "Anda belum memiliki alamat pengiriman. Silakan isi terlebih dahulu untuk melanjutkan pembayaran.",
+  "placeholders": {
+    "recipientName": "Nama Penerima",
+    "recipientPhone": "Nomor Telepon / WhatsApp",
+    "street": "Alamat Lengkap (Jalan, Nomor Rumah, RT/RW)",
+    "city": "Kota / Kabupaten",
+    "postalCode": "Kode Pos"
+  },
+  "buttons": {
+    "cancel": "Batal",
+    "submit": "Simpan & Lanjutkan Pembayaran",
+    "processing": "Menyimpan..."
+  },
+  "validationAlert": "Harap isi bidang yang wajib diisi!"
+}

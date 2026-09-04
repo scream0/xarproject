@@ -1,0 +1,54 @@
+{
+  "header": {
+    "title": "Pusat Notifikasi",
+    "subtitle": "Pantau order bermasalah, stok menipis, dan pembayaran gagal dari satu tempat."
+  },
+  "loadingText": "Memuat pusat notifikasi...",
+  "emptyTitle": "Tidak ada notifikasi",
+  "emptyText": "Notifikasi sistem tentang operasional toko akan muncul di sini.",
+  "tabs": {
+    "all": "Semua",
+    "order": "Pesanan",
+    "payment": "Pembayaran",
+    "system": "Sistem",
+    "promo": "Promo"
+  },
+  "typeLabels": {
+    "order": "Pesanan",
+    "payment": "Pembayaran",
+    "system": "Sistem",
+    "promo": "Promo"
+  },
+  "buttons": {
+    "markAllRead": "Tandai Semua Dibaca",
+    "create": "Buat Notifikasi"
+  },
+  "modal": {
+    "createTitle": "Buat Notifikasi",
+    "titleLabel": "Judul",
+    "titlePlaceholder": "Judul notifikasi",
+    "messageLabel": "Pesan",
+    "messagePlaceholder": "Isi pesan notifikasi",
+    "linkLabel": "Tautan (Link) Tujuan",
+    "linkOptions": [
+      { "value": "", "label": "Tidak ada (Tanpa Tautan)" },
+      { "value": "/dashboard?tab=shop", "label": "Katalog Produk" },
+      { "value": "/dashboard?tab=orders", "label": "Pesanan Saya" },
+      { "value": "/dashboard?tab=profile", "label": "Pengaturan Profil" }
+    ],
+    "typeLabel": "Tipe",
+    "typeOptions": ["order", "payment", "promo", "system"],
+    "audienceLabel": "Target",
+    "audienceOptions": ["user", "all", "admin"],
+    "submit": "Kirim",
+    "cancel": "Batal",
+    "close": "Tutup"
+  },
+  "toasts": {
+    "createSuccess": "Notifikasi berhasil dibuat.",
+    "createError": "Gagal membuat notifikasi.",
+    "markAllReadSuccess": "Semua notifikasi ditandai sudah dibaca.",
+    "deleteSuccess": "Notifikasi dihapus."
+  }
+}
+

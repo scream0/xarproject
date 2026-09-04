@@ -1,0 +1,246 @@
+.ticket {
+  position: relative;
+  display: flex;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 120px;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.ticket:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: var(--primary-accent);
+  transform: translateY(-2px);
+}
+
+.ticketInactive {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+
+/* Notch bentuk tiket sobek */
+.notchLeft,
+.notchRight {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: var(--background);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+.notchLeft {
+  left: 88px;
+  margin-left: -8px;
+}
+.notchRight {
+  left: 88px;
+  margin-left: -8px;
+}
+
+.ticketLeft {
+  width: 88px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary-accent), rgba(var(--primary-accent-rgb), 0.85));
+  color: var(--primary-accent-text, #fff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+}
+
+.iconCircle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.4rem;
+}
+
+.voucherIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.discountValue {
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.discountLabel {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.dashedDivider {
+  width: 0;
+  border-left: 2px dashed var(--border-color);
+  margin: 12px 0;
+}
+
+.ticketRight {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ticketHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.urgentBadge {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--danger-color);
+  background: rgba(var(--danger-color-rgb), 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.minPurchase,
+.expiry {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.progressWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 5px;
+  background: var(--surface-secondary, #eee);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9800, var(--danger-color));
+  border-radius: 999px;
+}
+
+.progressText {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ticketFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.codeChip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1.5px dashed var(--primary-accent);
+  color: var(--primary-accent);
+  background: rgba(var(--primary-accent-rgb), 0.06);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.codeChip:hover {
+  background: rgba(var(--primary-accent-rgb), 0.12);
+  transform: translateY(-1px);
+}
+
+.statusTag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.actionButton {
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--primary-accent);
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(var(--primary-accent-rgb), 0.25);
+}
+
+.actionButton:hover:not(:disabled) {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb), 0.4);
+  filter: brightness(1.08);
+}
+
+.actionButton:disabled,
+.claimed {
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: not-allowed;
+  opacity: 0.75;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 480px) {
+  .ticketLeft {
+    width: 72px;
+  }
+  .notchLeft,
+  .notchRight {
+    left: 72px;
+  }
+}

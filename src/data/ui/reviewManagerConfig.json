@@ -1,0 +1,40 @@
+{
+  "title": "Manajemen Ulasan Produk",
+  "filters": {
+    "all": "Semua",
+    "pending": "Pending",
+    "approved": "Disetujui"
+  },
+  "states": {
+    "loading": "Memuat ulasan...",
+    "empty": "Tidak ada ulasan untuk ditampilkan."
+  },
+  "tableHeaders": [
+    "Produk",
+    "Pengguna",
+    "Rating",
+    "Komentar",
+    "Status",
+    "Tindakan"
+  ],
+  "statusLabels": {
+    "approved": "Disetujui",
+    "pending": "Pending"
+  },
+  "buttons": {
+    "approve": "Setujui",
+    "delete": "Hapus",
+    "loading": "..."
+  },
+  "confirmations": {
+    "deletePrompt": "Apakah Anda yakin ingin menghapus ulasan ini? Tindakan ini tidak bisa dibatalkan."
+  },
+  "toasts": {
+    "authRequired": "Admin not authenticated.",
+    "fetchError": "Gagal memuat ulasan.",
+    "approveSuccess": "Ulasan berhasil disetujui!",
+    "approveError": "Gagal menyetujui ulasan.",
+    "deleteSuccess": "Ulasan berhasil dihapus.",
+    "deleteError": "Gagal menghapus ulasan."
+  }
+}

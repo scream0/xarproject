@@ -1,0 +1,11 @@
+{
+  "input": {
+    "placeholder": "Cari parfum eksklusif..."
+  },
+  "results": {
+    "pricePrefix": "Mulai",
+    "outOfStock": "Stok habis",
+    "emptyMessage": "Tidak ditemukan.",
+    "defaultImage": "/assets/produk/default.jpg"
+  }
+}

@@ -1,0 +1,760 @@
+/* ====================================================
+   SETTINGS VIEW CSS (Luxury High-End Theme)
+   ==================================================== */
+.settingsContainer {
+  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98), rgba(var(--surface-secondary-rgb), 0.9));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: var(--text-primary);
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  box-shadow: 0 16px 36px rgba(17, 13, 10, 0.05);
+}
+
+.settingsTitle {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: 1.4px;
+  color: var(--text-primary);
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
+}
+
+.loadingText {
+  text-align: center;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3rem 0;
+}
+
+/* ---- Tab Navigasi ---- */
+.tabNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tabBtn {
+  background: rgba(var(--surface-primary-rgb), 0.96);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.tabBtn:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+.tabBtnActive {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+}
+
+.logoutTabBtn {
+  background: transparent;
+  border: 1px solid rgba(220, 38, 38, 0.45);
+  color: #dc2626;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.logoutTabBtn:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+/* ---- Form Sections ---- */
+.formSection {
+  background: rgba(var(--surface-primary-rgb), 0.88);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.sectionTitle {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 1.5px;
+  color: var(--text-primary);
+  margin: 0 0 1.25rem 0;
+  text-transform: uppercase;
+}
+
+.toastContent {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ====================================================
+   ACCOUNT TAB & DIALOG
+   ==================================================== */
+.tabContent {
+  background: rgba(var(--surface-primary-rgb), 0.88);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.helpText {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.logoutActionBtn {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.12);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  color: var(--danger-color);
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutActionBtn:hover {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.2);
+  transform: translateY(-1px);
+}
+
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 1400;
+  padding: 1rem;
+}
+
+.logoutDialog {
+  width: min(420px, 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: rgba(var(--surface-primary-rgb), 0.98);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+  padding: 1.5rem;
+}
+
+.dialogTitle {
+  margin: 0;
+  font: 400 1.15rem var(--font-serif);
+  color: var(--text-primary);
+}
+
+.dialogDescription {
+  margin: 0.6rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.dialogActions {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.dialogSecondaryBtn,
+.dialogPrimaryBtn {
+  border-radius: 20px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.dialogSecondaryBtn {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dialogPrimaryBtn {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.12);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  color: var(--danger-color);
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.inputGroup:last-child {
+  margin-bottom: 0;
+}
+
+.fieldLabel {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.inputField,
+.selectField {
+  background: rgba(var(--surface-primary-rgb), 0.96);
+  border: 1px solid var(--border-color);
+  padding: 0.8rem 0.95rem;
+  color: var(--text-primary);
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+.textAreaField {
+  background: rgba(var(--surface-primary-rgb), 0.96);
+  border: 1px solid var(--border-color);
+  padding: 0.8rem 0.95rem;
+  color: var(--text-primary);
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  transition: all 0.25s ease;
+}
+
+.inputField::placeholder,
+.selectField::placeholder,
+.textAreaField::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.inputField:focus,
+.selectField:focus,
+.textAreaField:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.selectField {
+  cursor: pointer;
+}
+
+.fieldDesc {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+}
+
+.toggleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  width: fit-content;
+  background: rgba(var(--surface-primary-rgb), 0.96);
+}
+
+.toggleInput {
+  accent-color: var(--primary-accent);
+  width: 1rem;
+  height: 1rem;
+}
+
+.toggleLabel {
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  color: var(--text-primary);
+}
+
+.fileInput {
+  background: rgba(var(--surface-primary-rgb), 0.96);
+  border: 1px dashed var(--border-color);
+  padding: 0.9rem 1rem;
+  color: var(--text-primary);
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fileInput::file-selector-button {
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  margin-right: 0.8rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.previewCard {
+  margin-top: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-secondary);
+}
+
+.previewImage {
+  width: 100%;
+  padding: 1rem;
+}
+
+.logoutDialog {
+  width: min(420px, 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: rgba(var(--surface-primary-rgb), 0.98);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+  padding: 1.5rem;
+}
+
+.dialogTitle {
+  margin: 0;
+  font: 400 1.15rem var(--font-serif);
+  color: var(--text-primary);
+}
+
+.dialogDescription {
+  margin: 0.6rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.dialogActions {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.dialogSecondaryBtn,
+.dialogPrimaryBtn {
+  border-radius: 20px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.dialogSecondaryBtn {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dialogPrimaryBtn {
+  background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.12);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  color: var(--danger-color);
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.inputGroup:last-child {
+  margin-bottom: 0;
+}
+
+.fieldLabel {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.inputField,
+.selectField {
+  background: rgba(var(--surface-primary-rgb), 0.96);
+  border: 1px solid var(--border-color);
+  padding: 0.8rem 0.95rem;
+  color: var(--text-primary);
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+.textAreaField {
+  background: rgba(var(--surface-primary-rgb), 0.96);
+  border: 1px solid var(--border-color);
+  padding: 0.8rem 0.95rem;
+  color: var(--text-primary);
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  transition: all 0.25s ease;
+}
+
+.inputField::placeholder,
+.selectField::placeholder,
+.textAreaField::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.inputField:focus,
+.selectField:focus,
+.textAreaField:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.selectField {
+  cursor: pointer;
+}
+
+.fieldDesc {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+}
+
+.toggleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  width: fit-content;
+  background: rgba(var(--surface-primary-rgb), 0.96);
+}
+
+.toggleInput {
+  accent-color: var(--primary-accent);
+  width: 1rem;
+  height: 1rem;
+}
+
+.toggleLabel {
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  color: var(--text-primary);
+}
+
+.fileInput {
+  background: rgba(var(--surface-primary-rgb), 0.96);
+  border: 1px dashed var(--border-color);
+  padding: 0.9rem 1rem;
+  color: var(--text-primary);
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fileInput::file-selector-button {
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  margin-right: 0.8rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.previewCard {
+  margin-top: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-secondary);
+}
+
+.previewImage {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.saveBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-accent);
+  color: var(--primary-accent-text);
+  padding: 0.85rem 1.75rem;
+  border: 1px solid var(--primary-accent);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  box-shadow: 0 6px 16px rgba(var(--primary-accent-rgb), 0.16);
+  transition: all 0.25s ease;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 1rem;
+}
+
+/* ---- Layout Helpers ---- */
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.nestedCard {
+  background: rgba(var(--surface-secondary-rgb), 0.55);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.9rem;
+  margin-bottom: 0.8rem;
+}
+
+.removeBtn {
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .removeBtn:hover {
+    background: #ef4444;
+    color: #fff;
+  }
+}
+
+.addRowBtn {
+  background: transparent;
+  border: 1px dashed var(--primary-accent);
+  color: var(--primary-accent);
+  border-radius: 999px;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-top: 0.3rem;
+  transition: all 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .addRowBtn:hover {
+    background: rgba(var(--primary-accent-rgb), 0.12);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .saveBtn:hover:not(:disabled) {
+    background: transparent;
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+  }
+}
+
+.saveBtn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.saveBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ---- Mobile responsive ---- */
+@media (max-width: 768px) {
+
+  .row2,
+  .row3 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+/* ---- Tab Navigasi ---- */
+.tabNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tabBtn {
+  background: rgba(var(--surface-primary-rgb), 0.96);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.tabBtn:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+.tabBtnActive {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+}
+
+/* Override hover agar teks tetap kontras saat tab aktif di-hover */
+.tabBtnActive:hover {
+  color: var(--primary-accent-text);
+  opacity: 0.85;
+}
+
+.tabBtnActive:hover {
+  color: var(--primary-accent-text);
+  opacity: 0.88;
+}
+
+.tabBtnActive:hover {
+  color: var(--primary-accent-text);
+  opacity: 0.88;
+}
+
+.logoutTabBtn {
+  background: transparent;
+  border: 1px solid rgba(220, 38, 38, 0.45);
+  color: #dc2626;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.logoutTabBtn:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}

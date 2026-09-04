@@ -1,0 +1,91 @@
+{
+  "hero": {
+    "subtitle": "Pusat Promosi & Voucher",
+    "description": "Kelola kampanye diskon dan tarik lebih banyak pelanggan.",
+    "buttonText": "Download Laporan Penjualan"
+  },
+  "notifications": {
+    "payment": "Payment confirmations needed",
+    "lowStock": "Low-stock variants",
+    "reviews": "New reviews to review",
+    "outOfStock": "Out-of-stock variants"
+  },
+  "panels": {
+    "inventory": {
+      "title": "Inventory & stock alerts",
+      "empty": "All tracked variants are above the alert threshold."
+    },
+    "customers": {
+      "title": "Customer insights",
+      "empty": "Customer insights appear after the first orders arrive."
+    },
+    "reviews": {
+      "title": "Reviews & feedback",
+      "empty": "No reviews have been received yet."
+    },
+    "activity": {
+      "title": "Activity log",
+      "action": "Recent changes"
+    },
+    "orders": {
+      "title": "Order operations",
+      "empty": "No orders available yet."
+    },
+    "support": {
+      "title": "Customer support inbox",
+      "empty": "No support tickets."
+    },
+    "returns": {
+      "title": "Return & refund requests",
+      "empty": "No return or refund requests."
+    },
+    "team": {
+      "title": "Team access",
+      "empty": "No team members found."
+    },
+    "reconciliation": {
+      "title": "Payment reconciliation",
+      "empty": "No pending payments to reconcile."
+    },
+    "procurement": {
+      "title": "Supplier & purchase orders",
+      "empty": "Create supplier and purchase orders via the procurement API."
+    },
+    "automation": {
+      "title": "Automation rules",
+      "action": "Operational safeguards",
+      "loading": "Loading rules…"
+    },
+    "promo": {
+      "title": "Promo & Voucher Management",
+      "action": "Kelola database voucher",
+      "buttonText": "Simpan Voucher",
+      "empty": "Belum ada voucher tersimpan di database.",
+      "deleteText": "Hapus"
+    },
+    "checklist": {
+      "title": "Storefront checklist",
+      "action": "Edit in Settings",
+      "items": [
+        "Hero and promo banner content",
+        "Homepage product sections",
+        "Social proof and testimonials",
+        "Contact, shipping and policy information"
+      ]
+    },
+    "analytics": {
+      "title": "Lightweight analytics",
+      "action": "Current data"
+    }
+  },
+  "forms": {
+    "voucher": {
+      "codePlaceholder": "Kode (ex: GRATISONGKIR)",
+      "titlePlaceholder": "Judul / Keterangan",
+      "discountPlaceholder": "Besaran Diskon"
+    }
+  },
+  "status": {
+    "loading": "Loading operational workspace…"
+  }
+}

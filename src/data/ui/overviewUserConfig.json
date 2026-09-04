@@ -1,0 +1,49 @@
+{
+  "metrics": {
+    "totalSpent": { "title": "Total Belanja", "desc": "Dari pesanan yang tuntas" },
+    "totalOrders": { "title": "Total Pesanan", "desc": "Akumulasi seluruh transaksi" },
+    "processingOrders": { "title": "Dalam Proses", "desc": "Peracikan / pengiriman" },
+    "points": { "title": "Poin Rewards", "desc": "Dapat dipakai untuk transaksi", "icon": "star" },
+    "balance": { "title": "Saldo Wallet", "desc": "Saldo tersedia untuk belanja", "icon": "wallet", "currency": true }
+  },
+  "pointsBanner": {
+    "title": "Program Poin XAR",
+    "desc": "Kumpulkan poin dari setiap transaksi sukses dan tukarkan dengan produk eksklusif.",
+    "howTo": "Cara dapat poin:",
+    "rules": [
+      "1 poin / Rp10.000 belanja",
+      "Bonus poin di hari spesial",
+      "Poin tidak berlaku untuk ongkir"
+    ],
+    "pointsLabel": "Poin Anda",
+    "balanceLabel": "Saldo Wallet"
+  },
+  "welcomeBanner": {
+    "badge": "AREA ANGGOTA VIP",
+    "titlePrefix": "SELAMAT DATANG,",
+    "defaultGuest": "VALUED GUEST",
+    "desc": "Akses cepat untuk melihat status pesanan terbaru Anda atau jelajahi kembali koleksi parfum eksklusif kami.",
+    "buttons": {
+      "catalog": "Jelajahi Katalog",
+      "orders": "Semua Pesanan",
+      "cart": "Buka Keranjang"
+    }
+  },
+  "recentOrders": {
+    "title": "Aktivitas Terbaru",
+    "loading": "Memuat pesanan...",
+    "empty": "Belum ada pesanan.",
+    "detailBtn": "Detail"
+  },
+  "recommendations": {
+    "title": "Direkomendasikan Untuk Anda",
+    "seeAll": "Lihat Semua →",
+    "loading": "Mencari rekomendasi...",
+    "quickAddTitle": "Tambah ke Keranjang"
+  },
+  "toasts": {
+    "fetchOrdersError": "Gagal memuat data pesanan.",
+    "fetchSummaryError": "Gagal memuat data ringkasan."
+  }
+}
+

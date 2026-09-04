@@ -1,0 +1,129 @@
+/* ====================================================
+   SEARCH FORM CSS (Luxury High-End Theme)
+   ==================================================== */
+.searchForm {
+  position: absolute;
+  top: 90px;
+  right: 7%;
+  background: rgba(var(--surface-primary-rgb), 0.98);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  width: 380px;
+  padding: 1.25rem;
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.searchForm.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.searchForm input {
+  width: 100%;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.searchForm input:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.searchForm input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.searchResults {
+  margin-top: 1rem;
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.searchResultItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.searchResultItem:hover {
+  background: rgba(var(--primary-accent-rgb), 0.08);
+}
+
+.disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  filter: grayscale(1);
+}
+
+.searchResultItem.disabled:hover {
+  background-color: transparent;
+}
+
+.searchResultItem img {
+  width: 55px;
+  height: 55px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.resultInfo h4 {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.5px;
+}
+
+.resultInfo p {
+  color: var(--primary-accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.resultInfo p.outOfStockText {
+  color: var(--text-muted, #999);
+  font-weight: 400;
+}
+
+.searchResultEmpty {
+  padding: 1rem;
+  color: var(--text-secondary, #888);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+/* Penyesuaian Responsif untuk Mobile */
+@media (max-width: 768px) {
+  .searchForm {
+    top: 75px;
+    right: 5%;
+    width: 90vw;
+    max-width: 360px;
+  }
+}

@@ -1,0 +1,328 @@
+/* ====================================================
+   PRODUCT MANAGER CSS (Luxury High-End Theme)
+   ==================================================== */
+.container {
+  color: var(--text-primary);
+  padding: 10px 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  margin-top: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.summaryPillGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.summaryPill {
+  padding: 0.42rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* --- Controls Section --- */
+.controlsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .controlsContainer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.searchInput,
+.filterSelect {
+  background: rgba(var(--surface-primary-rgb), 0.95);
+  color: var(--text-primary);
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.searchInput {
+  width: 100%;
+  max-width: 340px;
+}
+
+.searchInput::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.searchInput:focus,
+.filterSelect:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filterSelect {
+  cursor: pointer;
+}
+
+/* --- Inventory Section --- */
+.inventorySection {
+  background: linear-gradient(135deg, rgba(var(--surface-primary-rgb), 0.98), rgba(var(--surface-secondary-rgb), 0.82));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 16px 36px rgba(17, 13, 10, 0.06);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.tableWrapper::-webkit-scrollbar {
+  height: 5px;
+}
+.tableWrapper::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+
+.table th {
+  padding: 12px 16px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
+  background: var(--surface-secondary);
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover td {
+  background-color: rgba(var(--primary-accent-rgb), 0.02);
+}
+
+.productImage {
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+  width: 50px;
+  height: 50px;
+  background: var(--surface-secondary);
+}
+
+.productNameCell {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+}
+
+.statusBadge {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusTersedia {
+  background-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.1);
+  color: var(--success-color);
+  border: 1px solid rgba(var(--success-color-rgb, 16, 185, 129), 0.25);
+}
+
+.statusStokMenipis {
+  background-color: rgba(var(--primary-accent-rgb), 0.1);
+  color: var(--primary-accent);
+  border: 1px solid rgba(var(--primary-accent-rgb), 0.25);
+}
+
+.statusHabis {
+  background-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+  color: var(--danger-color);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.25);
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.editBtn,
+.deleteBtn {
+  cursor: pointer;
+  background: rgba(var(--surface-secondary-rgb), 0.8);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .editBtn:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+
+  .deleteBtn:hover {
+    background: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
+}
+
+.editBtn:active,
+.deleteBtn:active {
+  transform: scale(0.98);
+}
+
+/* --- Pagination --- */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.paginationButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pagination button:hover:not(:disabled) {
+    background-color: var(--surface-primary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.emptyState,
+.loadingState {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* --- Form Section --- */
+.formSection {
+  background: var(--surface-primary);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 28px;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}

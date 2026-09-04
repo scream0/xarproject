@@ -1,0 +1,100 @@
+{
+  "header": {
+    "title": "Profil Pengguna",
+    "subtitle": "Kelola informasi personal, keamanan, dan daftar alamat pengiriman"
+  },
+  "buttons": {
+    "editProfile": "Edit Profil",
+    "addAddress": "+ Tambah Alamat"
+  },
+  "labels": {
+    "personalInfo": "Informasi Personal",
+    "security": "Keamanan & Sesi",
+    "addressBook": "Buku Alamat",
+    "username": "Username",
+    "fullName": "Nama Lengkap",
+    "email": "Email",
+    "phone": "Telepon",
+    "loginMethod": "Metode Login",
+    "changePassword": "Ganti Password",
+    "deleteAccount": "Hapus Akun",
+    "deleting": "Menghapus...",
+    "primaryBadge": "Utama",
+    "edit": "Edit",
+    "setPrimary": "Jadikan Utama",
+    "delete": "Hapus"
+  },
+  "modals": {
+    "editProfile": {
+      "title": "Edit Profil",
+      "avatarLabel": "Foto Profil",
+      "selectImage": "Pilih Gambar",
+      "removeImage": "Hapus",
+      "username": "Username",
+      "fullName": "Nama Lengkap",
+      "phone": "Telepon",
+      "birthDate": "Tanggal Lahir",
+      "gender": "Jenis Kelamin",
+      "genderOptions": {
+        "placeholder": "Pilih...",
+        "male": "Laki-laki",
+        "female": "Perempuan"
+      },
+      "newsletterLabel": "Terima info & promo eksklusif",
+      "cancel": "Batal",
+      "save": "Simpan",
+      "saving": "Menyimpan..."
+    },
+    "address": {
+      "addTitle": "Tambah Alamat",
+      "editTitle": "Edit Alamat",
+      "label": "Label Alamat",
+      "recipientName": "Nama Penerima",
+      "recipientPhone": "Telepon Penerima",
+      "street": "Alamat Lengkap",
+      "city": "Kota/Kabupaten",
+      "postalCode": "Kode Pos",
+      "cancel": "Batal",
+      "save": "Simpan Alamat",
+      "saving": "Menyimpan..."
+    },
+    "password": {
+      "title": "Ganti Password",
+      "current": "Password Saat Ini",
+      "new": "Password Baru",
+      "confirm": "Konfirmasi Password Baru",
+      "cancel": "Batal",
+      "submit": "Ubah Password",
+      "submitting": "Memperbarui..."
+    }
+  },
+  "states": {
+    "emptyAddress": "Belum ada alamat tersimpan."
+  },
+  "prompts": {
+    "removeAvatarConfirm": "Yakin ingin menghapus foto profil?",
+    "deleteAccountConfirm": "PERINGATAN: Ini akan menghapus seluruh data akun Anda secara permanen. Yakin?",
+    "deleteAddressConfirm": "Hapus alamat ini?"
+  },
+  "toasts": {
+    "fetchError": "Gagal memuat data profil.",
+    "uploadingAvatar": "Mengunggah avatar baru...",
+    "uploadSuccess": "Avatar berhasil diunggah!",
+    "removeAvatarLoading": "Menghapus avatar...",
+    "removeAvatarSuccess": "Avatar berhasil dihapus.",
+    "saveProfileLoading": "Menyimpan profil...",
+    "saveProfileSuccess": "Profil berhasil diperbarui!",
+    "passwordMismatch": "Password baru tidak cocok.",
+    "passwordLength": "Password baru minimal 6 karakter.",
+    "passwordLoading": "Memverifikasi & mengubah password...",
+    "passwordSuccess": "Password berhasil diubah!",
+    "deleteAccountLoading": "Menghapus akun...",
+    "deleteAccountSuccess": "Akun berhasil dihapus. Mengalihkan...",
+    "saveAddressLoading": "Menyimpan alamat...",
+    "saveAddressSuccess": "Alamat berhasil disimpan!",
+    "deleteAddressLoading": "Menghapus alamat...",
+    "deleteAddressSuccess": "Alamat dihapus.",
+    "setPrimaryLoading": "Memperbarui alamat utama...",
+    "setPrimarySuccess": "Alamat utama diperbarui!"
+  }
+}

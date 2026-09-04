@@ -1,0 +1,15 @@
+# Cloudflare Tunnel Config untuk mameko-api
+# Jalankan dengan: .\cloudflared.exe tunnel --config config.yml run
+
+# Tunnel mameko-api — credentials ada di .cloudflared/
+tunnel: a79e4250-6743-4696-823e-e87ffa8618fa
+credentials-file: C:\Users\karim\.cloudflared\a79e4250-6743-4696-823e-e87ffa8618fa.json
+
+ingress:
+  # Route semua request dari api.mameko.my.id ke backend Go di 127.0.0.1:8080
+  - hostname: api.mameko.my.id
+    service: http://127.0.0.1:8080
+
+  # Wajib: catch-all rule di paling bawah
+  - service: http_status:404
+

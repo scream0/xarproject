@@ -1,0 +1,81 @@
+{
+  "brand": {
+    "name": "MAKE ME KOOL",
+    "suffix": "PARFUM",
+    "badge": "MEMBER AREA"
+  },
+  "nav": [
+    {
+      "id": "shop",
+      "label": "Katalog",
+      "icon": "shopping-bag"
+    },
+    {
+      "id": "overview",
+      "label": "Ringkasan",
+      "icon": "layout-dashboard"
+    },
+    {
+      "id": "orders",
+      "label": "Pesanan",
+      "icon": "package"
+    },
+    {
+      "id": "returns",
+      "label": "Retur & Refund",
+      "icon": "rotate-ccw"
+    },
+    {
+      "id": "notifications",
+      "label": "Notifikasi",
+      "icon": "bell"
+    },
+    {
+      "id": "wishlist",
+      "label": "Wishlist",
+      "icon": "heart"
+    },
+    {
+      "id": "support",
+      "label": "Bantuan",
+      "icon": "help-circle"
+    },
+    {
+      "id": "profile",
+      "label": "Profil",
+      "icon": "user"
+    }
+  ],
+  "logoutText": "Keluar Akun",
+  "loading": "Memuat portal pengguna...",
+  "defaultCustomer": "Valued Customer",
+  "defaultUser": "USER",
+  "defaultRole": "user",
+  "greeting": {
+    "eyebrow": "Member area aktif",
+    "prefix": "Halo",
+    "suffix": "Siap lanjut belanja atau cek update akun Anda?"
+  },
+  "messages": {
+    "loadUserError": "Profil Anda belum berhasil dimuat. Anda masih bisa lanjut menggunakan dashboard, lalu coba ulang saat koneksi stabil.",
+    "retry": "Coba Lagi"
+  },
+  "logoutDialog": {
+    "title": "Keluar dari akun?",
+    "description": "Sesi Anda di perangkat ini akan diakhiri. Pastikan semua perubahan penting sudah selesai.",
+    "confirm": "Ya, keluar",
+    "cancel": "Batal"
+  },
+  "aria": {
+    "cart": "Buka Keranjang",
+    "menu": "Menu Navigasi",
+    "menuExpanded": "Tutup menu navigasi",
+    "menuPanel": "Drawer navigasi akun pengguna",
+    "logoutDialog": "Dialog konfirmasi logout"
+  },
+  "toasts": {
+    "initError": "Gagal inisialisasi dokumen user baru:",
+    "fetchError": "Gagal mengambil data profil dari database:",
+    "logoutError": "Gagal logout:"
+  }
+}

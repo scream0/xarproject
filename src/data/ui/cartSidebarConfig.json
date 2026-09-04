@@ -1,0 +1,27 @@
+{
+  "accessibility": {
+    "closeAriaLabel": "Close Cart"
+  },
+  "icons": {
+    "close": "x",
+    "emptyCart": "shopping-cart"
+  },
+  "labels": {
+    "title": "Keranjang Belanja",
+    "variant": "Varian:",
+    "quantityMinus": "−",
+    "quantityPlus": "+",
+    "total": "Total Pembayaran:",
+    "checkout": "Bayar Sekarang"
+  },
+  "emptyState": {
+    "message": "Keranjang Anda Kosong",
+    "buttonText": "Jelajahi Produk",
+    "buttonLink": "#product"
+  },
+  "shipping": {
+    "freeShippingThreshold": 500000,
+    "message": "Anda hanya butuh senilai {amount} lagi untuk gratis ongkir!",
+    "congratsMessage": "Selamat! Anda mendapatkan gratis biaya pengiriman."
+  }
+}

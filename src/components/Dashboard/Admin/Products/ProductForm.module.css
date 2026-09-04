@@ -1,0 +1,396 @@
+/* ====================================================
+   FORM CONTAINER CSS (Luxury High-End Theme)
+   ==================================================== */
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 100%;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dimensionGroup {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+    grid-column: 1 / -1;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.fieldLabel {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.inputField,
+.selectField,
+.textareaField {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.inputField::placeholder,
+.textareaField::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.inputField:focus,
+.selectField:focus,
+.textareaField:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.selectField {
+  cursor: pointer;
+}
+
+.textareaField {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* --- Image Upload --- */
+.imageUploadWrapper {
+  background-color: var(--surface-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 160px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .imageUploadWrapper:hover {
+    border-color: var(--primary-accent);
+  }
+}
+
+.previewContainer {
+  position: relative;
+}
+
+.mainPreviewImg {
+  max-height: 130px;
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  box-sizing: border-box;
+  object-fit: cover;
+}
+
+.removeImgBtn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: var(--danger-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.removeImgBtn:hover {
+  transform: scale(1.1);
+}
+
+/* --- Variants Section --- */
+.variantsBox {
+  grid-column: 1 / -1;
+  background-color: var(--surface-secondary);
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.variantsBox::-webkit-scrollbar {
+  height: 5px;
+}
+.variantsBox::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+
+.variantRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: var(--surface-primary);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.variantInput {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  outline: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.variantInput:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--primary-accent-rgb), 0.15);
+}
+
+.variantActionBtn {
+  background-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.1);
+  color: var(--danger-color);
+  border: 1px solid rgba(var(--danger-color-rgb, 220, 38, 38), 0.3);
+  border-radius: 6px;
+  padding: 0.6rem 0.9rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  height: 100%;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .variantActionBtn:hover {
+    background-color: rgba(var(--danger-color-rgb, 220, 38, 38), 0.2);
+    border-color: var(--danger-color);
+  }
+}
+
+.addVariantBtn {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .addVariantBtn:hover {
+    background-color: var(--surface-primary);
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+  }
+}
+
+/* --- File Input --- */
+.fileInputHidden {
+  display: none;
+}
+
+.customFileBtn {
+  background-color: var(--surface-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.85rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .customFileBtn:hover {
+    background-color: var(--surface-secondary);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+  }
+}
+
+.fileChosenText {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+}
+
+/* --- Button Group --- */
+.buttonGroup {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.submitBtn,
+.cancelBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.75rem;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.submitBtn {
+  background-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+  border-color: var(--primary-accent);
+  box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .submitBtn:hover:not(:disabled) {
+    background-color: transparent;
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.3);
+  }
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.submitBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.cancelBtn {
+  background-color: var(--surface-secondary);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cancelBtn:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+  }
+}
+
+.cancelBtn:active {
+  transform: scale(0.98);
+}
+
+/* Responsif Mobile */
+@media (max-width: 768px) {
+  .variantRow {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "xar-project",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "node --test",
+    "e2e": "playwright test",
+    "e2e:auth": "playwright test -g \"login and open account orders page\"",
+    "e2e:ui": "playwright test --ui",
+    "pages:build": "npx @opennextjs/cloudflare build && node build-pages.js",
+    "pages:deploy": "npm run build && npm run pages:build && wrangler pages deploy .worker-next/assets"
+  },
+  "dependencies": {
+    "@next/bundle-analyzer": "^16.3.0",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.2",
+    "@types/uuid": "^10.0.0",
+    "axios": "^1.18.1",
+    "framer-motion": "^12.42.2",
+    "html2pdf.js": "^0.14.0",
+    "lru-cache": "^11.5.2",
+    "lucide-react": "^1.28.0",
+    "next": "15.0.0",
+    "next-themes": "^0.4.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hot-toast": "^2.6.0",
+    "react-is": "^19.2.8",
+    "react-scroll-parallax": "^3.5.0",
+    "recharts": "^3.9.2",
+    "swiper": "^14.0.2",
+    "uuid": "^14.0.1"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.0.0",
+    "supabase": "^2.113.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "wrangler": "^4.128.0"
+  },
+  "overrides": {
+    "jwks-rsa": "3.1.0",
+    "jose": "4.15.9",
+    "nanoid": "3.3.17"
+  }
+}
