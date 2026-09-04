@@ -7,6 +7,7 @@ import (
 	"time"
 	"xar-backend-go/internal/config"
 	"xar-backend-go/internal/middleware"
+	"xar-backend-go/internal/whatsapp"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -117,31 +118,42 @@ func UpdateAdminReturn(c *fiber.Ctx) error {
 		orderStatus = "returned"
 		historyNote = "Pengajuan return disetujui oleh admin."
 		
-		// Withdrawals Logic
+		// Wallet Refund Logic
 		// Get total_amount from orders
 		var totalAmount float64
 		_ = config.DB.QueryRow(`SELECT total_amount FROM orders WHERE id::text = $1`, orderID).Scan(&totalAmount)
 
-		// Get user bank details from profiles
-		var bankName, bankAcc, bankHolder sql.NullString
-		_ = config.DB.QueryRow(`SELECT bank_name, bank_account_number, bank_account_name FROM profiles WHERE id::text = $1`, userID).Scan(&bankName, &bankAcc, &bankHolder)
-		
-		if bankName.Valid && bankAcc.Valid && bankHolder.Valid && bankName.String != "" {
-			// Insert into withdrawals
+		// Insert into wallet_transactions as refund
+		txQuery := `INSERT INTO wallet_transactions (wallet_id, amount, type, description, reference_id, created_at, updated_at) 
+					VALUES ($1, $2, 'refund', $3, $4, NOW(), NOW())`
+		_, errTx := config.DB.Exec(txQuery, userID, totalAmount, "Refund pesanan "+orderID, orderID)
+
+		if errTx == nil {
+			// Update or create wallet balance
 			_, _ = config.DB.Exec(`
-				INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_holder, reference_type, reference_id, status)
-				VALUES ($1, $2, $3, $4, $5, 'order_return', $6, 'pending')
-			`, userID, totalAmount, bankName.String, bankAcc.String, bankHolder.String, orderID)
-			
-			userNotificationMsg = fmt.Sprintf("Pengajuan return pesanan Anda (%s) telah disetujui. Dana sebesar Rp%v sedang diproses ke rekening Anda.", orderID, totalAmount)
-		} else {
-			userNotificationMsg = fmt.Sprintf("Pengajuan return pesanan Anda (%s) telah disetujui, namun data rekening Anda belum lengkap. Silakan hubungi admin.", orderID)
+				INSERT INTO wallets (user_id, balance, created_at, updated_at)
+				VALUES ($1, $2, NOW(), NOW())
+				ON CONFLICT (user_id) 
+				DO UPDATE SET balance = wallets.balance + EXCLUDED.balance, updated_at = NOW()
+			`, userID, totalAmount)
 		}
+
+		userNotificationMsg = fmt.Sprintf("Pengajuan return pesanan Anda (%s) telah disetujui. Dana sebesar Rp%v telah dikembalikan ke Mameko Wallet Anda.", orderID, totalAmount)
 		
 	} else if newStatus == "rejected" {
 		orderStatus = "delivered" // revert to delivered if rejected
 		historyNote = "Pengajuan return ditolak oleh admin."
 		userNotificationMsg = fmt.Sprintf("Pengajuan return pesanan Anda (%s) ditolak. Alasan: %s", orderID, req.AdminNote)
+	}
+
+	// Fetch User WhatsApp Number
+	var userPhone sql.NullString
+	_ = config.DB.QueryRow(`SELECT whatsapp_number FROM profiles WHERE id::text = $1`, userID).Scan(&userPhone)
+
+	// Send WhatsApp Notification to User
+	if userPhone.Valid && userPhone.String != "" {
+		waMsg := fmt.Sprintf("Halo! 📦 *Update Status Retur*\n\nPesanan: %s\nStatus: *%s*\n\n%s", orderID, strings.ToUpper(newStatus), userNotificationMsg)
+		go whatsapp.SendMessage(userPhone.String, waMsg)
 	}
 
 	// Insert User Notification

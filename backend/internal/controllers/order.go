@@ -12,6 +12,7 @@ import (
 	"xar-backend-go/internal/middleware"
 	"xar-backend-go/internal/models"
 	"xar-backend-go/internal/services"
+	"xar-backend-go/internal/whatsapp"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -848,6 +849,20 @@ func RequestOrderReturn(c *fiber.Ctx) error {
 		INSERT INTO notifications (title, message, audience, link, created_at, updated_at)
 		VALUES ($1, $2, 'admin', $3, NOW(), NOW())
 	`, "Pengajuan Retur Baru", fmt.Sprintf("Ada pengajuan retur baru untuk pesanan %s.", actualOrderID), "/admin/orders?tab=returns")
+
+	// WhatsApp Notification
+	go func() {
+		// Dapatkan nomor admin dari settings (jika ada) atau gunakan ENV (atau default)
+		adminPhone := "081234567890" // default placeholder
+		var dbPhone string
+		err := config.DB.QueryRow(`SELECT whatsapp_number FROM settings LIMIT 1`).Scan(&dbPhone)
+		if err == nil && dbPhone != "" {
+			adminPhone = dbPhone
+		}
+		
+		waMsg := fmt.Sprintf("⚠️ *Pengajuan Retur Baru*\n\nOrder ID: %s\nAlasan: %s\n\nSilakan cek di Dashboard Admin.", actualOrderID, req.Reason)
+		_ = whatsapp.SendMessage(adminPhone, waMsg)
+	}()
 
 	return c.JSON(fiber.Map{"success": true, "message": "Pengajuan retur berhasil dikirim."})
 }
