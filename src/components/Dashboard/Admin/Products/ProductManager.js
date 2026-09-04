@@ -80,7 +80,7 @@ export default function ProductManager() {
     // Go API default sorts by created_at desc
 
     try {
-      const res = await fetch(`/api/products?${params.toString()}`);
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "") + `/api/products?${params.toString()}`);
       if (!res.ok) throw new Error("Gagal mengambil data produk dari server");
       const result = await res.json();
       

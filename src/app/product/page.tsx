@@ -50,7 +50,7 @@ function ProductDetailContent() {
     if (!id || id === 'undefined') return;
 
     setLoading(true);
-    fetch(`/api/products?id=${id}`)
+    fetch((process.env.NEXT_PUBLIC_API_URL || "") + `/api/products?id=${id}`)
       .then(async res => {
         if (res.status === 404) {
           setIsNotFound(true);
