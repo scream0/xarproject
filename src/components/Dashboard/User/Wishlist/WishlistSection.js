@@ -155,7 +155,7 @@ export default function WishlistSection() {
 
   const handleCardClick = (product) => {
     const pId = product.id || product._id;
-    router.push(`/products/${pId}`);
+    router.push(`/product?id=${pId}`);
   };
 
   const handleExplore = () => {

@@ -8,9 +8,7 @@ import { Tenor_Sans, Lato } from "next/font/google";
 import styles from "./not-found.module.css";
 import Script from "next/script";
 
-const AddressModal = nextDynamic(
-  () => import("@/components/UI/Modal/AddressModal").then((mod) => mod.AddressModal)
-);
+import { AddressModal } from "@/components/UI/Modal/AddressModal";
 
 // 1. Setup Font
 const tenor = Tenor_Sans({
@@ -25,7 +23,6 @@ const lato = Lato({
   variable: "--font-lato",
 });
 
-export const dynamic = 'force-dynamic';
 export const metadata = {
   title: "mameko",
   description: "Artisanal Craftsmanship",
@@ -35,7 +32,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   let storeConfig: any = null;
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-    const res = await fetch(`${baseUrl}/api/settings`, { cache: 'no-store' });
+    const res = await fetch(`${baseUrl}/api/settings`);
     if (res.ok) {
       storeConfig = await res.json();
     }

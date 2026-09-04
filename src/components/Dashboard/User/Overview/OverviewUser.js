@@ -338,7 +338,7 @@ export default function OverviewUser({ setActiveTab }) {
                         onClick={() => {
                           const orderId = order.id || order.orderId;
                           if (orderId) {
-                            router.push(`/account/orders/${orderId}`);
+                            router.push(`/account/order-detail?id=${orderId}`);
                           } else {
                             router.push("/dashboard");
                           }

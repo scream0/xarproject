@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { notFound, useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { notFound, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import styles from "./ProductDetail.module.css";
 import modalData from "@/data/ui/productModalConfig.json";
@@ -30,9 +30,9 @@ interface Product {
   price?: number;
 }
 
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const { id } = resolvedParams;
+function ProductDetailContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
   const router = useRouter();
 
   const { activePromo, addToCart } = useStore();
@@ -336,5 +336,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProductDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className={styles.pageContainer}>
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
+          <p>Memuat detail produk...</p>
+        </div>
+      </div>
+    }>
+      <ProductDetailContent />
+    </Suspense>
   );
 }

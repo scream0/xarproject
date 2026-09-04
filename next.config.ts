@@ -15,6 +15,10 @@ const cspHeader = `
 `;
 
 const nextConfig = {
+  output: 'export',
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts', 'swiper'],
   },
@@ -22,9 +26,7 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   images: {
-    formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -35,58 +37,6 @@ const nextConfig = {
         hostname: "gwdvcfuzwchnfrhnhaek.supabase.co",
       },
     ],
-  },
-  async rewrites() {
-    // Di production (Vercel): gunakan NEXT_PUBLIC_API_URL atau https://api.mameko.my.id
-    // Di lokal: wajib gunakan http://127.0.0.1:8080 agar tidak error SSL Handshake dari proxy Next.js
-    const isProd = process.env.NODE_ENV === 'production';
-    const apiBase = isProd ? (process.env.NEXT_PUBLIC_API_URL || "https://api.mameko.my.id") : "http://127.0.0.1:8080";
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${apiBase}/api/:path*`,
-      },
-    ];
-  },
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: cspHeader.replace(/\s{2,}/g, " ").trim(),
-          },
-        ],
-      },
-      {
-        source: "/images/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/assets/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/favicon.ico",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=604800",
-          },
-        ],
-      },
-    ];
   },
 };
 

@@ -11,8 +11,8 @@
     "e2e": "playwright test",
     "e2e:auth": "playwright test -g \"login and open account orders page\"",
     "e2e:ui": "playwright test --ui",
-    "pages:build": "npx @opennextjs/cloudflare build && node build-pages.js",
-    "pages:deploy": "npm run build && npm run pages:build && wrangler pages deploy .worker-next/assets"
+    "pages:build": "next build",
+    "pages:deploy": "npm run pages:build && wrangler pages deploy out"
   },
   "dependencies": {
     "@next/bundle-analyzer": "^16.3.0",
@@ -36,7 +36,6 @@
     "uuid": "^14.0.1"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.20.6",
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

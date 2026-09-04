@@ -14,7 +14,7 @@ const getBaseUrl = () => {
 export async function getInitialProducts() {
   try {
     const res = await fetch(`${getBaseUrl()}/api/products?page=1&limit=${PRODUCTS_PER_PAGE}`, {
-      cache: "no-store", 
+      cache: "force-cache", 
     });
     
     if (!res.ok) {
@@ -56,7 +56,7 @@ export async function getInitialProducts() {
 export async function getSalesData(): Promise<SalesMap> {
   try {
     const res = await fetch(`${getBaseUrl()}/api/products/sales/public`, {
-      cache: "no-store",
+      cache: "force-cache",
     });
 
     if (!res.ok) {
@@ -81,7 +81,7 @@ export async function getSalesData(): Promise<SalesMap> {
 export async function getPublicReviews() {
    try {
     const res = await fetch(`${getBaseUrl()}/api/reviews?public=true`, {
-      cache: "no-store",
+      cache: "force-cache",
     });
 
     if (!res.ok) {

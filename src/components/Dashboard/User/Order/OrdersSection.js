@@ -589,7 +589,7 @@ export default function OrdersSection() {
 
   const handleOpenOrderDetail = async (order) => {
     if (!currentUser) return;
-    router.push(`/account/orders/${order.id}`);
+    router.push(`/account/order-detail?id=${order.id}`);
   };
 
   const handleCancelOrder = (order) => {
