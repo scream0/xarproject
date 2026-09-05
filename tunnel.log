@@ -1,0 +1,45 @@
+2026-09-05T08:56:45Z INF Starting tunnel tunnelID=a79e4250-6743-4696-823e-e87ffa8618fa
+2026-09-05T08:56:45Z INF Version 2026.8.2 (Checksum c29eee2b121f5436a642eed69fd9767da7e7b8c510fa50aaa130337f931357b5)
+2026-09-05T08:56:45Z INF GOOS: windows, GOVersion: go1.26.4, GoArch: amd64
+2026-09-05T08:56:45Z INF Settings: map[config:backend\config.yml cred-file:C:\Users\karim\.cloudflared\a79e4250-6743-4696-823e-e87ffa8618fa.json credentials-file:C:\Users\karim\.cloudflared\a79e4250-6743-4696-823e-e87ffa8618fa.json p:http2 protocol:http2]
+2026-09-05T08:56:45Z INF cloudflared will not automatically update on Windows systems.
+2026-09-05T08:56:45Z INF Generated Connector ID: 640f1e9d-bb4b-49b3-abd5-28c4e73e7618
+2026-09-05T08:56:45Z INF Initial protocol http2
+2026-09-05T08:56:45Z INF ICMP proxy will use 192.168.100.11 as source for IPv4
+2026-09-05T08:56:45Z INF ICMP proxy will use fe80::2a9c:2c67:4cba:9fff in zone Ethernet as source for IPv6
+2026-09-05T08:56:45Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-09-05T08:56:45Z INF ICMP proxy will use 192.168.100.11 as source for IPv4
+2026-09-05T08:56:45Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.7
+2026-09-05T08:56:45Z INF ICMP proxy will use fe80::2a9c:2c67:4cba:9fff in zone Ethernet as source for IPv6
+2026-09-05T08:56:45Z INF Starting metrics server on 127.0.0.1:20242/metrics
+2026-09-05T08:56:45Z INF +--------------------------------------------------------------------------------------+
+2026-09-05T08:56:45Z INF |                               CONNECTIVITY PRE-CHECKS                                |
+2026-09-05T08:56:45Z INF +--------------------------------------------------------------------------------------+
+2026-09-05T08:56:45Z INF |  COMPONENT         TARGET                     STATUS  DETAILS                        |
+2026-09-05T08:56:45Z INF |  DNS Resolution    region1.v2.argotunnel.com  PASS    DNS Resolved successfully      |
+2026-09-05T08:56:45Z INF |  DNS Resolution    region2.v2.argotunnel.com  PASS    DNS Resolved successfully      |
+2026-09-05T08:56:45Z INF |  UDP Connectivity  region1.v2.argotunnel.com  PASS    QUIC connection successful     |
+2026-09-05T08:56:45Z INF |  UDP Connectivity  region2.v2.argotunnel.com  PASS    QUIC connection successful     |
+2026-09-05T08:56:45Z INF |  TCP Connectivity  region1.v2.argotunnel.com  PASS    HTTP/2 connection successful   |
+2026-09-05T08:56:45Z INF |  TCP Connectivity  region2.v2.argotunnel.com  PASS    HTTP/2 connection successful   |
+2026-09-05T08:56:45Z INF |  Cloudflare API    api.cloudflare.com:443     PASS    API is reachable               |
+2026-09-05T08:56:45Z INF |                                                                                      |
+2026-09-05T08:56:45Z INF |  SUMMARY: Environment is healthy. cloudflared will use 'http2' as primary protocol.  |
+2026-09-05T08:56:45Z INF +--------------------------------------------------------------------------------------+
+2026-09-05T08:56:45Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=21debda7-e705-421c-b5b3-5941baea8ee5 status=pass target=region1.v2.argotunnel.com
+2026-09-05T08:56:45Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=21debda7-e705-421c-b5b3-5941baea8ee5 status=pass target=region2.v2.argotunnel.com
+2026-09-05T08:56:45Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=21debda7-e705-421c-b5b3-5941baea8ee5 status=pass target=region1.v2.argotunnel.com
+2026-09-05T08:56:45Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=21debda7-e705-421c-b5b3-5941baea8ee5 status=pass target=region2.v2.argotunnel.com
+2026-09-05T08:56:45Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=21debda7-e705-421c-b5b3-5941baea8ee5 status=pass target=region1.v2.argotunnel.com
+2026-09-05T08:56:45Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=21debda7-e705-421c-b5b3-5941baea8ee5 status=pass target=region2.v2.argotunnel.com
+2026-09-05T08:56:45Z INF precheck component="Cloudflare API" details="API is reachable" run_id=21debda7-e705-421c-b5b3-5941baea8ee5 status=pass target=api.cloudflare.com:443
+2026-09-05T08:56:45Z INF precheck complete hard_fail=false run_id=21debda7-e705-421c-b5b3-5941baea8ee5 suggested_protocol=http2
+2026-09-05T08:56:46Z INF Registered tunnel connection connIndex=0 connection=e8bb27db-dd94-4f84-ae0a-4e4489f8cb33 event=0 ip=198.41.192.7 location=cgk07 protocol=http2
+2026-09-05T08:56:46Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=1 event=0 ip=198.41.200.63
+2026-09-05T08:56:46Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-09-05T08:56:46Z INF Updated to new configuration config="{\"ingress\":[{\"hostname\":\"api.mameko.my.id\", \"originRequest\":{}, \"service\":\"http://127.0.0.1:8080\"}, {\"originRequest\":{}, \"service\":\"http_status:404\"}], \"warp-routing\":{\"enabled\":false}}" version=4
+2026-09-05T08:56:46Z INF Registered tunnel connection connIndex=1 connection=f9d73833-06fd-4163-a3a5-af99507d6f81 event=0 ip=198.41.200.63 location=sin13 protocol=http2
+2026-09-05T08:56:47Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=2 event=0 ip=198.41.192.57
+2026-09-05T08:56:47Z INF Registered tunnel connection connIndex=2 connection=e52b93cc-d704-4bab-b294-db2ef5b8c5d8 event=0 ip=198.41.192.57 location=cgk02 protocol=http2
+2026-09-05T08:56:48Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=3 event=0 ip=198.41.200.53
+2026-09-05T08:56:48Z INF Registered tunnel connection connIndex=3 connection=f58f819a-df0a-49f1-a038-f6286bfdb857 event=0 ip=198.41.200.53 location=sin12 protocol=http2
