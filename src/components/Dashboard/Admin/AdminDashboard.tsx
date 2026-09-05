@@ -453,6 +453,22 @@ export default function AdminDashboard() {
             </div>
           </section>
         );
+      case "chat":
+        return (
+          <section className={styles.workspaceArea}>
+            <div className={styles.workspaceInner}>
+              <AdminChatView onUnreadCountChange={setUnreadChatCount} />
+            </div>
+          </section>
+        );
+      case "customers":
+        return (
+          <section className={styles.workspaceArea}>
+            <div className={styles.workspaceInner}>
+              <UserManagement />
+            </div>
+          </section>
+        );
       default:
         return (
           <section className={styles.workspaceArea}>

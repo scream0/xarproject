@@ -927,11 +927,12 @@ func SyncBiteshipOrder(c *fiber.Ctx) error {
 	rawStatus, _ := result["status"].(string)
 	mappedStatus := currentStatus
 	bStatus := strings.ToLower(rawStatus)
-	if bStatus == "delivered" {
+	switch bStatus {
+	case "delivered":
 		mappedStatus = "delivered"
-	} else if bStatus == "cancelled" || bStatus == "rejected" {
+	case "cancelled", "rejected":
 		mappedStatus = "cancelled"
-	} else if bStatus == "picking_up" || bStatus == "picked" || bStatus == "dropping_off" || bStatus == "allocated" {
+	case "picking_up", "picked", "dropping_off", "allocated":
 		mappedStatus = "shipped"
 	}
 

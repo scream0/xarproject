@@ -209,6 +209,34 @@ export default function OrderDetailPage({ orderId: propOrderId }) {
     };
   }, [router]);
 
+  // Tangkap parameter redirect dari Midtrans (settlement / sukses)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("order_id") || params.get("id");
+    const transactionStatus =
+      params.get("transaction_status") || params.get("status_code");
+
+    if (
+      orderId &&
+      (transactionStatus === "settlement" ||
+        transactionStatus === "200" ||
+        transactionStatus === "success")
+    ) {
+      toast.success(`Pembayaran untuk pesanan #${orderId} berhasil!`);
+
+      fetch((process.env.NEXT_PUBLIC_API_URL || "") + `/api/user/orders/${orderId}/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transaction_status: transactionStatus === "200" ? "success" : transactionStatus }),
+      }).catch((err) =>
+        console.error("Gagal sinkronisasi status otomatis:", err),
+      );
+
+      const cleanUrl = `/dashboard/order-detail?id=${orderId}`;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
+
   useEffect(() => {
     if (!resolvedOrderId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect

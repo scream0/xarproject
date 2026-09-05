@@ -118,9 +118,9 @@ func CreateSnapToken(orderID string, grossAmount float64, custDetails SnapCustom
 		snapReq.ItemDetails = nil
 	}
 	snapReq.Callbacks = &SnapCallbacks{
-		Finish:   fmt.Sprintf("%s/dashboard/orders/%s", frontendURL, orderID),
-		Unfinish: fmt.Sprintf("%s/dashboard/orders/%s", frontendURL, orderID),
-		Error:    fmt.Sprintf("%s/dashboard/orders/%s", frontendURL, orderID),
+		Finish:   fmt.Sprintf("%s/dashboard/order-detail?id=%s", frontendURL, orderID),
+		Unfinish: fmt.Sprintf("%s/dashboard/order-detail?id=%s", frontendURL, orderID),
+		Error:    fmt.Sprintf("%s/dashboard/order-detail?id=%s", frontendURL, orderID),
 	}
 
 	reqBytes, err := json.Marshal(snapReq)

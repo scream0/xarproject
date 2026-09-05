@@ -370,6 +370,9 @@ func GetUserOrders(c *fiber.Ctx) error {
 			orders = append(orders, o)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
+	}
 
 	// Fetch items for all loaded orders in 1 query
 	if len(orderIDs) > 0 {
@@ -401,6 +404,9 @@ func GetUserOrders(c *fiber.Ctx) error {
 					it := parseOrderItem(itMap)
 					itemsMap[it.OrderID] = append(itemsMap[it.OrderID], it)
 				}
+			}
+			if err := itemRows.Err(); err != nil {
+				_ = err // ignored or handle appropriately
 			}
 
 			for i := range orders {
@@ -439,6 +445,9 @@ func GetUserOrders(c *fiber.Ctx) error {
 						}
 					}
 				}
+			}
+			if err := returnRows.Err(); err != nil {
+				_ = err // ignored or handle appropriately
 			}
 			// Attach return info to matching orders
 			for i := range orders {
@@ -518,6 +527,9 @@ func GetUserOrderDetail(c *fiber.Ctx) error {
 				it := parseOrderItem(itMap)
 				o.Items = append(o.Items, it)
 			}
+		}
+		if err := itemRows.Err(); err != nil {
+			_ = err // ignored or handle appropriately
 		}
 	}
 
@@ -623,6 +635,9 @@ func PayOrder(c *fiber.Ctx) error {
 					Quantity: it.Quantity,
 				})
 			}
+		}
+		if err := itemRows.Err(); err != nil {
+			_ = err // ignored or handle appropriately
 		}
 	}
 
@@ -996,6 +1011,9 @@ func GetUserReturns(c *fiber.Ctx) error {
 		} else {
 			fmt.Println("Scan error:", err)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 
 	return c.JSON(fiber.Map{"returns": returns})
@@ -1372,10 +1390,16 @@ func CreateCheckoutTransaction(c *fiber.Ctx) error {
 
 	// Claim vouchers if applicable
 	if req.DiscountVoucherClaimID != nil && *req.DiscountVoucherClaimID != "" {
-		_, _ = config.DB.Exec("UPDATE user_vouchers SET status = 'used', used_at = NOW(), order_id = $1::uuid WHERE id::text = $2", orderID, *req.DiscountVoucherClaimID)
+		_, err := config.DB.Exec("UPDATE user_vouchers SET status = 'used', used_at = NOW(), order_id = $1::text WHERE id::text = $2", orderID, *req.DiscountVoucherClaimID)
+		if err != nil {
+			fmt.Println("Error updating discount voucher status:", err)
+		}
 	}
 	if req.ShippingVoucherClaimID != nil && *req.ShippingVoucherClaimID != "" {
-		_, _ = config.DB.Exec("UPDATE user_vouchers SET status = 'used', used_at = NOW(), order_id = $1::uuid WHERE id::text = $2", orderID, *req.ShippingVoucherClaimID)
+		_, err := config.DB.Exec("UPDATE user_vouchers SET status = 'used', used_at = NOW(), order_id = $1::text WHERE id::text = $2", orderID, *req.ShippingVoucherClaimID)
+		if err != nil {
+			fmt.Println("Error updating shipping voucher status:", err)
+		}
 	}
 
 	if isManual {

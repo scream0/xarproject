@@ -27,7 +27,8 @@ func GetProducts(c *fiber.Ctx) error {
 	// 1. Single Product by ID
 	if rawID != "" && rawID != "undefined" && rawID != "null" {
 		query := `
-			SELECT id, name, description, category, image_url, variants, created_at
+			SELECT id, name, description, category, image_url, variants, created_at,
+			       weight, length, width, height, status, province, city, "cityId", "stockLocation"
 			FROM products
 			WHERE id::text = $1
 			LIMIT 1
@@ -36,6 +37,8 @@ func GetProducts(c *fiber.Ctx) error {
 		var desc, cat, img sql.NullString
 		var variantsRaw []byte
 		var createdAt sql.NullTime
+		var weight, length, width, height sql.NullFloat64
+		var status, province, city, cityId, stockLoc sql.NullString
 
 		err := config.DB.QueryRow(query, rawID).Scan(
 			&p.ID,
@@ -45,6 +48,8 @@ func GetProducts(c *fiber.Ctx) error {
 			&img,
 			&variantsRaw,
 			&createdAt,
+			&weight, &length, &width, &height,
+			&status, &province, &city, &cityId, &stockLoc,
 		)
 
 		if err != nil {
@@ -77,6 +82,15 @@ func GetProducts(c *fiber.Ctx) error {
 		if createdAt.Valid {
 			p.CreatedAt = &createdAt.Time
 		}
+		if weight.Valid { p.Weight = &weight.Float64 }
+		if length.Valid { p.Length = &length.Float64 }
+		if width.Valid { p.Width = &width.Float64 }
+		if height.Valid { p.Height = &height.Float64 }
+		if status.Valid { p.Status = &status.String }
+		if province.Valid { p.Province = &province.String }
+		if city.Valid { p.City = &city.String }
+		if cityId.Valid { p.CityID = &cityId.String }
+		if stockLoc.Valid { p.StockLocation = &stockLoc.String }
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"success": true,
@@ -131,17 +145,19 @@ func GetProducts(c *fiber.Ctx) error {
 	orderColumn := "created_at"
 	ascending := false
 
-	if sortBy == "name" {
+	switch sortBy {
+	case "name":
 		orderColumn = "name"
 		ascending = true
-	} else if sortBy == "price-low" || sortBy == "price-high" {
+	case "price-low", "price-high":
 		orderColumn = "created_at"
 		ascending = false
 	}
 
-	if sortOrder == "asc" {
+	switch sortOrder {
+	case "asc":
 		ascending = true
-	} else if sortOrder == "desc" {
+	case "desc":
 		ascending = false
 	}
 
@@ -152,6 +168,7 @@ func GetProducts(c *fiber.Ctx) error {
 
 	query := fmt.Sprintf(`
 		SELECT id, name, description, category, image_url, variants, created_at,
+		       weight, length, width, height, status, province, city, "cityId", "stockLocation",
 		       COUNT(*) OVER() AS total_count
 		FROM products
 		%s
@@ -178,6 +195,8 @@ func GetProducts(c *fiber.Ctx) error {
 		var desc, cat, img sql.NullString
 		var variantsRaw []byte
 		var createdAt sql.NullTime
+		var weight, length, width, height sql.NullFloat64
+		var status, province, city, cityId, stockLoc sql.NullString
 		var rowTotal int
 
 		err := rows.Scan(
@@ -188,6 +207,8 @@ func GetProducts(c *fiber.Ctx) error {
 			&img,
 			&variantsRaw,
 			&createdAt,
+			&weight, &length, &width, &height,
+			&status, &province, &city, &cityId, &stockLoc,
 			&rowTotal,
 		)
 		if err != nil {
@@ -214,9 +235,21 @@ func GetProducts(c *fiber.Ctx) error {
 		if createdAt.Valid {
 			p.CreatedAt = &createdAt.Time
 		}
+		if weight.Valid { p.Weight = &weight.Float64 }
+		if length.Valid { p.Length = &length.Float64 }
+		if width.Valid { p.Width = &width.Float64 }
+		if height.Valid { p.Height = &height.Float64 }
+		if status.Valid { p.Status = &status.String }
+		if province.Valid { p.Province = &province.String }
+		if city.Valid { p.City = &city.String }
+		if cityId.Valid { p.CityID = &cityId.String }
+		if stockLoc.Valid { p.StockLocation = &stockLoc.String }
 
 		total = rowTotal
 		products = append(products, p)
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -248,7 +281,8 @@ func GetProductSalesPublic(c *fiber.Ctx) error {
 	}
 
 	query := `
-		SELECT id, name, description, category, image_url, variants, created_at
+		SELECT id, name, description, category, image_url, variants, created_at,
+		       weight, length, width, height, status, province, city, "cityId", "stockLocation"
 		FROM products
 		WHERE id::text = $1
 		LIMIT 1
@@ -257,6 +291,8 @@ func GetProductSalesPublic(c *fiber.Ctx) error {
 	var desc, cat, img sql.NullString
 	var variantsRaw []byte
 	var createdAt sql.NullTime
+	var weight, length, width, height sql.NullFloat64
+	var status, province, city, cityId, stockLoc sql.NullString
 
 	err := config.DB.QueryRow(query, id).Scan(
 		&p.ID,
@@ -266,6 +302,8 @@ func GetProductSalesPublic(c *fiber.Ctx) error {
 		&img,
 		&variantsRaw,
 		&createdAt,
+		&weight, &length, &width, &height,
+		&status, &province, &city, &cityId, &stockLoc,
 	)
 
 	if err != nil {
@@ -298,6 +336,15 @@ func GetProductSalesPublic(c *fiber.Ctx) error {
 	if createdAt.Valid {
 		p.CreatedAt = &createdAt.Time
 	}
+	if weight.Valid { p.Weight = &weight.Float64 }
+	if length.Valid { p.Length = &length.Float64 }
+	if width.Valid { p.Width = &width.Float64 }
+	if height.Valid { p.Height = &height.Float64 }
+	if status.Valid { p.Status = &status.String }
+	if province.Valid { p.Province = &province.String }
+	if city.Valid { p.City = &city.String }
+	if cityId.Valid { p.CityID = &cityId.String }
+	if stockLoc.Valid { p.StockLocation = &stockLoc.String }
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
@@ -332,6 +379,9 @@ func GetProductSales(c *fiber.Ctx) error {
 		if err := rows.Scan(&pID, &total); err == nil && pID.Valid {
 			salesMap[pID.String] = int(total.Int64)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 
 	return c.JSON(fiber.Map{

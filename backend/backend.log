@@ -1,0 +1,7 @@
+2026/09/05 15:41:22 ✅ .env.local loaded from: ../.env.local
+2026/09/05 15:41:22 Mencoba koneksi ke: postgres://postgres.gwdvcfuzwchnfrhnhaek:xxxxx@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require ...
+2026/09/05 15:41:22 ✅ Terhubung ke: postgres://postgres.gwdvcfuzwchnfrhnhaek:xxxxx@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require
+2026/09/05 15:41:22 ✅ Berhasil terhubung ke PostgreSQL Supabase via Raw SQL!
+2026/09/05 15:41:22 🤖 Order Automation Worker started (Interval: 15 minutes)
+2026/09/05 15:41:22 failed to listen: listen tcp4 127.0.0.1:8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+exit status 1

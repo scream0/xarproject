@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 import ("fmt"; "log"; "xar-backend-go/internal/config"; "github.com/joho/godotenv"; "database/sql")
 func main() {

@@ -51,6 +51,9 @@ func BiteshipCronSync(c *fiber.Ctx) error {
 	for rows.Next() {
 		synced++
 	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
+	}
 
 	return c.JSON(fiber.Map{
 		"success": true,

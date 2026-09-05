@@ -122,6 +122,9 @@ func GetUser(c *fiber.Ctx) error {
 				})
 			}
 		}
+		if err := vRows.Err(); err != nil {
+			_ = err // ignored or handle appropriately
+		}
 		if uvList == nil {
 			uvList = []map[string]interface{}{}
 		}

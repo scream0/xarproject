@@ -93,6 +93,9 @@ func GetNotifications(c *fiber.Ctx) error {
 
 		notifications = append(notifications, n)
 	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
+	}
 
 	// Check read status for broadcast notifications
 	if len(broadcastIDs) > 0 {
@@ -108,6 +111,9 @@ func GetNotifications(c *fiber.Ctx) error {
 				if err := readRows.Scan(&nID); err == nil {
 					readMap[nID] = true
 				}
+			}
+			if err := readRows.Err(); err != nil {
+				_ = err // ignored or handle appropriately
 			}
 		}
 

@@ -59,26 +59,29 @@ func MidtransPaymentWebhook(c *fiber.Ctx) error {
 
 	// Determine new order status
 	nextStatus := "pending"
-	if transactionStatus == "capture" {
-		if fraudStatus == "challenge" {
+	switch transactionStatus {
+	case "capture":
+		switch fraudStatus {
+		case "challenge":
 			nextStatus = "challenge"
-		} else if fraudStatus == "accept" {
+		case "accept":
 			nextStatus = "paid"
 		}
-	} else if transactionStatus == "settlement" {
+	case "settlement":
 		nextStatus = "paid"
-	} else if transactionStatus == "cancel" || transactionStatus == "deny" || transactionStatus == "expire" {
+	case "cancel", "deny", "expire":
 		nextStatus = "cancelled"
-	} else if transactionStatus == "pending" {
+	case "pending":
 		nextStatus = "pending"
 	}
 
 	note := fmt.Sprintf("Pembayaran %s oleh Midtrans Gateway", transactionStatus)
-	if transactionStatus == "expire" {
+	switch transactionStatus {
+	case "expire":
 		note = "Batas waktu pembayaran kadaluarsa (Midtrans)"
-	} else if transactionStatus == "cancel" {
+	case "cancel":
 		note = "Pembayaran dibatalkan di gateway Midtrans"
-	} else if transactionStatus == "settlement" || transactionStatus == "capture" {
+	case "settlement", "capture":
 		note = "Pembayaran berhasil diverifikasi secara otomatis oleh Midtrans"
 	}
 
@@ -257,13 +260,14 @@ func BiteshipWebhook(c *fiber.Ctx) error {
 
 	// Map to high-level store status
 	newStatus := currentDBStatus
-	if bStatus == "delivered" {
+	switch bStatus {
+	case "delivered":
 		newStatus = "delivered"
-	} else if bStatus == "returned" || bStatus == "return_to_sender" {
+	case "returned", "return_to_sender":
 		newStatus = "returned"
-	} else if bStatus == "cancelled" || bStatus == "rejected" {
+	case "cancelled", "rejected":
 		newStatus = "cancelled"
-	} else if bStatus == "allocated" || bStatus == "picking_up" || bStatus == "picked" || bStatus == "dropping_off" {
+	case "allocated", "picking_up", "picked", "dropping_off":
 		if currentDBStatus != "delivered" {
 			newStatus = "shipped"
 		}

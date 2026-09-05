@@ -70,6 +70,9 @@ func GetAddresses(c *fiber.Ctx) error {
 
 		addresses = append(addresses, a)
 	}
+	if err := rows.Err(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 
 	return c.JSON(addresses)
 }

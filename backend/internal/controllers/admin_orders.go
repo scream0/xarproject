@@ -111,6 +111,9 @@ func GetAdminOrders(c *fiber.Ctx) error {
 			orders = append(orders, o)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		fmt.Println("Rows error AdminOrders:", err)
+	}
 
 	// Fetch items for all orders
 	if len(orderIDs) > 0 {
@@ -142,6 +145,9 @@ func GetAdminOrders(c *fiber.Ctx) error {
 					it := parseOrderItem(itMap)
 					itemsMap[it.OrderID] = append(itemsMap[it.OrderID], it)
 				}
+			}
+			if err := itemRows.Err(); err != nil {
+				fmt.Println("itemRows error AdminOrders:", err)
 			}
 
 			for i := range orders {

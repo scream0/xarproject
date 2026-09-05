@@ -61,6 +61,9 @@ func GetAdminReturns(c *fiber.Ctx) error {
 			fmt.Println("Scan error AdminReturns:", err)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		fmt.Println("Rows error AdminReturns:", err)
+	}
 
 	return c.JSON(fiber.Map{"returns": returns})
 }
@@ -83,9 +86,10 @@ func UpdateAdminReturn(c *fiber.Ctx) error {
 
 	// Determine new status from action or status field
 	newStatus := req.Status
-	if req.Action == "approve" {
+	switch req.Action {
+	case "approve":
 		newStatus = "approved"
-	} else if req.Action == "reject" {
+	case "reject":
 		newStatus = "rejected"
 	}
 
@@ -114,7 +118,8 @@ func UpdateAdminReturn(c *fiber.Ctx) error {
 	historyNote := "Status retur diperbarui."
 	userNotificationMsg := ""
 	
-	if newStatus == "approved" {
+	switch newStatus {
+	case "approved":
 		orderStatus = "returned"
 		historyNote = "Pengajuan return disetujui oleh admin."
 		
@@ -140,7 +145,7 @@ func UpdateAdminReturn(c *fiber.Ctx) error {
 
 		userNotificationMsg = fmt.Sprintf("Pengajuan return pesanan Anda (%s) telah disetujui. Dana sebesar Rp%v telah dikembalikan ke Mameko Wallet Anda.", orderID, totalAmount)
 		
-	} else if newStatus == "rejected" {
+	case "rejected":
 		orderStatus = "delivered" // revert to delivered if rejected
 		historyNote = "Pengajuan return ditolak oleh admin."
 		userNotificationMsg = fmt.Sprintf("Pengajuan return pesanan Anda (%s) ditolak. Alasan: %s", orderID, req.AdminNote)
@@ -210,6 +215,9 @@ func GetAdminWithdrawals(c *fiber.Ctx) error {
 			})
 		}
 	}
+	if err := rows.Err(); err != nil {
+		fmt.Println("Rows error AdminWithdrawals:", err)
+	}
 
 	return c.JSON(fiber.Map{"withdrawals": withdrawals})
 }
@@ -231,9 +239,10 @@ func UpdateAdminWithdrawal(c *fiber.Ctx) error {
 	}
 
 	newStatus := req.Status
-	if req.Action == "approve" {
+	switch req.Action {
+	case "approve":
 		newStatus = "completed"
-	} else if req.Action == "reject" {
+	case "reject":
 		newStatus = "rejected"
 	}
 
@@ -256,9 +265,10 @@ func UpdateAdminWithdrawal(c *fiber.Ctx) error {
 
 	// Send notification
 	notifMsg := ""
-	if newStatus == "completed" {
+	switch newStatus {
+	case "completed":
 		notifMsg = fmt.Sprintf("Penarikan dana sebesar Rp%v telah berhasil ditransfer ke rekening Anda. %s", amount, req.Description)
-	} else if newStatus == "rejected" {
+	case "rejected":
 		notifMsg = fmt.Sprintf("Penarikan dana sebesar Rp%v ditolak. Alasan: %s", amount, req.Description)
 	}
 
@@ -341,6 +351,9 @@ func GetTeamMembers(c *fiber.Ctx) error {
 		} else {
 			fmt.Println("GetTeamMembers Scan Error:", err)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		fmt.Println("Rows error GetTeamMembers:", err)
 	}
 
 	fmt.Println("GetTeamMembers returning team length:", len(team))

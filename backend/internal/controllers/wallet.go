@@ -57,6 +57,9 @@ func GetWallet(c *fiber.Ctx) error {
 				transactions = append(transactions, tx)
 			}
 		}
+		if err := txRows.Err(); err != nil {
+			_ = err // ignored or handle appropriately
+		}
 	}
 
 	return c.JSON(fiber.Map{

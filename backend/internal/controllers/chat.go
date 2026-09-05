@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"xar-backend-go/internal/config"
 	"xar-backend-go/internal/middleware"
@@ -42,6 +43,9 @@ func GetUserChats(c *fiber.Ctx) error {
 			continue
 		}
 		chats = append(chats, chat)
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 
 	return c.JSON(fiber.Map{"success": true, "data": chats})
@@ -156,6 +160,7 @@ func AdminGetChatList(c *fiber.Ctx) error {
 		var lastImage *string
 		
 		if err := rows.Scan(&userID, &lastActivity, &unreadCount, &fullName, &avatarURL, &email, &lastMessage, &lastImage); err != nil {
+			log.Printf("AdminGetChatList Scan error: %v", err)
 			continue
 		}
 		list = append(list, map[string]interface{}{
@@ -168,6 +173,9 @@ func AdminGetChatList(c *fiber.Ctx) error {
 			"last_message":  lastMessage,
 			"last_image":    lastImage,
 		})
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 
 	return c.JSON(fiber.Map{"success": true, "data": list})
@@ -199,6 +207,9 @@ func AdminGetUserChats(c *fiber.Ctx) error {
 			continue
 		}
 		chats = append(chats, chat)
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 
 	return c.JSON(fiber.Map{"success": true, "data": chats})

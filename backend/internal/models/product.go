@@ -18,5 +18,9 @@ type Product struct {
 	Width         *float64        `json:"width,omitempty"`
 	Height        *float64        `json:"height,omitempty"`
 	Status        *string         `json:"status,omitempty"`
+	Province      *string         `json:"province,omitempty"`
+	City          *string         `json:"city,omitempty"`
+	CityID        *string         `json:"cityId,omitempty"`
+	StockLocation *string         `json:"stockLocation,omitempty"`
 	CreatedAt     *time.Time      `json:"created_at"`
 }

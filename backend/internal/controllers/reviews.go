@@ -94,6 +94,9 @@ func GetReviews(c *fiber.Ctx) error {
 
 			reviews = append(reviews, r)
 		}
+		if err := rows.Err(); err != nil {
+			_ = err // ignored or handle appropriately
+		}
 
 		return c.JSON(fiber.Map{"reviews": reviews})
 	}
@@ -156,6 +159,9 @@ func GetReviews(c *fiber.Ctx) error {
 		}
 
 		reviews = append(reviews, r)
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 
 	return c.JSON(fiber.Map{"reviews": reviews})

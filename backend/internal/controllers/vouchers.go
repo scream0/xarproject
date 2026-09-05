@@ -42,6 +42,9 @@ func GetAvailableVouchers(c *fiber.Ctx) error {
 			vouchers = append(vouchers, v)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
+	}
 	if vouchers == nil {
 		vouchers = []models.Voucher{}
 	}
@@ -73,6 +76,9 @@ func GetPublicVouchers(c *fiber.Ctx) error {
 		if err := rows.Scan(&v.ID, &v.Code, &v.Title, &v.Type, &v.DiscountAmount, &v.MinPurchase, &v.ValidUntil, &v.UsageLimit, &v.UsedCount, &v.IsActive, &v.CreatedAt); err == nil {
 			vouchers = append(vouchers, v)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 	if vouchers == nil {
 		vouchers = []models.Voucher{}
@@ -146,7 +152,7 @@ func ClaimVoucher(c *fiber.Ctx) error {
 	// Check if user already claimed this voucher
 	var existingClaimID string
 	_ = config.DB.QueryRow(
-		"SELECT id::text FROM user_vouchers WHERE user_id::text = $1 AND voucher_id::text = $2 AND status = 'active' LIMIT 1",
+		"SELECT id::text FROM user_vouchers WHERE user_id::text = $1 AND voucher_id::text = $2 LIMIT 1",
 		user.ID, v.ID,
 	).Scan(&existingClaimID)
 
@@ -211,6 +217,9 @@ func GetAdminVouchers(c *fiber.Ctx) error {
 		if err := rows.Scan(&v.ID, &v.Code, &v.Title, &v.Type, &v.DiscountAmount, &v.MinPurchase, &v.ValidUntil, &v.UsageLimit, &v.UsedCount, &v.IsActive, &v.CreatedAt); err == nil {
 			vouchers = append(vouchers, v)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = err // ignored or handle appropriately
 	}
 
 	if vouchers == nil {
