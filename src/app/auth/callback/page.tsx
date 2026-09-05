@@ -25,22 +25,41 @@ function AuthCallbackContent() {
       if (code) {
         // Supabase createBrowserClient automatically handles the code exchange in the background.
         // We just need to verify the session exists.
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError || !session) {
+        let activeSession = session;
+        if (sessionError || !activeSession) {
           // Fallback manual exchange just in case
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             setErrorMsg(exchangeError.message);
             setTimeout(() => router.push('/login?error=auth-callback-failed'), 3000);
             return;
           }
+          activeSession = exchangeData?.session;
         }
         
-        // Success
-        router.push(next);
+        // Cek role untuk redirect yang sesuai (admin -> /dashboard, customer -> next)
+        let destination = next;
+        const userId = activeSession?.user?.id;
+        if (userId) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', userId)
+              .single();
+            const role = profile?.role || activeSession?.user?.user_metadata?.role;
+            if (role && ['admin', 'superadmin'].includes(String(role).toLowerCase())) {
+              destination = '/dashboard';
+            }
+          } catch (e) {
+            console.error('Pengecekan role saat callback gagal:', e);
+          }
+        }
+
+        // Success redirect
+        window.location.replace(destination);
       } else {
-        router.push(next);
+        window.location.replace(next);
       }
     };
 

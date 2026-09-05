@@ -88,54 +88,68 @@ export const loginWithGoogle = async () => {
 };
 
 /**
- * 4. Kirim Kode OTP via SMS (Nomor HP)
+ * 4. Kirim Kode OTP via Email (Supabase Auth + Resend SMTP)
  */
-export const sendOtpCode = async (phoneInput: string) => {
-  let formattedPhone = phoneInput.trim();
-  if (formattedPhone.startsWith("0")) {
-    formattedPhone = "+62" + formattedPhone.substring(1);
-  } else if (formattedPhone.startsWith("8")) {
-    formattedPhone = "+62" + formattedPhone;
+export const sendEmailOtp = async (email: string) => {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    throw new Error("Format alamat email tidak valid.");
   }
 
-  if (!formattedPhone.startsWith("+")) {
-    throw new Error("Format nomor HP tidak valid.");
-  }
+  const redirectUrl = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
 
   const { data, error } = await supabase.auth.signInWithOtp({
-    phone: formattedPhone,
+    email: cleanEmail,
+    options: {
+      emailRedirectTo: redirectUrl,
+    },
   });
 
   if (error) {
+    if (error.message?.includes("rate_limit") || error.status === 429) {
+      throw new Error("Terlalu banyak permintaan kode. Mohon tunggu 1 menit sebelum mencoba lagi.");
+    }
     throw error;
   }
 
-  return { phone: formattedPhone, data };
+  return { email: cleanEmail, data };
 };
 
 /**
- * 5. Verifikasi Kode OTP dan Login
+ * 5. Verifikasi Kode OTP Email dan Buat Sesi Login
  */
-export const verifyOtpAndLogin = async (phone: string, otpCode: string) => {
+export const verifyEmailOtp = async (email: string, otpCode: string) => {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanToken = otpCode.trim();
+
+  if (!cleanToken || cleanToken.length < 6) {
+    throw new Error("Kode OTP harus terdiri dari 6 digit.");
+  }
+
   const { data, error } = await supabase.auth.verifyOtp({
-    phone,
-    token: otpCode,
-    type: "sms",
+    email: cleanEmail,
+    token: cleanToken,
+    type: "email",
   });
 
   if (error) {
+    if (
+      error.message?.includes("expired") ||
+      error.message?.includes("invalid") ||
+      error.status === 400 ||
+      error.status === 401
+    ) {
+      throw new Error("Kode OTP salah atau telah kedaluwarsa. Silakan minta kode baru.");
+    }
     throw error;
   }
 
-  const user = data.user;
-  const accessToken = data.session?.access_token;
-
-  if (accessToken) {
-    await setSessionCookie(accessToken);
-  }
-
-  return user;
+  return data.user;
 };
+
+// Aliases for backward compatibility
+export const sendOtpCode = sendEmailOtp;
+export const verifyOtpAndLogin = verifyEmailOtp;
 
 /**
  * 6. Kirim Email Reset Password

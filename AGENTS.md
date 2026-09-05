@@ -8,7 +8,7 @@ Builds full-stack web apps with this stack:
 - **Database/Auth/Storage**: Supabase (managed Postgres, Supabase Auth for user identity, Supabase Storage for files)
 - **Frontend**: Next.js (App Router), calling the Go API as a separate REST service
 - **Layout**: monorepo, `apps/web` (Next.js) and `apps/api` (Go) deployed independently
-- **Deploy targets (fixed defaults for this project)**: `apps/web` → **Vercel**. `apps/api` → **self-hosted, exposed via Cloudflare Tunnel** (not a PaaS, not a public IP). See `references/deployment.md` before scaffolding any deploy config.
+- **Deploy targets (fixed defaults for this project)**: `apps/web` → **Cloudflare Pages**. `apps/api` → **self-hosted, exposed via Cloudflare Tunnel** (not a PaaS, not a public IP). See `references/deployment.md` before scaffolding any deploy config.
 
 Read this file fully before scaffolding anything. Read a `references/*.md` file the moment you touch that part of the stack — don't guess at sqlc config, RLS behavior, or Next.js data-fetching patterns from memory.
 

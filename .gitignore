@@ -31,7 +31,8 @@ scripts/serviceAccountKey.json
 .DS_Store
 *.pem
 
-# debug
+# logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -40,20 +41,14 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 # open-next/cloudflare
 .worker-next
-dist
 .open-next
 .wrangler
-.open-next
-.worker-next
 dist
-mameko/  
+mameko/
  

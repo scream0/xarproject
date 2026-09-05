@@ -148,8 +148,61 @@ export default function LoginForm() {
   }, [handleGoogleCredentialResponse]);
 
   // ==========================================
-  // OTP BOX HANDLERS
+  // OTP BOX HANDLERS & AUTO-SUBMIT
   // ==========================================
+  const handleVerifyOtp = useCallback(async (codeToVerify) => {
+    const otpCode = codeToVerify || otpArray.join("");
+    if (otpCode.length < 6) {
+      setError("Silakan masukkan kode OTP 6 digit.");
+      return;
+    }
+
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otpCode,
+        type: "email",
+      });
+
+      if (verifyError) throw verifyError;
+
+      let userName = data.user?.user_metadata?.name;
+      // Jika user baru dan tidak punya nama, gunakan nama depan dari email
+      if (!userName) {
+        userName = email.split("@")[0];
+        await supabase.auth.updateUser({
+          data: { name: userName, role: "customer" },
+        });
+      }
+
+      setCustomer({
+        name: userName,
+        email: data.user?.email,
+        phone: data.user?.user_metadata?.phone || "",
+      });
+
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
+
+      setSuccessMessage("Berhasil masuk! Mengalihkan...");
+      await handlePostLoginRedirect(data.user.id);
+    } catch (err) {
+      const errMsg = err?.message || "";
+      if (errMsg.includes("expired") || errMsg.includes("invalid") || errMsg.includes("Token")) {
+        setError("Kode OTP salah atau telah kedaluwarsa. Silakan minta kode baru.");
+      } else {
+        setError(errMsg || "Kode OTP salah atau gagal diverifikasi.");
+      }
+      setIsLoading(false);
+    }
+  }, [email, otpArray, rememberMe, setCustomer, handlePostLoginRedirect]);
+
   const handleOtpChange = (index, value) => {
     // Hanya terima satu digit angka saja
     const digit = value.replace(/\D/g, "").slice(-1);
@@ -160,6 +213,11 @@ export default function LoginForm() {
     // Auto-advance ke kotak berikutnya
     if (digit && index < 5) {
       inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit bila ke-6 digit sudah terisi semua
+    if (digit && newOtpArray.every((d) => d !== "")) {
+      handleVerifyOtp(newOtpArray.join(""));
     }
   };
 
@@ -172,15 +230,16 @@ export default function LoginForm() {
 
   const handleOtpPaste = (e) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData("text").slice(0, 6).split("");
+    const pasteData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
     if (pasteData.length > 0) {
       const newOtpArray = [...otpArray];
       pasteData.forEach((char, i) => {
-        if (!isNaN(char) && i < 6) {
+        if (i < 6) {
           newOtpArray[i] = char;
         }
       });
       setOtpArray(newOtpArray);
+
       // Focus on the next empty box or the last one
       const nextEmptyIndex = newOtpArray.findIndex(val => val === "");
       if (nextEmptyIndex !== -1) {
@@ -188,17 +247,32 @@ export default function LoginForm() {
       } else {
         inputRefs.current[5]?.focus();
       }
+
+      // Auto-submit jika hasil paste memenuhi 6 digit
+      if (newOtpArray.every((d) => d !== "")) {
+        handleVerifyOtp(newOtpArray.join(""));
+      }
     }
   };
 
   const requestOtpCode = async () => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setError("Masukkan alamat email yang valid.");
+      return;
+    }
+
     setError("");
     setSuccessMessage("");
     setIsLoading(true);
 
     try {
+      const redirectUrl = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
       const { error: signInError } = await supabase.auth.signInWithOtp({
-        email: email,
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
       });
       if (signInError) throw signInError;
       
@@ -206,7 +280,12 @@ export default function LoginForm() {
       setOtpSent(true);
       setResendTimer(60); // 1 menit
     } catch (err) {
-      setError(err.message || "Gagal mengirim kode OTP.");
+      const errMsg = err?.message || "";
+      if (errMsg.includes("rate_limit") || err?.status === 429) {
+        setError("Terlalu banyak permintaan OTP. Mohon tunggu 1 menit sebelum mencoba lagi.");
+      } else {
+        setError(errMsg || "Gagal mengirim kode OTP. Pastikan email valid.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -226,52 +305,7 @@ export default function LoginForm() {
     if (!otpSent) {
       await requestOtpCode();
     } else {
-      // TAHAP 2: VERIFIKASI KODE OTP
-      const otpCode = otpArray.join("");
-      if (otpCode.length < 6) {
-        setError("Silakan masukkan kode OTP 6 digit.");
-        return;
-      }
-
-      setError("");
-      setIsLoading(true);
-
-      try {
-        const { data, error: verifyError } = await supabase.auth.verifyOtp({
-          email: email,
-          token: otpCode,
-          type: "email",
-        });
-
-        if (verifyError) throw verifyError;
-
-        let userName = data.user?.user_metadata?.name;
-        // Jika user baru dan tidak punya nama, gunakan nama depan dari email
-        if (!userName) {
-          userName = email.split("@")[0];
-          await supabase.auth.updateUser({
-            data: { name: userName, role: "customer" },
-          });
-        }
-
-        setCustomer({
-          name: userName,
-          email: data.user?.email,
-          phone: data.user?.user_metadata?.phone || "",
-        });
-
-        if (rememberMe) {
-          localStorage.setItem("rememberedEmail", email);
-        } else {
-          localStorage.removeItem("rememberedEmail");
-        }
-
-        setSuccessMessage("Berhasil masuk! Mengalihkan...");
-        await handlePostLoginRedirect(data.user.id);
-      } catch (err) {
-        setError("Kode OTP salah atau telah kedaluwarsa.");
-        setIsLoading(false);
-      }
+      await handleVerifyOtp();
     }
   };
 
